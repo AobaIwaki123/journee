@@ -14,7 +14,8 @@ import { ShareButton } from './ShareButton';
 import { SaveButton } from './SaveButton';
 import { ResetButton } from './ResetButton';
 import { ToastContainer } from '@/components/ui/Toast';
-import { Calendar, MapPin, FileDown } from 'lucide-react';
+import { PDFExportButton } from './PDFExportButton';
+import { Calendar, MapPin } from 'lucide-react';
 
 export const ItineraryPreview: React.FC = () => {
   const { 
@@ -81,7 +82,7 @@ export const ItineraryPreview: React.FC = () => {
             {/* Days */}
             {currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
               <div className="space-y-6">
-                {currentItinerary.schedule.map((day, index) => (
+                {currentItinerary.schedule.map((day: any, index: number) => (
                   <DaySchedule 
                     key={day.day} 
                     day={day} 
@@ -102,15 +103,9 @@ export const ItineraryPreview: React.FC = () => {
             )}
 
             {/* PDF Export Button */}
-            {currentItinerary.schedule.length > 0 && planningPhase === 'completed' && (
+            {currentItinerary.schedule.length > 0 && (
               <div className="mt-10 mb-6 flex justify-center">
-                <button
-                  className="group flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                  onClick={() => alert('PDF出力機能はPhase 5.3で実装予定です')}
-                >
-                  <FileDown className="w-6 h-6 group-hover:animate-bounce" />
-                  <span className="text-lg font-semibold">PDFで保存</span>
-                </button>
+                <PDFExportButton itinerary={currentItinerary} />
               </div>
             )}
           </div>

@@ -21,8 +21,8 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
     notes: '',
   });
 
-  const addSpot = useStore((state) => state.addSpot);
-  const addToast = useStore((state) => state.addToast);
+  const addSpot = useStore((state: any) => state.addSpot);
+  const addToast = useStore((state: any) => state.addToast);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

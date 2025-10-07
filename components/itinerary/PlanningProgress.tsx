@@ -80,7 +80,7 @@ export const PlanningProgress: React.FC = () => {
         <div className="flex items-center space-x-2">
           <Clock className="w-4 h-4 text-blue-500" />
           <h3 className="text-sm font-semibold text-gray-700">
-            {phaseLabels[planningPhase]}
+            {phaseLabels[planningPhase as ItineraryPhase]}
           </h3>
         </div>
         <div className="text-xs font-medium text-gray-500">

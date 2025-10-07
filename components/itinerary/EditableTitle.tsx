@@ -14,8 +14,8 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
   const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const updateItineraryTitle = useStore((state) => state.updateItineraryTitle);
-  const addToast = useStore((state) => state.addToast);
+  const updateItineraryTitle = useStore((state: any) => state.updateItineraryTitle);
+  const addToast = useStore((state: any) => state.addToast);
 
   // 編集モードに入ったときにフォーカス
   useEffect(() => {
