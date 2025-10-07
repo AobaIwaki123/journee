@@ -655,40 +655,55 @@ journee/
   - [x] 公開時にLocalStorage保存
   - [x] 非公開時にLocalStorage削除
 
-##### 5.5.3 公開設定UI
-- [ ] `ShareButton.tsx` コンポーネント
-  - [ ] 公開/非公開切り替え
-  - [ ] 公開URL表示・コピー
-  - [ ] PDFダウンロード許可設定
-  - [ ] カスタムメッセージ入力（オプション）
-  - [ ] 公開URLのQRコード生成（オプション）
-- [ ] Zustand状態管理拡張
-  - [ ] `publishItinerary` アクション
-  - [ ] `unpublishItinerary` アクション
-  - [ ] `updatePublicSettings` アクション
+##### 5.5.3 公開設定UI ✅ **完了** (2025-10-07)
+- [x] `ShareButton.tsx` コンポーネント
+  - [x] 公開/非公開切り替え
+  - [x] 公開URL表示・コピー
+  - [x] PDFダウンロード許可設定
+  - [x] カスタムメッセージ入力（オプション）
+  - [x] Web Share API対応（モバイル）
+- [x] ItineraryPreview統合
+  - [x] Undo/Redoボタンと並べて配置
+  - [x] レスポンシブ対応
+- [x] Toast通知
+  - [x] 公開成功・失敗
+  - [x] URLコピー成功
+  - [x] 設定更新成功
 
-##### 5.5.4 セキュリティ対策
-- [ ] 推測困難なスラッグ（nanoid、62文字セット）
-- [ ] アクセス制御（公開フラグチェック）
-- [ ] レート制限（公開URL発行: 1日10回）
-- [ ] 個人情報保護（作成者メール非表示）
-- [ ] 不正アクセス検知・ログ記録
+##### 5.5.4 セキュリティ対策 ✅ **完了** (Phase 5.5.1で実装済み)
+- [x] 推測困難なスラッグ（nanoid、62文字セット）
+- [x] アクセス制御（公開フラグチェック）
+- [x] 個人情報保護（作成者メール非表示）
+- [x] 確認ダイアログ（非公開化時）
+- [ ] レート制限（Phase 8以降: API側で実装）
+- [ ] 不正アクセス検知・ログ記録（Phase 8以降）
 
-##### 5.5.5 モックデータ実装（Phase 5-7）
-- [ ] LocalStorageでの公開しおり管理
-- [ ] `lib/utils/storage.ts` 拡張
-  - [ ] `savePublicItinerary` 関数
-  - [ ] `getPublicItinerary` 関数
-- [ ] ⚠️ 注意: LocalStorageは他ユーザーと共有不可（Phase 8でDB統合必須）
+##### 5.5.5 モックデータ実装（Phase 5-7） ✅ **完了** (Phase 5.5.1-2で実装済み)
+- [x] LocalStorageでの公開しおり管理
+- [x] `lib/utils/storage.ts` 拡張
+  - [x] `savePublicItinerary` 関数
+  - [x] `getPublicItinerary` 関数
+  - [x] `removePublicItinerary` 関数
+- [x] Zustand連携
+  - [x] 公開時にLocalStorage保存
+  - [x] 非公開時にLocalStorage削除
+- [x] ⚠️ 注意: LocalStorageは他ユーザーと共有不可（Phase 8でDB統合必須）
+
+**実装完了**: ✅ Phase 5.5（しおり公開・共有機能）完了！
 
 **期待される効果**:
-- 旅のしおりを家族や友人と簡単に共有
-- SNSでのリッチプレビュー表示（OGP対応）
-- 安全なRead-only閲覧ページ
-- PDF ダウンロード許可の柔軟な設定
-- 閲覧数の可視化（Phase 8以降）
+- ✅ 旅のしおりを家族や友人と簡単に共有
+- ✅ SNSでのリッチプレビュー表示（OGP対応）
+- ✅ 安全なRead-only閲覧ページ
+- ✅ PDF ダウンロード許可の柔軟な設定
+- 📋 閲覧数の可視化（Phase 8以降）
 
-**詳細**: [docs/PHASE5_5_ITINERARY_SHARING.md](./docs/PHASE5_5_ITINERARY_SHARING.md)
+**詳細**: 
+- [PHASE5_5_ITINERARY_SHARING.md](./docs/PHASE5_5_ITINERARY_SHARING.md) - 全体計画
+- [PHASE5_5_1_IMPLEMENTATION.md](./docs/PHASE5_5_1_IMPLEMENTATION.md) - 型定義とAPI
+- [PHASE5_5_2_IMPLEMENTATION.md](./docs/PHASE5_5_2_IMPLEMENTATION.md) - 閲覧用ページ
+- [PHASE5_5_3_IMPLEMENTATION.md](./docs/PHASE5_5_3_IMPLEMENTATION.md) - 公開設定UI
+- [PHASE5_5_COMPLETE.md](./docs/PHASE5_5_COMPLETE.md) - ✅ 完了レポート
 
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
