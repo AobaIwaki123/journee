@@ -1,44 +1,46 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Plus, List, Settings } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import { Plus, List, Settings } from "lucide-react";
 
 /**
  * クイックアクションコンポーネント
- * 新規作成、栞一覧、設定へのナビゲーション
+ * 新規作成、しおり一覧、設定へのナビゲーション
  */
 export const QuickActions: React.FC = () => {
   const actions = [
     {
-      title: '新しいしおりを作成',
-      description: 'AIと一緒に新しい旅のしおりを作成',
-      href: '/',
+      title: "新しいしおりを作成",
+      description: "AIと一緒に新しい旅のしおりを作成",
+      href: "/",
       icon: Plus,
-      color: 'from-blue-500 to-blue-600',
-      hoverColor: 'hover:from-blue-600 hover:to-blue-700',
+      color: "from-blue-500 to-blue-600",
+      hoverColor: "hover:from-blue-600 hover:to-blue-700",
     },
     {
-      title: 'しおり一覧',
-      description: 'これまで作成したしおりを確認',
-      href: '/itineraries',
+      title: "しおり一覧",
+      description: "これまで作成したしおりを確認",
+      href: "/itineraries",
       icon: List,
-      color: 'from-purple-500 to-purple-600',
-      hoverColor: 'hover:from-purple-600 hover:to-purple-700',
+      color: "from-purple-500 to-purple-600",
+      hoverColor: "hover:from-purple-600 hover:to-purple-700",
     },
     {
-      title: '設定',
-      description: 'アカウントとアプリの設定を管理',
-      href: '/settings',
+      title: "設定",
+      description: "アカウントとアプリの設定を管理",
+      href: "/settings",
       icon: Settings,
-      color: 'from-pink-500 to-pink-600',
-      hoverColor: 'hover:from-pink-600 hover:to-pink-700',
+      color: "from-pink-500 to-pink-600",
+      hoverColor: "hover:from-pink-600 hover:to-pink-700",
     },
   ];
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">クイックアクション</h3>
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        クイックアクション
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {actions.map((action) => {
           const Icon = action.icon;
@@ -59,7 +61,9 @@ export const QuickActions: React.FC = () => {
                   <Icon className="w-6 h-6" />
                 </div>
                 <h4 className="font-semibold text-base mb-1">{action.title}</h4>
-                <p className="text-sm text-white text-opacity-90">{action.description}</p>
+                <p className="text-sm text-white text-opacity-90">
+                  {action.description}
+                </p>
               </div>
             </Link>
           );
