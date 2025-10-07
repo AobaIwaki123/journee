@@ -111,7 +111,7 @@ export const MessageInput: React.FC = () => {
     }
   };
 
-  const disabled = !input.trim() || isLoading || isStreaming;
+  const disabled = isLoading || isStreaming;
 
   return (
     <form onSubmit={handleSubmit} className="flex space-x-2">
