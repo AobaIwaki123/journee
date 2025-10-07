@@ -3,6 +3,7 @@
 import React from 'react';
 import { useStore } from '@/lib/store/useStore';
 import { DaySchedule } from './DaySchedule';
+<<<<<<< HEAD
 import { PlanningProgress } from './PlanningProgress';
 import { QuickActions } from './QuickActions';
 import { PhaseStatusBar } from './PhaseStatusBar';
@@ -10,8 +11,25 @@ import { Calendar, MapPin, FileDown } from 'lucide-react';
 
 export const ItineraryPreview: React.FC = () => {
   const { currentItinerary, planningPhase, isAutoProgressing, autoProgressState } = useStore();
+=======
+import { ItineraryHeader } from './ItineraryHeader';
+import { ItinerarySummary } from './ItinerarySummary';
+import { EmptyItinerary } from './EmptyItinerary';
+import { UndoRedoButtons } from './UndoRedoButtons';
+import { TemplateSelector } from './TemplateSelector';
+import { ToastContainer } from '@/components/ui/Toast';
+import { FileDown } from 'lucide-react';
+import { TEMPLATES } from '@/types/template';
 
+export const ItineraryPreview: React.FC = () => {
+  const currentItinerary = useStore((state) => state.currentItinerary);
+  const selectedTemplate = useStore((state) => state.selectedTemplate);
+  const template = TEMPLATES[selectedTemplate];
+>>>>>>> origin/main
+
+  // 空状態: しおりがない場合
   if (!currentItinerary) {
+<<<<<<< HEAD
     return (
       <div className="h-full flex flex-col bg-gray-50">
         {/* Phase 4: プランニング進捗（初期状態でも表示） */}
@@ -60,56 +78,84 @@ export const ItineraryPreview: React.FC = () => {
               <span>
                 {currentItinerary.startDate} - {currentItinerary.endDate}
               </span>
+=======
+    return <EmptyItinerary />;
+  }
+
+  return (
+    <>
+      {/* Toast Container */}
+      <ToastContainer />
+
+      <div 
+        className="h-full overflow-y-auto"
+        style={{ 
+          background: `linear-gradient(to bottom right, ${template.colors.background}, ${template.colors.background})`
+        }}
+      >
+        {/* Header */}
+        <ItineraryHeader itinerary={currentItinerary} editable={true} />
+
+        {/* Content */}
+        <div className="p-6 max-w-5xl mx-auto">
+          {/* Undo/Redo Buttons */}
+          {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
+            <div className="flex justify-end mb-4">
+              <UndoRedoButtons />
+>>>>>>> origin/main
             </div>
           )}
-          {currentItinerary.duration && (
-            <div className="flex items-center">
-              <span>{currentItinerary.duration}日間</span>
-            </div>
+
+          {/* Template Selector */}
+          {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
+            <TemplateSelector />
           )}
-        </div>
-        {currentItinerary.summary && (
-          <p className="mt-3 text-blue-50 text-sm">{currentItinerary.summary}</p>
-        )}
-      </div>
 
-      {/* Content */}
-      <div className="p-6">
-        {/* Days */}
-        {currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
-          <div className="space-y-6">
-            {currentItinerary.schedule.map((day) => (
-              <DaySchedule key={day.day} day={day} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center text-gray-500 py-8">
-            <p>スケジュールがまだ作成されていません</p>
-            <p className="text-sm mt-2">AIチャットで旅程を作成してみましょう</p>
-          </div>
-        )}
+          {/* Summary */}
+          {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
+            <ItinerarySummary itinerary={currentItinerary} />
+          )}
 
-        {/* Budget Info */}
-        {currentItinerary.totalBudget && currentItinerary.schedule.length > 0 && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-700">総予算</span>
-              <span className="text-lg font-bold text-blue-600">
-                ¥{currentItinerary.totalBudget.toLocaleString()}
-              </span>
+          {/* Days */}
+          {currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
+            <div className="space-y-6">
+              {currentItinerary.schedule.map((day, index) => (
+                <DaySchedule 
+                  key={day.day} 
+                  day={day} 
+                  dayIndex={index}
+                  editable={true}
+                />
+              ))}
             </div>
+          ) : (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <p className="text-gray-600 text-lg font-medium mb-2">
+              スケジュールがまだ作成されていません
+            </p>
+            <p className="text-sm text-gray-500">
+              AIチャットで「〇日目の詳細を教えて」と聞いてみましょう
+            </p>
           </div>
         )}
 
         {/* PDF Export Button */}
+<<<<<<< HEAD
         {currentItinerary.schedule.length > 0 && planningPhase === 'completed' && (
           <div className="mt-8 flex justify-center">
             <button
               className="flex items-center space-x-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               onClick={() => alert('PDF出力機能はPhase 5で実装予定です')}
+=======
+        {currentItinerary.schedule.length > 0 && (
+          <div className="mt-10 mb-6 flex justify-center">
+            <button
+              className="group flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              onClick={() => alert('PDF出力機能はPhase 5.3で実装予定です')}
+>>>>>>> origin/main
             >
-              <FileDown className="w-5 h-5" />
-              <span>PDFで保存</span>
+              <FileDown className="w-6 h-6 group-hover:animate-bounce" />
+              <span className="text-lg font-semibold">PDFで保存</span>
             </button>
           </div>
         )}
@@ -119,5 +165,6 @@ export const ItineraryPreview: React.FC = () => {
       {/* Phase 4: クイックアクション（自動進行中でない場合のみ表示） */}
       {!isAutoProgressing && <QuickActions />}
     </div>
+    </>
   );
 };

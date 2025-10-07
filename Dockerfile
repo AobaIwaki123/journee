@@ -11,7 +11,8 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm ci
+# Use npm install instead of npm ci to handle package.json changes
+RUN npm install
 
 # Copy source code
 COPY . .
