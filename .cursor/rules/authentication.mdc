@@ -1,0 +1,407 @@
+---
+globs: "lib/auth/**/*,app/api/auth/**/*,app/api/user/**/*,components/auth/**/*,middleware.ts"
+---
+
+# 認証機能 - Phase 2実装
+
+## 概要
+NextAuth.js v4を使用したGoogle OAuth認証システム。JWT戦略でステートレスなセッション管理を実現。
+
+## アーキテクチャ
+
+### 認証フロー
+```
+1. ユーザーが保護されたページにアクセス
+   ↓
+2. middleware.ts が認証チェック
+   ↓
+3. 未認証の場合 /login にリダイレクト
+   ↓
+4. ログインボタンクリック → /api/auth/signin
+   ↓
+5. Google OAuth画面にリダイレクト
+   ↓
+6. ユーザーがGoogleで認証
+   ↓
+7. /api/auth/callback/google にコールバック
+   ↓
+8. NextAuth.jsがユーザー情報を検証
+   ↓
+9. JWTトークンを生成してHTTPOnly Cookieに保存
+   ↓
+10. ホームページにリダイレクト
+```
+
+### セキュリティ
+- **JWT戦略**: データベース不要のステートレス認証
+- **HTTPOnly Cookie**: XSS攻撃対策
+- **Secure Cookie**: 本番環境で自動有効化
+- **CSRF保護**: NextAuth.js自動対応
+- **セッション期限**: 30日間
+- **メール確認**: Google OAuthで確認済みチェック
+
+## ファイル構成
+
+### 認証設定 (`lib/auth/`)
+- [auth-options.ts](mdc:lib/auth/auth-options.ts) - NextAuth中核設定
+- [session.ts](mdc:lib/auth/session.ts) - セッション管理ヘルパー
+
+### APIルート (`app/api/`)
+- `auth/[...nextauth]/route.ts` - NextAuth自動生成エンドポイント
+- `user/me/route.ts` - 現在のユーザー情報取得
+- `health/route.ts` - ヘルスチェック
+
+### 認証コンポーネント (`components/auth/`)
+- [AuthProvider.tsx](mdc:components/auth/AuthProvider.tsx) - SessionProviderラッパー
+- [LoginButton.tsx](mdc:components/auth/LoginButton.tsx) - Googleログインボタン
+- [UserMenu.tsx](mdc:components/auth/UserMenu.tsx) - ユーザーメニュー・ログアウト
+
+### ミドルウェア
+- [middleware.ts](mdc:middleware.ts) - 保護されたルートの認証チェック
+
+## NextAuth設定（auth-options.ts）
+
+### プロバイダー
+```typescript
+providers: [
+  GoogleProvider({
+    clientId: process.env.GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  }),
+]
+```
+
+### セッション戦略
+```typescript
+session: {
+  strategy: 'jwt',
+  maxAge: 30 * 24 * 60 * 60, // 30日間
+}
+```
+
+### コールバック
+- **jwt**: トークンにユーザー情報（id, email, name, image, googleId）を追加
+- **session**: セッションオブジェクトに型安全なユーザー情報を含める
+- **signIn**: メール確認済みチェック、サインイン可否を判定
+- **redirect**: 認証後のリダイレクト先制御（デフォルト: `/`）
+
+### イベント
+- **signIn**: ログイン成功時のログ出力
+- **signOut**: ログアウト時のログ出力
+
+## セッション管理ヘルパー（session.ts）
+
+### getSession()
+```typescript
+import { getSession } from '@/lib/auth/session'
+
+const session = await getSession()
+// session.user.id, session.user.email などにアクセス
+```
+
+### getCurrentUser()
+```typescript
+import { getCurrentUser } from '@/lib/auth/session'
+
+const user = await getCurrentUser()
+if (!user) {
+  return new Response('Unauthorized', { status: 401 })
+}
+// user.id, user.email, user.name, user.image
+```
+
+### isAuthenticated()
+```typescript
+import { isAuthenticated } from '@/lib/auth/session'
+
+if (!(await isAuthenticated())) {
+  redirect('/login')
+}
+```
+
+## 使用パターン
+
+### Server Component
+```typescript
+import { getCurrentUser } from '@/lib/auth/session'
+import { redirect } from 'next/navigation'
+
+export default async function ProtectedPage() {
+  const user = await getCurrentUser()
+  
+  if (!user) {
+    redirect('/login')
+  }
+  
+  return <div>こんにちは、{user.name}さん</div>
+}
+```
+
+### Route Handler（APIルート）
+```typescript
+import { getCurrentUser } from '@/lib/auth/session'
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  const user = await getCurrentUser()
+  
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+  
+  // 認証済み処理
+  return NextResponse.json({ userId: user.id })
+}
+```
+
+### Client Component
+```typescript
+'use client';
+
+import { useSession } from 'next-auth/react'
+
+export const ProfileCard: React.FC = () => {
+  const { data: session, status } = useSession()
+  
+  if (status === 'loading') {
+    return <LoadingSpinner />
+  }
+  
+  if (status === 'unauthenticated') {
+    return <LoginButton />
+  }
+  
+  return (
+    <div>
+      <p>{session.user.name}</p>
+      <img src={session.user.image} alt="avatar" />
+    </div>
+  )
+}
+```
+
+## 型定義（types/auth.ts）
+
+### NextAuth拡張
+```typescript
+// Session型の拡張
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string
+      email: string
+      name?: string | null
+      image?: string | null
+      googleId: string
+    }
+  }
+}
+
+// JWT型の拡張
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id: string
+    email: string
+    name?: string | null
+    image?: string | null
+    googleId: string
+  }
+}
+```
+
+### カスタム型
+```typescript
+export interface UserProfile {
+  id: string
+  email: string
+  name?: string | null
+  image?: string | null
+  googleId: string
+}
+
+export type AuthStatus = 'authenticated' | 'unauthenticated' | 'loading'
+```
+
+## ミドルウェア（middleware.ts）
+
+### 保護されたルート
+```typescript
+export const config = {
+  matcher: [
+    '/api/chat/:path*',
+    '/api/itinerary/:path*',
+    '/api/user/:path*',
+    '/api/settings/:path*',
+  ],
+}
+```
+
+### 除外ルート
+- `/api/auth/*` - NextAuth.js認証エンドポイント
+- `/api/health` - ヘルスチェック
+- 静的ファイル、画像、favicon
+
+### 動作
+1. リクエストがマッチャーにヒット
+2. NextAuth.jsでトークンチェック
+3. 未認証の場合、401 Unauthorized返却（APIルート）またはリダイレクト
+
+## 環境変数
+
+必須の環境変数（`.env.local`）:
+
+```env
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=生成した秘密鍵
+
+# Google OAuth
+GOOGLE_CLIENT_ID=Google Cloudから取得
+GOOGLE_CLIENT_SECRET=Google Cloudから取得
+```
+
+### NEXTAUTH_SECRETの生成
+```bash
+openssl rand -base64 32
+```
+
+### Google OAuth設定手順
+1. [Google Cloud Console](https://console.cloud.google.com/)
+2. プロジェクト作成
+3. 「APIとサービス」→「認証情報」
+4. OAuth 2.0 クライアントID作成
+5. 承認済みリダイレクトURI:
+   - `http://localhost:3000/api/auth/callback/google`（開発）
+   - `https://your-domain.com/api/auth/callback/google`（本番）
+
+## APIエンドポイント
+
+### NextAuth自動生成
+| エンドポイント | メソッド | 説明 |
+|------------|---------|------|
+| `/api/auth/signin` | GET | サインインページ |
+| `/api/auth/signin/google` | POST | Google認証開始 |
+| `/api/auth/signout` | GET/POST | サインアウト |
+| `/api/auth/session` | GET | セッション情報取得 |
+| `/api/auth/csrf` | GET | CSRFトークン取得 |
+| `/api/auth/providers` | GET | プロバイダー一覧 |
+| `/api/auth/callback/google` | GET | OAuthコールバック |
+
+### カスタムAPI
+| エンドポイント | メソッド | 説明 | 認証 |
+|------------|---------|------|------|
+| `/api/user/me` | GET | ユーザー情報取得 | 必須 |
+| `/api/health` | GET | ヘルスチェック | 不要 |
+
+詳細: [docs/API.md](mdc:docs/API.md)
+
+## 統合状態
+
+### 統合済みコンポーネント
+- ✅ [Header.tsx](mdc:components/layout/Header.tsx) - ログイン/ユーザーメニュー表示
+- ✅ [app/layout.tsx](mdc:app/layout.tsx) - AuthProvider統合
+- ✅ [app/page.tsx](mdc:app/page.tsx) - 認証チェック追加
+
+### 統合パターン
+```typescript
+// app/layout.tsx
+import { AuthProvider } from '@/components/auth/AuthProvider'
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="ja">
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+```typescript
+// components/layout/Header.tsx
+'use client';
+import { useSession } from 'next-auth/react'
+import { UserMenu } from '@/components/auth/UserMenu'
+import { LoginButton } from '@/components/auth/LoginButton'
+
+export const Header: React.FC = () => {
+  const { data: session, status } = useSession()
+  
+  return (
+    <header>
+      {status === 'loading' ? (
+        <LoadingSpinner />
+      ) : session ? (
+        <UserMenu />
+      ) : (
+        <LoginButton />
+      )}
+    </header>
+  )
+}
+```
+
+## 今後の拡張（Phase 9以降）
+
+### データベース統合
+- ユーザーテーブル作成
+- セッションテーブル作成
+- JWT戦略からDatabase戦略に移行
+- アカウント情報の永続化
+
+### 追加機能
+- メール/パスワード認証
+- 2要素認証（2FA）
+- アカウント削除
+- プロフィール編集
+- セッション一覧・無効化
+
+## トラブルシューティング
+
+### "Cannot GET /api/auth/signin"
+- Next.jsサーバーが起動しているか確認
+- `app/api/auth/[...nextauth]/route.ts`が存在するか確認
+
+### Google OAuth エラー
+- `.env.local`の環境変数を確認
+- Google Cloud ConsoleのリダイレクトURIを確認
+- `NEXTAUTH_URL`が正しいか確認
+
+### セッションが取得できない
+- ブラウザのクッキーが有効か確認
+- `NEXTAUTH_SECRET`が設定されているか確認
+- `http://localhost:3000`を使用（`127.0.0.1`ではなく）
+
+### 型エラー
+- `types/auth.ts`が正しくインポートされているか確認
+- TypeScriptサーバーを再起動
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ Server ComponentsでgetCurrentUser()を使用
+- ✅ Client ComponentsでuseSession()を使用
+- ✅ 認証が必要なAPIは必ずチェック
+- ✅ 環境変数は.env.exampleに記載
+- ✅ エラーハンドリングを適切に実装
+
+### DON'T（非推奨）
+- ❌ クライアントサイドに秘密鍵を露出
+- ❌ セッション情報をローカルストレージに保存
+- ❌ 認証チェックをスキップ
+- ❌ 環境変数をコミット
+- ❌ JWTトークンを手動で操作
+
+## 参考リンク
+
+- [NextAuth.js公式ドキュメント](https://next-auth.js.org/)
+- [Google OAuth設定ガイド](https://console.cloud.google.com/)
+- [lib/auth/README.md](mdc:lib/auth/README.md) - 詳細な実装ガイド
+- [docs/API.md](mdc:docs/API.md) - API仕様書
+- [docs/PHASE2_IMPLEMENTATION.md](mdc:docs/PHASE2_IMPLEMENTATION.md) - 実装レポート

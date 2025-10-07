@@ -13,7 +13,7 @@ export interface Location {
 }
 
 /**
- * 観光スポット
+ * 観光スポット（詳細版）
  */
 export interface TouristSpot {
   id: string;
@@ -25,7 +25,12 @@ export interface TouristSpot {
   /** 滞在時間（分） */
   duration?: number;
   /** カテゴリ（観光、食事、移動など） */
-  category?: 'sightseeing' | 'dining' | 'transportation' | 'accommodation' | 'other';
+  category?:
+    | "sightseeing"
+    | "dining"
+    | "transportation"
+    | "accommodation"
+    | "other";
   /** 予算（円） */
   estimatedCost?: number;
   /** メモ */
@@ -35,7 +40,19 @@ export interface TouristSpot {
 }
 
 /**
- * 1日の日程
+ * シンプルなスポット型（UI用）
+ */
+export interface Spot {
+  id: string;
+  name: string;
+  description: string;
+  time?: string;
+  address?: string;
+  imageUrl?: string;
+}
+
+/**
+ * 1日の日程（詳細版）
  */
 export interface DaySchedule {
   day: number;
@@ -49,7 +66,7 @@ export interface DaySchedule {
 }
 
 /**
- * 旅のしおりデータ
+ * 旅のしおりデータ（詳細版）
  */
 export interface ItineraryData {
   id: string;
@@ -69,13 +86,35 @@ export interface ItineraryData {
   /** 総予算（円） */
   totalBudget?: number;
   /** ステータス */
-  status: 'draft' | 'completed' | 'archived';
+  status: "draft" | "completed" | "archived";
   /** 作成日時 */
   createdAt: Date;
   /** 更新日時 */
   updatedAt: Date;
   /** 公開設定 */
   isPublic?: boolean;
+}
+
+/**
+ * シンプルなしおり型（UI用）
+ */
+export interface Itinerary {
+  id: string;
+  title: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  days: DaySchedule[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * しおり状態（Zustand用）
+ */
+export interface ItineraryState {
+  currentItinerary: Itinerary | null;
+  isEditing: boolean;
 }
 
 /**
@@ -101,7 +140,7 @@ export interface ItineraryListItem {
   destination: string;
   startDate?: string;
   endDate?: string;
-  status: 'draft' | 'completed' | 'archived';
+  status: "draft" | "completed" | "archived";
   createdAt: Date;
   updatedAt: Date;
   thumbnailUrl?: string;

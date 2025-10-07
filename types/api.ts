@@ -2,8 +2,8 @@
  * API関連の型定義
  */
 
-import type { ChatMessage, AIModel } from './chat';
-import type { ItineraryData } from './itinerary';
+import type { ChatMessage, AIModel } from "./chat";
+import type { ItineraryData } from "./itinerary";
 
 /**
  * チャットAPIリクエスト
@@ -45,7 +45,7 @@ export interface ChatAPIResponse {
  * ストリーミングレスポンスのチャンク
  */
 export interface ChatStreamChunk {
-  type: 'message' | 'itinerary' | 'done' | 'error';
+  type: "message" | "itinerary" | "done" | "error";
   /** メッセージの内容（type: 'message'の場合） */
   content?: string;
   /** しおりデータ（type: 'itinerary'の場合） */
@@ -65,10 +65,68 @@ export interface APIErrorResponse {
 }
 
 /**
- * API成功レスポンス
+ * API成功レスポンス（汎用）
  */
 export interface APISuccessResponse<T = any> {
   success: true;
   data: T;
   message?: string;
+}
+
+/**
+ * API成功レスポンスの基本型
+ */
+export interface ApiSuccessResponse<T = unknown> {
+  data: T;
+  message?: string;
+}
+
+/**
+ * APIエラーレスポンスの基本型
+ */
+export interface ApiErrorResponse {
+  error: string;
+  message: string;
+  details?: unknown;
+}
+
+/**
+ * ページネーション情報
+ */
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+/**
+ * ページネーション付きレスポンス
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationInfo;
+}
+
+/**
+ * HTTPメソッド型
+ */
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+/**
+ * APIレスポンスステータス
+ */
+export type ApiStatus = "success" | "error" | "loading";
+
+/**
+ * ユーザー情報レスポンス（/api/user/me）
+ */
+export interface UserMeResponse {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  googleId?: string;
 }

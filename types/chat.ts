@@ -2,13 +2,15 @@
  * チャット関連の型定義
  */
 
+import type { ItineraryData } from "./itinerary";
+
 /**
  * メッセージの役割
  */
-export type MessageRole = 'user' | 'assistant' | 'system';
+export type MessageRole = "user" | "assistant" | "system";
 
 /**
- * チャットメッセージ
+ * チャットメッセージ（詳細版）
  */
 export interface ChatMessage {
   id: string;
@@ -17,6 +19,16 @@ export interface ChatMessage {
   timestamp: Date;
   /** メッセージに関連するしおりデータ（AIが生成した場合） */
   itineraryData?: Partial<ItineraryData>;
+}
+
+/**
+ * シンプルなメッセージ型（UI用）
+ */
+export interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
 }
 
 /**
@@ -35,7 +47,7 @@ export interface ChatSession {
 /**
  * AI モデルの種類
  */
-export type AIModel = 'gemini' | 'claude';
+export type AIModel = "gemini" | "claude";
 
 /**
  * AI設定
@@ -49,6 +61,9 @@ export interface AISettings {
 }
 
 /**
- * しおりデータ（型定義はitinerary.tsから参照）
+ * チャット状態（Zustand用）
  */
-import type { ItineraryData } from './itinerary';
+export interface ChatState {
+  messages: Message[];
+  isLoading: boolean;
+}
