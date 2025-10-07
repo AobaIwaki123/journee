@@ -1,0 +1,376 @@
+# Journee - Cursor AI Rules
+
+このファイルは、Cursor AIがJourneeプロジェクトで開発する際の指針とコーディング規約を定義します。
+
+## 📋 プロジェクト概要
+
+**プロジェクト名**: Journee  
+**目的**: AIと対話しながら旅のしおりを作成するWebアプリケーション  
+**技術スタック**: Next.js 14 (App Router) + TypeScript + Tailwind CSS + Zustand
+
+## 🎯 開発フェーズ
+
+**現在のフェーズ**: Phase 1 完了 → Phase 2（認証機能）へ
+
+### Phase 1 ✅ 完了
+- Next.js + TypeScript + Tailwind CSS セットアップ
+- 基本レイアウト（デスクトップ版）
+- チャットUIコンポーネント
+- しおりプレビュー基本レイアウト
+- Zustand状態管理
+
+### Phase 2 🔄 次のステップ
+- NextAuth.js認証セットアップ
+- Google OAuth設定
+- ログイン/ログアウトUI
+- ユーザーメニュー
+
+## 🏗️ アーキテクチャ方針
+
+### ディレクトリ構造
+
+```
+app/              # Next.js App Router
+  ├── page.tsx           # メインページ
+  ├── layout.tsx         # ルートレイアウト
+  └── api/              # API Routes（Phase 2以降）
+components/       # Reactコンポーネント
+  ├── chat/            # チャット関連
+  ├── itinerary/       # しおり関連
+  ├── layout/          # レイアウト関連
+  └── auth/            # 認証関連（Phase 2以降）
+lib/              # ユーティリティ・ロジック
+  ├── store/           # Zustand状態管理
+  ├── ai/              # AI統合（Phase 3以降）
+  └── auth/            # 認証設定（Phase 2以降）
+types/            # TypeScript型定義
+```
+
+### 状態管理
+- **Zustand**を使用してグローバル状態を管理
+- `lib/store/useStore.ts`に集約
+- チャット、しおり、UI状態を管理
+
+### データフロー
+1. ユーザー入力 → Zustandストア更新
+2. API呼び出し（Phase 3以降）
+3. レスポンス → ストア更新
+4. UI自動更新（React再レンダリング）
+
+## 💻 コーディング規約
+
+### TypeScript
+
+#### 型定義
+- すべての関数に型を明記
+- `types/`ディレクトリに型定義を集約
+- `interface`を優先（`type`は必要時のみ）
+
+```typescript
+// Good
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+// Component props
+interface MessageInputProps {
+  onSubmit: (message: string) => void;
+  disabled?: boolean;
+}
+```
+
+#### エクスポート
+- 名前付きエクスポートを使用
+- デフォルトエクスポートは避ける（Pageコンポーネント除く）
+
+```typescript
+// Good
+export const ChatBox: React.FC = () => { ... }
+
+// Avoid（Page以外）
+export default ChatBox;
+```
+
+### React コンポーネント
+
+#### ファイル命名
+- PascalCase: `MessageInput.tsx`
+- 1ファイル1コンポーネント
+
+#### コンポーネント構造
+```typescript
+'use client'; // Client Componentの場合必須
+
+import React from 'react';
+import { useStore } from '@/lib/store/useStore';
+
+interface ComponentProps {
+  // props定義
+}
+
+export const ComponentName: React.FC<ComponentProps> = ({ prop1, prop2 }) => {
+  // hooks
+  const state = useStore((state) => state.value);
+  
+  // handlers
+  const handleClick = () => { ... };
+  
+  // render
+  return (
+    <div className="...">
+      {/* JSX */}
+    </div>
+  );
+};
+```
+
+#### Client vs Server Components
+- デフォルトはServer Component
+- 以下の場合のみClient Component（`'use client'`）:
+  - useState, useEffect等のhooksを使用
+  - イベントハンドラー（onClick等）を使用
+  - Zustandストアにアクセス
+  - ブラウザAPIを使用
+
+### Tailwind CSS
+
+#### スタイリング方針
+- Tailwind CSSクラスを直接使用
+- インラインスタイルは避ける
+- カスタムCSSは最小限に
+
+#### レスポンシブ設計
+```tsx
+// モバイルファースト
+<div className="w-full md:w-2/5 lg:w-1/3">
+  {/* content */}
+</div>
+```
+
+#### カラーパレット
+- Primary: `blue-500` (メインアクション)
+- Secondary: `gray-200` (背景、ボーダー)
+- Success: `green-500`
+- Error: `red-500`
+- Text: `gray-800` (メイン), `gray-500` (サブ)
+
+### 命名規則
+
+#### 変数・関数
+- camelCase: `currentItinerary`, `handleSubmit`
+- booleanは`is`, `has`で始める: `isLoading`, `hasError`
+
+#### コンポーネント
+- PascalCase: `ChatBox`, `MessageInput`
+
+#### 定数
+- UPPER_SNAKE_CASE: `API_BASE_URL`, `MAX_MESSAGE_LENGTH`
+
+#### ファイル
+- コンポーネント: `MessageInput.tsx`
+- ユーティリティ: `format.ts`
+- 型定義: `chat.ts`
+
+## 🔒 セキュリティ
+
+### 環境変数
+- 秘密情報は`.env.local`に保存
+- クライアント公開変数は`NEXT_PUBLIC_`プレフィックス
+- `.env.example`にテンプレートを用意
+
+### API呼び出し
+- Phase 3以降、AI APIはサーバーサイドから呼び出し
+- API Routesを経由（`app/api/`）
+- クライアントから直接外部APIを呼ばない
+
+### 入力検証
+- Phase 3以降、Zodでバリデーション
+- サーバーサイドで必ず検証
+
+## 🎨 UI/UX ガイドライン
+
+### レイアウト
+- デスクトップ: チャット（左40%）+ しおり（右60%）
+- モバイル: タブ切り替え（Phase 8実装）
+
+### インタラクション
+- ボタン: ホバーで色変化
+- ローディング: Skeletonまたはスピナー
+- エラー: toastまたはインラインメッセージ
+
+### アクセシビリティ
+- セマンティックHTML使用
+- aria属性を適切に設定
+- キーボード操作対応
+
+## 📝 コメント規約
+
+### JSDoc
+- public関数には必須
+- 複雑なロジックに説明を追加
+
+```typescript
+/**
+ * ユーザーメッセージをチャットに追加する
+ * @param content - メッセージ内容
+ * @returns 追加されたメッセージID
+ */
+export const addUserMessage = (content: string): string => {
+  // ...
+};
+```
+
+### インラインコメント
+- 複雑なロジックのみ
+- TODOコメントでフェーズを明記
+
+```typescript
+// TODO: Phase 3でAI統合を実装
+const mockResponse = "モックレスポンス";
+```
+
+## 🧪 テスト（Phase 10実装）
+
+### テストファイル
+- `ComponentName.test.tsx`
+- コンポーネントと同じディレクトリ
+
+### テスト範囲
+- ユニットテスト: ロジック、ユーティリティ
+- コンポーネントテスト: UI、インタラクション
+- E2Eテスト: ユーザーフロー
+
+## 🚀 パフォーマンス
+
+### 最適化方針
+- React.memo: 重いコンポーネント
+- useMemo: 高コストな計算
+- useCallback: 子コンポーネントに渡す関数
+- 動的インポート: 大きなライブラリ
+
+### 画像
+- Next.js Image コンポーネント使用
+- 適切なサイズ、フォーマット（WebP）
+
+## 🔄 Git ワークフロー
+
+### ブランチ戦略
+- `main`: 本番環境
+- `develop`: 開発環境
+- `feature/xxx`: 機能開発
+- `fix/xxx`: バグ修正
+
+### コミットメッセージ
+```
+<type>: <subject>
+
+<body>
+```
+
+**Type:**
+- `feat`: 新機能
+- `fix`: バグ修正
+- `docs`: ドキュメント
+- `style`: フォーマット
+- `refactor`: リファクタリング
+- `test`: テスト
+- `chore`: その他
+
+**例:**
+```
+feat: チャットメッセージ送信機能を実装
+
+- MessageInputコンポーネントを作成
+- ZustandストアにaddMessage actionを追加
+- モックレスポンスを返す機能を実装
+```
+
+## 📦 依存関係管理
+
+### パッケージ追加
+- 必要性を慎重に検討
+- package.jsonに追加後、READMEも更新
+- ライセンスを確認
+
+### バージョン管理
+- メジャーアップデートは慎重に
+- 定期的に依存関係を更新（月1回推奨）
+
+## 🐛 エラーハンドリング
+
+### エラー表示
+- ユーザーフレンドリーなメッセージ
+- 技術的詳細は開発環境のみ
+- エラー境界（Error Boundary）で保護（Phase 10）
+
+### ログ
+- 開発: console.log, console.error
+- 本番: 外部サービス（Sentry等、Phase 11）
+
+## 📚 ドキュメント
+
+### 更新必須
+- README.md: 機能追加時
+- DOCKER.md: Docker設定変更時
+- 型定義: 新しいデータ構造追加時
+
+### コードドキュメント
+- 複雑な関数にJSDoc
+- 設計判断をコメントで記録
+
+## 🎯 各フェーズの注意点
+
+### Phase 2（認証機能）- 次のステップ
+- NextAuth.jsの設定はlib/auth/に配置
+- セッション管理はServerコンポーネントで
+- ログイン状態によるUI制御を実装
+
+### Phase 3（AI統合）- 今後
+- プロンプトはlib/ai/prompts.tsに集約
+- ストリーミングレスポンスに対応
+- エラーハンドリングを厳格に
+
+### Phase 4-8（モックデータ期間）
+- LocalStorageを使用（Phase 4）
+- Phase 9のDB統合を見越した設計
+- データ構造はJSON serializable
+
+### Phase 9+（データベース統合）
+- Vercel Postgres または Supabase
+- 既存APIインターフェースを維持
+- マイグレーション計画を策定
+
+## ✅ チェックリスト（各PR前）
+
+- [ ] TypeScript型エラーなし
+- [ ] ESLintエラーなし
+- [ ] ビルド成功
+- [ ] 開発環境で動作確認
+- [ ] READMEを更新（必要に応じて）
+- [ ] コミットメッセージが明確
+- [ ] 不要なコメント/console.logを削除
+
+## 🤖 AI開発の指針
+
+Cursor AIとしてコードを生成する際：
+
+1. **段階的実装**: 一度に多くを実装せず、小さく確実に
+2. **既存コードの尊重**: 命名規則、構造を維持
+3. **説明的コメント**: 複雑なロジックには必ず説明
+4. **エラーハンドリング**: 常にエラーケースを考慮
+5. **型安全性**: TypeScriptの型を最大限活用
+6. **ドキュメント更新**: 機能追加時は関連ドキュメントも更新
+
+## 📞 サポート
+
+質問・提案がある場合：
+- GitHub Issues で議論
+- README.mdの「コントリビューション」を参照
+
+---
+
+最終更新: 2025-10-07  
+Phase 1 完了時作成
