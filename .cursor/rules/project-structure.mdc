@@ -94,8 +94,11 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - ✅ **Phase 1（完了）**: 基礎構築（レイアウト、チャットUI、状態管理）
 - ✅ **Phase 2（完了）**: 認証機能（NextAuth.js + Google OAuth）
 - ✅ **Phase 3（完了）**: AI統合（Gemini API、ストリーミング対応）
-- 🔄 **Phase 4（次）**: 一時保存機能（LocalStorage）
-- 📋 **Phase 5-11**: その他機能（詳細は[README.md](mdc:README.md)参照）
+- 🔴 **BUG-001（優先）**: JSON削除バグ修正
+- 🔄 **Phase 3.5（次）**: UI/UX改善（マークダウンレンダリング）
+- 🔄 **Phase 4（次）**: 段階的旅程構築システム
+- 📋 **Phase 5-10**: その他機能（しおり統合、Claude API、モバイル対応、DB統合など）
+- 📋 詳細は[README.md](mdc:README.md)参照
 
 ## 認証システム（Phase 2実装済み）
 ### アーキテクチャ
