@@ -21,12 +21,6 @@ export default withAuth(
        * @returns 認証済みの場合はtrue
        */
       authorized: ({ token }) => {
-        // 開発モードでDEV_MODEが有効な場合は認証をバイパス
-        if (process.env.NODE_ENV === 'development' && 
-            process.env.NEXT_PUBLIC_DEV_MODE === 'true') {
-          return true;
-        }
-        
         // トークンが存在する場合は認証済みとみなす
         return !!token
       },

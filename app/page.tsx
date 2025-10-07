@@ -12,16 +12,10 @@ import { ErrorNotification } from '@/components/ui/ErrorNotification';
  * 左側にチャットボックス、右側に旅のしおりプレビューを表示します。
  */
 export default async function Home() {
-  // 開発モードでの認証バイパス
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const devMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
-  
-  // 認証チェック（開発モードかつDEV_MODEが有効な場合はスキップ）
-  if (!(isDevelopment && devMode)) {
-    const session = await getSession();
-    if (!session) {
-      redirect('/login');
-    }
+  // 認証チェック
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
   }
 
   return (
