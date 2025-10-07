@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Message } from '@/types/chat';
 import { ItineraryData, ItineraryPhase, DayStatus } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
+<<<<<<< HEAD
 import type {
   RequirementChecklistItem,
   ChecklistStatus,
@@ -12,19 +13,49 @@ import {
   calculateChecklistStatus,
   determineButtonReadiness,
 } from '@/lib/requirements/checklist-utils';
+=======
+import type { AppSettings } from '@/types/settings';
+import { DEFAULT_SETTINGS } from '@/types/settings';
+>>>>>>> origin/main
 import {
   saveClaudeApiKey,
   loadClaudeApiKey,
   removeClaudeApiKey,
   saveSelectedAI,
   loadSelectedAI,
+<<<<<<< HEAD
   saveAutoProgressMode,
   loadAutoProgressMode,
   saveAutoProgressSettings,
   loadAutoProgressSettings,
   type AutoProgressSettings,
+=======
+  saveAppSettings,
+  loadAppSettings,
+>>>>>>> origin/main
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
+
+/**
+ * しおりフィルター条件
+ */
+export interface ItineraryFilter {
+  status?: 'draft' | 'completed' | 'archived' | 'all';
+  destination?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+/**
+ * しおりソート条件
+ */
+export type ItinerarySortField = 'updatedAt' | 'createdAt' | 'title' | 'startDate';
+export type ItinerarySortOrder = 'asc' | 'desc';
+
+export interface ItinerarySort {
+  field: ItinerarySortField;
+  order: ItinerarySortOrder;
+}
 
 interface AppState {
   // Chat state
@@ -44,6 +75,7 @@ interface AppState {
   setItinerary: (itinerary: ItineraryData | null) => void;
   updateItinerary: (updates: Partial<ItineraryData>) => void;
 
+<<<<<<< HEAD
   // Phase 4: Planning phase state
   planningPhase: ItineraryPhase;
   currentDetailingDay: number | null;
@@ -77,6 +109,14 @@ interface AppState {
   setIsAutoProgressing: (value: boolean) => void;
   setAutoProgressState: (state: any) => void;
   shouldTriggerAutoProgress: () => boolean;
+=======
+  // Itinerary list state
+  itineraryFilter: ItineraryFilter;
+  itinerarySort: ItinerarySort;
+  setItineraryFilter: (filter: ItineraryFilter) => void;
+  setItinerarySort: (sort: ItinerarySort) => void;
+  resetItineraryFilters: () => void;
+>>>>>>> origin/main
 
   // UI state
   selectedAI: AIModelId;
@@ -85,6 +125,12 @@ interface AppState {
   setClaudeApiKey: (key: string) => void;
   removeClaudeApiKey: () => void;
   initializeFromStorage: () => void;
+
+  // Settings state (Phase 5.4.3)
+  settings: AppSettings;
+  updateSettings: (updates: Partial<AppSettings>) => void;
+  updateGeneralSettings: (updates: Partial<AppSettings['general']>) => void;
+  updateSoundSettings: (updates: Partial<AppSettings['sound']>) => void;
 
   // Error state
   error: string | null;
@@ -116,6 +162,7 @@ export const useStore = create<AppState>((set, get) => ({
         : null,
     })),
 
+<<<<<<< HEAD
   // Phase 4: Planning phase state
   planningPhase: 'initial',
   currentDetailingDay: null,
@@ -292,6 +339,24 @@ export const useStore = create<AppState>((set, get) => ({
     return true;
   },
 
+=======
+  // Itinerary list state
+  itineraryFilter: {
+    status: 'all',
+  },
+  itinerarySort: {
+    field: 'updatedAt',
+    order: 'desc',
+  },
+  setItineraryFilter: (filter) => set({ itineraryFilter: filter }),
+  setItinerarySort: (sort) => set({ itinerarySort: sort }),
+  resetItineraryFilters: () =>
+    set({
+      itineraryFilter: { status: 'all' },
+      itinerarySort: { field: 'updatedAt', order: 'desc' },
+    }),
+
+>>>>>>> origin/main
   // UI state
   selectedAI: DEFAULT_AI_MODEL,
   claudeApiKey: '',
@@ -312,6 +377,7 @@ export const useStore = create<AppState>((set, get) => ({
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
     const savedAI = loadSelectedAI();
+<<<<<<< HEAD
     const autoProgressMode = loadAutoProgressMode();
     const autoProgressSettings = loadAutoProgressSettings();
     set({
@@ -319,6 +385,43 @@ export const useStore = create<AppState>((set, get) => ({
       selectedAI: savedAI,
       autoProgressMode,
       autoProgressSettings,
+=======
+    const savedSettings = loadAppSettings();
+    set({
+      claudeApiKey: savedApiKey,
+      selectedAI: savedAI,
+      settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
+    });
+  },
+
+  // Settings state (Phase 5.4.3)
+  settings: DEFAULT_SETTINGS,
+  updateSettings: (updates) => {
+    set((state) => {
+      const newSettings = { ...state.settings, ...updates };
+      saveAppSettings(newSettings);
+      return { settings: newSettings };
+    });
+  },
+  updateGeneralSettings: (updates) => {
+    set((state) => {
+      const newSettings = {
+        ...state.settings,
+        general: { ...state.settings.general, ...updates },
+      };
+      saveAppSettings(newSettings);
+      return { settings: newSettings };
+    });
+  },
+  updateSoundSettings: (updates) => {
+    set((state) => {
+      const newSettings = {
+        ...state.settings,
+        sound: { ...state.settings.sound, ...updates },
+      };
+      saveAppSettings(newSettings);
+      return { settings: newSettings };
+>>>>>>> origin/main
     });
   },
 
