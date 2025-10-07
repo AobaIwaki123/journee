@@ -13,10 +13,13 @@ import { StorageInitializer } from '@/components/layout/StorageInitializer';
  * 左側にチャットボックス、右側に旅のしおりプレビューを表示します。
  */
 export default async function Home() {
-  // 認証チェック
-  const session = await getSession();
-  if (!session) {
-    redirect('/login');
+  // 認証チェック（E2Eテスト時はスキップ）
+  const isE2ETest = process.env.PLAYWRIGHT_TEST_MODE === 'true';
+  if (!isE2ETest) {
+    const session = await getSession();
+    if (!session) {
+      redirect('/login');
+    }
   }
 
   return (
