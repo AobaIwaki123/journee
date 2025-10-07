@@ -22,8 +22,10 @@ interface AppState {
 
   // UI state
   selectedAI: 'gemini' | 'claude';
+  selectedGeminiModel: 'gemini-2.5-pro' | 'gemini-2.5-flash';
   claudeApiKey: string;
   setSelectedAI: (ai: 'gemini' | 'claude') => void;
+  setSelectedGeminiModel: (model: 'gemini-2.5-pro' | 'gemini-2.5-flash') => void;
   setClaudeApiKey: (key: string) => void;
 
   // Error state
@@ -58,8 +60,10 @@ export const useStore = create<AppState>((set) => ({
 
   // UI state
   selectedAI: 'gemini',
+  selectedGeminiModel: 'gemini-2.5-pro',
   claudeApiKey: '',
   setSelectedAI: (ai) => set({ selectedAI: ai }),
+  setSelectedGeminiModel: (model) => set({ selectedGeminiModel: model }),
   setClaudeApiKey: (key) => set({ claudeApiKey: key }),
 
   // Error state

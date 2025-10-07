@@ -18,16 +18,17 @@ import {
 export class GeminiClient {
   private client: GoogleGenerativeAI;
   private model: GenerativeModel;
+  private modelName: string;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, modelName: string = "gemini-2.5-pro") {
     const key = apiKey || process.env.GEMINI_API_KEY;
     if (!key) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
     this.client = new GoogleGenerativeAI(key);
-    // Gemini 2.5 Proを使用（より高性能）
-    this.model = this.client.getGenerativeModel({ model: "gemini-2.5-pro" });
+    this.modelName = modelName;
+    this.model = this.client.getGenerativeModel({ model: this.modelName });
   }
 
   /**
@@ -142,9 +143,10 @@ let geminiClientInstance: GeminiClient | null = null;
 /**
  * Geminiクライアントを取得
  */
-export function getGeminiClient(apiKey?: string): GeminiClient {
-  if (!geminiClientInstance) {
-    geminiClientInstance = new GeminiClient(apiKey);
+export function getGeminiClient(apiKey?: string, modelName?: string): GeminiClient {
+  // モデル名が変わる場合は新しいインスタンスを作成
+  if (!geminiClientInstance || (modelName && modelName !== geminiClientInstance['modelName'])) {
+    geminiClientInstance = new GeminiClient(apiKey, modelName);
   }
   return geminiClientInstance;
 }
@@ -156,12 +158,13 @@ export async function sendGeminiMessage(
   message: string,
   chatHistory?: ChatMessage[],
   currentItinerary?: ItineraryData,
-  apiKey?: string
+  apiKey?: string,
+  modelName?: string
 ): Promise<{
   message: string;
   itinerary?: ItineraryData;
 }> {
-  const client = getGeminiClient(apiKey);
+  const client = getGeminiClient(apiKey, modelName);
   return client.chat(message, chatHistory, currentItinerary);
 }
 
@@ -172,8 +175,9 @@ export async function* streamGeminiMessage(
   message: string,
   chatHistory?: ChatMessage[],
   currentItinerary?: ItineraryData,
-  apiKey?: string
+  apiKey?: string,
+  modelName?: string
 ): AsyncGenerator<string, void, unknown> {
-  const client = getGeminiClient(apiKey);
+  const client = getGeminiClient(apiKey, modelName);
   yield* client.chatStream(message, chatHistory, currentItinerary);
 }

@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
       chatHistory = [],
       currentItinerary,
       model = 'gemini',
+      geminiModel = 'gemini-2.5-pro',
       claudeApiKey,
       stream = false,
     } = body;
@@ -57,11 +58,11 @@ export async function POST(request: NextRequest) {
 
     // ストリーミングレスポンスの場合
     if (stream) {
-      return handleStreamingResponse(message, chatHistory, currentItinerary);
+      return handleStreamingResponse(message, chatHistory, currentItinerary, geminiModel);
     }
 
     // 非ストリーミングレスポンス
-    return handleNonStreamingResponse(message, chatHistory, currentItinerary);
+    return handleNonStreamingResponse(message, chatHistory, currentItinerary, geminiModel);
 
   } catch (error: any) {
     console.error('Chat API Error:', error);
@@ -83,11 +84,12 @@ export async function POST(request: NextRequest) {
 async function handleNonStreamingResponse(
   message: string,
   chatHistory: any[],
-  currentItinerary: any
+  currentItinerary: any,
+  geminiModel: string = 'gemini-2.5-pro'
 ) {
   try {
     // Gemini APIにメッセージを送信
-    const result = await sendGeminiMessage(message, chatHistory, currentItinerary);
+    const result = await sendGeminiMessage(message, chatHistory, currentItinerary, undefined, geminiModel);
 
     // しおりデータをマージ
     let updatedItinerary = currentItinerary;
@@ -113,7 +115,8 @@ async function handleNonStreamingResponse(
 async function handleStreamingResponse(
   message: string,
   chatHistory: any[],
-  currentItinerary: any
+  currentItinerary: any,
+  geminiModel: string = 'gemini-2.5-pro'
 ) {
   const encoder = new TextEncoder();
 
@@ -124,7 +127,7 @@ async function handleStreamingResponse(
         let fullResponse = '';
 
         // Gemini APIからストリーミングレスポンスを取得
-        for await (const chunk of streamGeminiMessage(message, chatHistory, currentItinerary)) {
+        for await (const chunk of streamGeminiMessage(message, chatHistory, currentItinerary, undefined, geminiModel)) {
           fullResponse += chunk;
 
           // チャンクを送信

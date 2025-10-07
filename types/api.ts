@@ -2,7 +2,7 @@
  * API関連の型定義
  */
 
-import type { ChatMessage, AIModel } from "./chat";
+import type { ChatMessage, AIModel, GeminiModelType } from "./chat";
 import type { ItineraryData } from "./itinerary";
 
 /**
@@ -17,6 +17,8 @@ export interface ChatAPIRequest {
   currentItinerary?: ItineraryData;
   /** 使用するAIモデル */
   model?: AIModel;
+  /** 使用するGeminiモデルバージョン */
+  geminiModel?: GeminiModelType;
   /** Claude APIキー（モデルがclaudeの場合） */
   claudeApiKey?: string;
   /** ストリーミングレスポンスを使用するか */

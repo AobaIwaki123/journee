@@ -30,6 +30,7 @@ export class ChatAPIClient {
       chatHistory?: ChatMessage[];
       currentItinerary?: ItineraryData;
       model?: 'gemini' | 'claude';
+      geminiModel?: 'gemini-2.5-pro' | 'gemini-2.5-flash';
       claudeApiKey?: string;
     }
   ): Promise<ChatAPIResponse> {
@@ -38,6 +39,7 @@ export class ChatAPIClient {
       chatHistory: options?.chatHistory,
       currentItinerary: options?.currentItinerary,
       model: options?.model || 'gemini',
+      geminiModel: options?.geminiModel || 'gemini-2.5-pro',
       claudeApiKey: options?.claudeApiKey,
       stream: false,
     };
@@ -67,6 +69,7 @@ export class ChatAPIClient {
       chatHistory?: ChatMessage[];
       currentItinerary?: ItineraryData;
       model?: 'gemini' | 'claude';
+      geminiModel?: 'gemini-2.5-pro' | 'gemini-2.5-flash';
       claudeApiKey?: string;
     }
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
@@ -75,6 +78,7 @@ export class ChatAPIClient {
       chatHistory: options?.chatHistory,
       currentItinerary: options?.currentItinerary,
       model: options?.model || 'gemini',
+      geminiModel: options?.geminiModel || 'gemini-2.5-pro',
       claudeApiKey: options?.claudeApiKey,
       stream: true,
     };
@@ -169,10 +173,12 @@ export async function sendChatMessage(
 export async function* sendChatMessageStream(
   message: string,
   chatHistory?: ChatMessage[],
-  currentItinerary?: ItineraryData
+  currentItinerary?: ItineraryData,
+  geminiModel?: 'gemini-2.5-pro' | 'gemini-2.5-flash'
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   yield* chatApiClient.sendMessageStream(message, {
     chatHistory,
     currentItinerary,
+    geminiModel,
   });
 }

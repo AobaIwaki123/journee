@@ -21,6 +21,7 @@ export const MessageInput: React.FC = () => {
   const currentItinerary = useStore((state) => state.currentItinerary);
   const setItinerary = useStore((state) => state.setItinerary);
   const selectedAI = useStore((state) => state.selectedAI);
+  const selectedGeminiModel = useStore((state) => state.selectedGeminiModel);
   const claudeApiKey = useStore((state) => state.claudeApiKey);
   const setError = useStore((state) => state.setError);
 
@@ -58,7 +59,8 @@ export const MessageInput: React.FC = () => {
       for await (const chunk of sendChatMessageStream(
         userMessage.content,
         chatHistory,
-        currentItinerary || undefined
+        currentItinerary || undefined,
+        selectedGeminiModel
       )) {
         if (chunk.type === 'message' && chunk.content) {
           // メッセージチャンクを追加

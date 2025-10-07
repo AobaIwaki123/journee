@@ -50,10 +50,16 @@ export interface ChatSession {
 export type AIModel = "gemini" | "claude";
 
 /**
+ * Gemini モデルの種類
+ */
+export type GeminiModelType = "gemini-2.5-pro" | "gemini-2.5-flash";
+
+/**
  * AI設定
  */
 export interface AISettings {
   model: AIModel;
+  geminiModel?: GeminiModelType;
   temperature?: number;
   maxTokens?: number;
   /** Claude APIキー（ユーザー提供） */
