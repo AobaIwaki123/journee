@@ -179,10 +179,10 @@ journee/
 
 ### Phase 1: 基礎構築（Week 1-2）
 - [x] プロジェクトセットアップ（Next.js + TypeScript + Tailwind CSS）
-- [ ] 基本的なレイアウト構築（デスクトップ版）
-- [ ] チャットUIコンポーネントの実装
-- [ ] しおりプレビューの基本レイアウト
-- [ ] 状態管理の実装（Zustand / Context API）
+- [x] 基本的なレイアウト構築（デスクトップ版）
+- [x] チャットUIコンポーネントの実装
+- [x] しおりプレビューの基本レイアウト
+- [x] 状態管理の実装（Zustand / Context API）
 
 ### Phase 2: 認証機能（Week 3）
 - [ ] NextAuth.jsのセットアップ
