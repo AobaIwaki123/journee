@@ -33,11 +33,11 @@ export const RequirementsChecklist: React.FC = () => {
   const optionalItems = requirementsChecklist.filter(item => !item.required);
   
   return (
-    <div className="bg-white border border-gray-200 rounded-lg mx-4 mb-4 overflow-hidden">
+    <div className="fixed top-20 right-4 w-80 max-h-[calc(100vh-6rem)] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50">
       {/* ヘッダー（クリックで展開/折りたたみ） */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors bg-white sticky top-0 z-10 border-b border-gray-100"
       >
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
@@ -91,7 +91,7 @@ export const RequirementsChecklist: React.FC = () => {
       
       {/* チェックリスト内容（展開時のみ表示） */}
       {isExpanded && (
-        <div className="border-t border-gray-200 px-4 py-3">
+        <div className="border-t border-gray-200 px-4 py-3 overflow-y-auto max-h-[calc(100vh-12rem)]">
           {/* 充足率プログレスバー */}
           {checklistStatus && (
             <div className="mb-4">

@@ -33,17 +33,17 @@ export const ItineraryPreview: React.FC = () => {
 
         {/* Phase 4: クイックアクション */}
         {planningPhase !== 'initial' && <QuickActions />}
+        
+        {/* Phase 4.8.4: チェックリスト表示（フローティング） */}
+        <RequirementsChecklist />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-50 relative">
       {/* Phase 4: プランニング進捗 */}
       <PlanningProgress />
-      
-      {/* Phase 4.8.4: チェックリスト表示（プログレス直下） */}
-      <RequirementsChecklist />
       
       {/* メインコンテンツ（スクロール可能） */}
       <div className="flex-1 overflow-y-auto">
