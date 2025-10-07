@@ -1,6 +1,15 @@
-import { create } from 'zustand';
-import { Message } from '@/types/chat';
-import { ItineraryData, ItineraryTemplate } from '@/types/itinerary';
+import { create } from "zustand";
+import { Message } from "@/types/chat";
+import { ItineraryData, ItineraryTemplate } from "@/types/itinerary";
+import type { AIModelId } from "@/types/ai";
+import {
+  saveClaudeApiKey,
+  loadClaudeApiKey,
+  removeClaudeApiKey,
+  saveSelectedAI,
+  loadSelectedAI,
+} from "@/lib/utils/storage";
+import { DEFAULT_AI_MODEL } from "@/lib/ai/models";
 
 interface AppState {
   // Chat state
@@ -23,10 +32,12 @@ interface AppState {
   setSelectedTemplate: (template: ItineraryTemplate) => void;
 
   // UI state
-  selectedAI: 'gemini' | 'claude';
+  selectedAI: AIModelId;
   claudeApiKey: string;
-  setSelectedAI: (ai: 'gemini' | 'claude') => void;
+  setSelectedAI: (ai: AIModelId) => void;
   setClaudeApiKey: (key: string) => void;
+  removeClaudeApiKey: () => void;
+  initializeFromStorage: () => void;
 
   // Error state
   error: string | null;
@@ -38,7 +49,7 @@ export const useStore = create<AppState>((set) => ({
   messages: [],
   isLoading: false,
   isStreaming: false,
-  streamingMessage: '',
+  streamingMessage: "",
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -46,7 +57,7 @@ export const useStore = create<AppState>((set) => ({
   setStreamingMessage: (message) => set({ streamingMessage: message }),
   appendStreamingMessage: (chunk) =>
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
-  clearMessages: () => set({ messages: [], streamingMessage: '' }),
+  clearMessages: () => set({ messages: [], streamingMessage: "" }),
 
   // Itinerary state
   currentItinerary: null,
@@ -57,14 +68,34 @@ export const useStore = create<AppState>((set) => ({
         ? { ...state.currentItinerary, ...updates }
         : null,
     })),
-  selectedTemplate: 'standard',
+  selectedTemplate: "standard",
   setSelectedTemplate: (template) => set({ selectedTemplate: template }),
 
   // UI state
-  selectedAI: 'gemini',
-  claudeApiKey: '',
-  setSelectedAI: (ai) => set({ selectedAI: ai }),
-  setClaudeApiKey: (key) => set({ claudeApiKey: key }),
+  selectedAI: DEFAULT_AI_MODEL,
+  claudeApiKey: "",
+  setSelectedAI: (ai) => {
+    saveSelectedAI(ai);
+    set({ selectedAI: ai });
+  },
+  setClaudeApiKey: (key) => {
+    if (key) {
+      saveClaudeApiKey(key);
+    }
+    set({ claudeApiKey: key });
+  },
+  removeClaudeApiKey: () => {
+    removeClaudeApiKey();
+    set({ claudeApiKey: "", selectedAI: DEFAULT_AI_MODEL });
+  },
+  initializeFromStorage: () => {
+    const savedApiKey = loadClaudeApiKey();
+    const savedAI = loadSelectedAI();
+    set({
+      claudeApiKey: savedApiKey,
+      selectedAI: savedAI,
+    });
+  },
 
   // Error state
   error: null,

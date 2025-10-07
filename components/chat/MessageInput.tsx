@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useStore } from '@/lib/store/useStore';
 import { Send } from 'lucide-react';
 import { sendChatMessageStream } from '@/lib/utils/api-client';
-import { mergeItineraryData } from '@/lib/ai/prompts';
+import { mergeItineraryData, parseAIResponse } from '@/lib/ai/prompts';
 
 export const MessageInput: React.FC = () => {
   const [input, setInput] = useState('');
@@ -58,7 +58,9 @@ export const MessageInput: React.FC = () => {
       for await (const chunk of sendChatMessageStream(
         userMessage.content,
         chatHistory,
-        currentItinerary || undefined
+        currentItinerary || undefined,
+        selectedAI,
+        claudeApiKey || undefined
       )) {
         if (chunk.type === 'message' && chunk.content) {
           // メッセージチャンクを追加
@@ -81,11 +83,13 @@ export const MessageInput: React.FC = () => {
         }
       }
 
-      // ストリーミング完了後、AIメッセージを追加
+      // ストリーミング完了後、JSONブロックを削除してAIメッセージを追加
+      const { message: cleanMessage } = parseAIResponse(fullResponse);
+      
       const aiMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant' as const,
-        content: fullResponse || 'しおりを更新しました。',
+        content: cleanMessage,
         timestamp: new Date(),
       };
       addMessage(aiMessage);

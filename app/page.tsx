@@ -1,14 +1,14 @@
-import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/auth/session';
-import { Header } from '@/components/layout/Header';
-import { ChatBox } from '@/components/chat/ChatBox';
-import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
-import { ErrorNotification } from '@/components/ui/ErrorNotification';
-import { LoadSampleButton } from '@/components/debug/LoadSampleButton';
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
+import { Header } from "@/components/layout/Header";
+import { ChatBox } from "@/components/chat/ChatBox";
+import { ItineraryPreview } from "@/components/itinerary/ItineraryPreview";
+import { ErrorNotification } from "@/components/ui/ErrorNotification";
+import { StorageInitializer } from "@/components/layout/StorageInitializer";
 
 /**
  * メインページ（ホーム）
- * 
+ *
  * 認証済みユーザー向けのメインアプリケーション画面。
  * 左側にチャットボックス、右側に旅のしおりプレビューを表示します。
  */
@@ -16,11 +16,14 @@ export default async function Home() {
   // 認証チェック
   const session = await getSession();
   if (!session) {
-    redirect('/login');
+    redirect("/login");
   }
 
   return (
     <div className="flex flex-col h-screen">
+      {/* LocalStorageからデータ復元 */}
+      <StorageInitializer />
+
       {/* Header */}
       <Header />
 
@@ -39,9 +42,6 @@ export default async function Home() {
 
       {/* Error Notification */}
       <ErrorNotification />
-
-      {/* Debug: Load Sample Data (開発環境のみ) */}
-      <LoadSampleButton />
     </div>
   );
 }
