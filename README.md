@@ -254,10 +254,12 @@ journee/
 - [x] `getSystemPromptForPhase` 関数の実装（フェーズ別プロンプト選択）
 - [x] テストケースとモックデータの作成
 
-#### 4.4 UIコンポーネントの追加
-- [ ] `PlanningProgress` コンポーネント（進捗インジケーター）
-- [ ] `QuickActions` コンポーネント（「次へ」ボタン）
-- [ ] `ItineraryPreview` にプログレス表示を統合
+#### 4.4 UIコンポーネントの追加 ✅ **完了**
+- [x] `PlanningProgress` コンポーネント（進捗インジケーター）
+- [x] `QuickActions` コンポーネント（「次へ」ボタン）
+- [x] `ItineraryPreview` にプログレス表示を統合
+- [x] `DaySchedule` にステータスバッジとテーマ表示を追加
+- [x] レスポンシブレイアウトの実装
 
 #### 4.5 APIの拡張
 - [ ] チャットAPIにフェーズ判定ロジックを追加

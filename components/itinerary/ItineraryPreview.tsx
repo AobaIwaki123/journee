@@ -3,27 +3,43 @@
 import React from 'react';
 import { useStore } from '@/lib/store/useStore';
 import { DaySchedule } from './DaySchedule';
+import { PlanningProgress } from './PlanningProgress';
+import { QuickActions } from './QuickActions';
 import { Calendar, MapPin, FileDown } from 'lucide-react';
 
 export const ItineraryPreview: React.FC = () => {
-  const currentItinerary = useStore((state) => state.currentItinerary);
+  const { currentItinerary, planningPhase } = useStore();
 
   if (!currentItinerary) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
-        <Calendar className="w-24 h-24 mb-4" />
-        <h3 className="text-xl font-semibold mb-2">旅のしおりをプレビュー</h3>
-        <p className="text-center text-sm">
-          AIチャットで旅行計画を作成すると、
-          <br />
-          こちらにリアルタイムでしおりが表示されます
-        </p>
+      <div className="h-full flex flex-col bg-gray-50">
+        {/* Phase 4: プランニング進捗（初期状態でも表示） */}
+        {planningPhase !== 'initial' && <PlanningProgress />}
+
+        {/* 空状態 */}
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
+          <Calendar className="w-24 h-24 mb-4" />
+          <h3 className="text-xl font-semibold mb-2">旅のしおりをプレビュー</h3>
+          <p className="text-center text-sm">
+            AIチャットで旅行計画を作成すると、
+            <br />
+            こちらにリアルタイムでしおりが表示されます
+          </p>
+        </div>
+
+        {/* Phase 4: クイックアクション */}
+        {planningPhase !== 'initial' && <QuickActions />}
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Phase 4: プランニング進捗 */}
+      <PlanningProgress />
+
+      {/* メインコンテンツ（スクロール可能） */}
+      <div className="flex-1 overflow-y-auto">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-8">
         <h1 className="text-3xl font-bold mb-2">{currentItinerary.title}</h1>
@@ -80,11 +96,11 @@ export const ItineraryPreview: React.FC = () => {
         )}
 
         {/* PDF Export Button */}
-        {currentItinerary.schedule.length > 0 && (
+        {currentItinerary.schedule.length > 0 && planningPhase === 'completed' && (
           <div className="mt-8 flex justify-center">
             <button
               className="flex items-center space-x-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              onClick={() => alert('PDF出力機能はPhase 6で実装予定です')}
+              onClick={() => alert('PDF出力機能はPhase 5で実装予定です')}
             >
               <FileDown className="w-5 h-5" />
               <span>PDFで保存</span>
@@ -92,6 +108,9 @@ export const ItineraryPreview: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Phase 4: クイックアクション */}
+      <QuickActions />
     </div>
   );
 };
