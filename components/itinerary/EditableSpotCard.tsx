@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { TouristSpot } from '@/types/itinerary';
 import { useStore } from '@/lib/store/useStore';
+import { formatCurrency } from '@/lib/utils/currency';
 import { 
   Clock, 
   MapPin, 
@@ -73,6 +74,8 @@ const getCategoryGradient = (category?: string): string => {
 
 export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayIndex, spotIndex }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const currentItinerary = useStore((state: any) => state.currentItinerary);
+  const currency = currentItinerary?.currency;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editValues, setEditValues] = useState({
     name: spot.name,
@@ -330,7 +333,7 @@ export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayInd
             {spot.estimatedCost !== undefined && spot.estimatedCost > 0 && (
               <div className="flex items-center gap-1.5 text-gray-600">
                 <Wallet className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span className="font-semibold">¥{spot.estimatedCost.toLocaleString()}</span>
+                <span className="font-semibold">{formatCurrency(spot.estimatedCost, currency)}</span>
               </div>
             )}
           </div>

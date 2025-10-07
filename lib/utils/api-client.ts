@@ -37,6 +37,7 @@ export class ChatAPIClient {
       claudeApiKey?: string;
       planningPhase?: ItineraryPhase;
       currentDetailingDay?: number | null;
+      currency?: string;
     }
   ): Promise<ChatAPIResponse> {
     const request: ChatAPIRequest = {
@@ -79,6 +80,7 @@ export class ChatAPIClient {
       claudeApiKey?: string;
       planningPhase?: ItineraryPhase;
       currentDetailingDay?: number | null;
+      currency?: string;
     }
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     const request: ChatAPIRequest = {
@@ -90,6 +92,7 @@ export class ChatAPIClient {
       stream: true,
       planningPhase: options?.planningPhase,
       currentDetailingDay: options?.currentDetailingDay,
+      currency: options?.currency,
     };
 
     const response = await fetch(`${this.baseUrl}/chat`, {
@@ -187,7 +190,8 @@ export async function* sendChatMessageStream(
   model?: AIModelId,
   claudeApiKey?: string,
   planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null
+  currentDetailingDay?: number | null,
+  currency?: string
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   yield* chatApiClient.sendMessageStream(message, {
     chatHistory,
@@ -196,5 +200,6 @@ export async function* sendChatMessageStream(
     claudeApiKey,
     planningPhase,
     currentDetailingDay,
+    currency,
   });
 }
