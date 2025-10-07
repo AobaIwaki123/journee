@@ -1,45 +1,45 @@
 /**
  * AIモデル設定の一元管理
- * 
+ *
  * すべてのAIモデルに関する設定をここで管理します。
  * モデル名のハードコーディングを避け、型安全な実装を実現します。
  */
 
-import type { AIModelId, AIModelConfig } from '@/types/ai';
+import type { AIModelId, AIModelConfig } from "@/types/ai";
 
 /**
  * AIモデル設定マップ
  */
 export const AI_MODELS: Record<AIModelId, AIModelConfig> = {
   gemini: {
-    id: 'gemini',
-    displayName: 'Gemini 2.0 Flash',
-    modelName: 'gemini-2.0-flash-exp',
-    provider: 'google',
-    description: 'Googleの最新AI。高速で安価、環境変数で設定済み',
+    id: "gemini",
+    displayName: "Gemini 2.5 Pro",
+    modelName: "gemini-2.5-pro",
+    provider: "google",
+    description: "Googleの最新AI。高速で安価、環境変数で設定済み",
     requiresApiKey: false,
-    maxTokens: 8192,
+    maxTokens: 1048576,
     enabled: true,
-    icon: '🤖',
+    icon: "🤖",
   },
   claude: {
-    id: 'claude',
-    displayName: 'Claude 3.5 Sonnet',
-    modelName: 'claude-3-5-sonnet-20241022',
-    provider: 'anthropic',
-    description: 'Anthropicの高性能AI。要APIキー登録',
+    id: "claude",
+    displayName: "Claude 4.5 Sonnet",
+    modelName: "claude-sonnet-4-5-20250929",
+    provider: "anthropic",
+    description: "Anthropicの高性能AI。要APIキー登録",
     requiresApiKey: true,
-    apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+    apiKeyUrl: "https://console.anthropic.com/settings/keys",
     maxTokens: 4096,
     enabled: true,
-    icon: '🧠',
+    icon: "🧠",
   },
 } as const;
 
 /**
  * デフォルトのAIモデル
  */
-export const DEFAULT_AI_MODEL: AIModelId = 'gemini';
+export const DEFAULT_AI_MODEL: AIModelId = "gemini";
 
 /**
  * サポートされているAIモデルのIDリスト

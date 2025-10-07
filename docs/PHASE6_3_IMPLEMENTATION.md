@@ -79,8 +79,8 @@ export const AI_MODELS: Record<AIModelId, AIModelConfig> = {
   },
   claude: {
     id: 'claude',
-    displayName: 'Claude 3.5 Sonnet',
-    modelName: 'claude-3-5-sonnet-20241022',
+    displayName: 'Claude 4.5 Sonnet',
+    modelName: 'claude-4-5-sonnet-20241022',
     provider: 'anthropic',
     description: 'Anthropicの高性能AI。要APIキー登録',
     requiresApiKey: true,
@@ -123,7 +123,7 @@ this.model = this.client.getGenerativeModel({ model: modelName });
 **変更内容**:
 ```typescript
 // 変更前
-this.model = "claude-3-5-sonnet-20241022";
+this.model = "claude-sonnet-4-5-20250929";
 
 // 変更後
 import { getModelName, getModelConfig } from "./models";
@@ -146,7 +146,7 @@ const response = await this.client.messages.create({
 <select>
   <option value="gemini">Gemini 2.5 Pro</option>
   <option value="claude">
-    Claude 3.5 Sonnet {!claudeApiKey && '(APIキー必要)'}
+    Claude 4.5 Sonnet {!claudeApiKey && '(APIキー必要)'}
   </option>
 </select>
 ```
@@ -316,13 +316,13 @@ if (selectedModel === 'claude') {
 ```
 components/chat/AISelector.tsx
   └─ "Gemini 2.5 Pro"  ❌ ハードコード
-  └─ "Claude 3.5 Sonnet" ❌ ハードコード
+  └─ "Claude 4.5 Sonnet" ❌ ハードコード
 
 lib/ai/gemini.ts
   └─ "gemini-2.5-pro" ❌ ハードコード
 
 lib/ai/claude.ts
-  └─ "claude-3-5-sonnet-20241022" ❌ ハードコード
+  └─ "claude-4-5-sonnet-20241022" ❌ ハードコード
   └─ max_tokens: 4096 ❌ ハードコード
 
 lib/store/useStore.ts
@@ -565,7 +565,7 @@ if (!isValidModelId(model)) {
 
 **期待結果**:
 - ✅ アイコン付きで表示: `🤖 Gemini 2.0 Flash`
-- ✅ アイコン付きで表示: `🧠 Claude 3.5 Sonnet (APIキー必要)`
+- ✅ アイコン付きで表示: `🧠 Claude 4.5 Sonnet (APIキー必要)`
 - ✅ ハードコードされたテキストが表示されない
 
 ### 2. モデル切り替えのテスト
