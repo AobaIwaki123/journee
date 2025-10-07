@@ -123,12 +123,33 @@ export const MessageInput: React.FC = () => {
         onChange={(e) => setInput(e.target.value)}
         placeholder="メッセージを入力..."
         disabled={disabled}
-        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+        className="
+          flex-1 px-4 py-3 
+          border-2 border-gray-300 rounded-lg 
+          text-gray-900 placeholder:text-gray-500
+          bg-white
+          transition-all duration-200
+          focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100
+          hover:border-gray-400
+          disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
+          shadow-sm focus:shadow-md
+        "
       />
       <button
         type="submit"
         disabled={disabled}
-        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="
+          px-5 py-3 
+          bg-gradient-to-r from-blue-500 to-blue-600 
+          text-white font-medium rounded-lg 
+          hover:from-blue-600 hover:to-blue-700 
+          active:from-blue-700 active:to-blue-800
+          focus:outline-none focus:ring-4 focus:ring-blue-200
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400
+          transition-all duration-200
+          shadow-md hover:shadow-lg
+        "
+        aria-label="メッセージを送信"
       >
         <Send className="w-5 h-5" />
       </button>
