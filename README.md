@@ -554,14 +554,42 @@ journee/
 
 **詳細**: [docs/PHASE5_2_IMPLEMENTATION.md](./docs/PHASE5_2_IMPLEMENTATION.md)
 
-#### 5.3 PDF出力機能
-- [ ] HTMLの見た目のままPDFに出力する
-- [ ] 日本語を扱うので文字化けに注意する
-- [ ] しおりのPDFレイアウト設計
-- [ ] PDF出力機能の実装
-- [ ] 印刷最適化
-- [ ] PDFプレビュー機能
-- [ ] PDF出力ボタンUIの実装
+#### 5.3 PDF出力機能 ✅ **完了** (2025-10-07)
+**目的**: しおりをPDFとして出力する機能を実装
+
+- [x] PDFライブラリのインストール（jspdf, html2canvas）
+- [x] PDF生成ユーティリティの作成（`lib/utils/pdf-generator.ts`）
+  - [x] HTML→Canvas→PDF変換
+  - [x] A4サイズ最適化
+  - [x] 複数ページ自動分割
+  - [x] プログレス表示対応
+  - [x] 日本語フォント対応
+- [x] PDF専用レイアウトコンポーネント（`ItineraryPDFLayout.tsx`）
+  - [x] 印刷用レイアウト設計
+  - [x] A4サイズ（210mm x 297mm）対応
+  - [x] ページ分割最適化（`break-inside-avoid`）
+- [x] PDF出力ボタンコンポーネント（`PDFExportButton.tsx`）
+  - [x] PDF生成機能
+  - [x] プログレス表示（0-100%）
+  - [x] Toast通知（成功/失敗）
+- [x] PDFプレビューモーダル（`PDFPreviewModal.tsx`）
+  - [x] 出力前のプレビュー表示
+  - [x] モーダルUI実装
+- [x] ItineraryPreviewへの統合
+- [x] PDF印刷用スタイル（globals.css）
+  - [x] 日本語フォントフォールバック
+  - [x] 背景色・ボーダー色保持
+  - [x] ページ分割最適化
+
+**実装結果**:
+- ✅ HTMLの見た目をそのままPDFに出力
+- ✅ 日本語文字化けなし（複数フォント対応）
+- ✅ A4サイズ最適化、複数ページ自動分割
+- ✅ プレビュー機能、プログレス表示
+- ✅ ユーザーがしおりをPDFでダウンロード・印刷可能
+- ✅ オフライン活用、共有の促進
+
+**詳細**: [docs/PHASE5_3_PDF_EXPORT.md](./docs/PHASE5_3_PDF_EXPORT.md)
 
 #### 5.4 マイページ・しおり一覧・設定ページ 🆕
 **目的**: ユーザー管理とアプリケーション設定の一元管理
@@ -1072,6 +1100,7 @@ MIT
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
 - ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
 - ✅ **Phase 5.2**: 一時保存機能（LocalStorage版、自動保存、保存状態表示）
+- ✅ **Phase 5.3**: PDF出力機能（HTML→PDF変換、日本語対応、プレビュー機能）
 - ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
 - ✅ **Phase 5.4.2**: しおり一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
 - ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
@@ -1087,10 +1116,9 @@ MIT
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 5.3** - PDF出力機能
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
-**最終更新**: 2025-10-07 (Phase 5.2完了)
+**最終更新**: 2025-10-07 (Phase 5.3完了)
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
@@ -1099,6 +1127,7 @@ MIT
 - [Phase 5.1.2 実装完了レポート](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
 - [Phase 5.1.3 実装完了レポート](./docs/PHASE5.1.3_ADVANCED_FEATURES.md)
 - [Phase 5.2 実装完了レポート](./docs/PHASE5_2_IMPLEMENTATION.md)
+- [Phase 5.3 実装完了レポート](./docs/PHASE5_3_PDF_EXPORT.md)
 - [Phase 5.4.1 実装完了レポート](./docs/PHASE5_4_1_IMPLEMENTATION_COMPLETE.md)
 - [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
 - [Phase 5.4.3 実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)

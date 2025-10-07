@@ -86,9 +86,9 @@ export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayInd
     notes: spot.notes || '',
   });
 
-  const updateSpot = useStore((state) => state.updateSpot);
-  const deleteSpot = useStore((state) => state.deleteSpot);
-  const addToast = useStore((state) => state.addToast);
+  const updateSpot = useStore((state: any) => state.updateSpot);
+  const deleteSpot = useStore((state: any) => state.deleteSpot);
+  const addToast = useStore((state: any) => state.addToast);
 
   // spotのpropsが変更されたらeditValuesを更新
   useEffect(() => {

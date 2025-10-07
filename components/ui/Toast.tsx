@@ -4,6 +4,22 @@ import React, { useEffect } from 'react';
 import { useStore } from '@/lib/store/useStore';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
+/**
+ * Toast通知を表示するヘルパー関数
+ */
+export const showToast = (options: {
+  type: 'success' | 'error' | 'info';
+  message: string;
+  duration?: number;
+}) => {
+  const { addToast } = useStore.getState();
+  addToast({
+    id: Date.now().toString(),
+    type: options.type,
+    message: options.message,
+  });
+};
+
 export const ToastContainer: React.FC = () => {
   const toasts = useStore((state) => state.toasts);
   const removeToast = useStore((state) => state.removeToast);

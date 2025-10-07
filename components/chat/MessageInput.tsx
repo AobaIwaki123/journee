@@ -36,7 +36,7 @@ export const MessageInput: React.FC = () => {
   const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
   const setIsAutoProgressing = useStore((state: any) => state.setIsAutoProgressing);
   const setAutoProgressState = useStore((state: any) => state.setAutoProgressState);
-  const currency = useStore((state) => state.settings.general.currency);
+  const currency = useStore((state: any) => state.settings.general.currency);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
