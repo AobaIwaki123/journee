@@ -5,7 +5,6 @@ import { useStore } from '@/lib/store/useStore';
 import { DaySchedule } from './DaySchedule';
 import { PlanningProgress } from './PlanningProgress';
 import { QuickActions } from './QuickActions';
-import { RequirementsChecklist } from './RequirementsChecklist';
 import { Calendar, MapPin, FileDown } from 'lucide-react';
 
 export const ItineraryPreview: React.FC = () => {
@@ -16,9 +15,6 @@ export const ItineraryPreview: React.FC = () => {
       <div className="h-full flex flex-col bg-gray-50">
         {/* Phase 4: プランニング進捗（初期状態でも表示） */}
         {planningPhase !== 'initial' && <PlanningProgress />}
-        
-        {/* Phase 4.8.4: チェックリスト表示 */}
-        <RequirementsChecklist />
 
         {/* 空状態 */}
         <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
@@ -33,9 +29,6 @@ export const ItineraryPreview: React.FC = () => {
 
         {/* Phase 4: クイックアクション */}
         {planningPhase !== 'initial' && <QuickActions />}
-        
-        {/* Phase 4.8.4: チェックリスト表示（フローティング） */}
-        <RequirementsChecklist />
       </div>
     );
   }
