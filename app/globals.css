@@ -25,3 +25,29 @@ body {
     text-wrap: balance;
   }
 }
+
+/* マークダウンレンダリング用カスタムスタイル */
+@layer components {
+  /* チャットメッセージ内のマークダウンスタイル調整 */
+  .prose {
+    /* 最初の要素のマージンを削除（チャットバブルに密着） */
+    & > :first-child {
+      margin-top: 0;
+    }
+    
+    /* 最後の要素のマージンを削除 */
+    & > :last-child {
+      margin-bottom: 0;
+    }
+    
+    /* コードブロック内のスクロール */
+    & code {
+      word-break: break-word;
+    }
+    
+    /* インラインコードのスタイル調整 */
+    & :not(pre) > code {
+      white-space: pre-wrap;
+    }
+  }
+}
