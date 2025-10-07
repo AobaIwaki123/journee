@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/lib/store/useStore';
 import { getItineraryById } from '@/lib/mock-data/itineraries';
-import { loadCurrentItinerary } from '@/lib/utils/storage';
+import { loadCurrentItinerary, getLastSaveTime } from '@/lib/utils/storage';
 
 /**
  * LocalStorageからデータを復元するコンポーネント
@@ -14,6 +14,8 @@ export const StorageInitializer: React.FC = () => {
   const searchParams = useSearchParams();
   const initializeFromStorage = useStore((state) => state.initializeFromStorage);
   const setItinerary = useStore((state) => state.setItinerary);
+  const setLastSaveTime = useStore((state) => state.setLastSaveTime);
+  const setStorageInitialized = useStore((state) => state.setStorageInitialized);
 
   useEffect(() => {
     // LocalStorageからAPIキーと選択AIを復元
@@ -32,9 +34,18 @@ export const StorageInitializer: React.FC = () => {
       const savedItinerary = loadCurrentItinerary();
       if (savedItinerary) {
         setItinerary(savedItinerary);
+        
+        // 最終保存時刻も復元
+        const lastSaveTime = getLastSaveTime();
+        if (lastSaveTime) {
+          setLastSaveTime(lastSaveTime);
+        }
       }
     }
-  }, [initializeFromStorage, setItinerary, searchParams]);
+    
+    // 初期化完了を通知
+    setStorageInitialized(true);
+  }, [initializeFromStorage, setItinerary, setLastSaveTime, setStorageInitialized, searchParams]);
 
   // このコンポーネントは何も表示しない
   return null;

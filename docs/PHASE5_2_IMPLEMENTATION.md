@@ -317,9 +317,140 @@ const response = await fetch('/api/itinerary/list');
 - 完全なユーザーごとのデータ分離
 - データマイグレーション機能
 
+## 🔄 追加実装（2025-10-07）
+
+### 5.2.8 保存ボタンの実装
+
+#### 実装ファイル
+- **`components/itinerary/SaveButton.tsx`** - 保存ボタンコンポーネント
+  - しおりをLocalStorageとしおり一覧に保存
+  - 保存後、一覧ページへ自動遷移
+  - 保存中の視覚的フィードバック
+
+#### 主要機能
+```typescript
+// 保存処理
+const handleSave = async () => {
+  // LocalStorageに保存
+  saveCurrentItinerary(currentItinerary);
+  
+  // しおり一覧に追加/更新
+  if (existingIndex !== -1) {
+    updateItinerary(currentItinerary.id, currentItinerary);
+  } else {
+    addItinerary(currentItinerary);
+  }
+  
+  // 一覧ページへ遷移
+  router.push('/itineraries');
+};
+```
+
+### 5.2.9 しおりリセットボタンの実装
+
+#### 実装ファイル
+- **`components/itinerary/ResetButton.tsx`** - リセットボタンコンポーネント
+  - 現在のしおりをクリア
+  - プランニング状態をリセット
+  - 確認ダイアログ表示
+
+#### 主要機能
+```typescript
+const confirmReset = () => {
+  // しおりをクリア
+  setItinerary(null);
+  
+  // プランニング状態をリセット
+  resetPlanning();
+  
+  // LocalStorageからも削除
+  clearCurrentItinerary();
+};
+```
+
+### 5.2.10 LocalStorage読み込み待機処理
+
+#### 実装ファイル
+- **`lib/store/useStore.ts`** - 初期化状態の管理
+  - `isStorageInitialized`: 初期化完了フラグ
+  - `setStorageInitialized()`: 初期化完了を通知
+
+- **`components/layout/StorageInitializer.tsx`** - 初期化処理の改善
+  - 最終保存時刻の復元
+  - 初期化完了の通知
+
+- **`components/ui/SaveStatus.tsx`** - 表示タイミングの改善
+  - 初期化完了までは非表示
+  - リロード時の「未保存」表示を防止
+
+#### 主要機能
+```typescript
+// StorageInitializer
+const savedItinerary = loadCurrentItinerary();
+if (savedItinerary) {
+  setItinerary(savedItinerary);
+  
+  // 最終保存時刻も復元
+  const lastSaveTime = getLastSaveTime();
+  if (lastSaveTime) {
+    setLastSaveTime(lastSaveTime);
+  }
+}
+
+// 初期化完了を通知
+setStorageInitialized(true);
+
+// SaveStatus
+if (!currentItinerary || !isStorageInitialized) {
+  return null; // 初期化完了まで非表示
+}
+```
+
+## 🎯 追加実装結果
+
+### 新規ファイル（2ファイル）
+1. `components/itinerary/SaveButton.tsx` - 保存ボタン
+2. `components/itinerary/ResetButton.tsx` - リセットボタン
+
+### 更新ファイル（4ファイル）
+1. `lib/store/useStore.ts` - 初期化状態の管理
+2. `components/layout/StorageInitializer.tsx` - 最終保存時刻の復元
+3. `components/ui/SaveStatus.tsx` - 表示タイミングの改善
+4. `components/itinerary/ItineraryPreview.tsx` - ボタンの追加
+
+### 主要機能一覧
+- ✅ 保存ボタン（一覧ページへ自動遷移）
+- ✅ リセットボタン（確認ダイアログ付き）
+- ✅ LocalStorage読み込み待機処理
+- ✅ リロード時の「未保存」表示を修正
+- ✅ 最終保存時刻の復元
+
+## 📊 改善内容
+
+### 1. 保存機能の強化
+- **手動保存**: ユーザーが任意のタイミングで保存可能
+- **一覧統合**: 保存後すぐに一覧ページで確認できる
+- **視覚的フィードバック**: 保存中の状態を明確に表示
+
+### 2. しおりリセット機能
+- **新規作成モード**: しおりをクリアして新規作成を開始
+- **確認ダイアログ**: 誤操作を防ぐ確認画面
+- **完全リセット**: しおりとプランニング状態の両方をクリア
+
+### 3. 初期化処理の改善
+- **最終保存時刻の復元**: リロード時も保存時刻を正しく表示
+- **初期化完了通知**: ロード完了まで保存状態を非表示
+- **「未保存」表示の修正**: リロード時に誤った状態を表示しない
+
 ## 🎉 完了
 
-Phase 5.2の実装が完了しました。しおりの一時保存機能により、ユーザーは安心して編集作業を続けることができます。
+Phase 5.2の実装が完了しました。追加実装により、以下の改善が実現されました：
+
+1. **保存ボタン**: しおりを一覧に保存し、一覧ページで閲覧可能
+2. **リセットボタン**: 現在のしおりをクリアして新規作成モードに戻る
+3. **初期化処理**: リロード時の「未保存」表示を修正し、保存状態を正しく復元
+
+ユーザーは安心してしおりの編集作業を続けることができます。
 
 ---
 

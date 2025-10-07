@@ -172,6 +172,10 @@ interface AppState {
   // Auto-save state (Phase 5.2)
   lastSaveTime: Date | null;
   setLastSaveTime: (time: Date | null) => void;
+  
+  // Storage initialization state (Phase 5.2.10)
+  isStorageInitialized: boolean;
+  setStorageInitialized: (initialized: boolean) => void;
 
   // Undo/Redo state (Phase 5.1.3)
   history: HistoryState;
@@ -698,6 +702,10 @@ export const useStore = create<AppState>((set, get) => ({
   // Auto-save state (Phase 5.2)
   lastSaveTime: null,
   setLastSaveTime: (time) => set({ lastSaveTime: time }),
+  
+  // Storage initialization state (Phase 5.2.10)
+  isStorageInitialized: false,
+  setStorageInitialized: (initialized) => set({ isStorageInitialized: initialized }),
 
   // Undo/Redo state (Phase 5.1.3)
   history: {

@@ -13,6 +13,7 @@ export const SaveStatus: React.FC = () => {
   const isSaving = useStore((state) => state.isSaving);
   const lastSaveTime = useStore((state) => state.lastSaveTime);
   const currentItinerary = useStore((state) => state.currentItinerary);
+  const isStorageInitialized = useStore((state) => state.isStorageInitialized);
   const [timeAgo, setTimeAgo] = useState<string>('');
 
   // 最後の保存からの経過時間を更新
@@ -46,8 +47,8 @@ export const SaveStatus: React.FC = () => {
     return () => clearInterval(interval);
   }, [lastSaveTime]);
 
-  // しおりがない場合は表示しない
-  if (!currentItinerary) {
+  // しおりがない場合、または初期化前は表示しない
+  if (!currentItinerary || !isStorageInitialized) {
     return null;
   }
 
