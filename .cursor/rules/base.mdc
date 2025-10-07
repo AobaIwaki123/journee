@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Cursor Ruleを作成するときは、.cursor/rules/配下に.mdcファイルとして作成してください
