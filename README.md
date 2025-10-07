@@ -516,10 +516,77 @@ journee/
 - [ ] PDFプレビュー機能
 - [ ] PDF出力ボタンUIの実装
 
+#### 5.4 マイページ・栞一覧・設定ページ 🆕
+**目的**: ユーザー管理とアプリケーション設定の一元管理
+
+##### 5.4.1 マイページ（`/mypage`）
+- [ ] ユーザープロフィール表示
+  - [ ] `UserProfile.tsx` - プロフィール画像、ユーザー名、メールアドレス、登録日
+  - [ ] レスポンシブレイアウト対応
+- [ ] ユーザー統計表示
+  - [ ] `UserStats.tsx` - しおり総数、訪問国数、総旅行日数
+  - [ ] グラフ表示（Chart.js/Recharts）- 月別しおり作成数、訪問国分布
+  - [ ] モックデータでの統計計算
+- [ ] クイックアクション
+  - [ ] `QuickActions.tsx` - 新規作成、栞一覧、設定へのナビゲーション
+  - [ ] ホバー効果・アニメーション
+- [ ] 最近のしおり表示（3-5件）
+  - [ ] `ItineraryCard` コンポーネントの再利用
+- [ ] ページレイアウト実装
+  - [ ] `app/mypage/page.tsx` の作成
+  - [ ] 認証チェック（未認証時はログインページへリダイレクト）
+
+##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用
+- [ ] しおり一覧表示
+  - [ ] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
+  - [ ] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
+  - [ ] クイックアクション（開く、PDF出力、削除）
+  - [ ] 空状態の表示（しおり0件の場合）
+- [ ] フィルター機能
+  - [ ] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
+  - [ ] フィルター状態の管理（Zustand）
+- [ ] ソート機能
+  - [ ] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
+  - [ ] 昇順/降順切り替え
+- [ ] モックデータ作成
+  - [ ] `lib/mock-data/itineraries.ts` - 10-20件のサンプルデータ
+  - [ ] LocalStorage連携（一時保存）
+- [ ] ページレイアウト実装
+  - [ ] `app/itineraries/page.tsx` の作成
+  - [ ] レスポンシブデザイン（デスクトップ: 3-4列、タブレット: 2列、モバイル: 1列）
+
+##### 5.4.3 設定ページ（`/settings`）
+- [ ] 一般設定
+  - [ ] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
+  - [ ] 設定の保存（LocalStorage）
+- [ ] AI設定
+  - [ ] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
+  - [ ] Claude APIキー管理（入力、保存、検証、削除）
+  - [ ] Phase 6との連携
+- [ ] 効果音設定
+  - [ ] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
+  - [ ] 効果音プレビューボタン
+  - [ ] Phase 3.6との連携
+  - [ ] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
+- [ ] アカウント設定
+  - [ ] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
+  - [ ] Phase 2（認証機能）との連携
+- [ ] ページレイアウト実装
+  - [ ] `app/settings/page.tsx` の作成
+  - [ ] サイドバーナビゲーション（デスクトップ）
+  - [ ] タブ切り替え（モバイル）
+- [ ] LocalStorage永続化
+  - [ ] 設定のロード・保存機能
+  - [ ] Zustandストアとの同期
+
 **期待される効果**:
 - しおりの作成から保存、出力までの一連の流れがシームレスに
 - ユーザーは作成中のしおりを失うことなく、いつでも再開可能
 - 美しいPDFで旅のしおりを印刷・共有できる
+- ユーザーが自分の作成したしおりを一元管理できる
+- アプリケーション全体の設定を柔軟にカスタマイズ可能
+
+**詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
 
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
@@ -910,6 +977,7 @@ MIT
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
+- **Phase 5.4** - マイページ・栞一覧・設定ページ（ユーザー管理、モックデータ） 🆕
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
@@ -917,6 +985,7 @@ MIT
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
+- [Phase 5.4 マイページ・栞一覧・設定ページ実装計画](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
