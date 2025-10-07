@@ -408,68 +408,97 @@ journee/
 
 #### 5.1 しおりコンポーネントの詳細実装
 
-##### 5.1.1 基本表示コンポーネント（Step 1）
+##### 5.1.1 基本表示コンポーネント（Step 1）✅ **完了** (2025-10-07)
 **目的**: しおりの基本的な表示コンポーネントを実装（読み取り専用）
 
-- [ ] タイトル・サマリーコンポーネントの実装
-  - [ ] `ItineraryHeader.tsx` - タイトル、目的地、期間表示
-  - [ ] `ItinerarySummary.tsx` - サマリー、総予算、ステータス表示
-  - [ ] レスポンシブレイアウト対応
-  - [ ] Tailwind CSSによるスタイリング
-- [ ] 日程表コンポーネントの実装
-  - [ ] `DaySchedule.tsx` の詳細実装
-  - [ ] 日付・曜日の表示
-  - [ ] 1日の総移動距離・総費用の表示
-  - [ ] タイムライン形式のレイアウト
-  - [ ] 折りたたみ機能（アコーディオン）
-- [ ] 観光スポット詳細カードの実装
-  - [ ] `SpotCard.tsx` の詳細実装
-  - [ ] カテゴリー別アイコン表示（観光・食事・移動・宿泊）
-  - [ ] 時刻・所要時間の表示
-  - [ ] 費用の表示
-  - [ ] 説明・ノートの表示
-  - [ ] カードホバー効果・アニメーション
-- [ ] 空状態（しおりがない場合）の実装
-  - [ ] EmptyItinerary コンポーネント
-  - [ ] 案内メッセージとCTA
+- [x] タイトル・サマリーコンポーネントの実装
+  - [x] `ItineraryHeader.tsx` - タイトル、目的地、期間表示
+  - [x] `ItinerarySummary.tsx` - サマリー、総予算、ステータス表示
+  - [x] レスポンシブレイアウト対応
+  - [x] Tailwind CSSによるスタイリング
+- [x] 日程表コンポーネントの実装
+  - [x] `DaySchedule.tsx` の詳細実装
+  - [x] 日付・曜日の表示
+  - [x] 1日の総移動距離・総費用の表示
+  - [x] タイムライン形式のレイアウト
+  - [x] 折りたたみ機能（アコーディオン）
+- [x] 観光スポット詳細カードの実装
+  - [x] `SpotCard.tsx` の詳細実装
+  - [x] カテゴリー別アイコン表示（観光・食事・移動・宿泊）
+  - [x] 時刻・所要時間の表示
+  - [x] 費用の表示
+  - [x] 説明・ノートの表示
+  - [x] カードホバー効果・アニメーション
+- [x] 空状態（しおりがない場合）の実装
+  - [x] EmptyItinerary コンポーネント
+  - [x] 案内メッセージとCTA
 
-**期待される効果**: 
-- しおりの基本的な情報が美しく読みやすく表示される
-- ユーザーがAIで生成した旅程を一目で把握できる
+**実装結果**: 
+- ✅ 6つのコンポーネントを実装/更新
+- ✅ カテゴリー別アイコンシステムの確立（Camera, Utensils, Car, Hotel, Sparkles）
+- ✅ レスポンシブデザイン対応（モバイル・デスクトップ）
+- ✅ アニメーション・ホバー効果の追加
+- ✅ 空状態の充実したガイド（3ステップ）
+- ✅ しおりの基本的な情報が美しく読みやすく表示される
+- ✅ ユーザーがAIで生成した旅程を一目で把握できる
 
-##### 5.1.2 インタラクティブ機能（Step 2）
+**詳細**: [docs/PHASE5.1.1_ITINERARY_COMPONENTS.md](./docs/PHASE5.1.1_ITINERARY_COMPONENTS.md)
+
+##### 5.1.2 インタラクティブ機能（Step 2）✅ **完了** (2025-10-07)
 **目的**: ユーザーがしおりを編集・カスタマイズできる機能を追加
 
-- [ ] リアルタイム更新機能の実装
-  - [ ] Zustandストアとの連携強化
-  - [ ] しおりデータ変更の即座反映
-  - [ ] 更新アニメーション（フェードイン等）
-  - [ ] 楽観的UI更新（Optimistic UI）
-- [ ] 編集機能の追加
-  - [ ] `EditableTitle.tsx` - タイトル編集
-  - [ ] `EditableSpotCard.tsx` - スポット情報の編集
-  - [ ] インライン編集UI（クリックで編集モード）
-  - [ ] 編集中の視覚的フィードバック
-  - [ ] 編集のキャンセル・保存機能
-  - [ ] バリデーション（必須項目、文字数制限等）
-- [ ] スポット操作機能
-  - [ ] スポットの並び替え（ドラッグ&ドロップ）
-  - [ ] スポットの削除（確認ダイアログ付き）
-  - [ ] スポットの追加（手動入力フォーム）
-  - [ ] 日程間のスポット移動
-- [ ] UIフィードバック
-  - [ ] 保存中のローディング状態
-  - [ ] 成功・エラー通知（Toast）
-  - [ ] 変更の取り消し機能（Undo）
+- [x] リアルタイム更新機能の実装
+  - [x] Zustandストアとの連携強化
+  - [x] しおりデータ変更の即座反映
+  - [x] 更新アニメーション（フェードイン等）
+  - [x] 楽観的UI更新（Optimistic UI）
+- [x] 編集機能の追加
+  - [x] `EditableTitle.tsx` - タイトル編集
+  - [x] `EditableSpotCard.tsx` - スポット情報の編集
+  - [x] インライン編集UI（クリックで編集モード）
+  - [x] 編集中の視覚的フィードバック
+  - [x] 編集のキャンセル・保存機能
+  - [x] バリデーション（必須項目、文字数制限等）
+- [x] スポット操作機能
+  - [x] スポットの削除（確認ダイアログ付き）
+  - [x] スポットの追加（手動入力フォーム）
+  - [ ] スポットの並び替え（ドラッグ&ドロップ） → Phase 5.1.3へ
+  - [ ] 日程間のスポット移動 → Phase 5.1.3へ
+- [x] UIフィードバック
+  - [x] 成功・エラー通知（Toast）
+  - [ ] 保存中のローディング状態 → Phase 5.2へ
+  - [ ] 変更の取り消し機能（Undo） → Phase 5.1.3へ
 
-**期待される効果**:
-- ユーザーがAI生成のしおりを自由にカスタマイズできる
-- 直感的な編集操作でストレスフリーな体験
+**実装結果**:
+- ✅ Zustand storeに7つの編集アクションを追加
+- ✅ Toast通知システムの確立（成功/エラー/情報）
+- ✅ インライン編集UI（タイトル、スポット情報）
+- ✅ スポット追加/編集/削除機能
+- ✅ バリデーションとエラーハンドリング
+- ✅ リアルタイム更新とアニメーション
+- ✅ ユーザーがAI生成のしおりを自由にカスタマイズできる
+- ✅ 直感的な編集操作でストレスフリーな体験
 
-##### 5.1.3 高度な機能（Step 3）
-**目的**: 地図統合とテンプレート機能で完成度を高める
+**詳細**: [docs/PHASE5.1.2_INTERACTIVE_FEATURES.md](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
 
-- [ ] 地図統合（Google Maps API）
+##### 5.1.3 高度な機能（Step 3）✅ **完了** (2025-10-07)
+**目的**: ドラッグ&ドロップ、Undo/Redo、パフォーマンス最適化で完成度を高める
+
+- [x] ドラッグ&ドロップ並び替え
+  - [x] @hello-pangea/dndライブラリ統合
+  - [x] スポットの並び替え機能
+  - [x] ドラッグ中の視覚的フィードバック
+  - [x] Toast通知
+- [x] Undo/Redo機能
+  - [x] History状態管理
+  - [x] Undoボタン
+  - [x] Redoボタン
+  - [x] キーボードショートカット（Cmd/Ctrl + Z, Shift + Z）
+- [x] パフォーマンス最適化
+  - [x] React.memo適用（DaySchedule, SpotCard, ItineraryHeader, ItinerarySummary）
+  - [x] useMemo適用（ItinerarySummary）
+  - [x] displayName追加
+- [ ] 地図統合（Google Maps API） → 別フェーズへ延期
   - [ ] Google Maps JavaScript APIのセットアップ
   - [ ] `MapView.tsx` コンポーネントの実装
   - [ ] 観光スポットのマーカー表示
@@ -519,94 +548,74 @@ journee/
 #### 5.4 マイページ・栞一覧・設定ページ 🆕
 **目的**: ユーザー管理とアプリケーション設定の一元管理
 
-##### 5.4.1 マイページ（`/mypage`） ✅ **完了**
-- [x] ユーザープロフィール表示
-  - [x] `UserProfile.tsx` - プロフィール画像、ユーザー名、メールアドレス、登録日
-  - [x] レスポンシブレイアウト対応
-- [x] ユーザー統計表示
-  - [x] `UserStats.tsx` - しおり総数、訪問国数、総旅行日数
-  - [x] グラフ表示（Recharts）- 月別しおり作成数、訪問国分布
-  - [x] モックデータでの統計計算
-- [x] クイックアクション
-  - [x] `QuickActions.tsx` - 新規作成、栞一覧、設定へのナビゲーション
-  - [x] ホバー効果・アニメーション
-- [x] 最近のしおり表示（3件）
-  - [x] `ItineraryCard` コンポーネントの実装
-- [x] ページレイアウト実装
-  - [x] `app/mypage/page.tsx` の作成
-  - [x] 認証チェック（未認証時はログインページへリダイレクト）
-- [x] UserMenuナビゲーション統合
+##### 5.4.1 マイページ（`/mypage`）
+- [ ] ユーザープロフィール表示
+  - [ ] `UserProfile.tsx` - プロフィール画像、ユーザー名、メールアドレス、登録日
+  - [ ] レスポンシブレイアウト対応
+- [ ] ユーザー統計表示
+  - [ ] `UserStats.tsx` - しおり総数、訪問国数、総旅行日数
+  - [ ] グラフ表示（Chart.js/Recharts）- 月別しおり作成数、訪問国分布
+  - [ ] モックデータでの統計計算
+- [ ] クイックアクション
+  - [ ] `QuickActions.tsx` - 新規作成、栞一覧、設定へのナビゲーション
+  - [ ] ホバー効果・アニメーション
+- [ ] 最近のしおり表示（3-5件）
+  - [ ] `ItineraryCard` コンポーネントの再利用
+- [ ] ページレイアウト実装
+  - [ ] `app/mypage/page.tsx` の作成
+  - [ ] 認証チェック（未認証時はログインページへリダイレクト）
 
-##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用 ✅ **完了**
-- [x] しおり一覧表示
-  - [x] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
-  - [x] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
-  - [x] クイックアクション（開く、PDF出力、削除）
-  - [x] 空状態の表示（しおり0件の場合）
-- [x] フィルター機能
-  - [x] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
-  - [x] フィルター状態の管理（Zustand）
-- [x] ソート機能
-  - [x] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
-  - [x] 昇順/降順切り替え
-- [x] モックデータ作成
-  - [x] `lib/mock-data/itineraries.ts` - 15件のサンプルデータ
-  - [x] LocalStorage連携（一時保存）
-- [x] ページレイアウト実装
-  - [x] `app/itineraries/page.tsx` の作成
-  - [x] レスポンシブデザイン（デスクトップ: 4列、タブレット: 2-3列、モバイル: 1列）
-- [x] 認証保護（ミドルウェア設定）
-- [x] Headerコンポーネントの更新（しおり一覧リンク）
-- [x] StorageInitializerの更新（URLパラメータ対応）
+##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用
+- [ ] しおり一覧表示
+  - [ ] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
+  - [ ] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
+  - [ ] クイックアクション（開く、PDF出力、削除）
+  - [ ] 空状態の表示（しおり0件の場合）
+- [ ] フィルター機能
+  - [ ] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
+  - [ ] フィルター状態の管理（Zustand）
+- [ ] ソート機能
+  - [ ] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
+  - [ ] 昇順/降順切り替え
+- [ ] モックデータ作成
+  - [ ] `lib/mock-data/itineraries.ts` - 10-20件のサンプルデータ
+  - [ ] LocalStorage連携（一時保存）
+- [ ] ページレイアウト実装
+  - [ ] `app/itineraries/page.tsx` の作成
+  - [ ] レスポンシブデザイン（デスクトップ: 3-4列、タブレット: 2列、モバイル: 1列）
 
-**詳細**: [docs/PHASE5_4_2_IMPLEMENTATION.md](./docs/PHASE5_4_2_IMPLEMENTATION.md)
-
-##### 5.4.3 設定ページ（`/settings`） ✅ **完了** (2025-10-07)
-- [x] 一般設定
-  - [x] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
-  - [x] 設定の保存（LocalStorage）
-- [x] AI設定
-  - [x] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
-  - [x] Claude APIキー管理（入力、保存、検証、削除）
-  - [x] Phase 6との連携
-- [x] 効果音設定
-  - [x] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
-  - [x] 効果音プレビューボタン（Phase 3.6で実装予定）
-  - [x] Phase 3.6との連携
-  - [x] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
-- [x] アカウント設定
-  - [x] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
-  - [x] Phase 2（認証機能）との連携
-- [x] ページレイアウト実装
-  - [x] `app/settings/page.tsx` の作成
-  - [x] サイドバーナビゲーション（デスクトップ）
-  - [x] タブ切り替え（モバイル）
-- [x] LocalStorage永続化
-  - [x] 設定のロード・保存機能
-  - [x] Zustandストアとの同期
-
-**実装結果**: 
-- ✅ 4つの設定セクション（一般、AI、効果音、アカウント）を実装
-- ✅ レスポンシブデザイン対応（デスクトップ：サイドバー、モバイル：タブ）
-- ✅ LocalStorageとZustandストアの完全連携
-- ✅ 設定変更が即座に保存され、ページリロード後も保持
-- ✅ 認証チェックと未認証時のリダイレクト
-- ✅ Phase 2（認証）、Phase 6（Claude API）との連携完了
-- ✅ Phase 3.6（効果音システム）への準備完了
-
-**コミット履歴**: 未コミット（実装完了）
-
-**詳細**: [docs/PHASE5_4_3_IMPLEMENTATION.md](./docs/PHASE5_4_3_IMPLEMENTATION.md)
+##### 5.4.3 設定ページ（`/settings`）
+- [ ] 一般設定
+  - [ ] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
+  - [ ] 設定の保存（LocalStorage）
+- [ ] AI設定
+  - [ ] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
+  - [ ] Claude APIキー管理（入力、保存、検証、削除）
+  - [ ] Phase 6との連携
+- [ ] 効果音設定
+  - [ ] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
+  - [ ] 効果音プレビューボタン
+  - [ ] Phase 3.6との連携
+  - [ ] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
+- [ ] アカウント設定
+  - [ ] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
+  - [ ] Phase 2（認証機能）との連携
+- [ ] ページレイアウト実装
+  - [ ] `app/settings/page.tsx` の作成
+  - [ ] サイドバーナビゲーション（デスクトップ）
+  - [ ] タブ切り替え（モバイル）
+- [ ] LocalStorage永続化
+  - [ ] 設定のロード・保存機能
+  - [ ] Zustandストアとの同期
 
 **期待される効果**:
 - しおりの作成から保存、出力までの一連の流れがシームレスに
 - ユーザーは作成中のしおりを失うことなく、いつでも再開可能
 - 美しいPDFで旅のしおりを印刷・共有できる
 - ユーザーが自分の作成したしおりを一元管理できる
-- ✅ アプリケーション全体の設定を柔軟にカスタマイズ可能（Phase 5.4.3完了）
+- アプリケーション全体の設定を柔軟にカスタマイズ可能
 
-**詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)  
-**実装完了**: [docs/PHASE5_4_3_IMPLEMENTATION.md](./docs/PHASE5_4_3_IMPLEMENTATION.md)
+**詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
 
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
@@ -726,109 +735,37 @@ journee/
 - [ ] 開発者向けドキュメント
 - [ ] トラブルシューティングガイド
 
-### Phase 11: ユーザーフィードバック & 自動Issue/PR作成ワークフロー（Week 20-22）🆕
-**目的**: ユーザーからの機能要望を受け取り、LLMで構造化してGitHub Issueに自動投稿し、Cursorを活用して自動的にPull Requestを作成する開発ワークフローの確立
-
-**アーキテクチャ**:
-```
-ユーザーフィードバック → LLM構造化 → GitHub Issue自動作成 
-  → GitHub Actions監視 → Cursor PR作成支援
-```
-
-#### 11.1 フィードバックフォームUI実装
-- [ ] フィードバックモーダルコンポーネント
-  - [ ] `FeedbackModal.tsx` - カテゴリー選択、タイトル、詳細入力、スクリーンショット添付
-  - [ ] `FeedbackButton.tsx` - ヘッダーの固定ボタン
-  - [ ] バリデーション（Zod + React Hook Form）
-  - [ ] アクセシビリティ対応
-- [ ] Zustand状態管理の拡張
-  - [ ] `feedbackModalOpen` 状態管理
-  - [ ] `openFeedbackModal()`, `closeFeedbackModal()` アクション
-
-#### 11.2 LLM構造化エンジン実装
-- [ ] プロンプトエンジニアリング
-  - [ ] `lib/feedback/prompts.ts` - フィードバック解析プロンプト
-  - [ ] カテゴリー別テンプレート（機能追加/バグ報告/UI改善）
-- [ ] LLM API統合
-  - [ ] `lib/feedback/analyzer.ts` - `analyzeFeedback()` 関数
-  - [ ] ユーザー入力をGitHub Issue用のフォーマットに変換
-    - Issueタイトル生成
-    - Issue本文生成（機能概要、実装要件、期待される効果）
-    - ラベル候補提案
-    - 優先度推定
-    - 関連ファイル候補抽出
-  - [ ] 型定義（`types/feedback.ts`）
-
-#### 11.3 GitHub Issue自動作成API実装
-- [ ] GitHub API統合
-  - [ ] `@octokit/rest` パッケージインストール
-  - [ ] `lib/github/client.ts` - `createIssue()` 関数
-  - [ ] `app/api/feedback/submit/route.ts` - フィードバック送信エンドポイント
-    - 認証チェック
-    - LLMで構造化
-    - GitHub Issueを自動作成
-    - ユーザー情報を埋め込み
-- [ ] スクリーンショット処理
-  - [ ] Base64エンコード
-  - [ ] GitHub Issueに画像埋め込み
-- [ ] 環境変数設定
-  - [ ] `GITHUB_TOKEN` - GitHub Personal Access Token
-  - [ ] `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`
-- [ ] エラーハンドリング
-  - [ ] レート制限対応
-  - [ ] リトライ処理
-
-#### 11.4 GitHub Actions - Issue監視ワークフロー
-- [ ] `.github/workflows/auto-issue-handler.yml` の作成
-  - [ ] 新しいIssueが作成されたらトリガー
-  - [ ] `auto-implement` ラベルでフィルタリング
-  - [ ] Webhook通知（Slack/Discord/メール）
-  - [ ] Issueにコメント追加（自動処理開始通知）
-- [ ] カテゴリー別処理分岐
-  - [ ] `bug`: バグ修正ワークフロー
-  - [ ] `enhancement`: 機能追加ワークフロー
-  - [ ] `UI`: UI改善ワークフロー
-
-#### 11.5 Cursor自動PR作成ワークフロー
-- [ ] Cursorルールの作成
-  - [ ] `.cursor/rules/auto-implement.mdc` - 自動実装ガイドライン
-  - [ ] PRテンプレート定義
-- [ ] 半自動化スクリプト
-  - [ ] `scripts/auto-implement.sh` - Issue番号を指定してCursor実装をサポート
-  - [ ] ブランチ自動作成
-  - [ ] Cursorプロンプト生成
-  - [ ] PR自動作成（GitHub CLI）
-- [ ] ワークフロー文書化
-  - [ ] 開発者向けガイド
-  - [ ] Cursor使用例
-
-#### 11.6 ユーザー通知システム
-- [ ] フィードバック送信完了画面
-  - [ ] `FeedbackSuccess.tsx` - Issue番号・URLを表示
-  - [ ] GitHubで確認ボタン
-- [ ] メール通知（オプション）
-  - [ ] Issue作成時にユーザーにメール送信
-  - [ ] PR作成時にユーザーにメール送信
-
-**技術スタック**:
-- **GitHub API**: `@octokit/rest`
-- **LLM**: Gemini/Claude API（構造化）
-- **GitHub Actions**: Issue監視・自動化
-- **Cursor**: AI支援コード編集
-- **GitHub CLI**: PR作成自動化
-
-**期待される効果**:
-- ユーザーが気軽にフィードバックを送信できる
-- 曖昧な要望がLLMで明確な要件に変換される
-- Issue作成の手間が削減される
-- Cursorとの連携で実装効率が向上する
-- 開発プロセスの透明性が向上する
-
-**詳細**: [docs/PHASE11_FEEDBACK_WORKFLOW.md](./docs/PHASE11_FEEDBACK_WORKFLOW.md)
-
 ## 🐛 バグ修正・技術的負債
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
+
+### BUG-002: Phase 5.1.3 時刻と順番の整合性バグ修正 ✅ **完了** (2025-10-07)
+**発生状況**: 
+1. 編集内容が即座にレンダリングされない
+2. 時刻を変更しても順番が変わらない、順番を変更しても時刻が変化しない
+
+**修正内容**:
+- [x] `EditableSpotCard.tsx` - useEffect追加でspot props変更を監視
+- [x] `EditableTitle.tsx` - コメント改善
+- [x] `lib/utils/time-utils.ts` - 時刻ユーティリティ関数の作成
+  - `timeToMinutes`: HH:mm → 分に変換
+  - `minutesToTime`: 分 → HH:mm に変換
+  - `sortSpotsByTime`: 時刻順にソート
+  - `adjustTimeAfterReorder`: 並び替え時の時刻自動調整
+- [x] `lib/store/useStore.ts` - 自動ソート・時刻調整ロジック追加
+  - `updateSpot`: 時刻変更時に自動ソート
+  - `addSpot`: 追加後に自動ソート
+  - `reorderSpots`: 並び替え後に時刻自動調整
+  - 全アクションにhistory更新を適用
+
+**実装結果**:
+- ✅ 編集内容が即座にUIに反映される
+- ✅ 時刻変更時に自動的に時刻順にソート
+- ✅ ドラッグ&ドロップ時に時刻が自動調整される
+- ✅ 時刻と順番の整合性が常に保たれる
+- ✅ すべての編集アクションでUndo/Redoが正常動作
+
+**詳細**: [docs/BUG_FIX_5.1.3_TIME_CONSISTENCY.md](./docs/BUG_FIX_5.1.3_TIME_CONSISTENCY.md)
 
 ### BUG-001: JSON削除バグ修正 ✅ **完了** (2025-10-07)
 **発生状況**: AIからのレスポンスに生のJSONブロックが表示される（ストリーミング中・完了後の両方）
@@ -1071,7 +1008,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.4.1, 5.4.2, 5.4.3, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）、Phase 4（段階的旅程構築）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.1, 5.4, 6, BUG-001, BUG-002 完了・統合済み → 次は Phase 3.5.2, 3.6, 4, 5.2
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -1086,46 +1023,41 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 5.1.1**: しおり基本表示コンポーネント（ヘッダー、サマリー、日程、スポット、空状態）
+- ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
+- ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
 - ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
 - ✅ **Phase 5.4.2**: 栞一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
 - ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
-  - ✅ 一般設定（言語、タイムゾーン、日付フォーマット、通貨）
-  - ✅ AI設定（モデル選択、APIキー管理）
-  - ✅ 効果音設定（ON/OFF、音量調整）
-  - ✅ アカウント設定（ユーザー情報、ログアウト、データ削除）
-  - ✅ レスポンシブデザイン（デスクトップ：サイドバー、モバイル：タブ）
 - ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
   - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
   - ✅ Phase 6.2: Claude API完全統合（ストリーミング対応）
   - ✅ Phase 6.3: モデル設定の一元管理・型安全性向上
-- ✅ **BUG-001**: JSON削除バグ修正（完全対応）
+- ✅ **BUG-001**: JSON削除バグ修正（3段階防御システム、完全対応）
+- ✅ **BUG-002**: Phase 5.1.3 時刻と順番の整合性バグ修正（イミュータブル更新、即座レンダリング）
 
 **次の実装**: 
-- **Phase 5.4.2** - しおり一覧ページ（フィルター、ソート、グリッド表示） 🔜
-- **Phase 5.4.3** - 設定ページ（一般設定、AI設定、効果音設定、アカウント） 🔜
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
-<<<<<<< HEAD
-=======
-- **Phase 5.4** - マイページ・栞一覧・設定ページ（ユーザー管理、モックデータ）
->>>>>>> origin/main
+- **Phase 5.2** - 一時保存機能（LocalStorage版、自動保存）
+- **Phase 5.3** - PDF出力機能
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
-- **Phase 11** - ユーザーフィードバック & 自動Issue/PR作成ワークフロー 🆕
 
 **最終更新**: 2025-10-07
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
-- [Phase 5.4 マイページ・栞一覧・設定ページ実装計画](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
+- [Phase 5.1.1 実装完了レポート](./docs/PHASE5.1.1_ITINERARY_COMPONENTS.md)
+- [Phase 5.1.2 実装完了レポート](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
+- [Phase 5.1.3 実装完了レポート](./docs/PHASE5.1.3_ADVANCED_FEATURES.md)
 - [Phase 5.4.1 実装完了レポート](./docs/PHASE5_4_1_IMPLEMENTATION_COMPLETE.md)
 - [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
-- [Phase 5.4.3 設定ページ実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)
+- [Phase 5.4.3 実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
-- [Phase 11 ユーザーフィードバックワークフロー実装計画](./docs/PHASE11_FEEDBACK_WORKFLOW.md) 🆕
+- [BUG-002修正レポート](./docs/BUG_FIX_5.1.3_TIME_CONSISTENCY.md)
 - [API ドキュメント](./docs/PHASE3_API_DOCUMENTATION.md)
 - [クイックスタートガイド](./docs/QUICK_START.md)

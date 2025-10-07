@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
-import { ItineraryData } from '@/types/itinerary';
+import { ItineraryData, TouristSpot, DaySchedule } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
+import type { TemplateId } from '@/types/template';
 import type { AppSettings } from '@/types/settings';
 import { DEFAULT_SETTINGS } from '@/types/settings';
 import {
@@ -14,6 +15,20 @@ import {
   loadAppSettings,
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
+import { createHistoryUpdate } from './useStore-helper';
+import { sortSpotsByTime, adjustTimeAfterReorder } from '@/lib/utils/time-utils';
+
+interface ToastMessage {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+interface HistoryState {
+  past: ItineraryData[];
+  present: ItineraryData | null;
+  future: ItineraryData[];
+}
 
 /**
  * しおりフィルター条件
@@ -54,7 +69,24 @@ interface AppState {
   setItinerary: (itinerary: ItineraryData | null) => void;
   updateItinerary: (updates: Partial<ItineraryData>) => void;
 
-  // Itinerary list state
+  // Itinerary editing actions (Phase 5.1.2)
+  updateItineraryTitle: (title: string) => void;
+  updateItineraryDestination: (destination: string) => void;
+  updateSpot: (
+    dayIndex: number,
+    spotId: string,
+    updates: Partial<TouristSpot>
+  ) => void;
+  deleteSpot: (dayIndex: number, spotId: string) => void;
+  addSpot: (dayIndex: number, spot: TouristSpot) => void;
+  reorderSpots: (
+    dayIndex: number,
+    startIndex: number,
+    endIndex: number
+  ) => void;
+  moveSpot: (fromDayIndex: number, toDayIndex: number, spotId: string) => void;
+
+  // Itinerary list state (Phase 5.4)
   itineraryFilter: ItineraryFilter;
   itinerarySort: ItinerarySort;
   setItineraryFilter: (filter: ItineraryFilter) => void;
@@ -78,6 +110,26 @@ interface AppState {
   // Error state
   error: string | null;
   setError: (error: string | null) => void;
+
+  // Toast notifications (Phase 5.1.2)
+  toasts: ToastMessage[];
+  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  removeToast: (id: string) => void;
+
+  // Editing state (Phase 5.1.2)
+  isSaving: boolean;
+  setSaving: (saving: boolean) => void;
+
+  // Undo/Redo state (Phase 5.1.3)
+  history: HistoryState;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+
+  // Template state (Phase 5.1.3)
+  selectedTemplate: TemplateId;
+  setSelectedTemplate: (template: TemplateId) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -97,15 +149,231 @@ export const useStore = create<AppState>((set) => ({
 
   // Itinerary state
   currentItinerary: null,
-  setItinerary: (itinerary) => set({ currentItinerary: itinerary }),
-  updateItinerary: (updates) =>
+  setItinerary: (itinerary) =>
     set((state) => ({
-      currentItinerary: state.currentItinerary
-        ? { ...state.currentItinerary, ...updates }
-        : null,
+      currentItinerary: itinerary,
+      history: {
+        past: itinerary
+          ? ([...state.history.past, state.currentItinerary].filter(
+              Boolean
+            ) as ItineraryData[])
+          : [],
+        present: itinerary,
+        future: [],
+      },
     })),
+  updateItinerary: (updates) =>
+    set((state) => {
+      const newItinerary = state.currentItinerary
+        ? {
+            ...state.currentItinerary,
+            ...updates,
+            updatedAt: new Date(),
+          }
+        : null;
 
-  // Itinerary list state
+      return {
+        currentItinerary: newItinerary,
+        history: {
+          past: state.currentItinerary
+            ? [...state.history.past, state.currentItinerary]
+            : state.history.past,
+          present: newItinerary,
+          future: [],
+        },
+      };
+    }),
+
+  // Itinerary editing actions (Phase 5.1.2)
+  updateItineraryTitle: (title) =>
+    set((state) => {
+      const newItinerary = state.currentItinerary
+        ? { ...state.currentItinerary, title, updatedAt: new Date() }
+        : null;
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
+
+  updateItineraryDestination: (destination) =>
+    set((state) => {
+      const newItinerary = state.currentItinerary
+        ? { ...state.currentItinerary, destination, updatedAt: new Date() }
+        : null;
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
+
+  updateSpot: (dayIndex, spotId, updates) =>
+    set((state) => {
+      if (!state.currentItinerary) return state;
+
+      const newSchedule = [...state.currentItinerary.schedule];
+      const oldDaySchedule = newSchedule[dayIndex];
+
+      if (!oldDaySchedule) return state;
+
+      const spotIndex = oldDaySchedule.spots.findIndex((s) => s.id === spotId);
+      if (spotIndex === -1) return state;
+
+      // 新しいspots配列を作成（イミュータブル）
+      const newSpots = [...oldDaySchedule.spots];
+      
+      // スポット情報を更新
+      newSpots[spotIndex] = {
+        ...newSpots[spotIndex],
+        ...updates,
+      };
+
+      // 時刻が変更された場合、時刻順にソート
+      const sortedSpots = updates.scheduledTime !== undefined 
+        ? sortSpotsByTime(newSpots)
+        : newSpots;
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: sortedSpots,
+      };
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
+      };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
+
+  deleteSpot: (dayIndex, spotId) =>
+    set((state) => {
+      if (!state.currentItinerary) return state;
+
+      const newSchedule = [...state.currentItinerary.schedule];
+      const oldDaySchedule = newSchedule[dayIndex];
+
+      if (!oldDaySchedule) return state;
+
+      // 新しいspots配列を作成（イミュータブル）
+      const newSpots = oldDaySchedule.spots.filter((s) => s.id !== spotId);
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: newSpots,
+      };
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
+      };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
+
+  addSpot: (dayIndex, spot) =>
+    set((state) => {
+      if (!state.currentItinerary) return state;
+
+      const newSchedule = [...state.currentItinerary.schedule];
+      const oldDaySchedule = newSchedule[dayIndex];
+
+      if (!oldDaySchedule) return state;
+
+      // 新しいspots配列を作成（イミュータブル）
+      const newSpots = [...oldDaySchedule.spots, spot];
+
+      // スポット追加後、時刻順にソート
+      const sortedSpots = sortSpotsByTime(newSpots);
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: sortedSpots,
+      };
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
+      };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
+
+  reorderSpots: (dayIndex, startIndex, endIndex) =>
+    set((state) => {
+      if (!state.currentItinerary) return state;
+
+      const newSchedule = [...state.currentItinerary.schedule];
+      const oldDaySchedule = newSchedule[dayIndex];
+
+      if (!oldDaySchedule) return state;
+
+      // 新しいspots配列を作成（イミュータブル）
+      const spots = [...oldDaySchedule.spots];
+      const [removed] = spots.splice(startIndex, 1);
+      spots.splice(endIndex, 0, removed);
+
+      // 並び替え後、移動したスポットの時刻を自動調整
+      const adjustedSpots = adjustTimeAfterReorder(spots, endIndex);
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: adjustedSpots,
+      };
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
+      };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
+
+  moveSpot: (fromDayIndex, toDayIndex, spotId) =>
+    set((state) => {
+      if (!state.currentItinerary) return state;
+
+      const newSchedule = [...state.currentItinerary.schedule];
+      const oldFromDay = newSchedule[fromDayIndex];
+      const oldToDay = newSchedule[toDayIndex];
+
+      if (!oldFromDay || !oldToDay) return state;
+
+      const spotIndex = oldFromDay.spots.findIndex((s) => s.id === spotId);
+      if (spotIndex === -1) return state;
+
+      // 新しいspots配列を作成（イミュータブル）
+      const newFromSpots = [...oldFromDay.spots];
+      const [spot] = newFromSpots.splice(spotIndex, 1);
+
+      const newToSpots = [...oldToDay.spots, spot];
+
+      // スポット追加後、移動先の日を時刻順にソート
+      const sortedToSpots = sortSpotsByTime(newToSpots);
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[fromDayIndex] = {
+        ...oldFromDay,
+        spots: newFromSpots,
+      };
+
+      newSchedule[toDayIndex] = {
+        ...oldToDay,
+        spots: sortedToSpots,
+      };
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
+      };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
+
+  // Itinerary list state (Phase 5.4)
   itineraryFilter: {
     status: 'all',
   },
@@ -141,10 +409,14 @@ export const useStore = create<AppState>((set) => ({
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
     const savedAI = loadSelectedAI();
+    const savedTemplate = (typeof window !== 'undefined' 
+      ? localStorage.getItem('journee_template') 
+      : null) as TemplateId | null;
     const savedSettings = loadAppSettings();
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
+      selectedTemplate: savedTemplate || 'classic',
       settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
     });
   },
@@ -182,4 +454,84 @@ export const useStore = create<AppState>((set) => ({
   // Error state
   error: null,
   setError: (error) => set({ error }),
+
+  // Toast notifications (Phase 5.1.2)
+  toasts: [],
+  addToast: (message, type) =>
+    set((state) => ({
+      toasts: [...state.toasts, { id: Date.now().toString(), message, type }],
+    })),
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
+
+  // Editing state (Phase 5.1.2)
+  isSaving: false,
+  setSaving: (saving) => set({ isSaving: saving }),
+
+  // Undo/Redo state (Phase 5.1.3)
+  history: {
+    past: [],
+    present: null,
+    future: [],
+  },
+
+  undo: () =>
+    set((state) => {
+      if (state.history.past.length === 0) return state;
+
+      const previous = state.history.past[state.history.past.length - 1];
+      const newPast = state.history.past.slice(0, -1);
+
+      return {
+        currentItinerary: previous,
+        history: {
+          past: newPast,
+          present: previous,
+          future: state.currentItinerary
+            ? [state.currentItinerary, ...state.history.future]
+            : state.history.future,
+        },
+      };
+    }),
+
+  redo: () =>
+    set((state) => {
+      if (state.history.future.length === 0) return state;
+
+      const next = state.history.future[0];
+      const newFuture = state.history.future.slice(1);
+
+      return {
+        currentItinerary: next,
+        history: {
+          past: state.currentItinerary
+            ? [...state.history.past, state.currentItinerary]
+            : state.history.past,
+          present: next,
+          future: newFuture,
+        },
+      };
+    }),
+
+  canUndo: () => {
+    const state = useStore.getState();
+    return state.history.past.length > 0;
+  },
+
+  canRedo: () => {
+    const state = useStore.getState();
+    return state.history.future.length > 0;
+  },
+
+  // Template state (Phase 5.1.3)
+  selectedTemplate: 'classic',
+  setSelectedTemplate: (template) => {
+    // LocalStorageに保存
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('journee_template', template);
+    }
+    set({ selectedTemplate: template });
+  },
 }));
