@@ -87,6 +87,18 @@ export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayInd
   const deleteSpot = useStore((state) => state.deleteSpot);
   const addToast = useStore((state) => state.addToast);
 
+  // spotのpropsが変更されたらeditValuesを更新
+  useEffect(() => {
+    setEditValues({
+      name: spot.name,
+      description: spot.description,
+      scheduledTime: spot.scheduledTime || '',
+      duration: spot.duration?.toString() || '',
+      estimatedCost: spot.estimatedCost?.toString() || '',
+      notes: spot.notes || '',
+    });
+  }, [spot]);
+
   const handleSave = () => {
     if (!editValues.name.trim()) {
       addToast('スポット名を入力してください', 'error');

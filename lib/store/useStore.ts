@@ -11,6 +11,7 @@ import {
 } from "@/lib/utils/storage";
 import { DEFAULT_AI_MODEL } from "@/lib/ai/models";
 import { createHistoryUpdate } from "./useStore-helper";
+import { sortSpotsByTime, adjustTimeAfterReorder } from "@/lib/utils/time-utils";
 
 interface ToastMessage {
   id: string;
@@ -142,18 +143,20 @@ export const useStore = create<AppState>((set) => ({
 
   // Itinerary editing actions (Phase 5.1.2)
   updateItineraryTitle: (title) =>
-    set((state) => ({
-      currentItinerary: state.currentItinerary
+    set((state) => {
+      const newItinerary = state.currentItinerary
         ? { ...state.currentItinerary, title, updatedAt: new Date() }
-        : null,
-    })),
+        : null;
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
 
   updateItineraryDestination: (destination) =>
-    set((state) => ({
-      currentItinerary: state.currentItinerary
+    set((state) => {
+      const newItinerary = state.currentItinerary
         ? { ...state.currentItinerary, destination, updatedAt: new Date() }
-        : null,
-    })),
+        : null;
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+    }),
 
   updateSpot: (dayIndex, spotId, updates) =>
     set((state) => {
@@ -167,18 +170,24 @@ export const useStore = create<AppState>((set) => ({
       const spotIndex = daySchedule.spots.findIndex((s) => s.id === spotId);
       if (spotIndex === -1) return state;
 
+      // スポット情報を更新
       daySchedule.spots[spotIndex] = {
         ...daySchedule.spots[spotIndex],
         ...updates,
       };
 
-      return {
-        currentItinerary: {
-          ...state.currentItinerary,
-          schedule: newSchedule,
-          updatedAt: new Date(),
-        },
+      // 時刻が変更された場合、時刻順にソート
+      if (updates.scheduledTime !== undefined) {
+        daySchedule.spots = sortSpotsByTime(daySchedule.spots);
+      }
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
       };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
 
   deleteSpot: (dayIndex, spotId) =>
@@ -192,13 +201,13 @@ export const useStore = create<AppState>((set) => ({
 
       daySchedule.spots = daySchedule.spots.filter((s) => s.id !== spotId);
 
-      return {
-        currentItinerary: {
-          ...state.currentItinerary,
-          schedule: newSchedule,
-          updatedAt: new Date(),
-        },
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
       };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
 
   addSpot: (dayIndex, spot) =>
@@ -212,13 +221,16 @@ export const useStore = create<AppState>((set) => ({
 
       daySchedule.spots.push(spot);
 
-      return {
-        currentItinerary: {
-          ...state.currentItinerary,
-          schedule: newSchedule,
-          updatedAt: new Date(),
-        },
+      // スポット追加後、時刻順にソート
+      daySchedule.spots = sortSpotsByTime(daySchedule.spots);
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
       };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
 
   reorderSpots: (dayIndex, startIndex, endIndex) =>
@@ -234,15 +246,18 @@ export const useStore = create<AppState>((set) => ({
       const [removed] = spots.splice(startIndex, 1);
       spots.splice(endIndex, 0, removed);
 
-      daySchedule.spots = spots;
+      // 並び替え後、移動したスポットの時刻を自動調整
+      const adjustedSpots = adjustTimeAfterReorder(spots, endIndex);
 
-      return {
-        currentItinerary: {
-          ...state.currentItinerary,
-          schedule: newSchedule,
-          updatedAt: new Date(),
-        },
+      daySchedule.spots = adjustedSpots;
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
       };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
 
   moveSpot: (fromDayIndex, toDayIndex, spotId) =>

@@ -44,7 +44,7 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
     if (sourceIndex === destinationIndex) return;
 
     reorderSpots(dayIndex, sourceIndex, destinationIndex);
-    addToast('スポットの順序を変更しました', 'info');
+    addToast('スポットの順序を変更し、時刻を自動調整しました', 'info');
   };
 
   return (

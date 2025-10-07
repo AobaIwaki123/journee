@@ -17,6 +17,7 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
   const updateItineraryTitle = useStore((state) => state.updateItineraryTitle);
   const addToast = useStore((state) => state.addToast);
 
+  // 編集モードに入ったときにフォーカス
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -24,6 +25,7 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
     }
   }, [isEditing]);
 
+  // propsのvalueが変更されたらeditValueを更新
   useEffect(() => {
     setEditValue(value);
   }, [value]);
