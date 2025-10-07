@@ -34,10 +34,10 @@ function removeJsonBlocks(text: string): string {
 }
 
 export const MessageList: React.FC = () => {
-  const messages = useStore((state) => state.messages);
-  const isLoading = useStore((state) => state.isLoading);
-  const isStreaming = useStore((state) => state.isStreaming);
-  const streamingMessage = useStore((state) => state.streamingMessage);
+  const messages = useStore((state: any) => state.messages);
+  const isLoading = useStore((state: any) => state.isLoading);
+  const isStreaming = useStore((state: any) => state.isStreaming);
+  const streamingMessage = useStore((state: any) => state.streamingMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ストリーミング中のメッセージからJSONブロックを除去
@@ -59,7 +59,7 @@ export const MessageList: React.FC = () => {
         </div>
       ) : (
         <>
-          {messages.map((message) => (
+          {messages.map((message: any) => (
             <div
               key={message.id}
               className={`flex ${

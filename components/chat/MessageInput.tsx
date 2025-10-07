@@ -57,7 +57,7 @@ export const MessageInput: React.FC = () => {
 
     try {
       // チャット履歴を準備（最新10件）
-      const chatHistory = messages.slice(-10).map((msg) => ({
+      const chatHistory = messages.slice(-10).map((msg: any) => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,

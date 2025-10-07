@@ -42,8 +42,8 @@ const getDayOfWeek = (dateString?: string): string => {
 
 export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, editable = true, onRetry }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const reorderSpots = useStore((state) => state.reorderSpots);
-  const addToast = useStore((state) => state.addToast);
+  const reorderSpots = useStore((state: any) => state.reorderSpots);
+  const addToast = useStore((state: any) => state.addToast);
 
   const dayOfWeek = getDayOfWeek(day.date);
 
