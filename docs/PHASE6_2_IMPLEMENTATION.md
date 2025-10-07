@@ -32,7 +32,7 @@ Phase 6.2では、Anthropic Claude APIの完全統合を実施しました。Gem
 ```typescript
 class ClaudeClient {
   private client: Anthropic;
-  private model: string = 'claude-3-5-sonnet-20241022';
+  private model: string = 'claude-sonnet-4-5-20250929';
 
   // 非ストリーミングチャット
   async chat(userMessage, chatHistory, currentItinerary);
@@ -226,11 +226,11 @@ MessageInput (チャンク受信)
 
 ## 🆚 Gemini vs Claude 比較
 
-| 項目 | Gemini 2.5 Pro | Claude 3.5 Sonnet |
+| 項目 | Gemini 2.5 Pro | Claude 4.5 Sonnet |
 |------|----------------|-------------------|
 | **APIキー** | 環境変数 | ユーザー登録（LocalStorage） |
 | **認証方式** | サーバーサイド | クライアント提供 |
-| **モデル名** | `gemini-2.5-pro` | `claude-3-5-sonnet-20241022` |
+| **モデル名** | `gemini-2.5-pro` | `claude-sonnet-4-5-20250929` |
 | **最大トークン** | デフォルト | 4096 |
 | **ストリーミング** | ✅ 対応 | ✅ 対応 |
 | **システムプロンプト** | メッセージに含める | 専用フィールド |
@@ -316,7 +316,7 @@ export async function validateClaudeApiKey(apiKey: string) {
     
     // 最小限のリクエストを送信して検証
     await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 10,
       messages: [{ role: 'user', content: 'test' }],
     });
@@ -356,7 +356,7 @@ export async function validateClaudeApiKey(apiKey: string) {
 #### 1. Claude選択テスト
 
 **手順**:
-1. AIセレクターで「Claude 3.5 Sonnet」を選択
+1. AIセレクターで「Claude 4.5 Sonnet」を選択
 2. （APIキー未登録の場合）自動的にモーダルが表示される
 3. APIキーを登録
 4. Claude選択状態になる
@@ -373,7 +373,7 @@ export async function validateClaudeApiKey(apiKey: string) {
 3. レスポンスを確認
 
 **期待結果**:
-- ✅ Claude 3.5 Sonnetからの応答が表示される
+- ✅ Claude 4.5 Sonnetからの応答が表示される
 - ✅ エラーが発生しない
 
 #### 3. Claudeチャット（ストリーミング）テスト
@@ -445,7 +445,7 @@ export async function validateClaudeApiKey(apiKey: string) {
 
 ### レスポンス時間（参考値）
 
-| 操作 | Gemini 2.5 Pro | Claude 3.5 Sonnet |
+| 操作 | Gemini 2.5 Pro | Claude 4.5 Sonnet |
 |------|----------------|-------------------|
 | 初回応答（TTFB） | ~1-2秒 | ~1-2秒 |
 | ストリーミング完了 | ~5-10秒 | ~5-10秒 |
@@ -455,7 +455,7 @@ export async function validateClaudeApiKey(apiKey: string) {
 
 ### トークン使用量
 
-- **Claude 3.5 Sonnet**: max_tokens = 4096
+- **Claude 4.5 Sonnet**: max_tokens = 4096
 - システムプロンプト: 約500トークン
 - しおり生成: 約2000-3000トークン
 - 通常会話: 約500-1000トークン

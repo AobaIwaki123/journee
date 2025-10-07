@@ -143,7 +143,7 @@ interface AppState {
 - Claude選択時のAPIキー確認
 - APIキー未設定時はモーダルを自動表示
 - Claude選択中の警告表示（Phase 6.2未実装）
-- AIモデル名の更新（"Gemini 2.5 Pro", "Claude 3.5 Sonnet"）
+- AIモデル名の更新（"Gemini 2.5 Pro", "Claude 4.5 Sonnet"）
 
 **動作フロー**:
 ```typescript
@@ -311,14 +311,14 @@ Claude選択
 
 #### ケース1: APIキー未設定でClaude選択
 1. APIキーが未設定の状態
-2. AIセレクターで「Claude 3.5 Sonnet (APIキー必要)」を選択
+2. AIセレクターで「Claude 4.5 Sonnet (APIキー必要)」を選択
 3. ✅ APIキー設定モーダルが自動的に表示される
 4. APIキーを登録
 5. ✅ Claude選択状態になる
 
 #### ケース2: APIキー設定済みでClaude選択
 1. APIキーを事前に登録
-2. AIセレクターで「Claude 3.5 Sonnet」を選択
+2. AIセレクターで「Claude 4.5 Sonnet」を選択
 3. ✅ 警告メッセージ表示: "Phase 6.2で実装予定"
 4. ✅ Claude選択状態になる（実際の機能はPhase 6.2で実装）
 

@@ -3,15 +3,15 @@
  * Anthropic Claude APIとの通信を管理
  */
 
-import Anthropic from '@anthropic-ai/sdk';
-import type { ChatMessage } from '@/types/chat';
-import type { ItineraryData } from '@/types/itinerary';
+import Anthropic from "@anthropic-ai/sdk";
+import type { ChatMessage } from "@/types/chat";
+import type { ItineraryData } from "@/types/itinerary";
 import {
   SYSTEM_PROMPT,
   createUpdatePrompt,
   parseAIResponse,
   formatChatHistory,
-} from './prompts';
+} from "./prompts";
 
 /**
  * Claude APIクライアント
@@ -22,15 +22,15 @@ export class ClaudeClient {
 
   constructor(apiKey: string) {
     if (!apiKey) {
-      throw new Error('Claude API key is required');
+      throw new Error("Claude API key is required");
     }
 
     this.client = new Anthropic({
       apiKey: apiKey,
     });
 
-    // Claude 3.5 Sonnetを使用（最新かつ高性能）
-    this.model = 'claude-3-5-sonnet-20241022';
+    // Claude 4.5 Sonnetを使用（最新かつ高性能）
+    this.model = "claude-sonnet-4-5-20250929";
   }
 
   /**
@@ -62,9 +62,9 @@ export class ClaudeClient {
 
       // レスポンスからテキストを取得
       const text = response.content
-        .filter((block) => block.type === 'text')
+        .filter((block) => block.type === "text")
         .map((block) => (block as any).text)
-        .join('');
+        .join("");
 
       // レスポンスをパース
       const { message, itineraryData } = parseAIResponse(text);
@@ -74,17 +74,19 @@ export class ClaudeClient {
         itinerary: itineraryData as ItineraryData | undefined,
       };
     } catch (error: any) {
-      console.error('Claude API Error:', error);
-      
+      console.error("Claude API Error:", error);
+
       // エラーメッセージを詳細化
       if (error.status === 401) {
-        throw new Error('Claude APIキーが無効です。設定を確認してください。');
+        throw new Error("Claude APIキーが無効です。設定を確認してください。");
       } else if (error.status === 429) {
-        throw new Error('API利用制限に達しました。しばらく待ってから再試行してください。');
+        throw new Error(
+          "API利用制限に達しました。しばらく待ってから再試行してください。"
+        );
       } else if (error.status === 500) {
-        throw new Error('Claude APIサーバーでエラーが発生しました。');
+        throw new Error("Claude APIサーバーでエラーが発生しました。");
       }
-      
+
       throw new Error(`Claude API error: ${error.message}`);
     }
   }
@@ -116,22 +118,24 @@ export class ClaudeClient {
       // ストリーミングレスポンスを処理
       for await (const event of stream) {
         if (
-          event.type === 'content_block_delta' &&
-          event.delta.type === 'text_delta'
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
         ) {
           yield event.delta.text;
         }
       }
     } catch (error: any) {
-      console.error('Claude API Streaming Error:', error);
+      console.error("Claude API Streaming Error:", error);
 
       // エラーメッセージを詳細化
       if (error.status === 401) {
-        throw new Error('Claude APIキーが無効です。設定を確認してください。');
+        throw new Error("Claude APIキーが無効です。設定を確認してください。");
       } else if (error.status === 429) {
-        throw new Error('API利用制限に達しました。しばらく待ってから再試行してください。');
+        throw new Error(
+          "API利用制限に達しました。しばらく待ってから再試行してください。"
+        );
       } else if (error.status === 500) {
-        throw new Error('Claude APIサーバーでエラーが発生しました。');
+        throw new Error("Claude APIサーバーでエラーが発生しました。");
       }
 
       throw new Error(`Claude API streaming error: ${error.message}`);
@@ -150,7 +154,7 @@ export class ClaudeClient {
     let systemPrompt = SYSTEM_PROMPT;
 
     // ユーザープロンプトを構築
-    let userPrompt = '';
+    let userPrompt = "";
 
     // チャット履歴がある場合は追加（最新10件のみ）
     if (chatHistory.length > 0) {
@@ -186,18 +190,20 @@ export class ClaudeClient {
     const messages: Anthropic.MessageParam[] = [];
 
     // 最新10件のチャット履歴を追加（システムメッセージは除外）
-    const recentHistory = chatHistory.slice(-10).filter((msg) => msg.role !== 'system');
-    
+    const recentHistory = chatHistory
+      .slice(-10)
+      .filter((msg) => msg.role !== "system");
+
     for (const msg of recentHistory) {
       messages.push({
-        role: msg.role === 'user' ? 'user' : 'assistant',
+        role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
       });
     }
 
     // 新しいユーザーメッセージを追加
     messages.push({
-      role: 'user',
+      role: "user",
       content: userPrompt,
     });
 
@@ -215,12 +221,12 @@ export async function validateClaudeApiKey(apiKey: string): Promise<{
   if (!apiKey || apiKey.trim().length === 0) {
     return {
       isValid: false,
-      error: 'APIキーが空です',
+      error: "APIキーが空です",
     };
   }
 
   // APIキーの形式を簡易的にチェック
-  if (!apiKey.startsWith('sk-ant-')) {
+  if (!apiKey.startsWith("sk-ant-")) {
     return {
       isValid: false,
       error: 'Claude APIキーは "sk-ant-" で始まる必要があります',
@@ -231,19 +237,19 @@ export async function validateClaudeApiKey(apiKey: string): Promise<{
   if (apiKey.length < 50) {
     return {
       isValid: false,
-      error: 'APIキーが短すぎます',
+      error: "APIキーが短すぎます",
     };
   }
 
   // 実際のAPI呼び出しで検証
   try {
     const client = new Anthropic({ apiKey });
-    
+
     // 最小限のリクエストを送信して検証
     await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 10,
-      messages: [{ role: 'user', content: 'test' }],
+      messages: [{ role: "user", content: "test" }],
     });
 
     return {
@@ -254,7 +260,7 @@ export async function validateClaudeApiKey(apiKey: string): Promise<{
     if (error.status === 401) {
       return {
         isValid: false,
-        error: 'APIキーが無効です',
+        error: "APIキーが無効です",
       };
     } else if (error.status === 429) {
       // レート制限の場合は形式的にはOKとする
@@ -265,7 +271,7 @@ export async function validateClaudeApiKey(apiKey: string): Promise<{
 
     return {
       isValid: false,
-      error: 'APIキーの検証に失敗しました',
+      error: "APIキーの検証に失敗しました",
     };
   }
 }
