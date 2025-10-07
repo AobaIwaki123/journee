@@ -231,7 +231,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-<<<<<<< HEAD
+    // デバッグモード: "test"と入力したらモックレスポンスを返す
+    if (message.trim().toLowerCase() === 'test') {
+      return handleMockResponse(stream);
+    }
+
     // Phase 4.5: 「次へ」キーワードの検出
     const isNextStepTrigger = detectNextStepKeyword(message);
     let enhancedMessage = message;
@@ -245,11 +249,6 @@ export async function POST(request: NextRequest) {
       if (nextStepPrompt) {
         enhancedMessage = `${message}\n\n【システムからの補足】\n${nextStepPrompt}`;
       }
-=======
-    // デバッグモード: "test"と入力したらモックレスポンスを返す
-    if (message.trim().toLowerCase() === 'test') {
-      return handleMockResponse(stream);
->>>>>>> origin/main
     }
 
     // モデルがClaudeの場合はAPIキーが必要

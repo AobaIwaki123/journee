@@ -12,30 +12,30 @@ export const MessageInput: React.FC = () => {
   const [input, setInput] = useState('');
   
   // Store state
-  const messages = useStore((state) => state.messages);
-  const addMessage = useStore((state) => state.addMessage);
-  const isLoading = useStore((state) => state.isLoading);
-  const isStreaming = useStore((state) => state.isStreaming);
-  const setLoading = useStore((state) => state.setLoading);
-  const setStreaming = useStore((state) => state.setStreaming);
-  const setStreamingMessage = useStore((state) => state.setStreamingMessage);
-  const appendStreamingMessage = useStore((state) => state.appendStreamingMessage);
-  const currentItinerary = useStore((state) => state.currentItinerary);
-  const setItinerary = useStore((state) => state.setItinerary);
-  const selectedAI = useStore((state) => state.selectedAI);
-  const claudeApiKey = useStore((state) => state.claudeApiKey);
-  const setError = useStore((state) => state.setError);
+  const messages = useStore((state: any) => state.messages);
+  const addMessage = useStore((state: any) => state.addMessage);
+  const isLoading = useStore((state: any) => state.isLoading);
+  const isStreaming = useStore((state: any) => state.isStreaming);
+  const setLoading = useStore((state: any) => state.setLoading);
+  const setStreaming = useStore((state: any) => state.setStreaming);
+  const setStreamingMessage = useStore((state: any) => state.setStreamingMessage);
+  const appendStreamingMessage = useStore((state: any) => state.appendStreamingMessage);
+  const currentItinerary = useStore((state: any) => state.currentItinerary);
+  const setItinerary = useStore((state: any) => state.setItinerary);
+  const selectedAI = useStore((state: any) => state.selectedAI);
+  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
+  const setError = useStore((state: any) => state.setError);
   
   // Phase 4.5: プランニングフェーズ状態を取得
-  const planningPhase = useStore((state) => state.planningPhase);
-  const currentDetailingDay = useStore((state) => state.currentDetailingDay);
+  const planningPhase = useStore((state: any) => state.planningPhase);
+  const currentDetailingDay = useStore((state: any) => state.currentDetailingDay);
   
   // Phase 4.10: 自動進行機能
-  const updateChecklist = useStore((state) => state.updateChecklist);
-  const shouldTriggerAutoProgress = useStore((state) => state.shouldTriggerAutoProgress);
-  const isAutoProgressing = useStore((state) => state.isAutoProgressing);
-  const setIsAutoProgressing = useStore((state) => state.setIsAutoProgressing);
-  const setAutoProgressState = useStore((state) => state.setAutoProgressState);
+  const updateChecklist = useStore((state: any) => state.updateChecklist);
+  const shouldTriggerAutoProgress = useStore((state: any) => state.shouldTriggerAutoProgress);
+  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
+  const setIsAutoProgressing = useStore((state: any) => state.setIsAutoProgressing);
+  const setAutoProgressState = useStore((state: any) => state.setAutoProgressState);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +57,7 @@ export const MessageInput: React.FC = () => {
 
     try {
       // チャット履歴を準備（最新10件）
-      const chatHistory = messages.slice(-10).map((msg) => ({
+      const chatHistory = messages.slice(-10).map((msg: any) => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,

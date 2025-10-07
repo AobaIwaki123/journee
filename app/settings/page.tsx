@@ -19,7 +19,7 @@ import type { SettingsSection } from '@/types/settings';
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const initializeFromStorage = useStore((state) => state.initializeFromStorage);
+  const initializeFromStorage = useStore((state: any) => state.initializeFromStorage);
   const [selectedSection, setSelectedSection] = useState<SettingsSection>('general');
 
   // 認証チェック
@@ -37,7 +37,7 @@ export default function SettingsPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="large" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
