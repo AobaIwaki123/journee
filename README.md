@@ -246,11 +246,13 @@ journee/
 - [x] `resetPlanning` 関数の実装
 - [x] フェーズ遷移ロジックの実装とテストシナリオ作成
 
-#### 4.3 プロンプトシステムの改善
-- [ ] `INCREMENTAL_SYSTEM_PROMPT` の作成
-- [ ] `createSkeletonPrompt` 関数の実装（骨組み作成用）
-- [ ] `createDayDetailPrompt` 関数の実装（日程詳細化用）
-- [ ] `createNextStepPrompt` 関数の実装（次のステップ誘導）
+#### 4.3 プロンプトシステムの改善 ✅ **完了**
+- [x] `INCREMENTAL_SYSTEM_PROMPT` の作成
+- [x] `createSkeletonPrompt` 関数の実装（骨組み作成用）
+- [x] `createDayDetailPrompt` 関数の実装（日程詳細化用）
+- [x] `createNextStepPrompt` 関数の実装（次のステップ誘導）
+- [x] `getSystemPromptForPhase` 関数の実装（フェーズ別プロンプト選択）
+- [x] テストケースとモックデータの作成
 
 #### 4.4 UIコンポーネントの追加
 - [ ] `PlanningProgress` コンポーネント（進捗インジケーター）
