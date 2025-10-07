@@ -1,9 +1,10 @@
 'use client';
 
-import React, { memo } from 'react';
-import { Calendar, MapPin, Clock } from 'lucide-react';
+import React, { memo, useState } from 'react';
+import { Calendar, MapPin, Clock, Download, Eye } from 'lucide-react';
 import { ItineraryData } from '@/types/itinerary';
 import { EditableTitle } from './EditableTitle';
+import { downloadItineraryPDF, previewItineraryPDF } from '@/lib/utils/pdf-generator';
 
 interface ItineraryHeaderProps {
   itinerary: ItineraryData;
@@ -11,6 +12,36 @@ interface ItineraryHeaderProps {
 }
 
 export const ItineraryHeader: React.FC<ItineraryHeaderProps> = memo(({ itinerary, editable = true }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    setError(null);
+    try {
+      await downloadItineraryPDF(itinerary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PDFのダウンロードに失敗しました');
+      console.error('PDF download error:', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handlePreviewPDF = async () => {
+    setIsPreviewing(true);
+    setError(null);
+    try {
+      await previewItineraryPDF(itinerary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PDFのプレビューに失敗しました');
+      console.error('PDF preview error:', err);
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white p-8 shadow-lg">
       <div className="max-w-4xl mx-auto">
@@ -62,8 +93,8 @@ export const ItineraryHeader: React.FC<ItineraryHeaderProps> = memo(({ itinerary
           </div>
         )}
 
-        {/* ステータスバッジ */}
-        <div className="mt-4">
+        {/* ステータスバッジとPDFアクション */}
+        <div className="mt-4 flex items-center justify-between flex-wrap gap-4">
           <span
             className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
               itinerary.status === 'completed'
@@ -79,7 +110,41 @@ export const ItineraryHeader: React.FC<ItineraryHeaderProps> = memo(({ itinerary
               ? 'アーカイブ'
               : '下書き'}
           </span>
+
+          {/* PDFアクションボタン */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePreviewPDF}
+              disabled={isPreviewing || isDownloading}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="PDFプレビュー"
+            >
+              <Eye size={16} />
+              <span className="text-sm font-medium">
+                {isPreviewing ? 'プレビュー中...' : 'プレビュー'}
+              </span>
+            </button>
+
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isDownloading || isPreviewing}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              aria-label="PDFダウンロード"
+            >
+              <Download size={16} />
+              <span className="text-sm">
+                {isDownloading ? 'ダウンロード中...' : 'PDFダウンロード'}
+              </span>
+            </button>
+          </div>
         </div>
+
+        {/* エラーメッセージ */}
+        {error && (
+          <div className="mt-3 p-3 bg-red-500/20 backdrop-blur-sm rounded-lg border border-red-300/30">
+            <p className="text-sm text-red-100">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );

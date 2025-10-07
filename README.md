@@ -554,13 +554,30 @@ journee/
 
 **詳細**: [docs/PHASE5_2_IMPLEMENTATION.md](./docs/PHASE5_2_IMPLEMENTATION.md)
 
-#### 5.3 PDF出力機能
-- [ ] PDF生成ライブラリの統合（react-pdf / jsPDF）
-- [ ] しおりのPDFレイアウト設計
-- [ ] PDF出力機能の実装
-- [ ] 印刷最適化
-- [ ] PDFプレビュー機能
-- [ ] PDF出力ボタンUIの実装
+#### 5.3 PDF出力機能 ✅ **完了** (2025-10-07)
+**目的**: しおりを美しいPDF形式で出力・印刷できる機能を実装
+
+- [x] PDF生成ライブラリの統合（jsPDF + jspdf-autotable）
+- [x] しおりのPDFレイアウト設計
+- [x] PDF出力機能の実装
+- [x] 印刷最適化
+- [x] PDFプレビュー機能
+- [x] PDF出力ボタンUIの実装
+
+**実装結果**:
+- ✅ jsPDF + jspdf-autotableで高品質PDF生成
+- ✅ A4サイズに最適化されたレイアウト
+- ✅ 日本語対応（テキスト折り返し処理）
+- ✅ テーブル形式のスポット一覧
+- ✅ プレビュー機能（新しいタブで開く）
+- ✅ ダウンロード機能（ファイル名自動生成）
+- ✅ PDFメタデータの設定
+- ✅ ページ番号の自動追加
+- ✅ PDF圧縮による軽量化
+- ✅ エラーハンドリングとローディング状態
+- ✅ しおりヘッダーにPDFアクションボタン統合
+
+**詳細**: [docs/PHASE5_3_IMPLEMENTATION.md](./docs/PHASE5_3_IMPLEMENTATION.md)
 
 #### 5.4 マイページ・しおり一覧・設定ページ 🆕
 **目的**: ユーザー管理とアプリケーション設定の一元管理
@@ -1070,6 +1087,7 @@ MIT
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
 - ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
 - ✅ **Phase 5.2**: 一時保存機能（LocalStorage版、自動保存、保存状態表示）
+- ✅ **Phase 5.3**: PDF出力機能（jsPDF、プレビュー、ダウンロード、印刷最適化）
 - ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
 - ✅ **Phase 5.4.2**: しおり一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
 - ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
@@ -1085,10 +1103,9 @@ MIT
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 5.3** - PDF出力機能
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
-**最終更新**: 2025-10-07 (Phase 5.2完了)
+**最終更新**: 2025-10-07 (Phase 5.3完了)
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
@@ -1097,6 +1114,7 @@ MIT
 - [Phase 5.1.2 実装完了レポート](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
 - [Phase 5.1.3 実装完了レポート](./docs/PHASE5.1.3_ADVANCED_FEATURES.md)
 - [Phase 5.2 実装完了レポート](./docs/PHASE5_2_IMPLEMENTATION.md)
+- [Phase 5.3 実装完了レポート](./docs/PHASE5_3_IMPLEMENTATION.md)
 - [Phase 5.4.1 実装完了レポート](./docs/PHASE5_4_1_IMPLEMENTATION_COMPLETE.md)
 - [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
 - [Phase 5.4.3 実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)
