@@ -1,12 +1,21 @@
-import { create } from 'zustand';
-import { Message } from '@/types/chat';
-import { ItineraryData, TouristSpot, DaySchedule } from '@/types/itinerary';
-import { createHistoryUpdate } from './useStore-helper';
+import { create } from "zustand";
+import { Message } from "@/types/chat";
+import { ItineraryData, TouristSpot, DaySchedule } from "@/types/itinerary";
+import type { AIModelId } from "@/types/ai";
+import {
+  saveClaudeApiKey,
+  loadClaudeApiKey,
+  removeClaudeApiKey,
+  saveSelectedAI,
+  loadSelectedAI,
+} from "@/lib/utils/storage";
+import { DEFAULT_AI_MODEL } from "@/lib/ai/models";
+import { createHistoryUpdate } from "./useStore-helper";
 
 interface ToastMessage {
   id: string;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: "success" | "error" | "info";
 }
 
 interface HistoryState {
@@ -32,21 +41,31 @@ interface AppState {
   currentItinerary: ItineraryData | null;
   setItinerary: (itinerary: ItineraryData | null) => void;
   updateItinerary: (updates: Partial<ItineraryData>) => void;
-  
+
   // Itinerary editing actions (Phase 5.1.2)
   updateItineraryTitle: (title: string) => void;
   updateItineraryDestination: (destination: string) => void;
-  updateSpot: (dayIndex: number, spotId: string, updates: Partial<TouristSpot>) => void;
+  updateSpot: (
+    dayIndex: number,
+    spotId: string,
+    updates: Partial<TouristSpot>
+  ) => void;
   deleteSpot: (dayIndex: number, spotId: string) => void;
   addSpot: (dayIndex: number, spot: TouristSpot) => void;
-  reorderSpots: (dayIndex: number, startIndex: number, endIndex: number) => void;
+  reorderSpots: (
+    dayIndex: number,
+    startIndex: number,
+    endIndex: number
+  ) => void;
   moveSpot: (fromDayIndex: number, toDayIndex: number, spotId: string) => void;
 
   // UI state
-  selectedAI: 'gemini' | 'claude';
+  selectedAI: AIModelId;
   claudeApiKey: string;
-  setSelectedAI: (ai: 'gemini' | 'claude') => void;
+  setSelectedAI: (ai: AIModelId) => void;
   setClaudeApiKey: (key: string) => void;
+  removeClaudeApiKey: () => void;
+  initializeFromStorage: () => void;
 
   // Error state
   error: string | null;
@@ -54,7 +73,7 @@ interface AppState {
 
   // Toast notifications (Phase 5.1.2)
   toasts: ToastMessage[];
-  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  addToast: (message: string, type: "success" | "error" | "info") => void;
   removeToast: (id: string) => void;
 
   // Editing state (Phase 5.1.2)
@@ -74,7 +93,7 @@ export const useStore = create<AppState>((set) => ({
   messages: [],
   isLoading: false,
   isStreaming: false,
-  streamingMessage: '',
+  streamingMessage: "",
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -82,32 +101,39 @@ export const useStore = create<AppState>((set) => ({
   setStreamingMessage: (message) => set({ streamingMessage: message }),
   appendStreamingMessage: (chunk) =>
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
-  clearMessages: () => set({ messages: [], streamingMessage: '' }),
+  clearMessages: () => set({ messages: [], streamingMessage: "" }),
 
   // Itinerary state
   currentItinerary: null,
-  setItinerary: (itinerary) => set((state) => ({
-    currentItinerary: itinerary,
-    history: {
-      past: itinerary ? [...state.history.past, state.currentItinerary].filter(Boolean) as ItineraryData[] : [],
-      present: itinerary,
-      future: [],
-    },
-  })),
+  setItinerary: (itinerary) =>
+    set((state) => ({
+      currentItinerary: itinerary,
+      history: {
+        past: itinerary
+          ? ([...state.history.past, state.currentItinerary].filter(
+              Boolean
+            ) as ItineraryData[])
+          : [],
+        present: itinerary,
+        future: [],
+      },
+    })),
   updateItinerary: (updates) =>
     set((state) => {
       const newItinerary = state.currentItinerary
-        ? { 
-            ...state.currentItinerary, 
+        ? {
+            ...state.currentItinerary,
             ...updates,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           }
         : null;
-      
+
       return {
         currentItinerary: newItinerary,
         history: {
-          past: state.currentItinerary ? [...state.history.past, state.currentItinerary] : state.history.past,
+          past: state.currentItinerary
+            ? [...state.history.past, state.currentItinerary]
+            : state.history.past,
           present: newItinerary,
           future: [],
         },
@@ -132,20 +158,20 @@ export const useStore = create<AppState>((set) => ({
   updateSpot: (dayIndex, spotId, updates) =>
     set((state) => {
       if (!state.currentItinerary) return state;
-      
+
       const newSchedule = [...state.currentItinerary.schedule];
       const daySchedule = newSchedule[dayIndex];
-      
+
       if (!daySchedule) return state;
-      
-      const spotIndex = daySchedule.spots.findIndex(s => s.id === spotId);
+
+      const spotIndex = daySchedule.spots.findIndex((s) => s.id === spotId);
       if (spotIndex === -1) return state;
-      
+
       daySchedule.spots[spotIndex] = {
         ...daySchedule.spots[spotIndex],
         ...updates,
       };
-      
+
       return {
         currentItinerary: {
           ...state.currentItinerary,
@@ -158,14 +184,14 @@ export const useStore = create<AppState>((set) => ({
   deleteSpot: (dayIndex, spotId) =>
     set((state) => {
       if (!state.currentItinerary) return state;
-      
+
       const newSchedule = [...state.currentItinerary.schedule];
       const daySchedule = newSchedule[dayIndex];
-      
+
       if (!daySchedule) return state;
-      
-      daySchedule.spots = daySchedule.spots.filter(s => s.id !== spotId);
-      
+
+      daySchedule.spots = daySchedule.spots.filter((s) => s.id !== spotId);
+
       return {
         currentItinerary: {
           ...state.currentItinerary,
@@ -178,14 +204,14 @@ export const useStore = create<AppState>((set) => ({
   addSpot: (dayIndex, spot) =>
     set((state) => {
       if (!state.currentItinerary) return state;
-      
+
       const newSchedule = [...state.currentItinerary.schedule];
       const daySchedule = newSchedule[dayIndex];
-      
+
       if (!daySchedule) return state;
-      
+
       daySchedule.spots.push(spot);
-      
+
       return {
         currentItinerary: {
           ...state.currentItinerary,
@@ -198,18 +224,18 @@ export const useStore = create<AppState>((set) => ({
   reorderSpots: (dayIndex, startIndex, endIndex) =>
     set((state) => {
       if (!state.currentItinerary) return state;
-      
+
       const newSchedule = [...state.currentItinerary.schedule];
       const daySchedule = newSchedule[dayIndex];
-      
+
       if (!daySchedule) return state;
-      
+
       const spots = [...daySchedule.spots];
       const [removed] = spots.splice(startIndex, 1);
       spots.splice(endIndex, 0, removed);
-      
+
       daySchedule.spots = spots;
-      
+
       return {
         currentItinerary: {
           ...state.currentItinerary,
@@ -222,19 +248,19 @@ export const useStore = create<AppState>((set) => ({
   moveSpot: (fromDayIndex, toDayIndex, spotId) =>
     set((state) => {
       if (!state.currentItinerary) return state;
-      
+
       const newSchedule = [...state.currentItinerary.schedule];
       const fromDay = newSchedule[fromDayIndex];
       const toDay = newSchedule[toDayIndex];
-      
+
       if (!fromDay || !toDay) return state;
-      
-      const spotIndex = fromDay.spots.findIndex(s => s.id === spotId);
+
+      const spotIndex = fromDay.spots.findIndex((s) => s.id === spotId);
       if (spotIndex === -1) return state;
-      
+
       const [spot] = fromDay.spots.splice(spotIndex, 1);
       toDay.spots.push(spot);
-      
+
       return {
         currentItinerary: {
           ...state.currentItinerary,
@@ -245,10 +271,30 @@ export const useStore = create<AppState>((set) => ({
     }),
 
   // UI state
-  selectedAI: 'gemini',
-  claudeApiKey: '',
-  setSelectedAI: (ai) => set({ selectedAI: ai }),
-  setClaudeApiKey: (key) => set({ claudeApiKey: key }),
+  selectedAI: DEFAULT_AI_MODEL,
+  claudeApiKey: "",
+  setSelectedAI: (ai) => {
+    saveSelectedAI(ai);
+    set({ selectedAI: ai });
+  },
+  setClaudeApiKey: (key) => {
+    if (key) {
+      saveClaudeApiKey(key);
+    }
+    set({ claudeApiKey: key });
+  },
+  removeClaudeApiKey: () => {
+    removeClaudeApiKey();
+    set({ claudeApiKey: "", selectedAI: DEFAULT_AI_MODEL });
+  },
+  initializeFromStorage: () => {
+    const savedApiKey = loadClaudeApiKey();
+    const savedAI = loadSelectedAI();
+    set({
+      claudeApiKey: savedApiKey,
+      selectedAI: savedAI,
+    });
+  },
 
   // Error state
   error: null,
@@ -258,10 +304,7 @@ export const useStore = create<AppState>((set) => ({
   toasts: [],
   addToast: (message, type) =>
     set((state) => ({
-      toasts: [
-        ...state.toasts,
-        { id: Date.now().toString(), message, type },
-      ],
+      toasts: [...state.toasts, { id: Date.now().toString(), message, type }],
     })),
   removeToast: (id) =>
     set((state) => ({
@@ -291,7 +334,9 @@ export const useStore = create<AppState>((set) => ({
         history: {
           past: newPast,
           present: previous,
-          future: state.currentItinerary ? [state.currentItinerary, ...state.history.future] : state.history.future,
+          future: state.currentItinerary
+            ? [state.currentItinerary, ...state.history.future]
+            : state.history.future,
         },
       };
     }),
@@ -306,7 +351,9 @@ export const useStore = create<AppState>((set) => ({
       return {
         currentItinerary: next,
         history: {
-          past: state.currentItinerary ? [...state.history.past, state.currentItinerary] : state.history.past,
+          past: state.currentItinerary
+            ? [...state.history.past, state.currentItinerary]
+            : state.history.past,
           present: next,
           future: newFuture,
         },

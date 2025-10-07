@@ -58,7 +58,9 @@ export const MessageInput: React.FC = () => {
       for await (const chunk of sendChatMessageStream(
         userMessage.content,
         chatHistory,
-        currentItinerary || undefined
+        currentItinerary || undefined,
+        selectedAI,
+        claudeApiKey || undefined
       )) {
         if (chunk.type === 'message' && chunk.content) {
           // メッセージチャンクを追加
