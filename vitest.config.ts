@@ -26,13 +26,16 @@ export default defineConfig({
         '**/*.test.tsx',
         'lib/ai/__tests__/', // 既存の手動テストファイル
         'lib/store/__tests__/', // 既存の手動テストファイル
+        'lib/store/useStore-original.ts', // Old store backup
       ],
       include: ['lib/**/*.ts', 'components/**/*.tsx', 'app/**/*.tsx'],
       all: true,
-      lines: 70,
-      functions: 70,
-      branches: 70,
-      statements: 70,
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
+      },
     },
     include: ['__tests__/**/*.test.{ts,tsx}', '**/*.test.{ts,tsx}'],
     exclude: [

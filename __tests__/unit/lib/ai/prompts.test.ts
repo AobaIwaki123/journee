@@ -139,7 +139,7 @@ describe('mergeItineraryData', () => {
         {
           day: 1,
           spots: [
-            { name: '金閣寺', description: '金色の寺', category: 'sightseeing' as const }
+            { id: '', name: '金閣寺', description: '金色の寺', category: 'sightseeing' as const }
           ]
         }
       ]
@@ -152,12 +152,12 @@ describe('mergeItineraryData', () => {
   });
 
   it('should preserve spot IDs when they exist', () => {
-    const updates = {
+    const updates: Partial<ItineraryData> = {
       schedule: [
         {
           day: 1,
           spots: [
-            { id: 'existing-id', name: '伏見稲荷', description: '千本鳥居', category: 'sightseeing' as const }
+            { id: 'existing-id', name: '伏見稲荷', description: '千本鳥居', category: 'sightseeing' }
           ]
         }
       ]
