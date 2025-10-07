@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
 import { ItineraryData } from '@/types/itinerary';
+import {
+  getFromLocalStorage,
+  saveToLocalStorage,
+  removeFromLocalStorage,
+} from '@/lib/utils/local-storage';
+import { encryptApiKey, decryptApiKey } from '@/lib/utils/encryption';
 
 interface AppState {
   // Chat state
@@ -23,8 +29,12 @@ interface AppState {
   // UI state
   selectedAI: 'gemini' | 'claude';
   claudeApiKey: string;
+  isApiKeyConfigured: boolean;
   setSelectedAI: (ai: 'gemini' | 'claude') => void;
   setClaudeApiKey: (key: string) => void;
+  saveClaudeApiKey: (key: string) => boolean;
+  loadClaudeApiKey: () => void;
+  clearClaudeApiKey: () => void;
 
   // Error state
   error: string | null;
