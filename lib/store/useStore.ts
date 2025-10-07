@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
 import { ItineraryData } from '@/types/itinerary';
+import type { AIModelId } from '@/types/ai';
+import {
+  saveClaudeApiKey,
+  loadClaudeApiKey,
+  removeClaudeApiKey,
+  saveSelectedAI,
+  loadSelectedAI,
+} from '@/lib/utils/storage';
+import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 
 interface AppState {
   // Chat state
@@ -21,10 +30,12 @@ interface AppState {
   updateItinerary: (updates: Partial<ItineraryData>) => void;
 
   // UI state
-  selectedAI: 'gemini' | 'claude';
+  selectedAI: AIModelId;
   claudeApiKey: string;
-  setSelectedAI: (ai: 'gemini' | 'claude') => void;
+  setSelectedAI: (ai: AIModelId) => void;
   setClaudeApiKey: (key: string) => void;
+  removeClaudeApiKey: () => void;
+  initializeFromStorage: () => void;
 
   // Error state
   error: string | null;
@@ -57,10 +68,30 @@ export const useStore = create<AppState>((set) => ({
     })),
 
   // UI state
-  selectedAI: 'gemini',
+  selectedAI: DEFAULT_AI_MODEL,
   claudeApiKey: '',
-  setSelectedAI: (ai) => set({ selectedAI: ai }),
-  setClaudeApiKey: (key) => set({ claudeApiKey: key }),
+  setSelectedAI: (ai) => {
+    saveSelectedAI(ai);
+    set({ selectedAI: ai });
+  },
+  setClaudeApiKey: (key) => {
+    if (key) {
+      saveClaudeApiKey(key);
+    }
+    set({ claudeApiKey: key });
+  },
+  removeClaudeApiKey: () => {
+    removeClaudeApiKey();
+    set({ claudeApiKey: '', selectedAI: DEFAULT_AI_MODEL });
+  },
+  initializeFromStorage: () => {
+    const savedApiKey = loadClaudeApiKey();
+    const savedAI = loadSelectedAI();
+    set({
+      claudeApiKey: savedApiKey,
+      selectedAI: savedAI,
+    });
+  },
 
   // Error state
   error: null,
