@@ -24,6 +24,7 @@ import {
 } from '@/lib/utils/storage';
 import { createHistoryUpdate } from '../useStore-helper';
 import { sortSpotsByTime, adjustTimeAfterReorder } from '@/lib/utils/time-utils';
+import { updateDayBudget, updateItineraryBudget } from '@/lib/utils/budget-utils';
 import type { Message } from '@/types/chat';
 
 export interface ItinerarySlice {
