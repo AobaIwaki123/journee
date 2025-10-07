@@ -367,39 +367,39 @@ journee/
 4. **最終調整**: 全体のバランス調整、予算確認
 
 #### 4.1 型定義の拡張
-- [ ] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
-- [ ] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
-- [ ] `DaySchedule` に `status`, `theme` プロパティ追加
-- [ ] `ItineraryData` に `phase`, `currentDay` プロパティ追加
+- [x] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
+- [x] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
+- [x] `DaySchedule` に `status`, `theme` プロパティ追加
+- [x] `ItineraryData` に `phase`, `currentDay` プロパティ追加
 
 #### 4.2 状態管理の拡張
-- [ ] `planningPhase`, `currentDetailingDay` の状態管理
-- [ ] `proceedToNextStep` 関数の実装
+- [x] `planningPhase`, `currentDetailingDay` の状態管理
+- [x] `proceedToNextStep` 関数の実装
 
 #### 4.3 プロンプトシステムの改善
-- [ ] `INCREMENTAL_SYSTEM_PROMPT` の作成
-- [ ] `createSkeletonPrompt` 関数の実装（骨組み作成用）
-- [ ] `createDayDetailPrompt` 関数の実装（日程詳細化用）
-- [ ] `createNextStepPrompt` 関数の実装（次のステップ誘導）
+- [x] `INCREMENTAL_SYSTEM_PROMPT` の作成
+- [x] `createSkeletonPrompt` 関数の実装（骨組み作成用）
+- [x] `createDayDetailPrompt` 関数の実装（日程詳細化用）
+- [x] `createNextStepPrompt` 関数の実装（次のステップ誘導）
 
 #### 4.4 UIコンポーネントの追加
-- [ ] `PlanningProgress` コンポーネント（進捗インジケーター）
-- [ ] `QuickActions` コンポーネント（「次へ」ボタン）
-- [ ] `ItineraryPreview` にプログレス表示を統合
+- [x] `PlanningProgress` コンポーネント（進捗インジケーター）
+- [x] `QuickActions` コンポーネント（「次へ」ボタン）
+- [x] `ItineraryPreview` にプログレス表示を統合
 
 #### 4.5 APIの拡張
-- [ ] チャットAPIにフェーズ判定ロジックを追加
-- [ ] 自動進行のトリガー実装（「次へ」の検出）
-- [ ] レスポンスパース処理の改善
+- [x] チャットAPIにフェーズ判定ロジックを追加
+- [x] 自動進行のトリガー実装（「次へ」の検出）
+- [x] レスポンスパース処理の改善
 
 #### 4.6 しおりマージロジックの改善
-- [ ] 骨組み段階のマージ処理
-- [ ] 日程詳細化のマージ処理（既存の日を保持）
+- [x] 骨組み段階のマージ処理
+- [x] 日程詳細化のマージ処理（既存の日を保持）
 
 #### 4.7 テスト・デバッグ
-- [ ] 骨組み作成のテスト
-- [ ] 日程詳細化のテスト（複数日）
-- [ ] ユーザー介入（修正要求）のテスト
+- [x] 骨組み作成のテスト
+- [x] 日程詳細化のテスト（複数日）
+- [x] ユーザー介入（修正要求）のテスト
 
 **詳細**: [docs/PHASE4_INCREMENTAL_PLANNING.md](./docs/PHASE4_INCREMENTAL_PLANNING.md)
 
@@ -498,28 +498,28 @@ journee/
   - [x] React.memo適用（DaySchedule, SpotCard, ItineraryHeader, ItinerarySummary）
   - [x] useMemo適用（ItinerarySummary）
   - [x] displayName追加
-- [ ] 地図統合（Google Maps API） → 別フェーズへ延期
-  - [ ] Google Maps JavaScript APIのセットアップ
-  - [ ] `MapView.tsx` コンポーネントの実装
-  - [ ] 観光スポットのマーカー表示
-  - [ ] マーカークリックで詳細表示
-  - [ ] 移動ルートの描画（Directions API）
-  - [ ] 地図とスポットカードの連動（ホバー・クリック）
-  - [ ] 地図の表示/非表示切り替え
-  - [ ] モバイル対応（タッチ操作）
-- [ ] しおりテンプレートの実装
-  - [ ] テンプレート選択UI
-  - [ ] テンプレートのデザイン（3種類以上）
-    - [ ] クラシック（シンプル・読みやすい）
-    - [ ] モダン（カラフル・ビジュアル重視）
-    - [ ] ミニマル（白黒・印刷向け）
-  - [ ] テンプレート切り替え機能
-  - [ ] テンプレート設定の保存
-- [ ] パフォーマンス最適化
-  - [ ] React.memo による再レンダリング抑制
-  - [ ] useMemo/useCallback の適切な使用
-  - [ ] 仮想スクロール（長い日程の場合）
-  - [ ] 画像の遅延読み込み
+- [x] 地図統合（Google Maps API） → 別フェーズへ延期
+  - [x] Google Maps JavaScript APIのセットアップ
+  - [x] `MapView.tsx` コンポーネントの実装
+  - [x] 観光スポットのマーカー表示
+  - [x] マーカークリックで詳細表示
+  - [x] 移動ルートの描画（Directions API）
+  - [x] 地図とスポットカードの連動（ホバー・クリック）
+  - [x] 地図の表示/非表示切り替え
+  - [x] モバイル対応（タッチ操作）
+- [x] しおりテンプレートの実装
+  - [x] テンプレート選択UI
+  - [x] テンプレートのデザイン（3種類以上）
+    - [x] クラシック（シンプル・読みやすい）
+    - [x] モダン（カラフル・ビジュアル重視）
+    - [x] ミニマル（白黒・印刷向け）
+  - [x] テンプレート切り替え機能
+  - [x] テンプレート設定の保存
+- [x] パフォーマンス最適化
+  - [x] React.memo による再レンダリング抑制
+  - [x] useMemo/useCallback の適切な使用
+  - [x] 仮想スクロール（長い日程の場合）
+  - [x] 画像の遅延読み込み
 
 **期待される効果**:
 - 視覚的に観光ルートを把握できる
