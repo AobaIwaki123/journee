@@ -7,9 +7,9 @@ import { getEnabledModels, requiresApiKey } from '@/lib/ai/models';
 import type { AIModelId } from '@/types/ai';
 
 export const AISelector: React.FC = () => {
-  const selectedAI = useStore((state) => state.selectedAI);
-  const claudeApiKey = useStore((state) => state.claudeApiKey);
-  const setSelectedAI = useStore((state) => state.setSelectedAI);
+  const selectedAI = useStore((state: any) => state.selectedAI);
+  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
+  const setSelectedAI = useStore((state: any) => state.setSelectedAI);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 有効なモデル一覧を取得

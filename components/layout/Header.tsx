@@ -60,7 +60,6 @@ export const Header: React.FC = () => {
           ) : (
             <LoginButton />
           )}
-          </div>
         </div>
       </div>
     </header>

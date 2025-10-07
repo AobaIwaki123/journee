@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
-<<<<<<< HEAD
-import { ItineraryData, ItineraryPhase, DayStatus } from '@/types/itinerary';
+import { ItineraryData, TouristSpot, DaySchedule, ItineraryPhase, DayStatus } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
-<<<<<<< HEAD
+import type { TemplateId } from '@/types/template';
+import type { AppSettings } from '@/types/settings';
+import { DEFAULT_SETTINGS } from '@/types/settings';
 import type {
   RequirementChecklistItem,
   ChecklistStatus,
@@ -14,31 +15,19 @@ import {
   calculateChecklistStatus,
   determineButtonReadiness,
 } from '@/lib/requirements/checklist-utils';
-=======
-=======
-import { ItineraryData, TouristSpot, DaySchedule } from '@/types/itinerary';
-import type { AIModelId } from '@/types/ai';
-import type { TemplateId } from '@/types/template';
->>>>>>> origin/main
-import type { AppSettings } from '@/types/settings';
-import { DEFAULT_SETTINGS } from '@/types/settings';
->>>>>>> origin/main
 import {
   saveClaudeApiKey,
   loadClaudeApiKey,
   removeClaudeApiKey,
   saveSelectedAI,
   loadSelectedAI,
-<<<<<<< HEAD
   saveAutoProgressMode,
   loadAutoProgressMode,
   saveAutoProgressSettings,
   loadAutoProgressSettings,
   type AutoProgressSettings,
-=======
   saveAppSettings,
   loadAppSettings,
->>>>>>> origin/main
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 import { createHistoryUpdate } from './useStore-helper';
@@ -95,8 +84,6 @@ interface AppState {
   setItinerary: (itinerary: ItineraryData | null) => void;
   updateItinerary: (updates: Partial<ItineraryData>) => void;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   // Phase 4: Planning phase state
   planningPhase: ItineraryPhase;
   currentDetailingDay: number | null;
@@ -130,10 +117,8 @@ interface AppState {
   setIsAutoProgressing: (value: boolean) => void;
   setAutoProgressState: (state: any) => void;
   shouldTriggerAutoProgress: () => boolean;
-=======
-  // Itinerary list state
-=======
-  // Itinerary editing actions (Phase 5.1.2)
+
+  // Phase 5.1.2: Itinerary editing actions
   updateItineraryTitle: (title: string) => void;
   updateItineraryDestination: (destination: string) => void;
   updateSpot: (
@@ -150,14 +135,12 @@ interface AppState {
   ) => void;
   moveSpot: (fromDayIndex: number, toDayIndex: number, spotId: string) => void;
 
-  // Itinerary list state (Phase 5.4)
->>>>>>> origin/main
+  // Phase 5.4: Itinerary list state
   itineraryFilter: ItineraryFilter;
   itinerarySort: ItinerarySort;
   setItineraryFilter: (filter: ItineraryFilter) => void;
   setItinerarySort: (sort: ItinerarySort) => void;
   resetItineraryFilters: () => void;
->>>>>>> origin/main
 
   // UI state
   selectedAI: AIModelId;
@@ -238,8 +221,18 @@ export const useStore = create<AppState>((set, get) => ({
           }
         : null;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+      return {
+        currentItinerary: newItinerary,
+        history: {
+          past: state.currentItinerary
+            ? [...state.history.past, state.currentItinerary]
+            : state.history.past,
+          present: newItinerary,
+          future: [],
+        },
+      };
+    }),
+
   // Phase 4: Planning phase state
   planningPhase: 'initial',
   currentDetailingDay: null,
@@ -416,22 +409,7 @@ export const useStore = create<AppState>((set, get) => ({
     return true;
   },
 
-=======
-  // Itinerary list state
-=======
-      return {
-        currentItinerary: newItinerary,
-        history: {
-          past: state.currentItinerary
-            ? [...state.history.past, state.currentItinerary]
-            : state.history.past,
-          present: newItinerary,
-          future: [],
-        },
-      };
-    }),
-
-  // Itinerary editing actions (Phase 5.1.2)
+  // Phase 5.1.2: Itinerary editing actions
   updateItineraryTitle: (title) =>
     set((state) => {
       const newItinerary = state.currentItinerary
@@ -620,8 +598,7 @@ export const useStore = create<AppState>((set, get) => ({
       return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
 
-  // Itinerary list state (Phase 5.4)
->>>>>>> origin/main
+  // Phase 5.4: Itinerary list state
   itineraryFilter: {
     status: 'all',
   },
@@ -637,7 +614,6 @@ export const useStore = create<AppState>((set, get) => ({
       itinerarySort: { field: 'updatedAt', order: 'desc' },
     }),
 
->>>>>>> origin/main
   // UI state
   selectedAI: DEFAULT_AI_MODEL,
   claudeApiKey: '',
@@ -658,25 +634,17 @@ export const useStore = create<AppState>((set, get) => ({
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
     const savedAI = loadSelectedAI();
-<<<<<<< HEAD
-<<<<<<< HEAD
     const autoProgressMode = loadAutoProgressMode();
     const autoProgressSettings = loadAutoProgressSettings();
+    const savedTemplate = (typeof window !== 'undefined' 
+      ? localStorage.getItem('journee_template') 
+      : null) as TemplateId | null;
+    const savedSettings = loadAppSettings();
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
       autoProgressMode,
       autoProgressSettings,
-=======
-=======
-    const savedTemplate = (typeof window !== 'undefined' 
-      ? localStorage.getItem('journee_template') 
-      : null) as TemplateId | null;
->>>>>>> origin/main
-    const savedSettings = loadAppSettings();
-    set({
-      claudeApiKey: savedApiKey,
-      selectedAI: savedAI,
       selectedTemplate: savedTemplate || 'classic',
       settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
     });
@@ -709,15 +677,12 @@ export const useStore = create<AppState>((set, get) => ({
       };
       saveAppSettings(newSettings);
       return { settings: newSettings };
->>>>>>> origin/main
     });
   },
 
   // Error state
   error: null,
   setError: (error) => set({ error }),
-<<<<<<< HEAD
-=======
 
   // Toast notifications (Phase 5.1.2)
   toasts: [],
@@ -798,5 +763,4 @@ export const useStore = create<AppState>((set, get) => ({
     }
     set({ selectedTemplate: template });
   },
->>>>>>> origin/main
 }));
