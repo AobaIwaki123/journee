@@ -240,9 +240,11 @@ journee/
 - [x] `DaySchedule` に `status`, `theme` プロパティ追加
 - [x] `ItineraryData` に `phase`, `currentDay` プロパティ追加
 
-#### 4.2 状態管理の拡張
-- [ ] `planningPhase`, `currentDetailingDay` の状態管理
-- [ ] `proceedToNextStep` 関数の実装
+#### 4.2 状態管理の拡張 ✅ **完了**
+- [x] `planningPhase`, `currentDetailingDay` の状態管理
+- [x] `proceedToNextStep` 関数の実装
+- [x] `resetPlanning` 関数の実装
+- [x] フェーズ遷移ロジックの実装とテストシナリオ作成
 
 #### 4.3 プロンプトシステムの改善
 - [ ] `INCREMENTAL_SYSTEM_PROMPT` の作成

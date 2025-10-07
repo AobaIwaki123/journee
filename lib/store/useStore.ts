@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
-import { ItineraryData } from '@/types/itinerary';
+import { ItineraryData, ItineraryPhase, DayStatus } from '@/types/itinerary';
 
 interface AppState {
   // Chat state
@@ -19,6 +19,14 @@ interface AppState {
   currentItinerary: ItineraryData | null;
   setItinerary: (itinerary: ItineraryData | null) => void;
   updateItinerary: (updates: Partial<ItineraryData>) => void;
+
+  // Phase 4: Planning phase state
+  planningPhase: ItineraryPhase;
+  currentDetailingDay: number | null;
+  setPlanningPhase: (phase: ItineraryPhase) => void;
+  setCurrentDetailingDay: (day: number | null) => void;
+  proceedToNextStep: () => void;
+  resetPlanning: () => void;
 
   // UI state
   selectedAI: 'gemini' | 'claude';
@@ -55,6 +63,79 @@ export const useStore = create<AppState>((set) => ({
         ? { ...state.currentItinerary, ...updates }
         : null,
     })),
+
+  // Phase 4: Planning phase state
+  planningPhase: 'initial',
+  currentDetailingDay: null,
+  setPlanningPhase: (phase) => set({ planningPhase: phase }),
+  setCurrentDetailingDay: (day) => set({ currentDetailingDay: day }),
+
+  // フェーズを次に進める
+  proceedToNextStep: () =>
+    set((state) => {
+      const { planningPhase, currentItinerary, currentDetailingDay } = state;
+      let newPhase: ItineraryPhase = planningPhase;
+      let newDetailingDay: number | null = currentDetailingDay;
+      let updates: Partial<ItineraryData> = {};
+
+      switch (planningPhase) {
+        case 'initial':
+          // 初期状態 → 情報収集フェーズへ
+          newPhase = 'collecting';
+          break;
+
+        case 'collecting':
+          // 情報収集完了 → 骨組み作成フェーズへ
+          newPhase = 'skeleton';
+          break;
+
+        case 'skeleton':
+          // 骨組み完了 → 詳細化フェーズへ（1日目から開始）
+          newPhase = 'detailing';
+          newDetailingDay = 1;
+          updates.phase = 'detailing';
+          updates.currentDay = 1;
+          break;
+
+        case 'detailing':
+          // 詳細化中 → 次の日へ、または完成へ
+          if (currentItinerary && currentDetailingDay !== null) {
+            const totalDays = currentItinerary.duration || currentItinerary.schedule.length;
+            if (currentDetailingDay < totalDays) {
+              // 次の日へ
+              newDetailingDay = currentDetailingDay + 1;
+              updates.currentDay = newDetailingDay;
+            } else {
+              // 全ての日が完了 → 完成フェーズへ
+              newPhase = 'completed';
+              newDetailingDay = null;
+              updates.phase = 'completed';
+              updates.currentDay = undefined;
+              updates.status = 'completed';
+            }
+          }
+          break;
+
+        case 'completed':
+          // 完成済み → 何もしない
+          break;
+      }
+
+      return {
+        planningPhase: newPhase,
+        currentDetailingDay: newDetailingDay,
+        currentItinerary: state.currentItinerary
+          ? { ...state.currentItinerary, ...updates }
+          : null,
+      };
+    }),
+
+  // プランニング状態をリセット
+  resetPlanning: () =>
+    set({
+      planningPhase: 'initial',
+      currentDetailingDay: null,
+    }),
 
   // UI state
   selectedAI: 'gemini',
