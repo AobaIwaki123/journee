@@ -31,6 +31,9 @@ export const QuickActions: React.FC = () => {
     buttonReadiness,
     checklistStatus,
     updateChecklist,
+    // Phase 6: AI model selection
+    selectedAI,
+    claudeApiKey,
   } = useStore();
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -149,12 +152,15 @@ export const QuickActions: React.FC = () => {
       let fullResponse = '';
       
       // ストリーミングレスポンスを処理
+      // パラメータ順序: message, chatHistory, currentItinerary, model, claudeApiKey, planningPhase, currentDetailingDay
       for await (const chunk of sendChatMessageStream(
         '次へ',
         chatHistory,
         useStore.getState().currentItinerary || undefined,
-        newPhase,
-        newDetailingDay
+        selectedAI,  // AIモデル（gemini / claude）
+        claudeApiKey,  // Claude APIキー
+        newPhase,  // planningPhase
+        newDetailingDay  // currentDetailingDay
       )) {
         if (chunk.type === 'message' && chunk.content) {
           appendStreamingMessage(chunk.content);
