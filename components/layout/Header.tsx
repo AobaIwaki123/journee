@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Plane, Settings, BookOpen } from 'lucide-react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { UserMenu } from '@/components/auth/UserMenu';
-import { LoginButton } from '@/components/auth/LoginButton';
+import React, { useState } from "react";
+import Link from "next/link";
+import { Plane, Settings, BookOpen } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { LoginButton } from "@/components/auth/LoginButton";
 
 export const Header: React.FC = () => {
   const { data: session, status } = useSession();
@@ -43,7 +43,7 @@ export const Header: React.FC = () => {
           {/* 設定ボタン */}
           {session && (
             <button
-              onClick={() => router.push('/settings')}
+              onClick={() => router.push("/settings")}
               className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               title="設定ページ"
             >
@@ -53,14 +53,13 @@ export const Header: React.FC = () => {
           )}
 
           {/* 認証ボタン */}
-          {status === 'loading' ? (
+          {status === "loading" ? (
             <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
           ) : session ? (
             <UserMenu />
           ) : (
             <LoginButton />
           )}
-          </div>
         </div>
       </div>
     </header>
