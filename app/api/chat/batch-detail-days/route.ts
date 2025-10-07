@@ -73,9 +73,8 @@ async function processDayDetail(
     
     // 日程詳細化プロンプトを生成
     const dayPrompt = createDayDetailPrompt(
-      day.day,
-      day.theme || `${day.day}日目`,
-      request.currentItinerary
+      request.currentItinerary,
+      day.day
     );
     
     const userMessage = `${day.day}日目の詳細を作成してください。\n\n${dayPrompt}`;

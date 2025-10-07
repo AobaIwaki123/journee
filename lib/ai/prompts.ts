@@ -395,6 +395,12 @@ export function createDayDetailPrompt(
   itinerary: ItineraryData,
   targetDay: number
 ): string {
+  // 安全性チェック: scheduleが存在しない場合の対応
+  if (!itinerary || !itinerary.schedule || itinerary.schedule.length === 0) {
+    console.warn(`createDayDetailPrompt: Invalid itinerary for day ${targetDay}`);
+    return `【日程詳細化フェーズ】\n${targetDay}日目の詳細を作成してください。`;
+  }
+  
   const daySchedule = itinerary.schedule.find(d => d.day === targetDay);
   const theme = daySchedule?.theme || `${targetDay}日目`;
   
