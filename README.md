@@ -186,21 +186,24 @@ journee/
 - [x] しおりプレビューの基本レイアウト
 - [x] 状態管理の実装（Zustand / Context API）
 
-### Phase 2: 認証機能（Week 3）
-- [ ] NextAuth.jsのセットアップ
-- [ ] Google OAuth設定
-- [ ] ログイン/ログアウトUI
-- [ ] ユーザーメニューコンポーネント
-- [ ] 認証ミドルウェアの実装
-- [ ] ログインページの作成
+### Phase 2: 認証機能（Week 3）✅ **完了**
+- [x] NextAuth.jsのセットアップ
+- [x] Google OAuth設定
+- [x] ログイン/ログアウトUI
+- [x] ユーザーメニューコンポーネント
+- [x] 認証ミドルウェアの実装
+- [x] ログインページの作成
 
-### Phase 3: AI統合（Week 4-5）
+### Phase 3: AI統合（Week 4-5）✅ **完了**
 - [x] Gemini API統合
 - [x] チャット機能の実装
 - [x] プロンプトエンジニアリング
 - [x] AIレスポンスのパース処理
 - [x] しおりデータの構造化
 - [x] ストリーミングレスポンス対応
+- [x] UI統合（MessageInput, MessageList, ItineraryPreview）
+- [x] エラーハンドリング実装
+- [x] しおりデータのリアルタイム更新
 
 ### Phase 4: 一時保存機能（モックデータ版）（Week 6）
 - [ ] モックストレージの実装（LocalStorage + Context）
