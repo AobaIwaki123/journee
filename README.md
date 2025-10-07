@@ -617,6 +617,68 @@ journee/
 
 **詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
 
+#### 5.5 しおり公開・共有機能 🆕
+**目的**: 作成したしおりを公開URLで共有し、Read-onlyページで閲覧できるようにする
+
+##### 5.5.1 型定義とAPI
+- [ ] `types/itinerary.ts` の拡張
+  - [ ] `isPublic`, `publicSlug`, `publishedAt`, `viewCount`, `allowPdfDownload` フィールド追加
+  - [ ] `PublicItinerarySettings` 型定義
+  - [ ] `PublicItineraryMetadata` 型定義
+- [ ] 公開API実装
+  - [ ] `/api/itinerary/publish` - 公開URL発行（POST）
+  - [ ] `/api/itinerary/unpublish` - 非公開化（POST）
+  - [ ] ユニークスラッグ生成（nanoid、10文字）
+  - [ ] 認証・所有権チェック
+
+##### 5.5.2 閲覧用ページ
+- [ ] `/app/share/[slug]/page.tsx` の実装
+  - [ ] 動的ルーティング（スラッグベース）
+  - [ ] OGPメタデータ生成（SNS共有対応）
+  - [ ] 閲覧数カウント（Phase 8以降）
+  - [ ] 404ページ（非公開・存在しないしおり）
+- [ ] `PublicItineraryView.tsx` コンポーネント
+  - [ ] Read-only表示（編集ボタン非表示）
+  - [ ] 共有ボタン（URLコピー、Web Share API対応）
+  - [ ] PDF ダウンロードボタン（Phase 5.3連携）
+  - [ ] カスタムメッセージ表示
+  - [ ] 閲覧数表示
+
+##### 5.5.3 公開設定UI
+- [ ] `ShareButton.tsx` コンポーネント
+  - [ ] 公開/非公開切り替え
+  - [ ] 公開URL表示・コピー
+  - [ ] PDFダウンロード許可設定
+  - [ ] カスタムメッセージ入力（オプション）
+  - [ ] 公開URLのQRコード生成（オプション）
+- [ ] Zustand状態管理拡張
+  - [ ] `publishItinerary` アクション
+  - [ ] `unpublishItinerary` アクション
+  - [ ] `updatePublicSettings` アクション
+
+##### 5.5.4 セキュリティ対策
+- [ ] 推測困難なスラッグ（nanoid、62文字セット）
+- [ ] アクセス制御（公開フラグチェック）
+- [ ] レート制限（公開URL発行: 1日10回）
+- [ ] 個人情報保護（作成者メール非表示）
+- [ ] 不正アクセス検知・ログ記録
+
+##### 5.5.5 モックデータ実装（Phase 5-7）
+- [ ] LocalStorageでの公開しおり管理
+- [ ] `lib/utils/storage.ts` 拡張
+  - [ ] `savePublicItinerary` 関数
+  - [ ] `getPublicItinerary` 関数
+- [ ] ⚠️ 注意: LocalStorageは他ユーザーと共有不可（Phase 8でDB統合必須）
+
+**期待される効果**:
+- 旅のしおりを家族や友人と簡単に共有
+- SNSでのリッチプレビュー表示（OGP対応）
+- 安全なRead-only閲覧ページ
+- PDF ダウンロード許可の柔軟な設定
+- 閲覧数の可視化（Phase 8以降）
+
+**詳細**: [docs/PHASE5_5_ITINERARY_SHARING.md](./docs/PHASE5_5_ITINERARY_SHARING.md)
+
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
 
