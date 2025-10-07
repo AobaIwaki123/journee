@@ -310,10 +310,10 @@ journee/
 ### Phase 6: Claude API統合（Week 11）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
 
-#### 6.1 APIキー管理
-- [ ] APIキー管理UIの実装
-- [ ] ローカルストレージでのAPIキー保存（暗号化）
-- [ ] APIキーの検証機能
+#### 6.1 APIキー管理 ✅ **完了**
+- [x] APIキー管理UIの実装
+- [x] ローカルストレージでのAPIキー保存（暗号化）
+- [x] APIキーの検証機能
 
 #### 6.2 Claude API統合
 - [ ] Claude API クライアントの実装
@@ -644,7 +644,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3 完了・統合済み → 次は Phase 3.5（UI/UX改善・バグ修正）
+**開発状況**: ✅ Phase 1, 2, 3, 6.1 完了 → 次は Phase 6.2（Claude API統合）または Phase 3.5（UI/UX改善）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -658,17 +658,19 @@ MIT
 - ✅ **Phase 3**: AIチャット機能（リアルタイムストリーミング対応）
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
+- ✅ **Phase 6.1**: APIキー管理機能（暗号化保存、UI実装）
 
 **次の実装**: 
 - **BUG-001** - JSON削除バグ修正（優先）
 - **Phase 3.5** - UI/UX改善（マークダウンレンダリング）
+- **Phase 6.2** - Claude API統合（ストリーミング対応）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
-- **Phase 6** - Claude API統合
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
+- [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [API ドキュメント](./PHASE3_API_DOCUMENTATION.md)

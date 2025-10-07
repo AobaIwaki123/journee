@@ -1,23 +1,56 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
+import { APIKeyModal } from '@/components/settings/APIKeyModal';
 
 export const AISelector: React.FC = () => {
   const selectedAI = useStore((state) => state.selectedAI);
+  const claudeApiKey = useStore((state) => state.claudeApiKey);
   const setSelectedAI = useStore((state) => state.setSelectedAI);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleAIChange = (ai: 'gemini' | 'claude') => {
+    // Claudeを選択しようとした場合、APIキーの確認
+    if (ai === 'claude' && !claudeApiKey) {
+      // APIキーが未設定の場合、モーダルを表示
+      setIsModalOpen(true);
+      return;
+    }
+
+    setSelectedAI(ai);
+  };
 
   return (
-    <div className="flex items-center space-x-2">
-      <span className="text-sm text-gray-600">AIモデル:</span>
-      <select
-        value={selectedAI}
-        onChange={(e) => setSelectedAI(e.target.value as 'gemini' | 'claude')}
-        className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="gemini">Gemini (デフォルト)</option>
-        <option value="claude">Claude (Phase 7で実装)</option>
-      </select>
-    </div>
+    <>
+      <div className="flex items-center space-x-2">
+        <span className="text-sm text-gray-600">AIモデル:</span>
+        <select
+          value={selectedAI}
+          onChange={(e) => handleAIChange(e.target.value as 'gemini' | 'claude')}
+          className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="gemini">Gemini 2.5 Pro</option>
+          <option value="claude">
+            Claude 3.5 Sonnet {!claudeApiKey && '(APIキー必要)'}
+          </option>
+        </select>
+
+        {/* Claude選択時の警告表示 */}
+        {selectedAI === 'claude' && (
+          <div className="flex items-center space-x-1 text-yellow-600">
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-xs">Phase 6.2で実装予定</span>
+          </div>
+        )}
+      </div>
+
+      {/* APIキー設定モーダル */}
+      <APIKeyModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
   );
 };
