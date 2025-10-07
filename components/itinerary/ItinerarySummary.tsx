@@ -15,9 +15,12 @@ export const ItinerarySummary: React.FC<ItinerarySummaryProps> = memo(({ itinera
     [itinerary.schedule]
   );
 
-  // 総費用を計算
+  // 総費用を計算（各スポットのestimatedCostから直接計算）
   const totalCost = useMemo(
-    () => itinerary.schedule.reduce((sum, day) => sum + (day.totalCost || 0), 0),
+    () => itinerary.schedule.reduce((sum, day) => {
+      const dayCost = day.spots.reduce((daySum, spot) => daySum + (spot.estimatedCost || 0), 0);
+      return sum + dayCost;
+    }, 0),
     [itinerary.schedule]
   );
 
