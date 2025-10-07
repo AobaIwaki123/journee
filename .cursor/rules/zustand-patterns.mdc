@@ -235,10 +235,66 @@ export const useStore = create<AppState>()(
 - ✅ 必要な部分のみをコンポーネントで取得
 - ✅ セレクタ関数で再レンダリング最適化
 
-## 現在の実装状態（Phase 1完了）
-- ✅ 基本ストア構造
-- ✅ チャット状態管理
-- ✅ しおり状態管理
-- ✅ UI状態管理
-- 📋 永続化（Phase 4で実装）
+## Phase 5.1で追加された状態
+
+### テンプレート選択
+```typescript
+interface AppState {
+  // テンプレート状態
+  selectedTemplate: ItineraryTemplate;
+  setSelectedTemplate: (template: ItineraryTemplate) => void;
+}
+
+// 初期化
+selectedTemplate: 'standard',
+setSelectedTemplate: (template) => set({ selectedTemplate: template }),
+```
+
+### しおりの部分更新
+```typescript
+interface AppState {
+  // しおり更新（既存のマージ）
+  updateItinerary: (updates: Partial<ItineraryData>) => void;
+}
+
+// 実装
+updateItinerary: (updates) =>
+  set((state) => ({
+    currentItinerary: state.currentItinerary
+      ? { ...state.currentItinerary, ...updates }
+      : null,
+  })),
+```
+
+### 使用例（Phase 5.1コンポーネント）
+```typescript
+// テンプレート選択
+const { selectedTemplate, setSelectedTemplate } = useStore();
+
+// しおり部分更新（日程編集）
+const { currentItinerary, updateItinerary } = useStore();
+
+const handleDayUpdate = (updatedDay: DaySchedule) => {
+  const updatedSchedule = currentItinerary!.schedule.map(day =>
+    day.day === updatedDay.day ? updatedDay : day
+  );
+  
+  updateItinerary({ 
+    schedule: updatedSchedule,
+    updatedAt: new Date()
+  });
+};
+```
+
+---
+
+## 現在の実装状態
+- ✅ 基本ストア構造（Phase 1完了）
+- ✅ チャット状態管理（Phase 3完了）
+- ✅ しおり状態管理（Phase 3完了）
+- ✅ UI状態管理（Phase 3完了）
+- ✅ テンプレート状態管理（Phase 5.1完了）
+- ✅ しおり部分更新（Phase 5.1完了）
+- ✅ APIキー管理（Phase 6完了）
+- 📋 永続化（Phase 5.2で実装予定）
 - 📋 DevTools統合（開発時のみ、必要に応じて）

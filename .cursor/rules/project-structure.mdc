@@ -46,10 +46,14 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
   - [MessageList.tsx](mdc:components/chat/MessageList.tsx) - メッセージ一覧
   - [MessageInput.tsx](mdc:components/chat/MessageInput.tsx) - メッセージ入力
   - [AISelector.tsx](mdc:components/chat/AISelector.tsx) - AIモデル選択
-- `/itinerary` - しおり機能
-  - [ItineraryPreview.tsx](mdc:components/itinerary/ItineraryPreview.tsx) - しおりプレビュー
-  - [DaySchedule.tsx](mdc:components/itinerary/DaySchedule.tsx) - 日程表示
-  - [SpotCard.tsx](mdc:components/itinerary/SpotCard.tsx) - 観光スポットカード
+- `/itinerary` - しおり機能（Phase 5.1実装済み）
+  - [ItineraryPreview.tsx](mdc:components/itinerary/ItineraryPreview.tsx) - しおりプレビュー（ビューモード切り替え）
+  - [ItineraryHeader.tsx](mdc:components/itinerary/ItineraryHeader.tsx) - タイトル・サマリー（グラデーション背景）
+  - [DaySchedule.tsx](mdc:components/itinerary/DaySchedule.tsx) - 日程表示（折りたたみ、統計情報）
+  - [SpotCard.tsx](mdc:components/itinerary/SpotCard.tsx) - 観光スポットカード（画像、カテゴリアイコン）
+  - [EditSpotModal.tsx](mdc:components/itinerary/EditSpotModal.tsx) - スポット編集モーダル
+  - [MapView.tsx](mdc:components/itinerary/MapView.tsx) - 地図表示（Google Maps API統合）
+  - [ItineraryTemplates.tsx](mdc:components/itinerary/ItineraryTemplates.tsx) - テンプレート選択UI
 - `/layout` - レイアウト
   - [Header.tsx](mdc:components/layout/Header.tsx) - ヘッダーナビゲーション（認証機能統合済み）
 - `/settings` - 設定コンポーネント（Phase 3.6予定）
@@ -75,6 +79,8 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
   - SoundManager.ts - 効果音再生・音量制御ユーティリティ
 - `/utils` - ユーティリティ関数
   - [api-client.ts](mdc:lib/utils/api-client.ts) - APIクライアントヘルパー
+- `/mock-data` - モックデータ（Phase 5.1実装済み）
+  - [sample-itinerary.ts](mdc:lib/mock-data/sample-itinerary.ts) - 京都・東京サンプルデータ（位置情報・画像付き）
 
 ### `/types` - TypeScript型定義
 - [chat.ts](mdc:types/chat.ts) - チャット関連の型
@@ -97,6 +103,12 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - [PHASE2_TESTING_GUIDE.md](mdc:docs/PHASE2_TESTING_GUIDE.md) - Phase 2テストガイド
 - [PHASE3_INTEGRATION_COMPLETE.md](mdc:docs/PHASE3_INTEGRATION_COMPLETE.md) - Phase 3統合レポート
 - [PHASE3_TESTING_GUIDE.md](mdc:docs/PHASE3_TESTING_GUIDE.md) - Phase 3テストガイド
+- [PHASE3.5.1_MARKDOWN_RENDERING.md](mdc:docs/PHASE3.5.1_MARKDOWN_RENDERING.md) - マークダウンレンダリング実装レポート
+- [PHASE5.1_IMPLEMENTATION.md](mdc:docs/PHASE5.1_IMPLEMENTATION.md) - Phase 5.1実装レポート
+- [PHASE5.1_USAGE.md](mdc:docs/PHASE5.1_USAGE.md) - Phase 5.1機能確認ガイド
+- [PHASE6_1_IMPLEMENTATION.md](mdc:docs/PHASE6_1_IMPLEMENTATION.md) - Phase 6.1実装レポート（APIキー管理）
+- [PHASE6_2_IMPLEMENTATION.md](mdc:docs/PHASE6_2_IMPLEMENTATION.md) - Phase 6.2実装レポート（Claude API統合）
+- [PHASE6_3_IMPLEMENTATION.md](mdc:docs/PHASE6_3_IMPLEMENTATION.md) - Phase 6.3実装レポート（モデル設定一元管理）
 - [INTEGRATION_COMPLETE.md](mdc:docs/INTEGRATION_COMPLETE.md) - Phase 1 & 2統合レポート
 
 ### その他
@@ -107,10 +119,12 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - ✅ **Phase 2（完了）**: 認証機能（NextAuth.js + Google OAuth）
 - ✅ **Phase 3（完了）**: AI統合（Gemini API、ストリーミング対応）
 - ✅ **Phase 3.5.1（完了）**: マークダウンレンダリング機能
+- ✅ **Phase 5.1（完了）**: しおりコンポーネント詳細実装（ヘッダー、地図、編集、テンプレート）
+- ✅ **Phase 6（完了）**: Claude API統合・モデル切り替え機能
 - ✅ **BUG-001（完了）**: JSON削除バグ修正
 - 🔄 **Phase 3.6（次）**: 効果音システム（AI返信音、音量設定、UX向上）
 - 🔄 **Phase 4（次）**: 段階的旅程構築システム
-- 📋 **Phase 5-10**: その他機能（しおり統合、Claude API、モバイル対応、DB統合など）
+- 📋 **Phase 5.2-10**: その他機能（一時保存、PDF出力、モバイル対応、DB統合など）
 - 📋 詳細は[README.md](mdc:README.md)参照
 
 ## 認証システム（Phase 2実装済み）
@@ -166,15 +180,18 @@ if (!user) {
 - **チャット状態**: `messages`, `isLoading`, `isStreaming`, `streamingMessage`
 - **しおり状態**: `currentItinerary`（`ItineraryData`型）
 - **UI状態**: `selectedAI`（gemini / claude）
+- **テンプレート状態**: `selectedTemplate`（Phase 5.1実装済み）
 - **エラー状態**: `error`, `setError`
-- **APIキー管理**: `claudeApiKey`, `setClaudeApiKey`（Phase 6用）
+- **APIキー管理**: `claudeApiKey`, `setClaudeApiKey`（Phase 6実装済み）
 - **効果音設定**: `soundEnabled`, `soundVolume`（Phase 3.6用）
 
 ### 主要な操作
 - `addMessage(message)` - メッセージ追加
 - `setItinerary(itinerary)` - しおり設定
+- `updateItinerary(updates)` - しおり部分更新（Phase 5.1実装済み）
 - `setStreaming(streaming)` - ストリーミング状態設定
 - `appendStreamingMessage(chunk)` - ストリーミングメッセージ追加
+- `setSelectedTemplate(template)` - テンプレート選択（Phase 5.1実装済み）
 - `setError(error)` - エラー設定
 - `setSoundEnabled(enabled)` - 効果音ON/OFF切り替え（Phase 3.6用）
 - `setSoundVolume(volume)` - 音量調整（0.0 - 1.0）（Phase 3.6用）
@@ -299,6 +316,9 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # AI統合（Phase 3実装済み）
 GEMINI_API_KEY=your_gemini_api_key
+
+# Google Maps（Phase 5.1実装済み）
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
 `.env.example` を参照して設定。

@@ -46,8 +46,10 @@ globs: "*.tsx,components/**/*,app/**/*"
   - `blue-600`: ボタンホバー
   - `blue-50`: 選択状態背景
 
-- **グラデーション**: しおりヘッダー
-  - `from-blue-500 to-purple-600`
+- **グラデーション**: しおりヘッダー（Phase 5.1実装済み）
+  - `from-blue-600 to-purple-600`: ヘッダー背景
+  - `from-blue-50 to-purple-50`: カード背景
+  - `from-gray-50 to-gray-100`: サブカード背景
 
 ```tsx
 // ✅ プライマリボタン
@@ -81,10 +83,33 @@ globs: "*.tsx,components/**/*,app/**/*"
 
 ## コンポーネントスタイリングパターン
 
-### カード
+### カード（基本）
 ```tsx
 <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
   {/* コンテンツ */}
+</div>
+```
+
+### カード（グラデーション背景）- Phase 5.1
+```tsx
+// ✅ ヘッダーカード
+<div className="p-6 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg shadow-lg text-white">
+  {/* しおりヘッダー */}
+</div>
+
+// ✅ サブカード（微細なグラデーション）
+<div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+  {/* 日程カード */}
+</div>
+```
+
+### カード（ホバーエフェクト）- Phase 5.1
+```tsx
+<div className="group p-4 bg-white border border-gray-200 rounded-lg shadow-sm transition-all hover:shadow-lg hover:border-blue-500">
+  {/* スポットカード */}
+  <button className="opacity-0 group-hover:opacity-100 transition-opacity">
+    編集
+  </button>
 </div>
 ```
 
@@ -126,6 +151,24 @@ globs: "*.tsx,components/**/*,app/**/*"
 
 // ✅ 入力フォーカス
 <input className="border-gray-300 focus:border-blue-500 transition-all">
+
+// ✅ カードホバー（Phase 5.1）
+<div className="transition-all hover:shadow-lg hover:border-blue-500">
+
+// ✅ 編集ボタン表示（Phase 5.1）
+<button className="opacity-0 group-hover:opacity-100 transition-opacity">
+```
+
+### 折りたたみアニメーション（Phase 5.1）
+```tsx
+// 日程カードの展開/折りたたみ
+const [isExpanded, setIsExpanded] = useState(true);
+
+{isExpanded && (
+  <div className="transition-all">
+    {/* コンテンツ */}
+  </div>
+)}
 ```
 
 ### メッセージアニメーション
@@ -208,6 +251,67 @@ import { Send, User, Bot, ChevronDown } from 'lucide-react';
 - ❌ !important の使用
 - ❌ 固定ピクセル値（pxではなくTailwindクラス使用）
 
+## Phase 5.1で追加されたパターン
+
+### ステータスバッジ
+```tsx
+// 作成中
+<span className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full">
+  作成中
+</span>
+
+// 完成
+<span className="px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-full">
+  完成
+</span>
+
+// アーカイブ
+<span className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-full">
+  アーカイブ
+</span>
+```
+
+### カテゴリアイコン
+```tsx
+// 絵文字をアイコンとして使用
+const categoryIcons = {
+  sightseeing: '🏛️',
+  dining: '🍽️',
+  transportation: '🚗',
+  accommodation: '🏨',
+  other: '📍',
+};
+
+<span className="text-2xl">{categoryIcons[category]}</span>
+```
+
+### グループホバーパターン
+```tsx
+// 親要素にgroupクラス
+<div className="group">
+  {/* 通常は非表示、ホバーで表示 */}
+  <button className="opacity-0 group-hover:opacity-100 transition-opacity">
+    編集
+  </button>
+</div>
+```
+
+### Next.js Imageスタイル
+```tsx
+import Image from 'next/image';
+
+<Image
+  src={imageUrl}
+  alt={name}
+  width={400}
+  height={300}
+  className="object-cover rounded-lg"
+/>
+```
+
+---
+
 ## 例外
 - グローバルスタイル（[globals.css](mdc:app/globals.css)）
 - アニメーションキーフレーム（Tailwind設定またはglobals.css）
+- Next.js Image コンポーネントの width/height 属性（必須）
