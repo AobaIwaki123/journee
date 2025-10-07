@@ -35,6 +35,11 @@ export class ChatAPIClient {
       claudeApiKey?: string;
     }
   ): Promise<ChatAPIResponse> {
+    // バリデーション
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      throw new Error('メッセージは必須です');
+    }
+
     const request: ChatAPIRequest = {
       message,
       chatHistory: options?.chatHistory,
@@ -53,8 +58,11 @@ export class ChatAPIClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'API request failed');
+      const errorData = await response.json().catch(() => ({
+        message: `HTTPエラー: ${response.status}`,
+      }));
+      
+      throw new Error(errorData.message || 'API request failed');
     }
 
     return response.json();
@@ -72,6 +80,11 @@ export class ChatAPIClient {
       claudeApiKey?: string;
     }
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
+    // バリデーション
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      throw new Error('メッセージは必須です');
+    }
+
     const request: ChatAPIRequest = {
       message,
       chatHistory: options?.chatHistory,
@@ -90,42 +103,51 @@ export class ChatAPIClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'API request failed');
+      const errorData = await response.json().catch(() => ({
+        message: `HTTPエラー: ${response.status}`,
+      }));
+      
+      throw new Error(errorData.message || 'API request failed');
     }
 
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error('ReadableStream not supported');
+      throw new Error('ストリーミングがサポートされていません');
     }
 
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      
-      // 最後の不完全な行はバッファに残す
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // 最後の不完全な行はバッファに残す
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data.trim()) {
-            try {
-              const chunk = JSON.parse(data) as ChatStreamChunk;
-              yield chunk;
-            } catch (error) {
-              console.error('Failed to parse chunk:', error);
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data.trim()) {
+              try {
+                const chunk = JSON.parse(data) as ChatStreamChunk;
+                yield chunk;
+              } catch (parseError) {
+                console.error('Failed to parse chunk:', parseError);
+                // パースエラーは無視してストリーミングを継続
+              }
             }
           }
         }
       }
+    } finally {
+      // リーダーを確実にクローズ
+      reader.releaseLock();
     }
   }
 }

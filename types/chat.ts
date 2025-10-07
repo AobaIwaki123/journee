@@ -12,6 +12,7 @@ export type MessageRole = "user" | "assistant" | "system";
 
 /**
  * チャットメッセージ（詳細版）
+ * API送信時に使用
  */
 export interface ChatMessage {
   id: string;
@@ -24,6 +25,7 @@ export interface ChatMessage {
 
 /**
  * シンプルなメッセージ型（UI用）
+ * フロントエンドの状態管理で使用
  */
 export interface Message {
   id: string;
@@ -34,6 +36,7 @@ export interface Message {
 
 /**
  * チャットセッション
+ * 将来的なDB保存用（Phase 9実装予定）
  */
 export interface ChatSession {
   id: string;
@@ -44,14 +47,6 @@ export interface ChatSession {
   /** 現在作成中のしおりID */
   currentItineraryId?: string;
 }
-
-import type { AIModelId } from './ai';
-
-/**
- * AI モデルの種類
- * @deprecated Use AIModelId from './ai' instead
- */
-export type AIModel = AIModelId;
 
 /**
  * AI設定
@@ -70,4 +65,6 @@ export interface AISettings {
 export interface ChatState {
   messages: Message[];
   isLoading: boolean;
+  isStreaming: boolean;
+  streamingMessage: string;
 }

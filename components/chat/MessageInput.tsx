@@ -5,6 +5,7 @@ import { useStore } from '@/lib/store/useStore';
 import { Send } from 'lucide-react';
 import { sendChatMessageStream } from '@/lib/utils/api-client';
 import { mergeItineraryData, parseAIResponse } from '@/lib/ai/prompts';
+import { APP_CONFIG } from '@/lib/constants/app-config';
 
 export const MessageInput: React.FC = () => {
   const [input, setInput] = useState('');
@@ -43,8 +44,8 @@ export const MessageInput: React.FC = () => {
     setError(null);
 
     try {
-      // チャット履歴を準備（最新10件）
-      const chatHistory = messages.slice(-10).map((msg) => ({
+      // チャット履歴を準備（設定に基づいた最新N件）
+      const chatHistory = messages.slice(-APP_CONFIG.chat.maxHistoryLength).map((msg) => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,
@@ -95,18 +96,23 @@ export const MessageInput: React.FC = () => {
       addMessage(aiMessage);
       setStreamingMessage('');
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Chat error:', error);
+      
+      // 型安全なエラーメッセージの取得
+      const errorText = error instanceof Error 
+        ? error.message 
+        : '不明なエラーが発生しました';
       
       // エラーメッセージを表示
       const errorMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant' as const,
-        content: `申し訳ございません。エラーが発生しました: ${error.message}`,
+        content: `申し訳ございません。エラーが発生しました: ${errorText}`,
         timestamp: new Date(),
       };
       addMessage(errorMessage);
-      setError(error.message);
+      setError(errorText);
       setStreamingMessage('');
       
     } finally {
