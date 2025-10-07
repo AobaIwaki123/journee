@@ -704,6 +704,7 @@ journee/
 - [PHASE5_5_2_IMPLEMENTATION.md](./docs/PHASE5_5_2_IMPLEMENTATION.md) - 閲覧用ページ
 - [PHASE5_5_3_IMPLEMENTATION.md](./docs/PHASE5_5_3_IMPLEMENTATION.md) - 公開設定UI
 - [PHASE5_5_COMPLETE.md](./docs/PHASE5_5_COMPLETE.md) - ✅ 完了レポート
+- [PHASE5_5_TEST_GUIDE.md](./docs/PHASE5_5_TEST_GUIDE.md) - 🧪 テストガイド
 
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
