@@ -1,0 +1,572 @@
+---
+globs: "app/api/**/*"
+---
+
+# API開発パターン - Next.js Route Handlers
+
+## 概要
+Next.js 14 App Routerの Route Handlers を使用したRESTful API実装パターン。
+
+## ファイル構造
+
+### APIルートの配置
+```
+app/api/
+├── auth/                    # 認証API（NextAuth.js自動生成）
+│   └── [...nextauth]/
+│       └── route.ts
+├── health/                  # ヘルスチェック
+│   └── route.ts
+├── user/                    # ユーザー関連
+│   └── me/
+│       └── route.ts
+└── (Phase 3以降)
+    ├── chat/
+    ├── itinerary/
+    └── settings/
+```
+
+### ファイル命名
+- **必須**: `route.ts` または `route.js`
+- **動的ルート**: `[id]/route.ts`, `[...slug]/route.ts`
+
+## 基本パターン
+
+### GETリクエスト
+```typescript
+import { NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth/session'
+
+export async function GET() {
+  try {
+    // 認証チェック（必要な場合）
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'ログインが必要です' },
+        { status: 401 }
+      )
+    }
+
+    // ビジネスロジック
+    const data = await fetchData(user.id)
+
+    // 成功レスポンス
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json(
+      { 
+        error: 'InternalServerError',
+        message: 'サーバーエラーが発生しました'
+      },
+      { status: 500 }
+    )
+  }
+}
+```
+
+### POSTリクエスト
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth/session'
+
+export async function POST(req: NextRequest) {
+  try {
+    // 認証チェック
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // リクエストボディのパース
+    const body = await req.json()
+
+    // バリデーション（Zodなど使用推奨、Phase 3以降）
+    if (!body.title) {
+      return NextResponse.json(
+        { error: 'ValidationError', message: 'タイトルは必須です' },
+        { status: 400 }
+      )
+    }
+
+    // ビジネスロジック
+    const result = await createData(user.id, body)
+
+    // 成功レスポンス
+    return NextResponse.json(result, { status: 201 })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json(
+      { error: 'InternalServerError' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+### PUT/PATCHリクエスト
+```typescript
+export async function PUT(req: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const updated = await updateData(user.id, body)
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    return NextResponse.json({ error: 'InternalServerError' }, { status: 500 })
+  }
+}
+```
+
+### DELETEリクエスト
+```typescript
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    await deleteData(user.id)
+
+    return NextResponse.json({ message: '削除しました' })
+  } catch (error) {
+    return NextResponse.json({ error: 'InternalServerError' }, { status: 500 })
+  }
+}
+```
+
+## 動的ルート
+
+### パラメータ取得
+```typescript
+// app/api/itinerary/[id]/route.ts
+interface RouteParams {
+  params: {
+    id: string
+  }
+}
+
+export async function GET(
+  req: NextRequest,
+  { params }: RouteParams
+) {
+  const { id } = params
+  
+  const data = await fetchById(id)
+  
+  if (!data) {
+    return NextResponse.json(
+      { error: 'NotFound', message: '見つかりません' },
+      { status: 404 }
+    )
+  }
+  
+  return NextResponse.json(data)
+}
+```
+
+### クエリパラメータ取得
+```typescript
+export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams
+  const page = searchParams.get('page') || '1'
+  const limit = searchParams.get('limit') || '10'
+  
+  const data = await fetchWithPagination(
+    parseInt(page),
+    parseInt(limit)
+  )
+  
+  return NextResponse.json(data)
+}
+```
+
+## 型定義パターン
+
+### リクエストボディ型
+```typescript
+// types/api.ts
+export interface CreateItineraryRequest {
+  title: string
+  destination: string
+  startDate: string
+  endDate: string
+}
+
+// route.ts
+import { CreateItineraryRequest } from '@/types/api'
+
+export async function POST(req: NextRequest) {
+  const body: CreateItineraryRequest = await req.json()
+  // ...
+}
+```
+
+### レスポンス型
+```typescript
+// types/api.ts
+export interface ApiResponse<T> {
+  data?: T
+  error?: string
+  message?: string
+}
+
+export interface ApiErrorResponse {
+  error: string
+  message: string
+  details?: unknown
+}
+
+// route.ts
+export async function GET(): Promise<NextResponse<ApiResponse<User>>> {
+  const user = await getCurrentUser()
+  return NextResponse.json({ data: user })
+}
+```
+
+## エラーハンドリング
+
+### 標準エラーレスポンス
+```typescript
+// types/api.ts
+export type ApiErrorCode =
+  | 'Unauthorized'
+  | 'Forbidden'
+  | 'NotFound'
+  | 'ValidationError'
+  | 'InternalServerError'
+
+export interface ApiErrorResponse {
+  error: ApiErrorCode
+  message: string
+  details?: unknown
+}
+```
+
+### エラーヘルパー
+```typescript
+// lib/api/errors.ts
+export class ApiError extends Error {
+  constructor(
+    public statusCode: number,
+    public errorCode: ApiErrorCode,
+    message: string
+  ) {
+    super(message)
+  }
+}
+
+export function handleApiError(error: unknown): NextResponse {
+  if (error instanceof ApiError) {
+    return NextResponse.json(
+      {
+        error: error.errorCode,
+        message: error.message,
+      },
+      { status: error.statusCode }
+    )
+  }
+
+  console.error('Unexpected error:', error)
+  return NextResponse.json(
+    {
+      error: 'InternalServerError',
+      message: '予期しないエラーが発生しました',
+    },
+    { status: 500 }
+  )
+}
+```
+
+### エラーハンドリング使用例
+```typescript
+import { handleApiError, ApiError } from '@/lib/api/errors'
+
+export async function GET() {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      throw new ApiError(401, 'Unauthorized', 'ログインが必要です')
+    }
+
+    const data = await fetchData(user.id)
+    return NextResponse.json(data)
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+```
+
+## 認証パターン
+
+### 必須認証
+```typescript
+import { getCurrentUser } from '@/lib/auth/session'
+
+export async function GET() {
+  const user = await getCurrentUser()
+  
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+  
+  // 認証済み処理
+}
+```
+
+### オプショナル認証
+```typescript
+export async function GET() {
+  const user = await getCurrentUser()
+  
+  // ユーザーの有無で処理を分岐
+  if (user) {
+    // ログイン済みユーザー向け処理
+    return NextResponse.json({ personalizedData: true })
+  } else {
+    // ゲスト向け処理
+    return NextResponse.json({ publicData: true })
+  }
+}
+```
+
+## CORS設定（必要な場合）
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(req: NextRequest) {
+  const data = await fetchData()
+  
+  return NextResponse.json(data, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  })
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  })
+}
+```
+
+## ヘルスチェックパターン
+
+```typescript
+// app/api/health/route.ts
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'Journee API',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+  })
+}
+```
+
+## ページネーションパターン（Phase 4以降）
+
+```typescript
+// types/api.ts
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
+// route.ts
+export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams
+  const page = parseInt(searchParams.get('page') || '1')
+  const limit = parseInt(searchParams.get('limit') || '10')
+
+  const { data, total } = await fetchPaginated(page, limit)
+
+  return NextResponse.json({
+    data,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  })
+}
+```
+
+## ストリーミングレスポンス（Phase 3 - AI統合で使用予定）
+
+```typescript
+export async function POST(req: NextRequest) {
+  const body = await req.json()
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      // AIストリーミングレスポンス
+      for await (const chunk of aiStream(body.prompt)) {
+        controller.enqueue(new TextEncoder().encode(chunk))
+      }
+      controller.close()
+    },
+  })
+
+  return new NextResponse(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  })
+}
+```
+
+## HTTPステータスコード
+
+### 成功
+- `200 OK` - 成功（GET, PUT, PATCH, DELETE）
+- `201 Created` - リソース作成成功（POST）
+- `204 No Content` - 成功、コンテンツなし（DELETE）
+
+### クライアントエラー
+- `400 Bad Request` - リクエストが不正
+- `401 Unauthorized` - 認証が必要
+- `403 Forbidden` - アクセス権限がない
+- `404 Not Found` - リソースが見つからない
+- `409 Conflict` - 競合エラー
+- `422 Unprocessable Entity` - バリデーションエラー
+
+### サーバーエラー
+- `500 Internal Server Error` - サーバーエラー
+- `503 Service Unavailable` - サービス利用不可
+
+## レート制限（Phase 10で実装予定）
+
+```typescript
+// lib/api/rate-limit.ts
+import { LRUCache } from 'lru-cache'
+
+const rateLimit = new LRUCache({
+  max: 500,
+  ttl: 60000, // 1分
+})
+
+export function checkRateLimit(identifier: string, limit: number): boolean {
+  const count = (rateLimit.get(identifier) as number) || 0
+  
+  if (count >= limit) {
+    return false
+  }
+  
+  rateLimit.set(identifier, count + 1)
+  return true
+}
+
+// route.ts
+export async function POST(req: NextRequest) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (!checkRateLimit(user.id, 10)) {
+    return NextResponse.json(
+      { error: 'TooManyRequests', message: 'レート制限を超えました' },
+      { status: 429 }
+    )
+  }
+
+  // 処理続行
+}
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ 必ずtry-catchでエラーハンドリング
+- ✅ 認証が必要なエンドポイントは必ずチェック
+- ✅ 型安全なリクエスト/レスポンス
+- ✅ 適切なHTTPステータスコード使用
+- ✅ エラーメッセージはユーザーフレンドリーに
+- ✅ ログ出力（console.error）
+- ✅ バリデーション実装（Zodなど）
+
+### DON'T（非推奨）
+- ❌ 認証チェックを忘れる
+- ❌ エラーを無視する
+- ❌ 500エラーで詳細を露出
+- ❌ 型定義を省略する
+- ❌ any型を使用する
+- ❌ 秘密鍵をレスポンスに含める
+
+## 実装済みAPI（Phase 2）
+
+### ヘルスチェック
+- `GET /api/health` - サービス稼働状況確認
+
+### 認証API（NextAuth.js自動生成）
+- `GET /api/auth/signin` - サインインページ
+- `POST /api/auth/signin/google` - Google認証開始
+- `GET /api/auth/signout` - サインアウト
+- `GET /api/auth/session` - セッション情報取得
+- `GET /api/auth/csrf` - CSRFトークン取得
+- `GET /api/auth/providers` - プロバイダー一覧
+- `GET /api/auth/callback/google` - OAuthコールバック
+
+### ユーザーAPI
+- `GET /api/user/me` - 現在のユーザー情報取得（認証必須）
+
+## 今後の実装予定
+
+### Phase 3: AI統合
+- `POST /api/chat` - AIチャット（ストリーミング）
+- `GET /api/chat/history` - チャット履歴
+
+### Phase 4: しおり管理
+- `POST /api/itinerary` - しおり作成
+- `GET /api/itinerary/:id` - しおり取得
+- `PUT /api/itinerary/:id` - しおり更新
+- `DELETE /api/itinerary/:id` - しおり削除
+- `GET /api/itinerary` - しおり一覧（ページネーション）
+
+### Phase 6: PDF生成
+- `POST /api/generate-pdf` - PDF生成
+
+### Phase 7: 設定管理
+- `GET /api/settings` - 設定取得
+- `PUT /api/settings` - 設定更新
+
+## 参考リンク
+
+- [Next.js Route Handlers](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
+- [docs/API.md](mdc:docs/API.md) - API仕様書
+- [types/api.ts](mdc:types/api.ts) - API型定義
+- [lib/auth/session.ts](mdc:lib/auth/session.ts) - 認証ヘルパー

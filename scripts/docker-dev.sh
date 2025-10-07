@@ -21,7 +21,7 @@ fi
 case "${1:-start}" in
     start|up)
         echo "🐳 Dockerコンテナを起動します..."
-        docker-compose up -d
+        docker compose up -d
         echo ""
         echo "✅ 起動完了！"
         echo "🌐 アプリケーション: http://localhost:3000"
@@ -32,41 +32,41 @@ case "${1:-start}" in
     
     stop|down)
         echo "🛑 Dockerコンテナを停止します..."
-        docker-compose down
+        docker compose down
         echo "✅ 停止完了"
         ;;
     
     restart)
         echo "🔄 Dockerコンテナを再起動します..."
-        docker-compose restart
+        docker compose restart
         echo "✅ 再起動完了"
         ;;
     
     logs)
         echo "📊 ログを表示します (Ctrl+Cで終了)..."
-        docker-compose logs -f app
+        docker compose logs -f app
         ;;
     
     shell|bash)
         echo "🐚 コンテナ内のシェルに接続します..."
-        docker-compose exec app sh
+        docker compose exec app sh
         ;;
     
     build)
         echo "🔨 Dockerイメージをビルドします..."
-        docker-compose build --no-cache
+        docker compose build --no-cache
         echo "✅ ビルド完了"
         ;;
     
     clean)
         echo "🧹 Dockerコンテナとボリュームを削除します..."
-        docker-compose down -v
+        docker compose down -v
         echo "✅ クリーンアップ完了"
         ;;
     
     status)
         echo "📊 コンテナの状態:"
-        docker-compose ps
+        docker compose ps
         ;;
     
     *)

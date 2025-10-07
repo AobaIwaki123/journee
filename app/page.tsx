@@ -1,11 +1,22 @@
-'use client';
-
-import React from 'react';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth/session';
 import { Header } from '@/components/layout/Header';
 import { ChatBox } from '@/components/chat/ChatBox';
 import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
 
-export default function Home() {
+/**
+ * メインページ（ホーム）
+ * 
+ * 認証済みユーザー向けのメインアプリケーション画面。
+ * 左側にチャットボックス、右側に旅のしおりプレビューを表示します。
+ */
+export default async function Home() {
+  // 認証チェック
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
