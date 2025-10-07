@@ -25,25 +25,35 @@ export default function PublicItineraryView({ slug }: PublicItineraryViewProps) 
     // Phase 5-7: LocalStorageから公開しおりを取得
     const loadPublicItinerary = () => {
       try {
-        const publicItineraries = localStorage.getItem('public_itineraries');
+        // 正しいLocalStorageキーを使用
+        const publicItineraries = localStorage.getItem('journee_public_itineraries');
+        console.log('[PublicItineraryView] Loading public itinerary for slug:', slug);
+        console.log('[PublicItineraryView] LocalStorage data:', publicItineraries);
+        
         if (publicItineraries) {
           const itineraries = JSON.parse(publicItineraries);
           const foundItinerary = itineraries[slug];
           
+          console.log('[PublicItineraryView] Found itinerary:', foundItinerary);
+          
           if (foundItinerary && foundItinerary.isPublic) {
             setItinerary(foundItinerary);
+            setLoading(false);
           } else {
             // しおりが見つからないか非公開
-            router.push('/404');
+            console.warn('[PublicItineraryView] Itinerary not found or not public');
+            setLoading(false);
+            setItinerary(null);
           }
         } else {
-          router.push('/404');
+          console.warn('[PublicItineraryView] No public itineraries in LocalStorage');
+          setLoading(false);
+          setItinerary(null);
         }
       } catch (error) {
-        console.error('Error loading public itinerary:', error);
-        router.push('/404');
-      } finally {
+        console.error('[PublicItineraryView] Error loading public itinerary:', error);
         setLoading(false);
+        setItinerary(null);
       }
     };
 
@@ -104,7 +114,41 @@ export default function PublicItineraryView({ slug }: PublicItineraryViewProps) 
   }
 
   if (!itinerary) {
-    return null; // 404ページにリダイレクト済み
+    // しおりが見つからない場合の表示
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-24 h-24 mx-auto mb-6 text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 2l6 6" />
+            </svg>
+          </div>
+          
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            しおりが見つかりません
+          </h1>
+          
+          <p className="text-gray-600 mb-8">
+            指定されたしおりは存在しないか、非公開に設定されています。
+          </p>
+          
+          <div className="space-y-4">
+            <a
+              href="/"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              トップページへ戻る
+            </a>
+            
+            <p className="text-sm text-gray-500 mt-4">
+              自分の旅のしおりを作成したい場合は、<br />
+              トップページから新規作成できます。
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

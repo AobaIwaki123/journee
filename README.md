@@ -828,6 +828,38 @@ journee/
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
 
+### BUG-004: Phase 5.5 公開リンク404エラー修正 ✅ **完了** (2025-10-07)
+**発生状況**: 
+共有リンクを作成して開くと404エラーが発生し、しおりが全く表示されない
+
+**原因**:
+1. LocalStorageキー名の不一致（`'public_itineraries'` vs `'journee_public_itineraries'`）
+2. 404ページへのリダイレクトの不適切な実装
+
+**修正内容**:
+- [x] `PublicItineraryView.tsx` - LocalStorageキー名を統一（`'journee_public_itineraries'`）
+- [x] 404表示をインラインレンダリングに変更
+- [x] デバッグログ追加（問題特定を容易に）
+- [x] デバッグツール作成（`/debug-share.html`）
+- [x] 統合テストページ作成（`/test-share-integration.html`）
+
+**実装結果**:
+- ✅ 公開リンクが正しく動作する
+- ✅ LocalStorageからデータを正しく取得できる
+- ✅ しおりが正しく表示される
+- ✅ 404ページが正しく表示される（存在しないスラッグの場合）
+- ✅ デバッグツールで簡単に動作確認可能
+
+**テスト方法**:
+```bash
+# デバッグツールで確認
+npm run dev
+# ブラウザで http://localhost:3000/debug-share.html を開く
+# 「クイック公開テスト実行」をクリック
+```
+
+**詳細**: [docs/PHASE5_5_CRITICAL_BUG_FIX.md](./docs/PHASE5_5_CRITICAL_BUG_FIX.md)
+
 ### BUG-003: 予算自動更新バグ修正 ✅ **完了** (2025-10-07)
 **発生状況**: 
 個別スポットの予算（estimatedCost）を変更しても、日別の総予算（DaySchedule.totalCost）やしおり全体の総予算（ItineraryData.totalBudget）が自動更新されない
