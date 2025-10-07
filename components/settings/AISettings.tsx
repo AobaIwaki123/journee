@@ -75,8 +75,8 @@ export const AISettings: React.FC = () => {
                     {AI_MODELS.gemini.description}
                   </p>
                   <div className="flex items-center space-x-2 mt-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-xs text-green-700">APIキー設定済み</span>
+                    <CheckCircle className="w-4 h-4 text-blue-500" />
+                    <span className="text-xs text-blue-700">APIキー設定不要</span>
                   </div>
                 </div>
               </label>

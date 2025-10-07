@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Volume2, VolumeX, Play } from 'lucide-react';
+import React, { useState } from 'react';
+import { Volume2, VolumeX, Play, Save, CheckCircle } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
 
 /**
@@ -11,19 +11,25 @@ import { useStore } from '@/lib/store/useStore';
 export const SoundSettings: React.FC = () => {
   const settings = useStore((state) => state.settings);
   const updateSoundSettings = useStore((state) => state.updateSoundSettings);
+  
+  const [localEnabled, setLocalEnabled] = useState(settings.sound.enabled);
+  const [localVolume, setLocalVolume] = useState(settings.sound.volume);
+  const [saved, setSaved] = useState(false);
 
-  const handleToggleSound = () => {
-    updateSoundSettings({ enabled: !settings.sound.enabled });
-  };
+  const hasChanges = 
+    localEnabled !== settings.sound.enabled || 
+    localVolume !== settings.sound.volume;
 
-  const handleVolumeChange = (volume: number) => {
-    updateSoundSettings({ volume });
+  const handleApply = () => {
+    updateSoundSettings({ enabled: localEnabled, volume: localVolume });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const handlePreview = () => {
     // Phase 3.6で効果音再生機能を実装
     // 現在はアラートで代用
-    alert(`効果音プレビュー（音量: ${Math.round(settings.sound.volume * 100)}%）\nPhase 3.6で実装予定です。`);
+    alert(`効果音プレビュー（音量: ${Math.round(localVolume * 100)}%）\nPhase 3.6で実装予定です。`);
   };
 
   return (
@@ -40,7 +46,7 @@ export const SoundSettings: React.FC = () => {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {settings.sound.enabled ? (
+            {localEnabled ? (
               <Volume2 className="w-5 h-5 text-blue-500" />
             ) : (
               <VolumeX className="w-5 h-5 text-gray-400" />
@@ -53,14 +59,14 @@ export const SoundSettings: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={handleToggleSound}
+            onClick={() => setLocalEnabled(!localEnabled)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              settings.sound.enabled ? 'bg-blue-500' : 'bg-gray-300'
+              localEnabled ? 'bg-blue-500' : 'bg-gray-300'
             }`}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                settings.sound.enabled ? 'translate-x-6' : 'translate-x-1'
+                localEnabled ? 'translate-x-6' : 'translate-x-1'
               }`}
             />
           </button>
@@ -78,7 +84,7 @@ export const SoundSettings: React.FC = () => {
               </p>
             </div>
             <span className="text-lg font-semibold text-blue-500">
-              {Math.round(settings.sound.volume * 100)}%
+              {Math.round(localVolume * 100)}%
             </span>
           </div>
           
@@ -88,18 +94,18 @@ export const SoundSettings: React.FC = () => {
               type="range"
               min="0"
               max="100"
-              value={settings.sound.volume * 100}
-              onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
-              disabled={!settings.sound.enabled}
+              value={localVolume * 100}
+              onChange={(e) => setLocalVolume(Number(e.target.value) / 100)}
+              disabled={!localEnabled}
               className={`w-full h-2 rounded-lg appearance-none cursor-pointer
-                ${settings.sound.enabled 
+                ${localEnabled 
                   ? 'bg-gray-200' 
                   : 'bg-gray-100 cursor-not-allowed'
                 }
               `}
               style={{
-                background: settings.sound.enabled
-                  ? `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${settings.sound.volume * 100}%, #e5e7eb ${settings.sound.volume * 100}%, #e5e7eb 100%)`
+                background: localEnabled
+                  ? `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${localVolume * 100}%, #e5e7eb ${localVolume * 100}%, #e5e7eb 100%)`
                   : '#f3f4f6',
               }}
             />
@@ -112,9 +118,9 @@ export const SoundSettings: React.FC = () => {
           {/* プレビューボタン */}
           <button
             onClick={handlePreview}
-            disabled={!settings.sound.enabled}
+            disabled={!localEnabled}
             className={`w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              settings.sound.enabled
+              localEnabled
                 ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
@@ -166,6 +172,30 @@ export const SoundSettings: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 適用ボタン */}
+      <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center space-x-2">
+          {saved && (
+            <>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              <span className="text-sm text-green-700">設定を保存しました</span>
+            </>
+          )}
+        </div>
+        <button
+          onClick={handleApply}
+          disabled={!hasChanges || saved}
+          className={`flex items-center space-x-2 px-6 py-2 rounded-lg transition-colors ${
+            hasChanges && !saved
+              ? 'bg-blue-500 text-white hover:bg-blue-600'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          <Save className="w-4 h-4" />
+          <span>適用</span>
+        </button>
       </div>
 
       {/* Phase 3.6について */}

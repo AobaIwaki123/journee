@@ -4,21 +4,6 @@
  */
 
 /**
- * 言語設定
- */
-export type Language = 'ja' | 'en';
-
-/**
- * タイムゾーン設定
- */
-export type Timezone = 'Asia/Tokyo' | 'UTC' | 'America/New_York' | 'Europe/London';
-
-/**
- * 日付フォーマット設定
- */
-export type DateFormat = 'YYYY/MM/DD' | 'MM/DD/YYYY' | 'DD/MM/YYYY';
-
-/**
  * 通貨設定
  */
 export type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP';
@@ -27,9 +12,6 @@ export type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP';
  * 一般設定
  */
 export interface GeneralSettings {
-  language: Language;
-  timezone: Timezone;
-  dateFormat: DateFormat;
   currency: Currency;
 }
 
@@ -54,9 +36,6 @@ export interface AppSettings {
  */
 export const DEFAULT_SETTINGS: AppSettings = {
   general: {
-    language: 'ja',
-    timezone: 'Asia/Tokyo',
-    dateFormat: 'YYYY/MM/DD',
     currency: 'JPY',
   },
   sound: {
