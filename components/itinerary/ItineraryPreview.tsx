@@ -10,6 +10,7 @@ import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
 import { EmptyItinerary } from './EmptyItinerary';
 import { UndoRedoButtons } from './UndoRedoButtons';
+import { ShareButton } from './ShareButton';
 import { SaveButton } from './SaveButton';
 import { ResetButton } from './ResetButton';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -64,6 +65,7 @@ export const ItineraryPreview: React.FC = () => {
             {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
               <div className="flex justify-between items-center mb-4">
                 <div className="flex gap-3">
+                  <ShareButton />
                   <SaveButton />
                   <ResetButton />
                 </div>
