@@ -5,10 +5,11 @@ import { useStore } from '@/lib/store/useStore';
 import { DaySchedule } from './DaySchedule';
 import { PlanningProgress } from './PlanningProgress';
 import { QuickActions } from './QuickActions';
+import { PhaseStatusBar } from './PhaseStatusBar';
 import { Calendar, MapPin, FileDown } from 'lucide-react';
 
 export const ItineraryPreview: React.FC = () => {
-  const { currentItinerary, planningPhase } = useStore();
+  const { currentItinerary, planningPhase, isAutoProgressing, autoProgressState } = useStore();
 
   if (!currentItinerary) {
     return (
@@ -35,8 +36,13 @@ export const ItineraryPreview: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 relative">
-      {/* Phase 4: プランニング進捗 */}
-      <PlanningProgress />
+      {/* Phase 4.10.3: 自動進行中の進捗表示 */}
+      {isAutoProgressing && autoProgressState && (
+        <PhaseStatusBar state={autoProgressState} />
+      )}
+      
+      {/* Phase 4: プランニング進捗（自動進行中でない場合のみ表示） */}
+      {!isAutoProgressing && <PlanningProgress />}
       
       {/* メインコンテンツ（スクロール可能） */}
       <div className="flex-1 overflow-y-auto">
@@ -110,8 +116,8 @@ export const ItineraryPreview: React.FC = () => {
       </div>
       </div>
 
-      {/* Phase 4: クイックアクション */}
-      <QuickActions />
+      {/* Phase 4: クイックアクション（自動進行中でない場合のみ表示） */}
+      {!isAutoProgressing && <QuickActions />}
     </div>
   );
 };

@@ -63,10 +63,19 @@ interface AppState {
   autoProgressMode: boolean;
   autoProgressSettings: AutoProgressSettings;
   isAutoProgressing: boolean;
+  autoProgressState: {
+    phase: 'idle' | 'skeleton' | 'detailing' | 'completed' | 'error';
+    currentStep: string;
+    currentDay?: number;
+    totalDays?: number;
+    progress: number;
+    error?: string;
+  } | null;
   enableAutoProgress: () => void;
   disableAutoProgress: () => void;
   setAutoProgressSettings: (settings: AutoProgressSettings) => void;
   setIsAutoProgressing: (value: boolean) => void;
+  setAutoProgressState: (state: any) => void;
   shouldTriggerAutoProgress: () => boolean;
 
   // UI state
@@ -188,6 +197,16 @@ export const useStore = create<AppState>((set, get) => ({
   checklistStatus: null,
   buttonReadiness: null,
   
+  // Phase 4.10: Auto progress state
+  autoProgressMode: true,
+  autoProgressSettings: {
+    enabled: true,
+    parallelCount: 3,
+    showNotifications: true,
+  },
+  isAutoProgressing: false,
+  autoProgressState: null,
+  
   // Phase 4.8: Update requirements checklist
   updateChecklist: () => {
     const { messages, currentItinerary, planningPhase } = get();
@@ -242,6 +261,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ autoProgressSettings: settings });
   },
   setIsAutoProgressing: (value) => set({ isAutoProgressing: value }),
+  setAutoProgressState: (state) => set({ autoProgressState: state }),
   
   /**
    * Phase 4.10.1: 自動進行をトリガーすべきか判定

@@ -1,15 +1,13 @@
 /**
- * Phase 4.10.2: 一気通貫実行エンジン
- * 骨組み作成 → 詳細化 → 完成の自動実行
+ * Phase 4.10.2: 順次実行版しおり作成エンジン
+ * 骨組み作成 → 各日を順次詳細化 → 完成の自動実行
  */
 
 import { sendChatMessageStream } from '@/lib/utils/api-client';
-import { batchDetailDaysStream, createDayDetailTasks } from '@/lib/utils/batch-api-client';
 import { mergeItineraryData } from '@/lib/ai/prompts';
 import type { Message } from '@/types/chat';
 import type { ItineraryData } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
-import type { MultiStreamChunk } from '@/types/api';
 
 /**
  * 自動進行の進捗状態
@@ -17,6 +15,8 @@ import type { MultiStreamChunk } from '@/types/api';
 export interface AutoProgressState {
   phase: 'idle' | 'skeleton' | 'detailing' | 'completed' | 'error';
   currentStep: string;
+  currentDay?: number;
+  totalDays?: number;
   progress: number; // 0-100
   error?: string;
 }
@@ -33,14 +33,13 @@ export interface AutoProgressCallbacks {
 }
 
 /**
- * 一気通貫でしおりを作成
+ * 一気通貫でしおりを作成（順次実行版）
  */
-export async function executeFullItineraryCreation(
+export async function executeSequentialItineraryCreation(
   messages: Message[],
   currentItinerary: ItineraryData | undefined,
   selectedAI: AIModelId,
   claudeApiKey: string,
-  parallelCount: number,
   callbacks: AutoProgressCallbacks
 ): Promise<void> {
   const { onStateChange, onMessage, onItineraryUpdate, onComplete, onError } = callbacks;
@@ -49,7 +48,7 @@ export async function executeFullItineraryCreation(
     // ステップ1: 骨組み作成
     onStateChange({
       phase: 'skeleton',
-      currentStep: '骨組みを作成中...',
+      currentStep: '旅程の骨組みを作成中...',
       progress: 10,
     });
     
@@ -65,7 +64,7 @@ export async function executeFullItineraryCreation(
     
     // 骨組み作成のストリーミング
     for await (const chunk of sendChatMessageStream(
-      '骨組みを作成してください',
+      '旅程の骨組みを作成してください。各日の大まかなテーマやエリアを決定してください。',
       chatHistory,
       currentItinerary,
       selectedAI,
@@ -107,61 +106,72 @@ export async function executeFullItineraryCreation(
       progress: 30,
     });
     
-    // ステップ2: 全日程の並列詳細化
-    onStateChange({
-      phase: 'detailing',
-      currentStep: `全${skeletonItinerary.schedule.length}日の詳細を並列作成中...`,
-      progress: 40,
-    });
+    // ステップ2: 各日を順次詳細化
+    const totalDays = skeletonItinerary.schedule.length;
+    const baseProgress = 30;
+    const progressPerDay = 60 / totalDays; // 30% → 90%
     
-    const tasks = createDayDetailTasks(skeletonItinerary);
-    let detailProgress = 40;
-    const progressPerDay = 50 / tasks.length; // 40% → 90%
-    
-    for await (const chunk of batchDetailDaysStream(
-      tasks,
-      [...messages, ...(skeletonResponse ? [{
-        id: `assistant-skeleton-${Date.now()}`,
-        role: 'assistant' as const,
-        content: skeletonResponse,
-        timestamp: new Date(),
-      }] : [])],
-      skeletonItinerary,
-      parallelCount
-    )) {
-      if (chunk.type === 'day_start') {
-        onStateChange({
-          phase: 'detailing',
-          currentStep: `${chunk.day}日目の詳細を作成中...`,
-          progress: detailProgress,
-        });
-      } else if (chunk.type === 'day_complete') {
-        detailProgress += progressPerDay;
-        onStateChange({
-          phase: 'detailing',
-          currentStep: `${chunk.day}日目の詳細が完了`,
-          progress: Math.min(90, Math.round(detailProgress)),
-        });
-      } else if (chunk.type === 'itinerary' && chunk.itinerary) {
-        const updatedItinerary = mergeItineraryData(
-          skeletonItinerary,
-          chunk.itinerary
-        );
-        onItineraryUpdate(updatedItinerary);
-        skeletonItinerary = updatedItinerary;
-      } else if (chunk.type === 'day_error') {
-        console.error(`Day ${chunk.day} error:`, chunk.error);
-        // エラーでも続行（部分的失敗を許容）
-      } else if (chunk.type === 'progress' && chunk.progress) {
-        const rate = 40 + (chunk.progress.progressRate * 0.5);
-        onStateChange({
-          phase: 'detailing',
-          currentStep: `詳細化中... (${chunk.progress.completedDays.length}/${chunk.progress.totalDays}日完了)`,
-          progress: Math.round(rate),
-        });
-      } else if (chunk.type === 'done') {
-        break;
+    for (let i = 0; i < totalDays; i++) {
+      const dayNumber = i + 1;
+      const currentProgress = baseProgress + (progressPerDay * i);
+      
+      onStateChange({
+        phase: 'detailing',
+        currentStep: `${dayNumber}日目の詳細を作成中...`,
+        currentDay: dayNumber,
+        totalDays,
+        progress: Math.round(currentProgress),
+      });
+      
+      let dayResponse = '';
+      
+      // 各日の詳細化
+      for await (const chunk of sendChatMessageStream(
+        `${dayNumber}日目の詳細なスケジュールを作成してください。具体的な観光スポット、時間、移動手段を含めてください。`,
+        [...chatHistory, ...(skeletonResponse ? [{
+          id: `assistant-skeleton-${Date.now()}`,
+          role: 'assistant' as const,
+          content: skeletonResponse,
+          timestamp: new Date(),
+        }] : [])],
+        skeletonItinerary,
+        selectedAI,
+        claudeApiKey,
+        'detailing',
+        dayNumber
+      )) {
+        if (chunk.type === 'message' && chunk.content) {
+          dayResponse += chunk.content;
+        } else if (chunk.type === 'itinerary' && chunk.itinerary) {
+          skeletonItinerary = mergeItineraryData(
+            skeletonItinerary,
+            chunk.itinerary
+          );
+          onItineraryUpdate(skeletonItinerary);
+        } else if (chunk.type === 'error') {
+          console.error(`Day ${dayNumber} error:`, chunk.error);
+          // エラーでも続行
+        }
       }
+      
+      // 各日のメッセージを追加
+      if (dayResponse) {
+        const dayMessage: Message = {
+          id: `assistant-day${dayNumber}-${Date.now()}`,
+          role: 'assistant',
+          content: dayResponse,
+          timestamp: new Date(),
+        };
+        onMessage(dayMessage);
+      }
+      
+      onStateChange({
+        phase: 'detailing',
+        currentStep: `${dayNumber}日目の詳細が完了`,
+        currentDay: dayNumber,
+        totalDays,
+        progress: Math.round(currentProgress + progressPerDay),
+      });
     }
     
     // ステップ3: 完成
@@ -174,7 +184,7 @@ export async function executeFullItineraryCreation(
     onComplete();
     
   } catch (error: any) {
-    console.error('Auto progress error:', error);
+    console.error('Sequential itinerary creation error:', error);
     onStateChange({
       phase: 'error',
       currentStep: 'エラーが発生しました',
