@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { DaySchedule } from '@/types/itinerary';
 import { MapPin, AlertCircle } from 'lucide-react';
 
@@ -21,8 +21,8 @@ export const MapView: React.FC<MapViewProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get all spots with location data
-  const getSpotsWithLocation = () => {
+  // Get all spots with location data (memoized to prevent infinite loops)
+  const spots = useMemo(() => {
     const spotsToShow = selectedDay !== undefined
       ? days.filter(day => day.day === selectedDay)
       : days;
@@ -35,9 +35,7 @@ export const MapView: React.FC<MapViewProps> = ({
           dayNumber: day.day,
         }))
     );
-  };
-
-  const spots = getSpotsWithLocation();
+  }, [days, selectedDay]);
 
   // Load Google Maps script
   useEffect(() => {
@@ -74,7 +72,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
   // Initialize map
   useEffect(() => {
-    if (!isLoaded || !mapRef.current || spots.length === 0) return;
+    if (!isLoaded || !mapRef.current || spots.length === 0 || map) return;
 
     // Default center (Tokyo)
     const defaultCenter = { lat: 35.6762, lng: 139.6503 };
@@ -96,7 +94,7 @@ export const MapView: React.FC<MapViewProps> = ({
     });
 
     setMap(newMap);
-  }, [isLoaded, spots.length]);
+  }, [isLoaded, spots.length, map]);
 
   // Add markers
   useEffect(() => {
@@ -198,6 +196,7 @@ export const MapView: React.FC<MapViewProps> = ({
     return () => {
       newMarkers.forEach(marker => marker.setMap(null));
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, spots, selectedDay]);
 
   if (error) {
