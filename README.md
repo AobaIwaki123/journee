@@ -308,6 +308,29 @@ journee/
 
 ## 🔧 開発環境セットアップ
 
+### 🐳 Docker環境（推奨）
+
+ローカル環境を汚さずに開発できます。
+
+```bash
+# リポジトリのクローン
+git clone <repository-url>
+cd journee
+
+# 環境変数の設定
+cp .env.example .env.local
+
+# Dockerコンテナの起動
+npm run docker:start
+
+# ブラウザでアクセス
+# http://localhost:3000
+```
+
+**詳細は [DOCKER.md](./DOCKER.md) を参照してください。**
+
+### ローカル環境
+
 ```bash
 # リポジトリのクローン
 git clone <repository-url>

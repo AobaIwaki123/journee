@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "docker:start": "bash scripts/docker-dev.sh start",
+    "docker:stop": "bash scripts/docker-dev.sh stop",
+    "docker:restart": "bash scripts/docker-dev.sh restart",
+    "docker:logs": "bash scripts/docker-dev.sh logs",
+    "docker:shell": "bash scripts/docker-dev.sh shell",
+    "docker:build": "bash scripts/docker-dev.sh build",
+    "docker:clean": "bash scripts/docker-dev.sh clean",
+    "docker:status": "bash scripts/docker-dev.sh status"
   },
   "dependencies": {
     "react": "^18.2.0",
