@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/lib/store/useStore';
 import { getItineraryById } from '@/lib/mock-data/itineraries';
+import { loadCurrentItinerary } from '@/lib/utils/storage';
 
 /**
  * LocalStorageからデータを復元するコンポーネント
@@ -21,9 +22,16 @@ export const StorageInitializer: React.FC = () => {
     // URLパラメータからしおりIDを取得
     const itineraryId = searchParams.get('itineraryId');
     if (itineraryId) {
+      // URLパラメータで指定されたしおりを読み込む
       const itinerary = getItineraryById(itineraryId);
       if (itinerary) {
         setItinerary(itinerary);
+      }
+    } else {
+      // URLパラメータがない場合、LocalStorageから現在のしおりを復元
+      const savedItinerary = loadCurrentItinerary();
+      if (savedItinerary) {
+        setItinerary(savedItinerary);
       }
     }
   }, [initializeFromStorage, setItinerary, searchParams]);

@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { LoginButton } from '@/components/auth/LoginButton';
+import { SaveStatus } from '@/components/ui/SaveStatus';
 
 export const Header: React.FC = () => {
   const { data: session, status } = useSession();
@@ -28,6 +29,9 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* 保存状態表示 */}
+          {session && <SaveStatus />}
+
           {/* しおり一覧ボタン */}
           {session && (
             <Link
