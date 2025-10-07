@@ -103,7 +103,7 @@ export const ItineraryPreview: React.FC = () => {
             )}
 
             {/* PDF Export Button */}
-            {currentItinerary.schedule.length > 0 && planningPhase === 'completed' && (
+            {currentItinerary.schedule.length > 0 && (
               <div className="mt-10 mb-6 flex justify-center">
                 <PDFExportButton itinerary={currentItinerary} />
               </div>
