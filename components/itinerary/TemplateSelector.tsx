@@ -6,8 +6,8 @@ import { useStore } from '@/lib/store/useStore';
 import { Check } from 'lucide-react';
 
 export const TemplateSelector: React.FC = () => {
-  const selectedTemplate = useStore((state) => state.selectedTemplate);
-  const setSelectedTemplate = useStore((state) => state.setSelectedTemplate);
+  const selectedTemplate = useStore((state: any) => state.selectedTemplate);
+  const setSelectedTemplate = useStore((state: any) => state.setSelectedTemplate);
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-6">

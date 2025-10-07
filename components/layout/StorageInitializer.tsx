@@ -11,8 +11,8 @@ import { getItineraryById } from '@/lib/mock-data/itineraries';
  */
 export const StorageInitializer: React.FC = () => {
   const searchParams = useSearchParams();
-  const initializeFromStorage = useStore((state) => state.initializeFromStorage);
-  const setItinerary = useStore((state) => state.setItinerary);
+  const initializeFromStorage = useStore((state: any) => state.initializeFromStorage);
+  const setItinerary = useStore((state: any) => state.setItinerary);
 
   useEffect(() => {
     // LocalStorageからAPIキーと選択AIを復元

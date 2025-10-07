@@ -745,12 +745,12 @@ export const useStore = create<AppState>((set, get) => ({
     }),
 
   canUndo: () => {
-    const state = useStore.getState();
+    const state = get();
     return state.history.past.length > 0;
   },
 
   canRedo: () => {
-    const state = useStore.getState();
+    const state = get();
     return state.history.future.length > 0;
   },
 

@@ -5,12 +5,12 @@ import { useStore } from '@/lib/store/useStore';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
 export const ToastContainer: React.FC = () => {
-  const toasts = useStore((state) => state.toasts);
-  const removeToast = useStore((state) => state.removeToast);
+  const toasts = useStore((state: any) => state.toasts);
+  const removeToast = useStore((state: any) => state.removeToast);
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-      {toasts.map((toast) => (
+      {toasts.map((toast: any) => (
         <Toast
           key={toast.id}
           id={toast.id}

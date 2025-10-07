@@ -6,6 +6,7 @@ import type { ItineraryPhase } from '@/types/itinerary';
 import { ArrowRight, RotateCcw, Check, AlertCircle } from 'lucide-react';
 import { sendChatMessageStream } from '@/lib/utils/api-client';
 import { mergeItineraryData } from '@/lib/ai/prompts';
+// import { createDayDetailTasks } from '@/lib/execution/sequential-itinerary-builder';
 
 /**
  * Phase 4.4, 4.5, 4.8: 段階的旅程構築のクイックアクション
@@ -145,7 +146,7 @@ export const QuickActions: React.FC = () => {
       addMessage(userMessage);
       
       // チャット履歴を準備
-      const chatHistory = messages.slice(-10).map((msg) => ({
+      const chatHistory = messages.slice(-10).map((msg: any) => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,
@@ -180,62 +181,28 @@ export const QuickActions: React.FC = () => {
           }
         }
         
-        // 現在のしおりを取得
-        const currentSkeleton = useStore.getState().currentItinerary;
-        if (!currentSkeleton || !currentSkeleton.schedule || currentSkeleton.schedule.length === 0) {
-          throw new Error('骨組みが作成されていません');
-        }
-        
-        // 並列バッチ処理タスクを作成
-        const tasks = createDayDetailTasks(currentSkeleton);
-        console.log(`📋 ${tasks.length}日分の詳細化タスクを作成`);
-        
-        // 並列バッチストリーミング処理
-        const updatedChatHistory = [
-          ...chatHistory,
-          {
-            id: `assistant-skeleton-${Date.now()}`,
-            role: 'assistant' as const,
-            content: fullResponse,
-            timestamp: new Date(),
-          }
-        ];
-        
-        const batchResponse: string[] = [];
-        
-        for await (const chunk of batchDetailDaysStream(
-          tasks,
-          updatedChatHistory,
-          currentSkeleton,
-          3 // 最大3並列
+        // Phase 4.9の並列処理は未実装のため、通常のストリーミング処理にフォールバック
+        // TODO: Phase 4.9実装時に並列処理を追加
+        for await (const chunk of sendChatMessageStream(
+          '次へ',
+          chatHistory,
+          useStore.getState().currentItinerary || undefined,
+          selectedAI,
+          claudeApiKey,
+          newPhase,
+          newDetailingDay
         )) {
-          if (chunk.type === 'day_start') {
-            console.log(`📝 ${chunk.day}日目の詳細化開始`);
-            appendStreamingMessage(`\n\n### ${chunk.day}日目の詳細を作成中...\n`);
-          } else if (chunk.type === 'message' && chunk.content) {
+          if (chunk.type === 'message' && chunk.content) {
             appendStreamingMessage(chunk.content);
-            batchResponse.push(chunk.content);
+            fullResponse += chunk.content;
           } else if (chunk.type === 'itinerary' && chunk.itinerary) {
             const mergedItinerary = mergeItineraryData(
               useStore.getState().currentItinerary || undefined,
               chunk.itinerary
             );
             setItinerary(mergedItinerary);
-          } else if (chunk.type === 'day_complete') {
-            console.log(`✅ ${chunk.day}日目の詳細化完了`);
-            appendStreamingMessage(`\n✓ ${chunk.day}日目完了\n`);
-          } else if (chunk.type === 'day_error') {
-            console.error(`❌ ${chunk.day}日目エラー:`, chunk.error);
-            appendStreamingMessage(`\n⚠️ ${chunk.day}日目でエラーが発生しました: ${chunk.error}\n`);
-          } else if (chunk.type === 'progress' && chunk.progress) {
-            console.log(`📊 進捗: ${chunk.progress.completedDays.length}/${chunk.progress.totalDays}日完了`);
-          } else if (chunk.type === 'done') {
-            console.log('🎉 並列バッチ処理完了');
-            break;
           }
         }
-        
-        fullResponse += '\n\n全ての日程の詳細化が完了しました！';
         
       } else {
         // 通常のストリーミング処理（skeleton作成など）
@@ -340,7 +307,7 @@ export const QuickActions: React.FC = () => {
                 以下の情報が不足しています
               </h4>
               <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">
-                {checklistStatus.missingRequired.map(item => (
+                {checklistStatus.missingRequired.map((item: string) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
