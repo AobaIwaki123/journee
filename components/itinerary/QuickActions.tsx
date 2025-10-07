@@ -6,7 +6,6 @@ import type { ItineraryPhase } from '@/types/itinerary';
 import { ArrowRight, RotateCcw, Check, AlertCircle } from 'lucide-react';
 import { sendChatMessageStream } from '@/lib/utils/api-client';
 import { mergeItineraryData } from '@/lib/ai/prompts';
-import { batchDetailDaysStream, createDayDetailTasks } from '@/lib/utils/batch-api-client';
 
 /**
  * Phase 4.4, 4.5, 4.8: 段階的旅程構築のクイックアクション
