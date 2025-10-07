@@ -350,21 +350,35 @@ npm run dev
 ```
 
 ### 必要な環境変数
+
+#### 最小構成（AI機能のテストのみ）
+```bash
+# 必須
+GEMINI_API_KEY=your_gemini_api_key
+
+# 開発モード（認証をバイパス）
+NEXT_PUBLIC_DEV_MODE=true
 ```
+
+#### 完全構成（すべての機能）
+```bash
 # AI API
 GEMINI_API_KEY=your_gemini_api_key
 
-# 認証
+# 認証（Phase 2）
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_nextauth_secret
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 
-# Google Maps
+# Google Maps（Phase 5）
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_maps_api_key
 
 # データベース（Phase 9以降）
 DATABASE_URL=your_database_url
+
+# 開発モード（認証あり・なしを切り替え）
+# NEXT_PUBLIC_DEV_MODE=false
 ```
 
 ## 🗄️ データベーススキーマ（Phase 9実装時）
@@ -482,5 +496,8 @@ MIT
 **最終更新**: 2025-10-07
 
 **詳細ドキュメント**:
+- **[🔧 即座に解決: テキストボックスが無効な問題](./QUICK_FIX.md)** - 3分で解決
+- **[開発モードセットアップ](./DEV_MODE_SETUP.md)** - 認証なしでテストする方法
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [API ドキュメント](./PHASE3_API_DOCUMENTATION.md)
+- [テストガイド](./TESTING_QUICKSTART.md)
