@@ -12,12 +12,9 @@ const STORAGE_KEYS = {
   CLAUDE_API_KEY: 'journee_claude_api_key',
   SELECTED_AI: 'journee_selected_ai',
   PANEL_WIDTH: 'journee_panel_width', // Phase 7用
-<<<<<<< HEAD
   AUTO_PROGRESS_MODE: 'journee_auto_progress_mode', // Phase 4.10用
   AUTO_PROGRESS_SETTINGS: 'journee_auto_progress_settings', // Phase 4.10用
-=======
   APP_SETTINGS: 'journee_app_settings', // Phase 5.4.3用
->>>>>>> origin/main
 } as const;
 
 /**
