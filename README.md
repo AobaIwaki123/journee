@@ -739,6 +739,32 @@ journee/
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
 
+### BUG-003: 予算自動更新バグ修正 ✅ **完了** (2025-10-07)
+**発生状況**: 
+個別スポットの予算（estimatedCost）を変更しても、日別の総予算（DaySchedule.totalCost）やしおり全体の総予算（ItineraryData.totalBudget）が自動更新されない
+
+**修正内容**:
+- [x] 予算計算ヘルパー関数の作成（`lib/utils/budget-utils.ts`）
+  - `calculateDayTotalCost`: 1日の総予算を計算
+  - `calculateTotalBudget`: しおり全体の総予算を計算
+  - `updateDayBudget`: DayScheduleの予算を更新
+  - `updateItineraryBudget`: ItineraryDataの予算を更新
+- [x] Zustand storeの編集アクション修正（`lib/store/useStore.ts`）
+  - `updateSpot`: スポット編集時に予算を自動再計算
+  - `deleteSpot`: スポット削除時に予算を自動再計算
+  - `addSpot`: スポット追加時に予算を自動再計算
+  - `reorderSpots`: スポット並び替え時に予算を自動再計算
+  - `moveSpot`: スポット移動時に両日の予算を自動再計算
+
+**実装結果**:
+- ✅ スポットの予算変更時に自動的に日別・全体の総予算が更新される
+- ✅ スポット追加・削除・移動時も予算が正確に計算される
+- ✅ データの整合性が常に保たれる
+- ✅ Undo/Redoとも完全に統合
+- ✅ イミュータブルな状態更新を維持
+
+**詳細**: [docs/BUG_FIX_003_BUDGET_UPDATE.md](./docs/BUG_FIX_003_BUDGET_UPDATE.md)
+
 ### BUG-002: Phase 5.1.3 時刻と順番の整合性バグ修正 ✅ **完了** (2025-10-07)
 **発生状況**: 
 1. 編集内容が即座にレンダリングされない
@@ -1035,6 +1061,7 @@ MIT
   - ✅ Phase 6.3: モデル設定の一元管理・型安全性向上
 - ✅ **BUG-001**: JSON削除バグ修正（3段階防御システム、完全対応）
 - ✅ **BUG-002**: Phase 5.1.3 時刻と順番の整合性バグ修正（イミュータブル更新、即座レンダリング）
+- ✅ **BUG-003**: 予算自動更新バグ修正（スポット編集時の予算再計算、データ整合性保証）
 
 **次の実装**: 
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）

@@ -32,6 +32,7 @@ import {
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 import { createHistoryUpdate } from './useStore-helper';
 import { sortSpotsByTime, adjustTimeAfterReorder } from '@/lib/utils/time-utils';
+import { updateDayBudget, updateItineraryBudget } from '@/lib/utils/budget-utils';
 
 interface ToastMessage {
   id: string;
@@ -453,16 +454,16 @@ export const useStore = create<AppState>((set, get) => ({
         : newSpots;
 
       // 新しいdayScheduleオブジェクトを作成（イミュータブル）
-      newSchedule[dayIndex] = {
+      newSchedule[dayIndex] = updateDayBudget({
         ...oldDaySchedule,
         spots: sortedSpots,
-      };
+      });
 
-      const newItinerary = {
+      const newItinerary = updateItineraryBudget({
         ...state.currentItinerary,
         schedule: newSchedule,
         updatedAt: new Date(),
-      };
+      });
 
       return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
@@ -480,16 +481,16 @@ export const useStore = create<AppState>((set, get) => ({
       const newSpots = oldDaySchedule.spots.filter((s) => s.id !== spotId);
 
       // 新しいdayScheduleオブジェクトを作成（イミュータブル）
-      newSchedule[dayIndex] = {
+      newSchedule[dayIndex] = updateDayBudget({
         ...oldDaySchedule,
         spots: newSpots,
-      };
+      });
 
-      const newItinerary = {
+      const newItinerary = updateItineraryBudget({
         ...state.currentItinerary,
         schedule: newSchedule,
         updatedAt: new Date(),
-      };
+      });
 
       return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
@@ -510,16 +511,16 @@ export const useStore = create<AppState>((set, get) => ({
       const sortedSpots = sortSpotsByTime(newSpots);
 
       // 新しいdayScheduleオブジェクトを作成（イミュータブル）
-      newSchedule[dayIndex] = {
+      newSchedule[dayIndex] = updateDayBudget({
         ...oldDaySchedule,
         spots: sortedSpots,
-      };
+      });
 
-      const newItinerary = {
+      const newItinerary = updateItineraryBudget({
         ...state.currentItinerary,
         schedule: newSchedule,
         updatedAt: new Date(),
-      };
+      });
 
       return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
@@ -542,16 +543,16 @@ export const useStore = create<AppState>((set, get) => ({
       const adjustedSpots = adjustTimeAfterReorder(spots, endIndex);
 
       // 新しいdayScheduleオブジェクトを作成（イミュータブル）
-      newSchedule[dayIndex] = {
+      newSchedule[dayIndex] = updateDayBudget({
         ...oldDaySchedule,
         spots: adjustedSpots,
-      };
+      });
 
-      const newItinerary = {
+      const newItinerary = updateItineraryBudget({
         ...state.currentItinerary,
         schedule: newSchedule,
         updatedAt: new Date(),
-      };
+      });
 
       return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
@@ -579,21 +580,21 @@ export const useStore = create<AppState>((set, get) => ({
       const sortedToSpots = sortSpotsByTime(newToSpots);
 
       // 新しいdayScheduleオブジェクトを作成（イミュータブル）
-      newSchedule[fromDayIndex] = {
+      newSchedule[fromDayIndex] = updateDayBudget({
         ...oldFromDay,
         spots: newFromSpots,
-      };
+      });
 
-      newSchedule[toDayIndex] = {
+      newSchedule[toDayIndex] = updateDayBudget({
         ...oldToDay,
         spots: sortedToSpots,
-      };
+      });
 
-      const newItinerary = {
+      const newItinerary = updateItineraryBudget({
         ...state.currentItinerary,
         schedule: newSchedule,
         updatedAt: new Date(),
-      };
+      });
 
       return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
