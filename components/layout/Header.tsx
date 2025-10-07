@@ -2,8 +2,13 @@
 
 import React from 'react';
 import { Plane } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { UserMenu } from '@/components/auth/UserMenu';
+import { LoginButton } from '@/components/auth/LoginButton';
 
 export const Header: React.FC = () => {
+  const { data: session, status } = useSession();
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -18,13 +23,13 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="text-sm text-gray-600 hover:text-gray-800">
-            ログイン
-          </button>
-          <span className="text-gray-300">|</span>
-          <button className="text-sm px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            はじめる
-          </button>
+          {status === 'loading' ? (
+            <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+          ) : session ? (
+            <UserMenu />
+          ) : (
+            <LoginButton />
+          )}
         </div>
       </div>
     </header>
