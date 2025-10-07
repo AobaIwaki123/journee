@@ -620,16 +620,20 @@ journee/
 #### 5.5 しおり公開・共有機能 🆕
 **目的**: 作成したしおりを公開URLで共有し、Read-onlyページで閲覧できるようにする
 
-##### 5.5.1 型定義とAPI
-- [ ] `types/itinerary.ts` の拡張
-  - [ ] `isPublic`, `publicSlug`, `publishedAt`, `viewCount`, `allowPdfDownload` フィールド追加
-  - [ ] `PublicItinerarySettings` 型定義
-  - [ ] `PublicItineraryMetadata` 型定義
-- [ ] 公開API実装
-  - [ ] `/api/itinerary/publish` - 公開URL発行（POST）
-  - [ ] `/api/itinerary/unpublish` - 非公開化（POST）
-  - [ ] ユニークスラッグ生成（nanoid、10文字）
-  - [ ] 認証・所有権チェック
+##### 5.5.1 型定義とAPI ✅ **完了** (2025-10-07)
+- [x] `types/itinerary.ts` の拡張
+  - [x] `isPublic`, `publicSlug`, `publishedAt`, `viewCount`, `allowPdfDownload` フィールド追加
+  - [x] `PublicItinerarySettings` 型定義
+  - [x] `PublicItineraryMetadata` 型定義
+- [x] 公開API実装
+  - [x] `/api/itinerary/publish` - 公開URL発行（POST）
+  - [x] `/api/itinerary/unpublish` - 非公開化（POST）
+  - [x] ユニークスラッグ生成（nanoid、10文字）
+  - [x] 認証・所有権チェック
+- [x] Zustand状態管理拡張
+  - [x] `publishItinerary` アクション
+  - [x] `unpublishItinerary` アクション
+  - [x] `updatePublicSettings` アクション
 
 ##### 5.5.2 閲覧用ページ
 - [ ] `/app/share/[slug]/page.tsx` の実装

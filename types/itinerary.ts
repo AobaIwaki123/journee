@@ -119,6 +119,16 @@ export interface ItineraryData {
   updatedAt: Date;
   /** 公開設定 */
   isPublic?: boolean;
+  /** Phase 5.5: 公開URL用のユニークスラッグ */
+  publicSlug?: string;
+  /** Phase 5.5: 公開日時 */
+  publishedAt?: Date;
+  /** Phase 5.5: 閲覧数 */
+  viewCount?: number;
+  /** Phase 5.5: PDFダウンロード許可フラグ */
+  allowPdfDownload?: boolean;
+  /** Phase 5.5: 閲覧者へのカスタムメッセージ（オプション） */
+  customMessage?: string;
   /** Phase 4: 段階的作成システムの現在のフェーズ */
   phase?: ItineraryPhase;
   /** Phase 4: 現在詳細化中の日（detailingフェーズで使用） */
@@ -174,4 +184,28 @@ export interface ItineraryListItem {
   createdAt: Date;
   updatedAt: Date;
   thumbnailUrl?: string;
+}
+
+/**
+ * Phase 5.5: 公開設定の型
+ */
+export interface PublicItinerarySettings {
+  isPublic: boolean;
+  allowPdfDownload: boolean;
+  customMessage?: string;
+}
+
+/**
+ * Phase 5.5: 公開しおりのメタデータ
+ */
+export interface PublicItineraryMetadata {
+  slug: string;
+  title: string;
+  destination: string;
+  startDate?: string;
+  endDate?: string;
+  thumbnailUrl?: string;
+  authorName: string;
+  viewCount: number;
+  publishedAt: Date;
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
-import { ItineraryData, TouristSpot, DaySchedule, ItineraryPhase, DayStatus } from '@/types/itinerary';
+import { ItineraryData, TouristSpot, DaySchedule, ItineraryPhase, DayStatus, PublicItinerarySettings } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
 import type { AppSettings } from '@/types/settings';
 import { DEFAULT_SETTINGS } from '@/types/settings';
@@ -175,9 +175,14 @@ interface AppState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+
+  // Phase 5.5: Itinerary sharing/publishing actions
+  publishItinerary: (settings: PublicItinerarySettings) => Promise<{ success: boolean; publicUrl?: string; slug?: string; error?: string }>;
+  unpublishItinerary: () => Promise<{ success: boolean; error?: string }>;
+  updatePublicSettings: (settings: Partial<PublicItinerarySettings>) => void;
 }
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>()((set, get) => ({
   // Chat state
   messages: [],
   isLoading: false,
@@ -737,12 +742,136 @@ export const useStore = create<AppState>((set, get) => ({
     }),
 
   canUndo: () => {
-    const state = useStore.getState();
+    const state: AppState = useStore.getState();
     return state.history.past.length > 0;
   },
 
   canRedo: () => {
-    const state = useStore.getState();
+    const state: AppState = useStore.getState();
     return state.history.future.length > 0;
   },
+
+  // Phase 5.5: Itinerary sharing/publishing actions
+  publishItinerary: async (settings) => {
+    const state = get();
+    const { currentItinerary } = state;
+
+    if (!currentItinerary) {
+      return { success: false, error: 'しおりが存在しません' };
+    }
+
+    try {
+      const response = await fetch('/api/itinerary/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itineraryId: currentItinerary.id,
+          settings,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || '公開に失敗しました' };
+      }
+
+      // しおりの公開情報を更新
+      const updatedItinerary: ItineraryData = {
+        ...currentItinerary,
+        isPublic: settings.isPublic,
+        publicSlug: data.slug,
+        publishedAt: new Date(data.publishedAt),
+        allowPdfDownload: settings.allowPdfDownload,
+        customMessage: settings.customMessage,
+        updatedAt: new Date(),
+      };
+
+      set({
+        currentItinerary: updatedItinerary,
+        history: {
+          ...state.history,
+          present: updatedItinerary,
+        },
+      });
+
+      return {
+        success: true,
+        publicUrl: data.publicUrl,
+        slug: data.slug,
+      };
+    } catch (error) {
+      console.error('Error publishing itinerary:', error);
+      return { success: false, error: '公開に失敗しました' };
+    }
+  },
+
+  unpublishItinerary: async () => {
+    const state = get();
+    const { currentItinerary } = state;
+
+    if (!currentItinerary) {
+      return { success: false, error: 'しおりが存在しません' };
+    }
+
+    try {
+      const response = await fetch('/api/itinerary/unpublish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itineraryId: currentItinerary.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || '非公開化に失敗しました' };
+      }
+
+      // しおりの公開情報をクリア
+      const updatedItinerary: ItineraryData = {
+        ...currentItinerary,
+        isPublic: false,
+        publicSlug: undefined,
+        publishedAt: undefined,
+        allowPdfDownload: undefined,
+        customMessage: undefined,
+        updatedAt: new Date(),
+      };
+
+      set({
+        currentItinerary: updatedItinerary,
+        history: {
+          ...state.history,
+          present: updatedItinerary,
+        },
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error unpublishing itinerary:', error);
+      return { success: false, error: '非公開化に失敗しました' };
+    }
+  },
+
+  updatePublicSettings: (settings) =>
+    set((state) => {
+      if (!state.currentItinerary) return state;
+
+      const updatedItinerary: ItineraryData = {
+        ...state.currentItinerary,
+        allowPdfDownload: settings.allowPdfDownload ?? state.currentItinerary.allowPdfDownload,
+        customMessage: settings.customMessage ?? state.currentItinerary.customMessage,
+        updatedAt: new Date(),
+      };
+
+      return {
+        currentItinerary: updatedItinerary,
+        history: {
+          ...state.history,
+          present: updatedItinerary,
+        },
+      };
+    }),
 }));
