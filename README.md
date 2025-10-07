@@ -234,11 +234,11 @@ journee/
 3. **日程詳細化**: 1日ずつ具体的な観光スポット、時間、移動手段を追加
 4. **最終調整**: 全体のバランス調整、予算確認
 
-#### 4.1 型定義の拡張
-- [ ] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
-- [ ] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
-- [ ] `DaySchedule` に `status`, `theme` プロパティ追加
-- [ ] `ItineraryData` に `phase`, `currentDay` プロパティ追加
+#### 4.1 型定義の拡張 ✅ **完了**
+- [x] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
+- [x] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
+- [x] `DaySchedule` に `status`, `theme` プロパティ追加
+- [x] `ItineraryData` に `phase`, `currentDay` プロパティ追加
 
 #### 4.2 状態管理の拡張
 - [ ] `planningPhase`, `currentDetailingDay` の状態管理
