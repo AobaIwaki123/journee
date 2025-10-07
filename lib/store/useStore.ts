@@ -8,8 +8,13 @@ import {
   removeClaudeApiKey,
   saveSelectedAI,
   loadSelectedAI,
+  saveSoundEnabled,
+  loadSoundEnabled,
+  saveSoundVolume,
+  loadSoundVolume,
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
+import { soundManager } from '@/lib/sound/SoundManager';
 
 interface AppState {
   // Chat state
@@ -40,6 +45,12 @@ interface AppState {
   // Error state
   error: string | null;
   setError: (error: string | null) => void;
+
+  // Sound state (Phase 3.6)
+  soundEnabled: boolean;
+  soundVolume: number;
+  setSoundEnabled: (enabled: boolean) => void;
+  setSoundVolume: (volume: number) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -87,13 +98,37 @@ export const useStore = create<AppState>((set) => ({
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
     const savedAI = loadSelectedAI();
+    const savedSoundEnabled = loadSoundEnabled();
+    const savedSoundVolume = loadSoundVolume();
+    
+    // SoundManager にも設定を反映
+    soundManager.setEnabled(savedSoundEnabled);
+    soundManager.setVolume(savedSoundVolume);
+    
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
+      soundEnabled: savedSoundEnabled,
+      soundVolume: savedSoundVolume,
     });
   },
 
   // Error state
   error: null,
   setError: (error) => set({ error }),
+
+  // Sound state (Phase 3.6)
+  soundEnabled: true,
+  soundVolume: 0.7,
+  setSoundEnabled: (enabled) => {
+    saveSoundEnabled(enabled);
+    soundManager.setEnabled(enabled);
+    set({ soundEnabled: enabled });
+  },
+  setSoundVolume: (volume) => {
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    saveSoundVolume(clampedVolume);
+    soundManager.setVolume(clampedVolume);
+    set({ soundVolume: clampedVolume });
+  },
 }));

@@ -12,6 +12,8 @@ const STORAGE_KEYS = {
   CLAUDE_API_KEY: 'journee_claude_api_key',
   SELECTED_AI: 'journee_selected_ai',
   PANEL_WIDTH: 'journee_panel_width', // Phase 7用
+  SOUND_ENABLED: 'journee_sound_enabled', // Phase 3.6用
+  SOUND_VOLUME: 'journee_sound_volume', // Phase 3.6用
 } as const;
 
 /**
@@ -135,6 +137,88 @@ export function loadSelectedAI(): AIModelId {
   } catch (error) {
     console.error('Failed to load selected AI:', error);
     return DEFAULT_AI_MODEL;
+  }
+}
+
+/**
+ * 効果音のON/OFF設定を保存（Phase 3.6）
+ */
+export function saveSoundEnabled(enabled: boolean): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  
+  try {
+    window.localStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, String(enabled));
+    return true;
+  } catch (error) {
+    console.error('Failed to save sound enabled:', error);
+    return false;
+  }
+}
+
+/**
+ * 効果音のON/OFF設定を取得（Phase 3.6）
+ */
+export function loadSoundEnabled(): boolean {
+  if (!isLocalStorageAvailable()) {
+    return true; // デフォルト: ON
+  }
+  
+  try {
+    const value = window.localStorage.getItem(STORAGE_KEYS.SOUND_ENABLED);
+    if (value === null) {
+      return true; // デフォルト: ON
+    }
+    return value === 'true';
+  } catch (error) {
+    console.error('Failed to load sound enabled:', error);
+    return true;
+  }
+}
+
+/**
+ * 効果音の音量設定を保存（Phase 3.6）
+ * @param volume - 音量（0.0 - 1.0）
+ */
+export function saveSoundVolume(volume: number): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  
+  try {
+    // 0.0 - 1.0 の範囲にクランプ
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    window.localStorage.setItem(STORAGE_KEYS.SOUND_VOLUME, String(clampedVolume));
+    return true;
+  } catch (error) {
+    console.error('Failed to save sound volume:', error);
+    return false;
+  }
+}
+
+/**
+ * 効果音の音量設定を取得（Phase 3.6）
+ */
+export function loadSoundVolume(): number {
+  if (!isLocalStorageAvailable()) {
+    return 0.7; // デフォルト: 70%
+  }
+  
+  try {
+    const value = window.localStorage.getItem(STORAGE_KEYS.SOUND_VOLUME);
+    if (value === null) {
+      return 0.7; // デフォルト: 70%
+    }
+    const volume = parseFloat(value);
+    if (isNaN(volume)) {
+      return 0.7;
+    }
+    // 0.0 - 1.0 の範囲にクランプ
+    return Math.max(0, Math.min(1, volume));
+  } catch (error) {
+    console.error('Failed to load sound volume:', error);
+    return 0.7;
   }
 }
 

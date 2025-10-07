@@ -257,23 +257,33 @@ journee/
 ### Phase 3.6: 効果音システム（Week 6）🆕
 **目的**: UXを向上させる効果音機能の実装
 
-#### 3.6.1 効果音システムの基礎構築
-- [ ] サウンドライブラリの選定と設定
-  - [ ] `use-sound` または Web Audio API の選定
-  - [ ] 効果音ファイルの準備（.mp3, .wav等）
-  - [ ] `/public/sounds/` ディレクトリの作成
-- [ ] サウンドマネージャーの実装
-  - [ ] `lib/sound/SoundManager.ts` の作成
-    - [ ] 音声再生ユーティリティ関数
-    - [ ] 音量制御機能
-    - [ ] プリロード機能
-  - [ ] React Context による音声管理
-    - [ ] `components/sound/SoundProvider.tsx`
-    - [ ] グローバルな音声設定の管理
-  - [ ] Zustand ストアへの統合
-    - [ ] `soundEnabled` 状態の追加
-    - [ ] `soundVolume` 状態の追加（0.0 - 1.0）
-    - [ ] `setSoundEnabled`, `setSoundVolume` アクションの追加
+#### 3.6.1 効果音システムの基礎構築 ✅ **完了** (2025-10-07)
+- [x] サウンドライブラリの選定と設定
+  - [x] `use-sound` または Web Audio API の選定 → `use-sound` を選定
+  - [x] 効果音ファイルの準備（.mp3, .wav等）→ READMEを配置、ユーザーが音源を追加可能
+  - [x] `/public/sounds/` ディレクトリの作成
+- [x] サウンドマネージャーの実装
+  - [x] `lib/sound/SoundManager.ts` の作成
+    - [x] 音声再生ユーティリティ関数
+    - [x] 音量制御機能
+    - [x] プリロード機能
+  - [x] React Context による音声管理
+    - [x] `components/sound/SoundProvider.tsx`
+    - [x] グローバルな音声設定の管理
+  - [x] Zustand ストアへの統合
+    - [x] `soundEnabled` 状態の追加
+    - [x] `soundVolume` 状態の追加（0.0 - 1.0）
+    - [x] `setSoundEnabled`, `setSoundVolume` アクションの追加
+
+**実装結果**:
+- ✅ シングルトンパターンのSoundManager実装完了
+- ✅ Zustand + LocalStorageで設定永続化
+- ✅ SoundProvider を app/layout.tsx に統合
+- ✅ ブラウザ自動再生ポリシー対応
+- ✅ 型安全性確保（TypeScript完全対応）
+- ✅ エラーハンドリング完備（音声ファイル不在でも動作）
+
+**詳細**: [docs/PHASE3.6.1_IMPLEMENTATION.md](./docs/PHASE3.6.1_IMPLEMENTATION.md)
 
 #### 3.6.2 効果音の実装
 - [ ] AI返信時の効果音
@@ -884,7 +894,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）または Phase 4（段階的旅程構築）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 3.6.1, 6完了 → 次は Phase 3.6.2（効果音実装）または Phase 4（段階的旅程構築）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -899,6 +909,11 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 3.6.1**: 効果音システムの基礎構築（完全実装）
+  - ✅ SoundManager実装（音声再生・音量制御・プリロード）
+  - ✅ Zustandストアへの音声設定統合
+  - ✅ SoundProvider実装（React Context）
+  - ✅ LocalStorageで設定永続化
 - ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
   - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
   - ✅ Phase 6.2: Claude API完全統合（ストリーミング対応）
@@ -906,8 +921,8 @@ MIT
 - ✅ **BUG-001**: JSON削除バグ修正（完全対応）
 
 **次の実装**: 
-- **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
-- **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
+- **Phase 3.6.2** - 効果音の実装（AI返信音、メッセージ送信音、しおり更新音、エラー音）
+- **Phase 3.6.3** - 音量設定UI（スライダー、トグル、プレビュー）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
@@ -917,6 +932,7 @@ MIT
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
+- [Phase 3.6.1 効果音システム基礎構築](./docs/PHASE3.6.1_IMPLEMENTATION.md)
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
