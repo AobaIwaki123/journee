@@ -1,0 +1,104 @@
+---
+alwaysApply: true
+description: プロジェクト構造とアーキテクチャの定義
+---
+
+# Journee プロジェクト構造
+
+## プロジェクト概要
+AIとともに旅のしおりを作成するWebアプリケーション。チャット形式で旅行計画を立て、リアルタイムでしおりを生成します。
+
+## 技術スタック
+- **フレームワーク**: Next.js 14+ (App Router)
+- **言語**: TypeScript
+- **スタイリング**: Tailwind CSS
+- **状態管理**: Zustand
+- **認証**: NextAuth.js (Google OAuth)
+- **UI**: lucide-react (アイコン)
+- **開発環境**: Docker
+
+## ディレクトリ構造
+
+### `/app` - Next.js App Router
+- [app/page.tsx](mdc:app/page.tsx) - メインページ（認証保護、チャット40% / しおり60%）
+- [app/layout.tsx](mdc:app/layout.tsx) - ルートレイアウト（AuthProvider統合済み）
+- [app/globals.css](mdc:app/globals.css) - グローバルスタイル
+- `/app/login` - ログインページ
+  - [page.tsx](mdc:app/login/page.tsx) - Googleログイン画面
+- `/app/privacy` - プライバシーポリシー（Phase 2実装済み）
+- `/app/terms` - 利用規約（Phase 2実装済み）
+- `/app/api` - APIルート
+  - `/auth/[...nextauth]` - NextAuth.js認証エンドポイント
+    - [route.ts](mdc:app/api/auth/[...nextauth]/route.ts) - 認証API
+  - `/chat` - チャットAPI（Phase 3実装済み）
+    - [route.ts](mdc:app/api/chat/route.ts) - AIチャットエンドポイント（ストリーミング対応）
+  - `/health` - ヘルスチェック
+    - [route.ts](mdc:app/api/health/route.ts) - サービス稼働状況確認
+  - `/user/me` - ユーザー情報
+    - [route.ts](mdc:app/api/user/me/route.ts) - 現在のユーザー取得（認証必須）
+
+### `/components` - Reactコンポーネント
+- `/auth` - 認証コンポーネント（Phase 2実装済み）
+  - [AuthProvider.tsx](mdc:components/auth/AuthProvider.tsx) - NextAuthセッションプロバイダー
+  - [LoginButton.tsx](mdc:components/auth/LoginButton.tsx) - Googleログインボタン
+  - [UserMenu.tsx](mdc:components/auth/UserMenu.tsx) - ユーザーメニュー（ドロップダウン）
+- `/chat` - チャット機能
+  - [ChatBox.tsx](mdc:components/chat/ChatBox.tsx) - チャットコンテナ
+  - [MessageList.tsx](mdc:components/chat/MessageList.tsx) - メッセージ一覧
+  - [MessageInput.tsx](mdc:components/chat/MessageInput.tsx) - メッセージ入力
+  - [AISelector.tsx](mdc:components/chat/AISelector.tsx) - AIモデル選択
+- `/itinerary` - しおり機能
+  - [ItineraryPreview.tsx](mdc:components/itinerary/ItineraryPreview.tsx) - しおりプレビュー
+  - [DaySchedule.tsx](mdc:components/itinerary/DaySchedule.tsx) - 日程表示
+  - [SpotCard.tsx](mdc:components/itinerary/SpotCard.tsx) - 観光スポットカード
+- `/layout` - レイアウト
+  - [Header.tsx](mdc:components/layout/Header.tsx) - ヘッダーナビゲーション（認証機能統合済み）
+- `/settings` - 設定コンポーネント（Phase 3.6予定）
+  - SoundSettings.tsx - 効果音設定UI（音量調整、ON/OFF）
+- `/sound` - サウンドコンポーネント（Phase 3.6予定）
+  - SoundProvider.tsx - グローバル音声管理プロバイダー
+- `/ui` - 共通UIコンポーネント
+  - [LoadingSpinner.tsx](mdc:components/ui/LoadingSpinner.tsx) - ローディングスピナー
+  - [ErrorNotification.tsx](mdc:components/ui/ErrorNotification.tsx) - エラー通知（Phase 3実装済み）
+
+### `/lib` - ユーティリティ・ロジック
+- `/auth` - 認証ロジック（Phase 2実装済み）
+  - [auth-options.ts](mdc:lib/auth/auth-options.ts) - NextAuth設定（Google OAuth, JWT戦略）
+  - [session.ts](mdc:lib/auth/session.ts) - セッション管理ヘルパー（getSession, getCurrentUser）
+  - [README.md](mdc:lib/auth/README.md) - 認証機能ドキュメント
+- `/store` - Zustand状態管理
+  - [useStore.ts](mdc:lib/store/useStore.ts) - グローバルストア
+- `/ai` - AI統合（Phase 3実装済み）
+  - [gemini.ts](mdc:lib/ai/gemini.ts) - Google Gemini API統合（gemini-2.5-pro使用）
+  - [prompts.ts](mdc:lib/ai/prompts.ts) - プロンプト管理とレスポンスパース処理
+  - [test-client.ts](mdc:lib/ai/test-client.ts) - APIテスト用クライアント
+- `/sound` - サウンド管理（Phase 3.6予定）
+  - SoundManager.ts - 効果音再生・音量制御ユーティリティ
+- `/utils` - ユーティリティ関数
+  - [api-client.ts](mdc:lib/utils/api-client.ts) - APIクライアントヘルパー
+
+### `/types` - TypeScript型定義
+- [chat.ts](mdc:types/chat.ts) - チャット関連の型
+- [itinerary.ts](mdc:types/itinerary.ts) - しおり関連の型
+- [auth.ts](mdc:types/auth.ts) - 認証関連の型（NextAuth拡張型定義）
+- [api.ts](mdc:types/api.ts) - API共通型定義（レスポンス、エラー）
+
+### `/public` - 静的ファイル
+- `/images` - 画像・アイコン
+- `/sounds` - 効果音ファイル（Phase 3.6予定）
+  - notification.mp3 - AI返信通知音
+  - send.mp3 - メッセージ送信音
+  - update.mp3 - しおり更新音
+  - error.mp3 - エラー通知音
+  - success.mp3 - 成功通知音
+
+### `/docs` - ドキュメント
+- [API.md](mdc:docs/API.md) - API仕様書
+- [PHASE2_IMPLEMENTATION.md](mdc:docs/PHASE2_IMPLEMENTATION.md) - Phase 2実装レポート
+- [PHASE2_TESTING_GUIDE.md](mdc:docs/PHASE2_TESTING_GUIDE.md) - Phase 2テストガイド
+- [PHASE3_INTEGRATION_COMPLETE.md](mdc:docs/PHASE3_INTEGRATION_COMPLETE.md) - Phase 3統合レポート
+- [PHASE3_TESTING_GUIDE.md](mdc:docs/PHASE3_TESTING_GUIDE.md) - Phase 3テストガイド
+- [INTEGRATION_COMPLETE.md](mdc:docs/INTEGRATION_COMPLETE.md) - Phase 1 & 2統合レポート
+
+### その他
+- [middleware.ts](mdc:middleware.ts) - 認証ミドルウェア（保護されたルート自動チェック）

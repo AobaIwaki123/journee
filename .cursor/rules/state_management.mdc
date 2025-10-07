@@ -1,0 +1,130 @@
+---
+alwaysApply: true
+description: 状態管理（Zustand）の設計と実装ルール
+---
+
+# 状態管理（Zustand）
+
+## 主要な状態
+
+### チャット状態
+- `messages`: チャットメッセージ履歴
+- `isLoading`: ローディング状態
+- `isStreaming`: ストリーミング中の状態
+- `streamingMessage`: 現在のストリーミングメッセージ
+
+### しおり状態
+- `currentItinerary`: 現在のしおりデータ（`ItineraryData`型）
+- `planningPhase`: 現在の計画フェーズ
+- `currentDetailingDay`: 詳細化中の日程
+
+### UI状態
+- `selectedAI`: 選択中のAIモデル（gemini / claude）
+- `error`: エラー状態
+- `soundEnabled`: 効果音ON/OFF（Phase 3.6用）
+- `soundVolume`: 音量設定（0.0 - 1.0）（Phase 3.6用）
+
+### APIキー管理
+- `claudeApiKey`: Claude APIキー（Phase 6用）
+
+## 主要な操作
+
+### メッセージ管理
+```typescript
+addMessage(message: Message): void
+appendStreamingMessage(chunk: string): void
+setStreaming(streaming: boolean): void
+```
+
+### しおり管理
+```typescript
+setItinerary(itinerary: ItineraryData): void
+updateItinerary(update: Partial<ItineraryData>): void
+setPlanningPhase(phase: ItineraryPhase): void
+setCurrentDetailingDay(day: number | null): void
+proceedToNextStep(): void
+```
+
+### エラー管理
+```typescript
+setError(error: string | null): void
+clearError(): void
+```
+
+### 効果音設定（Phase 3.6用）
+```typescript
+setSoundEnabled(enabled: boolean): void
+setSoundVolume(volume: number): void
+```
+
+### APIキー管理（Phase 6用）
+```typescript
+setClaudeApiKey(key: string): void
+clearClaudeApiKey(): void
+```
+
+## 実装ルール
+
+### 1. 状態の分割
+- 関連する状態をグループ化
+- 適切なスライス分割
+- 状態間の依存関係を最小化
+
+### 2. 型安全性
+- すべての状態に明示的な型定義
+- Union型を活用したフェーズ管理
+- 型ガードによる安全な状態チェック
+
+### 3. パフォーマンス
+- 必要な状態のみを購読
+- メモ化による再レンダリング最適化
+- バッチ更新の活用
+
+### 4. 永続化
+- LocalStorageによる状態の永続化
+- 必要な状態のみを永続化
+- マイグレーション戦略の実装
+
+## 使用例
+
+```typescript
+// コンポーネントでの使用
+const {
+  messages,
+  isStreaming,
+  addMessage,
+  appendStreamingMessage
+} = useStore();
+
+// 選択的な状態購読
+const selectedAI = useStore(state => state.selectedAI);
+const setSelectedAI = useStore(state => state.setSelectedAI);
+
+// 複数の状態を一度に購読
+const {
+  planningPhase,
+  currentDetailingDay,
+  proceedToNextStep
+} = useStore(state => ({
+  planningPhase: state.planningPhase,
+  currentDetailingDay: state.currentDetailingDay,
+  proceedToNextStep: state.proceedToNextStep
+}));
+```
+
+## 注意事項
+
+1. **状態の正規化**
+   - 重複を避ける
+   - 単一の信頼できる情報源を維持
+   - 状態間の整合性を保つ
+
+2. **副作用の管理**
+   - 副作用はアクション内で処理
+   - useEffectの適切な使用
+   - クリーンアップ関数の実装
+
+3. **デバッグ対応**
+   - 開発環境でのロギング
+   - DevToolsとの統合
+   - エラー追跡の容易さ

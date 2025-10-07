@@ -3,8 +3,24 @@
  */
 
 /**
+ * 各日の進捗状態（Phase 4用）
+ */
+export type DayStatus = "draft" | "skeleton" | "detailed" | "completed";
+
+/**
+ * しおり全体の作成フェーズ（Phase 4用）
+ */
+export type ItineraryPhase =
+  | "initial"      // 初期状態（まだ何も決まっていない）
+  | "collecting"   // 基本情報収集中（行き先、期間、興味など）
+  | "skeleton"     // 骨組み作成中（各日のテーマ・エリアを決定）
+  | "detailing"    // 日程詳細化中（具体的なスポット・時間を追加）
+  | "completed";   // 完成
+
+/**
  * 座標情報
  */
+
 export interface Location {
   lat: number;
   lng: number;
@@ -63,6 +79,16 @@ export interface DaySchedule {
   totalDistance?: number;
   /** その日の総予算（円） */
   totalCost?: number;
+  /** Phase 4: この日の作成状態 */
+  status?: DayStatus;
+  /** Phase 4: この日のテーマ・コンセプト（骨組み作成時に使用） */
+  theme?: string;
+  /** Phase 4.9.3: ローディング状態 */
+  isLoading?: boolean;
+  /** Phase 4.9.3: エラー情報 */
+  error?: string;
+  /** Phase 4.9.3: 進捗率（0-100） */
+  progress?: number;
 }
 
 /**
@@ -93,6 +119,10 @@ export interface ItineraryData {
   updatedAt: Date;
   /** 公開設定 */
   isPublic?: boolean;
+  /** Phase 4: 段階的作成システムの現在のフェーズ */
+  phase?: ItineraryPhase;
+  /** Phase 4: 現在詳細化中の日（detailingフェーズで使用） */
+  currentDay?: number;
 }
 
 /**

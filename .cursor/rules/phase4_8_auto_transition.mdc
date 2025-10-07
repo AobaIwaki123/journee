@@ -1,0 +1,104 @@
+---
+alwaysApply: true
+description: Phase 4.8（フェーズ移動処理の半自動化）の実装ルール
+---
+
+# Phase 4.8: フェーズ移動処理の半自動化
+
+## 実装概要
+
+フェーズ移動の自動化により、ユーザーが適切なタイミングで次のステップに進めるようガイドします。
+
+## コアコンポーネント
+
+### 1. 情報抽出システム（[lib/requirements/extractors.ts](mdc:lib/requirements/extractors.ts)）
+```typescript
+interface RequiredInfo {
+  destination: boolean;
+  duration: boolean;
+  participants: boolean;
+  interests: boolean;
+  budget?: boolean;
+}
+
+interface ExtractionResult {
+  foundInfo: RequiredInfo;
+  completionRate: number;
+  missingItems: string[];
+}
+```
+
+### 2. チェックリスト設定（[lib/requirements/checklist-config.ts](mdc:lib/requirements/checklist-config.ts)）
+```typescript
+interface PhaseRequirements {
+  required: string[];
+  optional: string[];
+  minimumCompletionRate: number;
+}
+
+const phaseRequirements: Record<ItineraryPhase, PhaseRequirements>;
+```
+
+### 3. UIコンポーネント
+- [PhaseStatusBar.tsx](mdc:components/itinerary/PhaseStatusBar.tsx): フェーズ状態表示
+- [PlanningProgress.tsx](mdc:components/itinerary/PlanningProgress.tsx): 進捗表示
+
+## 実装ルール
+
+### 1. 情報抽出
+- チャット履歴から必要情報を自動抽出
+- 正規表現とAIベースの抽出を組み合わせ
+- 抽出結果のキャッシュと更新管理
+
+### 2. 充足度判定
+- フェーズごとの必須情報を定義
+- 重み付けによる充足度計算
+- 最小要件の設定と確認
+
+### 3. UI表示
+- 充足度に応じたボタンスタイル変更
+- チェックリストのリアルタイム更新
+- 視覚的なフィードバック提供
+
+### 4. 遷移制御
+- 充足度に基づく遷移推奨
+- 手動オーバーライドの許可
+- 遷移履歴の記録
+
+## コーディング規約
+
+### 1. 抽出ロジック
+- 再利用可能な抽出関数
+- テスト可能な設計
+- エラー処理の標準化
+
+### 2. パフォーマンス
+- 効率的な履歴スキャン
+- キャッシュの適切な利用
+- 不要な再計算の防止
+
+### 3. エラーハンドリング
+- 抽出失敗時の適切な処理
+- ユーザーへの明確なフィードバック
+- リカバリーメカニズムの提供
+
+## 注意事項
+
+1. **情報の信頼性**
+   - 抽出結果の検証
+   - 矛盾する情報の検出
+   - 不確実な情報のフラグ付け
+
+2. **UX配慮**
+   - 過度な自動化を避ける
+   - ユーザーの意図を尊重
+   - 明確なフィードバック提供
+
+3. **拡張性**
+   - 新規フェーズへの対応
+   - 要件の動的更新
+   - カスタム要件の追加
+
+## 関連ドキュメント
+- [PHASE4_8_AUTO_PHASE_TRANSITION.md](mdc:docs/PHASE4_8_AUTO_PHASE_TRANSITION.md)
+- [PHASE4_8_4_AND_4_9_IMPLEMENTATION.md](mdc:docs/PHASE4_8_4_AND_4_9_IMPLEMENTATION.md)
