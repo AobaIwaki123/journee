@@ -519,74 +519,94 @@ journee/
 #### 5.4 マイページ・栞一覧・設定ページ 🆕
 **目的**: ユーザー管理とアプリケーション設定の一元管理
 
-##### 5.4.1 マイページ（`/mypage`）
-- [ ] ユーザープロフィール表示
-  - [ ] `UserProfile.tsx` - プロフィール画像、ユーザー名、メールアドレス、登録日
-  - [ ] レスポンシブレイアウト対応
-- [ ] ユーザー統計表示
-  - [ ] `UserStats.tsx` - しおり総数、訪問国数、総旅行日数
-  - [ ] グラフ表示（Chart.js/Recharts）- 月別しおり作成数、訪問国分布
-  - [ ] モックデータでの統計計算
-- [ ] クイックアクション
-  - [ ] `QuickActions.tsx` - 新規作成、栞一覧、設定へのナビゲーション
-  - [ ] ホバー効果・アニメーション
-- [ ] 最近のしおり表示（3-5件）
-  - [ ] `ItineraryCard` コンポーネントの再利用
-- [ ] ページレイアウト実装
-  - [ ] `app/mypage/page.tsx` の作成
-  - [ ] 認証チェック（未認証時はログインページへリダイレクト）
+##### 5.4.1 マイページ（`/mypage`） ✅ **完了**
+- [x] ユーザープロフィール表示
+  - [x] `UserProfile.tsx` - プロフィール画像、ユーザー名、メールアドレス、登録日
+  - [x] レスポンシブレイアウト対応
+- [x] ユーザー統計表示
+  - [x] `UserStats.tsx` - しおり総数、訪問国数、総旅行日数
+  - [x] グラフ表示（Recharts）- 月別しおり作成数、訪問国分布
+  - [x] モックデータでの統計計算
+- [x] クイックアクション
+  - [x] `QuickActions.tsx` - 新規作成、栞一覧、設定へのナビゲーション
+  - [x] ホバー効果・アニメーション
+- [x] 最近のしおり表示（3件）
+  - [x] `ItineraryCard` コンポーネントの実装
+- [x] ページレイアウト実装
+  - [x] `app/mypage/page.tsx` の作成
+  - [x] 認証チェック（未認証時はログインページへリダイレクト）
+- [x] UserMenuナビゲーション統合
 
-##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用
-- [ ] しおり一覧表示
-  - [ ] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
-  - [ ] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
-  - [ ] クイックアクション（開く、PDF出力、削除）
-  - [ ] 空状態の表示（しおり0件の場合）
-- [ ] フィルター機能
-  - [ ] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
-  - [ ] フィルター状態の管理（Zustand）
-- [ ] ソート機能
-  - [ ] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
-  - [ ] 昇順/降順切り替え
-- [ ] モックデータ作成
-  - [ ] `lib/mock-data/itineraries.ts` - 10-20件のサンプルデータ
-  - [ ] LocalStorage連携（一時保存）
-- [ ] ページレイアウト実装
-  - [ ] `app/itineraries/page.tsx` の作成
-  - [ ] レスポンシブデザイン（デスクトップ: 3-4列、タブレット: 2列、モバイル: 1列）
+##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用 ✅ **完了**
+- [x] しおり一覧表示
+  - [x] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
+  - [x] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
+  - [x] クイックアクション（開く、PDF出力、削除）
+  - [x] 空状態の表示（しおり0件の場合）
+- [x] フィルター機能
+  - [x] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
+  - [x] フィルター状態の管理（Zustand）
+- [x] ソート機能
+  - [x] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
+  - [x] 昇順/降順切り替え
+- [x] モックデータ作成
+  - [x] `lib/mock-data/itineraries.ts` - 15件のサンプルデータ
+  - [x] LocalStorage連携（一時保存）
+- [x] ページレイアウト実装
+  - [x] `app/itineraries/page.tsx` の作成
+  - [x] レスポンシブデザイン（デスクトップ: 4列、タブレット: 2-3列、モバイル: 1列）
+- [x] 認証保護（ミドルウェア設定）
+- [x] Headerコンポーネントの更新（しおり一覧リンク）
+- [x] StorageInitializerの更新（URLパラメータ対応）
 
-##### 5.4.3 設定ページ（`/settings`）
-- [ ] 一般設定
-  - [ ] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
-  - [ ] 設定の保存（LocalStorage）
-- [ ] AI設定
-  - [ ] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
-  - [ ] Claude APIキー管理（入力、保存、検証、削除）
-  - [ ] Phase 6との連携
-- [ ] 効果音設定
-  - [ ] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
-  - [ ] 効果音プレビューボタン
-  - [ ] Phase 3.6との連携
-  - [ ] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
-- [ ] アカウント設定
-  - [ ] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
-  - [ ] Phase 2（認証機能）との連携
-- [ ] ページレイアウト実装
-  - [ ] `app/settings/page.tsx` の作成
-  - [ ] サイドバーナビゲーション（デスクトップ）
-  - [ ] タブ切り替え（モバイル）
-- [ ] LocalStorage永続化
-  - [ ] 設定のロード・保存機能
-  - [ ] Zustandストアとの同期
+**詳細**: [docs/PHASE5_4_2_IMPLEMENTATION.md](./docs/PHASE5_4_2_IMPLEMENTATION.md)
+
+##### 5.4.3 設定ページ（`/settings`） ✅ **完了** (2025-10-07)
+- [x] 一般設定
+  - [x] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
+  - [x] 設定の保存（LocalStorage）
+- [x] AI設定
+  - [x] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
+  - [x] Claude APIキー管理（入力、保存、検証、削除）
+  - [x] Phase 6との連携
+- [x] 効果音設定
+  - [x] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
+  - [x] 効果音プレビューボタン（Phase 3.6で実装予定）
+  - [x] Phase 3.6との連携
+  - [x] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
+- [x] アカウント設定
+  - [x] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
+  - [x] Phase 2（認証機能）との連携
+- [x] ページレイアウト実装
+  - [x] `app/settings/page.tsx` の作成
+  - [x] サイドバーナビゲーション（デスクトップ）
+  - [x] タブ切り替え（モバイル）
+- [x] LocalStorage永続化
+  - [x] 設定のロード・保存機能
+  - [x] Zustandストアとの同期
+
+**実装結果**: 
+- ✅ 4つの設定セクション（一般、AI、効果音、アカウント）を実装
+- ✅ レスポンシブデザイン対応（デスクトップ：サイドバー、モバイル：タブ）
+- ✅ LocalStorageとZustandストアの完全連携
+- ✅ 設定変更が即座に保存され、ページリロード後も保持
+- ✅ 認証チェックと未認証時のリダイレクト
+- ✅ Phase 2（認証）、Phase 6（Claude API）との連携完了
+- ✅ Phase 3.6（効果音システム）への準備完了
+
+**コミット履歴**: 未コミット（実装完了）
+
+**詳細**: [docs/PHASE5_4_3_IMPLEMENTATION.md](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 
 **期待される効果**:
 - しおりの作成から保存、出力までの一連の流れがシームレスに
 - ユーザーは作成中のしおりを失うことなく、いつでも再開可能
 - 美しいPDFで旅のしおりを印刷・共有できる
 - ユーザーが自分の作成したしおりを一元管理できる
-- アプリケーション全体の設定を柔軟にカスタマイズ可能
+- ✅ アプリケーション全体の設定を柔軟にカスタマイズ可能（Phase 5.4.3完了）
 
-**詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
+**詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)  
+**実装完了**: [docs/PHASE5_4_3_IMPLEMENTATION.md](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
@@ -1051,7 +1071,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）または Phase 4（段階的旅程構築）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.4.1, 5.4.2, 5.4.3, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）、Phase 4（段階的旅程構築）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -1066,6 +1086,14 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
+- ✅ **Phase 5.4.2**: 栞一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
+- ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
+  - ✅ 一般設定（言語、タイムゾーン、日付フォーマット、通貨）
+  - ✅ AI設定（モデル選択、APIキー管理）
+  - ✅ 効果音設定（ON/OFF、音量調整）
+  - ✅ アカウント設定（ユーザー情報、ログアウト、データ削除）
+  - ✅ レスポンシブデザイン（デスクトップ：サイドバー、モバイル：タブ）
 - ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
   - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
   - ✅ Phase 6.2: Claude API完全統合（ストリーミング対応）
@@ -1073,11 +1101,16 @@ MIT
 - ✅ **BUG-001**: JSON削除バグ修正（完全対応）
 
 **次の実装**: 
+- **Phase 5.4.2** - しおり一覧ページ（フィルター、ソート、グリッド表示） 🔜
+- **Phase 5.4.3** - 設定ページ（一般設定、AI設定、効果音設定、アカウント） 🔜
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
+<<<<<<< HEAD
+=======
 - **Phase 5.4** - マイページ・栞一覧・設定ページ（ユーザー管理、モックデータ）
+>>>>>>> origin/main
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 - **Phase 11** - ユーザーフィードバック & 自動Issue/PR作成ワークフロー 🆕
 
@@ -1087,6 +1120,9 @@ MIT
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
 - [Phase 5.4 マイページ・栞一覧・設定ページ実装計画](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
+- [Phase 5.4.1 実装完了レポート](./docs/PHASE5_4_1_IMPLEMENTATION_COMPLETE.md)
+- [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
+- [Phase 5.4.3 設定ページ実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)

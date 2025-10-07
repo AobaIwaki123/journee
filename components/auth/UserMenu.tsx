@@ -94,12 +94,9 @@ export function UserMenu() {
 
           {/* メニュー項目 */}
           <div className="py-1">
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                // TODO: Phase 4以降で実装予定
-                console.log('マイページへ移動')
-              }}
+            <a
+              href="/mypage"
+              onClick={() => setIsOpen(false)}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
             >
               <svg
@@ -114,14 +111,11 @@ export function UserMenu() {
                 <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               マイページ
-            </button>
+            </a>
 
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                // TODO: Phase 4以降で実装予定
-                console.log('しおり一覧へ移動')
-              }}
+            <a
+              href="/itineraries"
+              onClick={() => setIsOpen(false)}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
             >
               <svg
@@ -136,14 +130,11 @@ export function UserMenu() {
                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               しおり一覧
-            </button>
+            </a>
 
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                // TODO: Phase 7で実装予定
-                console.log('設定を開く')
-              }}
+            <a
+              href="/settings"
+              onClick={() => setIsOpen(false)}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
             >
               <svg
@@ -159,7 +150,7 @@ export function UserMenu() {
                 <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               設定
-            </button>
+            </a>
           </div>
 
           {/* ログアウト */}

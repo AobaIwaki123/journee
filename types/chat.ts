@@ -45,8 +45,6 @@ export interface ChatSession {
   currentItineraryId?: string;
 }
 
-import type { AIModelId } from './ai';
-
 /**
  * AI モデルの種類
  * @deprecated Use AIModelId from './ai' instead
