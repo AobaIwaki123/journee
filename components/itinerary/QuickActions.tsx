@@ -1,16 +1,34 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '@/lib/store/useStore';
 import type { ItineraryPhase } from '@/types/itinerary';
 import { ArrowRight, RotateCcw, Check } from 'lucide-react';
+import { sendChatMessageStream } from '@/lib/utils/api-client';
+import { mergeItineraryData } from '@/lib/ai/prompts';
 
 /**
- * Phase 4.4: 段階的旅程構築のクイックアクション
+ * Phase 4.4 & 4.5: 段階的旅程構築のクイックアクション
  * 「次へ」ボタンやリセットボタンなどを提供
  */
 export const QuickActions: React.FC = () => {
-  const { planningPhase, currentItinerary, proceedToNextStep, resetPlanning } = useStore();
+  const {
+    planningPhase,
+    currentItinerary,
+    proceedToNextStep,
+    resetPlanning,
+    messages,
+    addMessage,
+    setStreamingMessage,
+    appendStreamingMessage,
+    setItinerary,
+    setLoading,
+    setStreaming,
+    setError,
+    currentDetailingDay,
+  } = useStore();
+  
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // フェーズごとのボタンラベル
   const getButtonLabel = (): string => {
@@ -73,9 +91,90 @@ export const QuickActions: React.FC = () => {
     }
   };
 
-  const handleNextStep = () => {
-    if (!isDisabled()) {
+  // Phase 4.5: 「次へ」ボタンでAIにメッセージ送信
+  const handleNextStep = async () => {
+    if (isDisabled() || isProcessing) return;
+    
+    setIsProcessing(true);
+    setLoading(true);
+    setStreaming(true);
+    setStreamingMessage('');
+    setError(null);
+
+    try {
+      // まず、フェーズを進める
       proceedToNextStep();
+      
+      // フェーズを進めた後の状態を取得
+      const newPhase = useStore.getState().planningPhase;
+      const newDetailingDay = useStore.getState().currentDetailingDay;
+      
+      // 「次へ」メッセージをAIに送信
+      const userMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user' as const,
+        content: '次へ',
+        timestamp: new Date(),
+      };
+      
+      addMessage(userMessage);
+      
+      // チャット履歴を準備
+      const chatHistory = messages.slice(-10).map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+      
+      let fullResponse = '';
+      
+      // ストリーミングレスポンスを処理
+      for await (const chunk of sendChatMessageStream(
+        '次へ',
+        chatHistory,
+        useStore.getState().currentItinerary || undefined,
+        newPhase,
+        newDetailingDay
+      )) {
+        if (chunk.type === 'message' && chunk.content) {
+          appendStreamingMessage(chunk.content);
+          fullResponse += chunk.content;
+        } else if (chunk.type === 'itinerary' && chunk.itinerary) {
+          const mergedItinerary = mergeItineraryData(
+            useStore.getState().currentItinerary || undefined,
+            chunk.itinerary
+          );
+          setItinerary(mergedItinerary);
+        } else if (chunk.type === 'error') {
+          throw new Error(chunk.error || 'Unknown error occurred');
+        } else if (chunk.type === 'done') {
+          break;
+        }
+      }
+      
+      // ストリーミング完了後、アシスタントメッセージを追加
+      if (fullResponse) {
+        const assistantMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant' as const,
+          content: fullResponse,
+          timestamp: new Date(),
+        };
+        addMessage(assistantMessage);
+      }
+      
+      setStreamingMessage('');
+      setStreaming(false);
+      setLoading(false);
+      
+    } catch (error: any) {
+      console.error('Error in handleNextStep:', error);
+      setError(error.message || '次へ進む際にエラーが発生しました');
+      setStreaming(false);
+      setLoading(false);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -99,12 +198,12 @@ export const QuickActions: React.FC = () => {
         {/* 次へボタン */}
         <button
           onClick={handleNextStep}
-          disabled={isDisabled() || planningPhase === 'completed'}
+          disabled={isDisabled() || planningPhase === 'completed' || isProcessing}
           title={getTooltip()}
           className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all ${
             planningPhase === 'completed'
               ? 'bg-green-500 text-white cursor-default'
-              : isDisabled()
+              : isDisabled() || isProcessing
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
               : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-sm hover:shadow'
           }`}

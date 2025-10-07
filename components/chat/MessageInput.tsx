@@ -23,6 +23,10 @@ export const MessageInput: React.FC = () => {
   const selectedAI = useStore((state) => state.selectedAI);
   const claudeApiKey = useStore((state) => state.claudeApiKey);
   const setError = useStore((state) => state.setError);
+  
+  // Phase 4.5: プランニングフェーズ状態を取得
+  const planningPhase = useStore((state) => state.planningPhase);
+  const currentDetailingDay = useStore((state) => state.currentDetailingDay);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +58,13 @@ export const MessageInput: React.FC = () => {
       let fullResponse = '';
       let receivedItinerary = false;
 
-      // ストリーミングレスポンスを処理
+      // Phase 4.5: フェーズ情報を含めてストリーミングレスポンスを処理
       for await (const chunk of sendChatMessageStream(
         userMessage.content,
         chatHistory,
-        currentItinerary || undefined
+        currentItinerary || undefined,
+        planningPhase,
+        currentDetailingDay
       )) {
         if (chunk.type === 'message' && chunk.content) {
           // メッセージチャンクを追加

@@ -205,6 +205,7 @@ export const JSON_EXTRACTION_REGEX = /```json\s*([\s\S]*?)\s*```/;
 
 /**
  * AIの応答をパースして、メッセージとしおりデータに分離
+ * Phase 4.5 & BUG-001: JSONブロックを完全に削除してクリーンなメッセージを返す
  */
 export function parseAIResponse(response: string): {
   message: string;
@@ -220,26 +221,36 @@ export function parseAIResponse(response: string): {
     };
   }
 
-  // JSONの前のテキストをメッセージとして抽出
-  const jsonStartIndex = match.index || 0;
-  const message = response.substring(0, jsonStartIndex).trim();
-  
   // JSONデータをパース
+  let itineraryData: Partial<ItineraryData> | null = null;
   try {
     const jsonString = match[1];
-    const itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
-    
-    return {
-      message: message || 'しおりを更新しました。',
-      itineraryData,
-    };
+    itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
   } catch (error) {
     console.error('Failed to parse itinerary JSON:', error);
-    return {
-      message: response.trim(),
-      itineraryData: null,
-    };
   }
+
+  // BUG-001修正: JSONブロック全体を削除してクリーンなメッセージを抽出
+  // すべてのJSONブロック（```json ... ```）を削除
+  let cleanMessage = response.replace(/```json[\s\S]*?```/g, '').trim();
+  
+  // 余分な空白行を削除（3行以上の連続した改行を2行に）
+  cleanMessage = cleanMessage.replace(/\n{3,}/g, '\n\n');
+  
+  // 前後の空白を削除
+  cleanMessage = cleanMessage.trim();
+  
+  // メッセージが空の場合はデフォルトメッセージ
+  if (!cleanMessage) {
+    cleanMessage = itineraryData 
+      ? 'しおりを更新しました。' 
+      : 'メッセージを受け取りました。';
+  }
+  
+  return {
+    message: cleanMessage,
+    itineraryData,
+  };
 }
 
 /**

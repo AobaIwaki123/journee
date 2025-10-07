@@ -1,12 +1,18 @@
 /**
  * チャットAPIルート
  * POST /api/chat
+ * Phase 4.5: フェーズ判定ロジックと「次へ」キーワード検出を追加
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { ChatAPIRequest, ChatAPIResponse, ChatStreamChunk } from '@/types/api';
 import { sendGeminiMessage, streamGeminiMessage } from '@/lib/ai/gemini';
-import { parseAIResponse, mergeItineraryData, generateErrorMessage } from '@/lib/ai/prompts';
+import { 
+  parseAIResponse, 
+  mergeItineraryData, 
+  generateErrorMessage,
+  createNextStepPrompt 
+} from '@/lib/ai/prompts';
 
 /**
  * POST /api/chat
@@ -23,6 +29,8 @@ export async function POST(request: NextRequest) {
       model = 'gemini',
       claudeApiKey,
       stream = false,
+      planningPhase = 'initial',
+      currentDetailingDay,
     } = body;
 
     // バリデーション
@@ -31,6 +39,18 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid request', message: 'Message is required' },
         { status: 400 }
       );
+    }
+
+    // Phase 4.5: 「次へ」キーワードの検出
+    const isNextStepTrigger = detectNextStepKeyword(message);
+    let enhancedMessage = message;
+    
+    if (isNextStepTrigger) {
+      // 「次へ」が検出された場合、次のステップ誘導プロンプトを追加
+      const nextStepPrompt = createNextStepPrompt(planningPhase, currentItinerary);
+      if (nextStepPrompt) {
+        enhancedMessage = `${message}\n\n【システムからの補足】\n${nextStepPrompt}`;
+      }
     }
 
     // モデルがClaudeの場合はAPIキーが必要
@@ -57,11 +77,23 @@ export async function POST(request: NextRequest) {
 
     // ストリーミングレスポンスの場合
     if (stream) {
-      return handleStreamingResponse(message, chatHistory, currentItinerary);
+      return handleStreamingResponse(
+        enhancedMessage,
+        chatHistory,
+        currentItinerary,
+        planningPhase,
+        currentDetailingDay
+      );
     }
 
     // 非ストリーミングレスポンス
-    return handleNonStreamingResponse(message, chatHistory, currentItinerary);
+    return handleNonStreamingResponse(
+      enhancedMessage,
+      chatHistory,
+      currentItinerary,
+      planningPhase,
+      currentDetailingDay
+    );
 
   } catch (error: any) {
     console.error('Chat API Error:', error);
@@ -79,15 +111,25 @@ export async function POST(request: NextRequest) {
 
 /**
  * 非ストリーミングレスポンスを処理
+ * Phase 4.5: フェーズ情報を追加
  */
 async function handleNonStreamingResponse(
   message: string,
   chatHistory: any[],
-  currentItinerary: any
+  currentItinerary: any,
+  planningPhase: any,
+  currentDetailingDay: any
 ) {
   try {
     // Gemini APIにメッセージを送信
-    const result = await sendGeminiMessage(message, chatHistory, currentItinerary);
+    const result = await sendGeminiMessage(
+      message,
+      chatHistory,
+      currentItinerary,
+      undefined,
+      planningPhase,
+      currentDetailingDay
+    );
 
     // しおりデータをマージ
     let updatedItinerary = currentItinerary;
@@ -109,11 +151,14 @@ async function handleNonStreamingResponse(
 
 /**
  * ストリーミングレスポンスを処理
+ * Phase 4.5: フェーズ情報を追加
  */
 async function handleStreamingResponse(
   message: string,
   chatHistory: any[],
-  currentItinerary: any
+  currentItinerary: any,
+  planningPhase: any,
+  currentDetailingDay: any
 ) {
   const encoder = new TextEncoder();
 
@@ -124,7 +169,14 @@ async function handleStreamingResponse(
         let fullResponse = '';
 
         // Gemini APIからストリーミングレスポンスを取得
-        for await (const chunk of streamGeminiMessage(message, chatHistory, currentItinerary)) {
+        for await (const chunk of streamGeminiMessage(
+          message,
+          chatHistory,
+          currentItinerary,
+          undefined,
+          planningPhase,
+          currentDetailingDay
+        )) {
           fullResponse += chunk;
 
           // チャンクを送信
@@ -187,6 +239,26 @@ async function handleStreamingResponse(
       'Connection': 'keep-alive',
     },
   });
+}
+
+/**
+ * Phase 4.5: 「次へ」キーワードを検出
+ */
+function detectNextStepKeyword(message: string): boolean {
+  const lowerMessage = message.toLowerCase().trim();
+  const nextKeywords = [
+    '次へ',
+    '次に',
+    '次',
+    'つぎ',
+    '進む',
+    '進んで',
+    '次のステップ',
+    '次の段階',
+    'next',
+  ];
+  
+  return nextKeywords.some(keyword => lowerMessage.includes(keyword));
 }
 
 /**
