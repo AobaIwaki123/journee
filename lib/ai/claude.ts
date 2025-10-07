@@ -6,6 +6,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ChatMessage } from "@/types/chat";
 import type { ItineraryData } from "@/types/itinerary";
+import { getModelName, getModelConfig } from "./models";
 import {
   SYSTEM_PROMPT,
   createUpdatePrompt,
@@ -29,8 +30,8 @@ export class ClaudeClient {
       apiKey: apiKey,
     });
 
-    // Claude 4.5 Sonnetを使用（最新かつ高性能）
-    this.model = "claude-sonnet-4-5-20250929";
+    // モデル設定から取得
+    this.model = getModelName('claude');
   }
 
   /**
@@ -53,9 +54,10 @@ export class ClaudeClient {
       );
 
       // Claude APIに送信
+      const config = getModelConfig('claude');
       const response = await this.client.messages.create({
         model: this.model,
-        max_tokens: 4096,
+        max_tokens: config.maxTokens || 4096,
         system: systemPrompt,
         messages: this.convertToClaudeMessages(chatHistory, userPrompt),
       });
@@ -108,9 +110,10 @@ export class ClaudeClient {
       );
 
       // Claude APIにストリーミングリクエスト
+      const config = getModelConfig('claude');
       const stream = await this.client.messages.stream({
         model: this.model,
-        max_tokens: 4096,
+        max_tokens: config.maxTokens || 4096,
         system: systemPrompt,
         messages: this.convertToClaudeMessages(chatHistory, userPrompt),
       });
@@ -244,10 +247,11 @@ export async function validateClaudeApiKey(apiKey: string): Promise<{
   // 実際のAPI呼び出しで検証
   try {
     const client = new Anthropic({ apiKey });
+    const modelName = getModelName('claude');
 
     // 最小限のリクエストを送信して検証
     await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: modelName,
       max_tokens: 10,
       messages: [{ role: "user", content: "test" }],
     });

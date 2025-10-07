@@ -4,6 +4,8 @@
  */
 
 import { encrypt, decrypt } from './encryption';
+import type { AIModelId } from '@/types/ai';
+import { isValidModelId, DEFAULT_AI_MODEL } from '@/lib/ai/models';
 
 // LocalStorageキー
 const STORAGE_KEYS = {
@@ -101,7 +103,7 @@ export function hasClaudeApiKey(): boolean {
 /**
  * 選択されたAIモデルを保存
  */
-export function saveSelectedAI(ai: 'gemini' | 'claude'): boolean {
+export function saveSelectedAI(ai: AIModelId): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
@@ -118,17 +120,21 @@ export function saveSelectedAI(ai: 'gemini' | 'claude'): boolean {
 /**
  * 選択されたAIモデルを取得
  */
-export function loadSelectedAI(): 'gemini' | 'claude' {
+export function loadSelectedAI(): AIModelId {
   if (!isLocalStorageAvailable()) {
-    return 'gemini';
+    return DEFAULT_AI_MODEL;
   }
   
   try {
     const ai = window.localStorage.getItem(STORAGE_KEYS.SELECTED_AI);
-    return ai === 'claude' ? 'claude' : 'gemini';
+    // 有効なモデルIDかチェック
+    if (ai && isValidModelId(ai)) {
+      return ai;
+    }
+    return DEFAULT_AI_MODEL;
   } catch (error) {
     console.error('Failed to load selected AI:', error);
-    return 'gemini';
+    return DEFAULT_AI_MODEL;
   }
 }
 

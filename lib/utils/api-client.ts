@@ -10,6 +10,8 @@ import type {
 } from '@/types/api';
 import type { ChatMessage } from '@/types/chat';
 import type { ItineraryData } from '@/types/itinerary';
+import type { AIModelId } from '@/types/ai';
+import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 
 /**
  * チャットAPIクライアント
@@ -29,7 +31,7 @@ export class ChatAPIClient {
     options?: {
       chatHistory?: ChatMessage[];
       currentItinerary?: ItineraryData;
-      model?: 'gemini' | 'claude';
+      model?: AIModelId;
       claudeApiKey?: string;
     }
   ): Promise<ChatAPIResponse> {
@@ -74,7 +76,7 @@ export class ChatAPIClient {
       message,
       chatHistory: options?.chatHistory,
       currentItinerary: options?.currentItinerary,
-      model: options?.model || 'gemini',
+      model: options?.model || DEFAULT_AI_MODEL,
       claudeApiKey: options?.claudeApiKey,
       stream: true,
     };
@@ -170,7 +172,7 @@ export async function* sendChatMessageStream(
   message: string,
   chatHistory?: ChatMessage[],
   currentItinerary?: ItineraryData,
-  model?: 'gemini' | 'claude',
+  model?: AIModelId,
   claudeApiKey?: string
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   yield* chatApiClient.sendMessageStream(message, {

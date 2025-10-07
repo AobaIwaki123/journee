@@ -5,9 +5,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { ChatAPIRequest, ChatAPIResponse, ChatStreamChunk } from '@/types/api';
+import type { AIModelId } from '@/types/ai';
 import { sendGeminiMessage, streamGeminiMessage } from '@/lib/ai/gemini';
 import { sendClaudeMessage, streamClaudeMessage } from '@/lib/ai/claude';
 import { parseAIResponse, mergeItineraryData, generateErrorMessage } from '@/lib/ai/prompts';
+import { isValidModelId } from '@/lib/ai/models';
 
 /**
  * POST /api/chat
@@ -21,10 +23,20 @@ export async function POST(request: NextRequest) {
       message,
       chatHistory = [],
       currentItinerary,
-      model = 'gemini',
+      model,
       claudeApiKey,
       stream = false,
     } = body;
+
+    // モデルIDの検証
+    if (model && !isValidModelId(model)) {
+      return NextResponse.json(
+        { error: 'Invalid model', message: `Unsupported AI model: ${model}` },
+        { status: 400 }
+      );
+    }
+
+    const selectedModel: AIModelId = model || 'gemini';
 
     // バリデーション
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -35,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // モデルがClaudeの場合はAPIキーが必要
-    if (model === 'claude') {
+    if (selectedModel === 'claude') {
       if (!claudeApiKey) {
         return NextResponse.json(
           { 
