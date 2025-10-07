@@ -121,9 +121,11 @@ export function parseAIResponse(response: string): {
   message: string;
   itineraryData: Partial<ItineraryData> | null;
 } {
-  const match = response.match(JSON_EXTRACTION_REGEX);
+  // すべてのJSONブロックを検出（グローバルフラグ付き）
+  const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/g;
+  const matches = Array.from(response.matchAll(jsonBlockRegex));
   
-  if (!match) {
+  if (matches.length === 0) {
     // JSONが含まれていない場合は、メッセージのみ
     return {
       message: response.trim(),
@@ -131,26 +133,45 @@ export function parseAIResponse(response: string): {
     };
   }
 
-  // JSONの前のテキストをメッセージとして抽出
-  const jsonStartIndex = match.index || 0;
-  const message = response.substring(0, jsonStartIndex).trim();
+  // 最初のJSONブロックからしおりデータを抽出
+  let itineraryData: Partial<ItineraryData> | null = null;
   
-  // JSONデータをパース
   try {
-    const jsonString = match[1];
-    const itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
-    
-    return {
-      message: message || 'しおりを更新しました。',
-      itineraryData,
-    };
+    const firstMatch = matches[0];
+    const jsonString = firstMatch[1];
+    itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
   } catch (error) {
     console.error('Failed to parse itinerary JSON:', error);
+    // パースに失敗した場合はJSONを削除せずに元のメッセージを返す
     return {
       message: response.trim(),
       itineraryData: null,
     };
   }
+
+  // すべてのJSONブロックをメッセージから削除
+  let message = response;
+  for (const match of matches) {
+    message = message.replace(match[0], '');
+  }
+  
+  // 余分な空白・改行を整理
+  message = message
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n')
+    .trim();
+  
+  // メッセージが空の場合はデフォルトメッセージを設定
+  if (!message) {
+    message = 'しおりを更新しました。';
+  }
+  
+  return {
+    message,
+    itineraryData,
+  };
 }
 
 /**
