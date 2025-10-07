@@ -635,6 +635,95 @@ journee/
 
 **詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
 
+#### 5.5 しおり公開・共有機能 🆕
+**目的**: 作成したしおりを公開URLで共有し、Read-onlyページで閲覧できるようにする
+
+##### 5.5.1 型定義とAPI ✅ **完了** (2025-10-07)
+- [x] `types/itinerary.ts` の拡張
+  - [x] `isPublic`, `publicSlug`, `publishedAt`, `viewCount`, `allowPdfDownload` フィールド追加
+  - [x] `PublicItinerarySettings` 型定義
+  - [x] `PublicItineraryMetadata` 型定義
+- [x] 公開API実装
+  - [x] `/api/itinerary/publish` - 公開URL発行（POST）
+  - [x] `/api/itinerary/unpublish` - 非公開化（POST）
+  - [x] ユニークスラッグ生成（nanoid、10文字）
+  - [x] 認証・所有権チェック
+- [x] Zustand状態管理拡張
+  - [x] `publishItinerary` アクション
+  - [x] `unpublishItinerary` アクション
+  - [x] `updatePublicSettings` アクション
+
+##### 5.5.2 閲覧用ページ ✅ **完了** (2025-10-07)
+- [x] `/app/share/[slug]/page.tsx` の実装
+  - [x] 動的ルーティング（スラッグベース）
+  - [x] OGPメタデータ生成（SNS共有対応）
+  - [x] 閲覧数カウント（Phase 8以降）
+  - [x] 404ページ（非公開・存在しないしおり）
+- [x] `PublicItineraryView.tsx` コンポーネント
+  - [x] Read-only表示（編集ボタン非表示）
+  - [x] 共有ボタン（URLコピー、Web Share API対応）
+  - [x] PDF ダウンロードボタン（Phase 5.3連携）
+  - [x] カスタムメッセージ表示
+  - [x] 閲覧数表示
+- [x] LocalStorage公開しおり管理
+  - [x] `savePublicItinerary` 関数
+  - [x] `getPublicItinerary` 関数
+  - [x] `removePublicItinerary` 関数
+- [x] Zustand連携
+  - [x] 公開時にLocalStorage保存
+  - [x] 非公開時にLocalStorage削除
+
+##### 5.5.3 公開設定UI ✅ **完了** (2025-10-07)
+- [x] `ShareButton.tsx` コンポーネント
+  - [x] 公開/非公開切り替え
+  - [x] 公開URL表示・コピー
+  - [x] PDFダウンロード許可設定
+  - [x] カスタムメッセージ入力（オプション）
+  - [x] Web Share API対応（モバイル）
+- [x] ItineraryPreview統合
+  - [x] Undo/Redoボタンと並べて配置
+  - [x] レスポンシブ対応
+- [x] Toast通知
+  - [x] 公開成功・失敗
+  - [x] URLコピー成功
+  - [x] 設定更新成功
+
+##### 5.5.4 セキュリティ対策 ✅ **完了** (Phase 5.5.1で実装済み)
+- [x] 推測困難なスラッグ（nanoid、62文字セット）
+- [x] アクセス制御（公開フラグチェック）
+- [x] 個人情報保護（作成者メール非表示）
+- [x] 確認ダイアログ（非公開化時）
+- [ ] レート制限（Phase 8以降: API側で実装）
+- [ ] 不正アクセス検知・ログ記録（Phase 8以降）
+
+##### 5.5.5 モックデータ実装（Phase 5-7） ✅ **完了** (Phase 5.5.1-2で実装済み)
+- [x] LocalStorageでの公開しおり管理
+- [x] `lib/utils/storage.ts` 拡張
+  - [x] `savePublicItinerary` 関数
+  - [x] `getPublicItinerary` 関数
+  - [x] `removePublicItinerary` 関数
+- [x] Zustand連携
+  - [x] 公開時にLocalStorage保存
+  - [x] 非公開時にLocalStorage削除
+- [x] ⚠️ 注意: LocalStorageは他ユーザーと共有不可（Phase 8でDB統合必須）
+
+**実装完了**: ✅ Phase 5.5（しおり公開・共有機能）完了！
+
+**期待される効果**:
+- ✅ 旅のしおりを家族や友人と簡単に共有
+- ✅ SNSでのリッチプレビュー表示（OGP対応）
+- ✅ 安全なRead-only閲覧ページ
+- ✅ PDF ダウンロード許可の柔軟な設定
+- 📋 閲覧数の可視化（Phase 8以降）
+
+**詳細**: 
+- [PHASE5_5_ITINERARY_SHARING.md](./docs/PHASE5_5_ITINERARY_SHARING.md) - 全体計画
+- [PHASE5_5_1_IMPLEMENTATION.md](./docs/PHASE5_5_1_IMPLEMENTATION.md) - 型定義とAPI
+- [PHASE5_5_2_IMPLEMENTATION.md](./docs/PHASE5_5_2_IMPLEMENTATION.md) - 閲覧用ページ
+- [PHASE5_5_3_IMPLEMENTATION.md](./docs/PHASE5_5_3_IMPLEMENTATION.md) - 公開設定UI
+- [PHASE5_5_COMPLETE.md](./docs/PHASE5_5_COMPLETE.md) - ✅ 完了レポート
+- [PHASE5_5_TEST_GUIDE.md](./docs/PHASE5_5_TEST_GUIDE.md) - 🧪 テストガイド
+
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
 
@@ -757,6 +846,72 @@ journee/
 ## 🐛 バグ修正・技術的負債
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
+
+### BUG-004: Phase 5.5 公開リンク404エラー修正 ✅ **完了** (2025-10-07)
+**発生状況**: 
+共有リンクを作成して開くと404エラーが発生し、しおりが全く表示されない
+
+**原因**:
+1. LocalStorageキー名の不一致（`'public_itineraries'` vs `'journee_public_itineraries'`）
+2. 404ページへのリダイレクトの不適切な実装
+
+**修正内容**:
+- [x] `PublicItineraryView.tsx` - LocalStorageキー名を統一（`'journee_public_itineraries'`）
+- [x] 404表示をインラインレンダリングに変更
+- [x] デバッグログ追加（問題特定を容易に）
+- [x] デバッグツール作成（`/debug-share.html`）
+- [x] 統合テストページ作成（`/test-share-integration.html`）
+
+**実装結果**:
+- ✅ 公開リンクが正しく動作する
+- ✅ LocalStorageからデータを正しく取得できる
+- ✅ しおりが正しく表示される
+- ✅ 404ページが正しく表示される（存在しないスラッグの場合）
+- ✅ デバッグツールで簡単に動作確認可能
+
+**テスト方法**:
+```bash
+# デバッグツールで確認
+npm run dev
+# ブラウザで http://localhost:3000/debug-share.html を開く
+# 「クイック公開テスト実行」をクリック
+```
+
+**詳細**: [docs/PHASE5_5_CRITICAL_BUG_FIX.md](./docs/PHASE5_5_CRITICAL_BUG_FIX.md)
+### BUG-005: 地図機能のモックデータ対応 🔄 **対応中** (2025-10-07)
+**発生状況**: 
+地図機能（MapView.tsx）を実装したが、モックデータにピンが表示されない
+
+**原因分析**:
+- `MapView.tsx` は `spot.location?.lat && spot.location?.lng` でフィルタリング
+- モックデータ（`lib/mock-data/itineraries.ts`）の全てのスポットに `location` プロパティが含まれていない
+- 結果: `spots.length === 0` となり、「位置情報が設定されたスポットがありません」と表示される
+
+**影響範囲**:
+- ✅ `MapView.tsx` コンポーネント自体は正常動作（location付きスポットがあれば表示される）
+- ❌ モックデータから読み込んだしおりは地図表示不可
+- ✅ AIチャットで生成された新規しおりはlocation情報が含まれる場合あり（プロンプト次第）
+
+**対応方針**:
+1. モックデータにlocation情報を追加
+2. 主要な観光スポットの緯度・経度を設定
+3. AIプロンプトでlocation生成を強化（Phase 4で対応予定）
+
+**修正内容**:
+- [ ] `lib/mock-data/itineraries.ts` の更新
+  - [ ] 東京3日間の旅（浅草寺、スカイツリー等）
+  - [ ] 京都紅葉巡り（渡月橋等）
+  - [ ] 北海道グルメツアー（時計台、すすきの等）
+  - [ ] 大阪食い倒れツアー（道頓堀等）
+- [ ] 実際の緯度・経度データの追加
+- [ ] 地図表示テスト
+
+**回避策（現時点）**:
+- AIチャットで「地図に表示してほしい」と明示的にリクエストすると、AIがlocation情報を含むしおりを生成する
+
+**関連Phase**: Phase 5.1.3（地図統合）、Phase 4（プロンプト改善）
+
+---
 
 ### BUG-003: 予算自動更新バグ修正 ✅ **完了** (2025-10-07)
 **発生状況**: 
@@ -1071,6 +1226,7 @@ MIT
 - ✅ **Phase 5.1.1**: しおり基本表示コンポーネント（ヘッダー、サマリー、日程、スポット、空状態）
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
 - ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
+  - ✅ **地図機能**: Google Maps統合（マーカー表示、ルート描画、情報ウィンドウ）※モックデータ対応は進行中（BUG-004）
 - ✅ **Phase 5.2**: 一時保存機能（LocalStorage版、自動保存、保存状態表示）
 - ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
 - ✅ **Phase 5.4.2**: しおり一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
@@ -1082,6 +1238,7 @@ MIT
 - ✅ **BUG-001**: JSON削除バグ修正（3段階防御システム、完全対応）
 - ✅ **BUG-002**: Phase 5.1.3 時刻と順番の整合性バグ修正（イミュータブル更新、即座レンダリング）
 - ✅ **BUG-003**: 予算自動更新バグ修正（スポット編集時の予算再計算、データ整合性保証）
+- 🔄 **BUG-004**: 地図機能のモックデータ対応（location情報の追加が必要）
 
 **次の実装**: 
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）

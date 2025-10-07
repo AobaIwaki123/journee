@@ -11,6 +11,7 @@ import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
 import { EmptyItinerary } from './EmptyItinerary';
 import { UndoRedoButtons } from './UndoRedoButtons';
+import { ShareButton } from './ShareButton';
 import { SaveButton } from './SaveButton';
 import { ResetButton } from './ResetButton';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -103,15 +104,17 @@ export const ItineraryPreview: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex gap-3">
+                      <ShareButton />
                       <SaveButton />
                       <ResetButton />
                     </div>
                   )}
 
-                  {/* Undo/Redo Buttons */}
+                  {/* Action Buttons (right side) */}
                   <div className="flex gap-3 items-center">
                     {hasLocations && (
                       <>
+                        <ShareButton />
                         <SaveButton />
                         <ResetButton />
                       </>
