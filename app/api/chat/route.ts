@@ -12,6 +12,175 @@ import { parseAIResponse, mergeItineraryData, generateErrorMessage } from '@/lib
 import { isValidModelId } from '@/lib/ai/models';
 
 /**
+ * デバッグ用モックレスポンス生成関数
+ */
+function handleMockResponse(stream: boolean) {
+  const mockItinerary = {
+    title: '京都2日間の旅',
+    destination: '京都',
+    startDate: '2025-11-01',
+    endDate: '2025-11-02',
+    duration: 2,
+    summary: '古都京都を満喫する2日間の旅程です。歴史的な寺社仏閣を巡り、京都の文化と美食を楽しみます。',
+    schedule: [
+      {
+        day: 1,
+        date: '2025-11-01',
+        title: '東山エリアを散策',
+        spots: [
+          {
+            id: 'test-spot-1-1',
+            name: '清水寺',
+            description: '世界遺産に登録されている京都を代表する寺院。清水の舞台からの眺めは絶景です。',
+            scheduledTime: '09:00',
+            duration: 90,
+            category: 'sightseeing',
+            estimatedCost: 400,
+            notes: '早朝がおすすめです'
+          },
+          {
+            id: 'test-spot-1-2',
+            name: '二年坂・三年坂',
+            description: '清水寺からの帰り道にある風情ある石畳の坂道。お土産屋さんが立ち並びます。',
+            scheduledTime: '10:30',
+            duration: 60,
+            category: 'sightseeing',
+            estimatedCost: 0
+          },
+          {
+            id: 'test-spot-1-3',
+            name: '祇園ランチ',
+            description: '京都らしい雰囲気の中で京料理をいただきます。',
+            scheduledTime: '12:00',
+            duration: 60,
+            category: 'dining',
+            estimatedCost: 2000
+          },
+          {
+            id: 'test-spot-1-4',
+            name: '伏見稲荷大社',
+            description: '千本鳥居で有名な神社。朱色の鳥居のトンネルは圧巻です。',
+            scheduledTime: '14:00',
+            duration: 120,
+            category: 'sightseeing',
+            estimatedCost: 0,
+            notes: '歩きやすい靴がおすすめ'
+          }
+        ],
+        totalDistance: 15,
+        totalCost: 2400
+      },
+      {
+        day: 2,
+        date: '2025-11-02',
+        title: '嵐山・金閣寺エリア',
+        spots: [
+          {
+            id: 'test-spot-2-1',
+            name: '金閣寺',
+            description: '金箔で覆われた豪華絢爛な寺院。池に映る姿も美しいです。',
+            scheduledTime: '09:00',
+            duration: 60,
+            category: 'sightseeing',
+            estimatedCost: 500
+          },
+          {
+            id: 'test-spot-2-2',
+            name: '嵐山竹林の小径',
+            description: '幻想的な竹林の道。京都の自然を感じられます。',
+            scheduledTime: '11:00',
+            duration: 45,
+            category: 'sightseeing',
+            estimatedCost: 0
+          },
+          {
+            id: 'test-spot-2-3',
+            name: '嵐山ランチ',
+            description: '渡月橋近くで湯豆腐や京野菜を使った料理を楽しみます。',
+            scheduledTime: '12:30',
+            duration: 60,
+            category: 'dining',
+            estimatedCost: 2500
+          },
+          {
+            id: 'test-spot-2-4',
+            name: '天龍寺',
+            description: '世界遺産の寺院。美しい庭園が見どころです。',
+            scheduledTime: '14:00',
+            duration: 60,
+            category: 'sightseeing',
+            estimatedCost: 500
+          }
+        ],
+        totalDistance: 12,
+        totalCost: 3500
+      }
+    ],
+    totalBudget: 5900,
+    status: 'draft' as const
+  };
+
+  const mockMessage = 'テストモードです。京都2日間の旅程を作成しました！清水寺や金閣寺などの定番スポットを巡る充実したプランです。';
+
+  if (stream) {
+    // ストリーミングレスポンス
+    const encoder = new TextEncoder();
+    const responseStream = new ReadableStream({
+      async start(controller) {
+        try {
+          // メッセージをチャンクに分割してストリーミング
+          const words = mockMessage.split('');
+          for (const char of words) {
+            const chunk = {
+              type: 'message',
+              content: char
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+            // 少し遅延を入れてストリーミング感を出す
+            await new Promise(resolve => setTimeout(resolve, 20));
+          }
+
+          // しおりデータを送信
+          const itineraryChunk = {
+            type: 'itinerary',
+            itinerary: mockItinerary
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(itineraryChunk)}\n\n`));
+
+          // 完了通知
+          const doneChunk = { type: 'done' };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(doneChunk)}\n\n`));
+
+          controller.close();
+        } catch (error) {
+          const errorChunk = {
+            type: 'error',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`));
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(responseStream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+  } else {
+    // 非ストリーミングレスポンス
+    return NextResponse.json({
+      success: true,
+      message: mockMessage,
+      itinerary: mockItinerary
+    });
+  }
+}
+
+/**
  * POST /api/chat
  * チャットメッセージを送信してAIの応答を取得
  */
@@ -44,6 +213,11 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid request', message: 'Message is required' },
         { status: 400 }
       );
+    }
+
+    // デバッグモード: "test"と入力したらモックレスポンスを返す
+    if (message.trim().toLowerCase() === 'test') {
+      return handleMockResponse(stream);
     }
 
     // モデルがClaudeの場合はAPIキーが必要
