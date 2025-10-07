@@ -42,6 +42,9 @@ export const ItineraryPreview: React.FC = () => {
       {/* Phase 4: プランニング進捗 */}
       <PlanningProgress />
       
+      {/* Phase 4.8.4: チェックリスト表示（プログレス直下） */}
+      <RequirementsChecklist />
+      
       {/* メインコンテンツ（スクロール可能） */}
       <div className="flex-1 overflow-y-auto">
       {/* Header */}

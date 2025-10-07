@@ -4,7 +4,6 @@ import React from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { AISelector } from './AISelector';
-import { RequirementsChecklist } from '@/components/itinerary/RequirementsChecklist';
 
 export const ChatBox: React.FC = () => {
   return (
@@ -19,9 +18,6 @@ export const ChatBox: React.FC = () => {
           <AISelector />
         </div>
       </div>
-      
-      {/* Phase 4.8.4: Requirements Checklist */}
-      <RequirementsChecklist />
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
