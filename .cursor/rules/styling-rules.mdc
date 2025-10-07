@@ -1,0 +1,213 @@
+---
+globs: "*.tsx,components/**/*,app/**/*"
+---
+
+# スタイリング規約（Tailwind CSS）
+
+## Tailwind CSS使用規則
+
+### クラス命名順序
+1. レイアウト（flex, grid, position）
+2. サイズ（w-, h-, max-w-）
+3. スペーシング（p-, m-, gap-）
+4. タイポグラフィ（text-, font-）
+5. カラー（bg-, text-, border-）
+6. ボーダー・角丸（border-, rounded-）
+7. エフェクト（shadow-, opacity-, hover:）
+8. アニメーション（transition-, animate-）
+
+```tsx
+// ✅ Good - 読みやすい順序
+<div className="flex items-center justify-between w-full h-12 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
+  コンテンツ
+</div>
+
+// ❌ Bad - ランダムな順序
+<div className="hover:bg-gray-50 text-gray-700 px-4 w-full border-gray-200 flex rounded-lg">
+  コンテンツ
+</div>
+```
+
+## カラーパレット
+
+### プライマリカラー
+- **グレー**: UI全般
+  - `gray-50`: 背景（薄い）
+  - `gray-100`: ホバー背景
+  - `gray-200`: ボーダー
+  - `gray-500`: 補助テキスト
+  - `gray-700`: メインテキスト
+  - `gray-800`: 強調テキスト
+  - `gray-900`: ヘッダー
+
+### アクセントカラー
+- **青系**: プライマリアクション
+  - `blue-500`: メインボタン
+  - `blue-600`: ボタンホバー
+  - `blue-50`: 選択状態背景
+
+- **グラデーション**: しおりヘッダー
+  - `from-blue-500 to-purple-600`
+
+```tsx
+// ✅ プライマリボタン
+<button className="px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors">
+  送信
+</button>
+
+// ✅ セカンダリボタン
+<button className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+  キャンセル
+</button>
+```
+
+## レスポンシブデザイン
+
+### ブレークポイント
+- `sm`: 640px（モバイル大）
+- `md`: 768px（タブレット）
+- `lg`: 1024px（デスクトップ小）
+- `xl`: 1280px（デスクトップ）
+
+### Phase 8でモバイル対応予定
+現在はデスクトップレイアウトのみ実装（Phase 1完了）
+
+```tsx
+// Phase 8での実装例
+<div className="flex flex-col lg:flex-row">
+  {/* モバイル: 縦積み、デスクトップ: 横並び */}
+</div>
+```
+
+## コンポーネントスタイリングパターン
+
+### カード
+```tsx
+<div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+  {/* コンテンツ */}
+</div>
+```
+
+### 入力フォーム
+```tsx
+<input
+  type="text"
+  className="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+  placeholder="メッセージを入力..."
+/>
+```
+
+### ボタン（プライマリ）
+```tsx
+<button className="flex items-center gap-2 px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+  <Send size={16} />
+  送信
+</button>
+```
+
+### ボーダー・セパレータ
+```tsx
+{/* 水平線 */}
+<div className="border-b border-gray-200" />
+
+{/* 垂直線 */}
+<div className="border-r border-gray-200" />
+```
+
+## アニメーション
+
+### トランジション
+- **標準**: `transition-colors` または `transition-all`
+- **デュレーション**: デフォルト（150ms）
+
+```tsx
+// ✅ ボタンホバー
+<button className="bg-blue-500 hover:bg-blue-600 transition-colors">
+
+// ✅ 入力フォーカス
+<input className="border-gray-300 focus:border-blue-500 transition-all">
+```
+
+### メッセージアニメーション
+```tsx
+// MessageList.tsxで実装済み
+<div className="opacity-0 translate-y-2 animate-fadeIn">
+  {/* メッセージ */}
+</div>
+```
+
+## アイコン（lucide-react）
+
+### サイズ
+- **小**: 16px（ボタン内）
+- **中**: 20px（標準）
+- **大**: 24px（ヘッダー）
+
+### 使用例
+```tsx
+import { Send, User, Bot, ChevronDown } from 'lucide-react';
+
+<Send size={16} className="text-white" />
+<User size={20} className="text-gray-500" />
+<Bot size={20} className="text-blue-500" />
+```
+
+## スペーシング
+
+### 標準パディング
+- **小**: `p-2` または `px-2 py-1`
+- **中**: `p-4`
+- **大**: `p-6`
+
+### マージン・ギャップ
+- **小**: `gap-2`, `mt-2`
+- **中**: `gap-4`, `mt-4`
+- **大**: `gap-6`, `mt-6`
+
+## フォント
+
+### サイズ
+- `text-xs`: 12px（キャプション）
+- `text-sm`: 14px（補助テキスト）
+- `text-base`: 16px（本文）
+- `text-lg`: 18px（サブタイトル）
+- `text-xl`: 20px（タイトル）
+- `text-2xl`: 24px（ヘッダー）
+
+### ウェイト
+- `font-normal`: 400（本文）
+- `font-medium`: 500（強調）
+- `font-semibold`: 600（タイトル）
+- `font-bold`: 700（ヘッダー）
+
+```tsx
+// ✅ タイトル
+<h2 className="text-lg font-semibold text-gray-800">
+
+// ✅ 本文
+<p className="text-base text-gray-700">
+
+// ✅ キャプション
+<span className="text-sm text-gray-500">
+```
+
+## スクロール
+
+### オーバーフロー
+```tsx
+// ✅ 縦スクロール（MessageList）
+<div className="flex-1 overflow-y-auto">
+
+// ✅ スクロールバーのカスタマイズ
+<div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+```
+
+## 禁止事項
+- ❌ インラインstyle属性（`style={{ ... }}`）の使用
+- ❌ カスタムCSSファイルの新規作成（globals.cssのみ）
+- ❌ !important の使用
+- ❌ 固定ピクセル値（pxではなくTailwindクラス使用）
+
+## 例外
+- グローバルスタイル（[globals.css](mdc:app/globals.css)）
+- アニメーションキーフレーム（Tailwind設定またはglobals.css）
