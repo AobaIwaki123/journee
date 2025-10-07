@@ -138,12 +138,12 @@ export const ShareButton: React.FC = () => {
         <>
           {/* 背景オーバーレイ */}
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-40 bg-black bg-opacity-25"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* パネル */}
-          <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20">
+          {/* パネル - 画面中央に配置 */}
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 p-4 z-50">
             {/* ヘッダー */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800 flex items-center gap-2">
