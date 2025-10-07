@@ -1,0 +1,362 @@
+'use client';
+
+import React, { useState } from 'react';
+import { TouristSpot } from '@/types/itinerary';
+import { useStore } from '@/lib/store/useStore';
+import { 
+  Clock, 
+  MapPin, 
+  Wallet, 
+  Info, 
+  Camera,
+  Utensils,
+  Car,
+  Hotel,
+  Sparkles,
+  Edit2,
+  Trash2,
+  Check,
+  X,
+  GripVertical
+} from 'lucide-react';
+
+interface EditableSpotCardProps {
+  spot: TouristSpot;
+  dayIndex: number;
+  spotIndex: number;
+}
+
+const getCategoryLabel = (category?: string): string => {
+  const labels: Record<string, string> = {
+    sightseeing: '観光',
+    dining: '食事',
+    transportation: '移動',
+    accommodation: '宿泊',
+    other: 'その他',
+  };
+  return category ? labels[category] || 'その他' : '';
+};
+
+const getCategoryColor = (category?: string): string => {
+  const colors: Record<string, string> = {
+    sightseeing: 'bg-blue-100 text-blue-700 border-blue-200',
+    dining: 'bg-orange-100 text-orange-700 border-orange-200',
+    transportation: 'bg-green-100 text-green-700 border-green-200',
+    accommodation: 'bg-purple-100 text-purple-700 border-purple-200',
+    other: 'bg-gray-100 text-gray-700 border-gray-200',
+  };
+  return category ? colors[category] || colors.other : colors.other;
+};
+
+const getCategoryIcon = (category?: string) => {
+  const iconClass = "w-5 h-5";
+  const icons: Record<string, JSX.Element> = {
+    sightseeing: <Camera className={iconClass} />,
+    dining: <Utensils className={iconClass} />,
+    transportation: <Car className={iconClass} />,
+    accommodation: <Hotel className={iconClass} />,
+    other: <Sparkles className={iconClass} />,
+  };
+  return category ? icons[category] || icons.other : icons.other;
+};
+
+const getCategoryGradient = (category?: string): string => {
+  const gradients: Record<string, string> = {
+    sightseeing: 'from-blue-400 to-blue-600',
+    dining: 'from-orange-400 to-orange-600',
+    transportation: 'from-green-400 to-green-600',
+    accommodation: 'from-purple-400 to-purple-600',
+    other: 'from-gray-400 to-gray-600',
+  };
+  return category ? gradients[category] || gradients.other : gradients.other;
+};
+
+export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayIndex, spotIndex }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editValues, setEditValues] = useState({
+    name: spot.name,
+    description: spot.description,
+    scheduledTime: spot.scheduledTime || '',
+    duration: spot.duration?.toString() || '',
+    estimatedCost: spot.estimatedCost?.toString() || '',
+    notes: spot.notes || '',
+  });
+
+  const updateSpot = useStore((state) => state.updateSpot);
+  const deleteSpot = useStore((state) => state.deleteSpot);
+  const addToast = useStore((state) => state.addToast);
+
+  const handleSave = () => {
+    if (!editValues.name.trim()) {
+      addToast('スポット名を入力してください', 'error');
+      return;
+    }
+
+    const updates: Partial<TouristSpot> = {
+      name: editValues.name.trim(),
+      description: editValues.description.trim(),
+      scheduledTime: editValues.scheduledTime.trim() || undefined,
+      duration: editValues.duration ? parseInt(editValues.duration) : undefined,
+      estimatedCost: editValues.estimatedCost ? parseInt(editValues.estimatedCost) : undefined,
+      notes: editValues.notes.trim() || undefined,
+    };
+
+    updateSpot(dayIndex, spot.id, updates);
+    setIsEditing(false);
+    addToast('スポット情報を更新しました', 'success');
+  };
+
+  const handleCancel = () => {
+    setEditValues({
+      name: spot.name,
+      description: spot.description,
+      scheduledTime: spot.scheduledTime || '',
+      duration: spot.duration?.toString() || '',
+      estimatedCost: spot.estimatedCost?.toString() || '',
+      notes: spot.notes || '',
+    });
+    setIsEditing(false);
+  };
+
+  const handleDelete = () => {
+    deleteSpot(dayIndex, spot.id);
+    addToast('スポットを削除しました', 'info');
+    setShowDeleteConfirm(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border-2 border-blue-400 p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="font-bold text-gray-900">スポット編集</h4>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              title="保存"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleCancel}
+              className="p-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors"
+              title="キャンセル"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              スポット名 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={editValues.name}
+              onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="例: 清水寺"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              説明
+            </label>
+            <textarea
+              value={editValues.description}
+              onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={3}
+              placeholder="スポットの説明を入力"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                予定時刻
+              </label>
+              <input
+                type="time"
+                value={editValues.scheduledTime}
+                onChange={(e) => setEditValues({ ...editValues, scheduledTime: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                所要時間（分）
+              </label>
+              <input
+                type="number"
+                value={editValues.duration}
+                onChange={(e) => setEditValues({ ...editValues, duration: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="60"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              予算（円）
+            </label>
+            <input
+              type="number"
+              value={editValues.estimatedCost}
+              onChange={(e) => setEditValues({ ...editValues, estimatedCost: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="1000"
+              min="0"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              メモ
+            </label>
+            <textarea
+              value={editValues.notes}
+              onChange={(e) => setEditValues({ ...editValues, notes: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={2}
+              placeholder="注意事項やメモを入力"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-200 hover:border-blue-300">
+      {/* Drag Handle */}
+      <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move">
+        <GripVertical className="w-4 h-4 text-gray-400" />
+      </div>
+
+      {/* Card Content */}
+      <div className="flex items-start gap-4 p-4 pl-8">
+        {/* Category Icon */}
+        <div className={`flex-shrink-0 flex items-center justify-center w-12 h-12 bg-gradient-to-br ${getCategoryGradient(spot.category)} text-white rounded-lg shadow-md group-hover:scale-110 transition-transform duration-200`}>
+          {getCategoryIcon(spot.category)}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title & Category Badge */}
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h4 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
+                  {spot.name}
+                </h4>
+                {spot.category && (
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-full font-medium border ${getCategoryColor(
+                      spot.category
+                    )}`}
+                  >
+                    {getCategoryLabel(spot.category)}
+                  </span>
+                )}
+              </div>
+
+              {/* Time & Duration */}
+              {spot.scheduledTime && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                  <Clock className="w-4 h-4 text-blue-500" />
+                  <span className="font-medium">{spot.scheduledTime}</span>
+                  {spot.duration && (
+                    <span className="text-gray-500">({spot.duration}分)</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+                title="編集"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                title="削除"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Description */}
+          {spot.description && (
+            <p className="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-3">
+              {spot.description}
+            </p>
+          )}
+
+          {/* Location & Cost */}
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            {spot.location?.address && (
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <span className="truncate">{spot.location.address}</span>
+              </div>
+            )}
+
+            {spot.estimatedCost !== undefined && spot.estimatedCost > 0 && (
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <Wallet className="w-4 h-4 text-green-600 flex-shrink-0" />
+                <span className="font-semibold">¥{spot.estimatedCost.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          {spot.notes && (
+            <div className="flex items-start gap-2 mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <span className="text-sm text-amber-900 leading-relaxed">{spot.notes}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center p-4 z-10 rounded-lg">
+          <div className="text-center">
+            <p className="text-gray-900 font-medium mb-4">
+              このスポットを削除しますか？
+            </p>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+              >
+                削除
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -3,19 +3,28 @@
 import React from 'react';
 import { Calendar, MapPin, Clock } from 'lucide-react';
 import { ItineraryData } from '@/types/itinerary';
+import { EditableTitle } from './EditableTitle';
 
 interface ItineraryHeaderProps {
   itinerary: ItineraryData;
+  editable?: boolean;
 }
 
-export const ItineraryHeader: React.FC<ItineraryHeaderProps> = ({ itinerary }) => {
+export const ItineraryHeader: React.FC<ItineraryHeaderProps> = ({ itinerary, editable = true }) => {
   return (
     <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white p-8 shadow-lg">
       <div className="max-w-4xl mx-auto">
         {/* タイトル */}
-        <h1 className="text-4xl font-bold mb-4 drop-shadow-lg">
-          {itinerary.title}
-        </h1>
+        {editable ? (
+          <EditableTitle 
+            value={itinerary.title}
+            className="text-4xl font-bold mb-4 drop-shadow-lg"
+          />
+        ) : (
+          <h1 className="text-4xl font-bold mb-4 drop-shadow-lg">
+            {itinerary.title}
+          </h1>
+        )}
 
         {/* 基本情報 */}
         <div className="flex flex-wrap items-center gap-6 text-blue-50 mb-4">

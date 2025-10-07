@@ -3,10 +3,14 @@
 import React, { useState } from 'react';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { SpotCard } from './SpotCard';
+import { EditableSpotCard } from './EditableSpotCard';
+import { AddSpotForm } from './AddSpotForm';
 import { ChevronDown, ChevronUp, MapPin, Wallet } from 'lucide-react';
 
 interface DayScheduleProps {
   day: DayScheduleType;
+  dayIndex: number;
+  editable?: boolean;
 }
 
 // 日付から曜日を取得
@@ -22,7 +26,7 @@ const getDayOfWeek = (dateString?: string): string => {
   }
 };
 
-export const DaySchedule: React.FC<DayScheduleProps> = ({ day }) => {
+export const DaySchedule: React.FC<DayScheduleProps> = ({ day, dayIndex, editable = true }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const dayOfWeek = getDayOfWeek(day.date);
@@ -108,10 +112,25 @@ export const DaySchedule: React.FC<DayScheduleProps> = ({ day }) => {
                     </div>
 
                     {/* Spot Card */}
-                    <SpotCard spot={spot} />
+                    {editable ? (
+                      <EditableSpotCard 
+                        spot={spot} 
+                        dayIndex={dayIndex} 
+                        spotIndex={index} 
+                      />
+                    ) : (
+                      <SpotCard spot={spot} />
+                    )}
                   </div>
                 ))}
               </div>
+
+              {/* Add Spot Form */}
+              {editable && (
+                <div className="mt-6">
+                  <AddSpotForm dayIndex={dayIndex} />
+                </div>
+              )}
             </div>
           ) : (
             <div className="p-8 bg-gray-50 rounded-lg text-center text-gray-500 text-sm mt-4">

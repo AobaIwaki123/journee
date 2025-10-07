@@ -6,6 +6,7 @@ import { DaySchedule } from './DaySchedule';
 import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
 import { EmptyItinerary } from './EmptyItinerary';
+import { ToastContainer } from '@/components/ui/Toast';
 import { FileDown } from 'lucide-react';
 
 export const ItineraryPreview: React.FC = () => {
@@ -17,25 +18,34 @@ export const ItineraryPreview: React.FC = () => {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <ItineraryHeader itinerary={currentItinerary} />
+    <>
+      {/* Toast Container */}
+      <ToastContainer />
 
-      {/* Content */}
-      <div className="p-6 max-w-5xl mx-auto">
-        {/* Summary */}
-        {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
-          <ItinerarySummary itinerary={currentItinerary} />
-        )}
+      <div className="h-full overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Header */}
+        <ItineraryHeader itinerary={currentItinerary} editable={true} />
 
-        {/* Days */}
-        {currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
-          <div className="space-y-6">
-            {currentItinerary.schedule.map((day) => (
-              <DaySchedule key={day.day} day={day} />
-            ))}
-          </div>
-        ) : (
+        {/* Content */}
+        <div className="p-6 max-w-5xl mx-auto">
+          {/* Summary */}
+          {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
+            <ItinerarySummary itinerary={currentItinerary} />
+          )}
+
+          {/* Days */}
+          {currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
+            <div className="space-y-6">
+              {currentItinerary.schedule.map((day, index) => (
+                <DaySchedule 
+                  key={day.day} 
+                  day={day} 
+                  dayIndex={index}
+                  editable={true}
+                />
+              ))}
+            </div>
+          ) : (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <p className="text-gray-600 text-lg font-medium mb-2">
               スケジュールがまだ作成されていません
@@ -60,5 +70,6 @@ export const ItineraryPreview: React.FC = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
