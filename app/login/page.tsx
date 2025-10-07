@@ -47,11 +47,11 @@ export default async function LoginPage() {
           {/* 利用規約・プライバシーポリシー */}
           <p className="text-xs text-gray-500 text-center mt-6">
             ログインすることで、
-            <a href="#" className="text-blue-600 hover:underline">
+            <a href="/terms" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
               利用規約
             </a>
             および
-            <a href="#" className="text-blue-600 hover:underline">
+            <a href="/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
               プライバシーポリシー
             </a>
             に同意したものとみなされます。
