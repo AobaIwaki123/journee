@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TouristSpot } from '@/types/itinerary';
 import { useStore } from '@/lib/store/useStore';
 import { 
