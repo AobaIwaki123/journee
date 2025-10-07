@@ -7,11 +7,15 @@ import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
 import { EmptyItinerary } from './EmptyItinerary';
 import { UndoRedoButtons } from './UndoRedoButtons';
+import { TemplateSelector } from './TemplateSelector';
 import { ToastContainer } from '@/components/ui/Toast';
 import { FileDown } from 'lucide-react';
+import { TEMPLATES } from '@/types/template';
 
 export const ItineraryPreview: React.FC = () => {
   const currentItinerary = useStore((state) => state.currentItinerary);
+  const selectedTemplate = useStore((state) => state.selectedTemplate);
+  const template = TEMPLATES[selectedTemplate];
 
   // 空状態: しおりがない場合
   if (!currentItinerary) {
@@ -23,7 +27,12 @@ export const ItineraryPreview: React.FC = () => {
       {/* Toast Container */}
       <ToastContainer />
 
-      <div className="h-full overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
+      <div 
+        className="h-full overflow-y-auto"
+        style={{ 
+          background: `linear-gradient(to bottom right, ${template.colors.background}, ${template.colors.background})`
+        }}
+      >
         {/* Header */}
         <ItineraryHeader itinerary={currentItinerary} editable={true} />
 
@@ -34,6 +43,11 @@ export const ItineraryPreview: React.FC = () => {
             <div className="flex justify-end mb-4">
               <UndoRedoButtons />
             </div>
+          )}
+
+          {/* Template Selector */}
+          {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
+            <TemplateSelector />
           )}
 
           {/* Summary */}

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { Message } from "@/types/chat";
 import { ItineraryData, TouristSpot, DaySchedule } from "@/types/itinerary";
 import type { AIModelId } from "@/types/ai";
+import type { TemplateId } from "@/types/template";
 import {
   saveClaudeApiKey,
   loadClaudeApiKey,
@@ -87,6 +88,10 @@ interface AppState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+
+  // Template state (Phase 5.1.3)
+  selectedTemplate: TemplateId;
+  setSelectedTemplate: (template: TemplateId) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -350,9 +355,13 @@ export const useStore = create<AppState>((set) => ({
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
     const savedAI = loadSelectedAI();
+    const savedTemplate = (typeof window !== 'undefined' 
+      ? localStorage.getItem('journee_template') 
+      : null) as TemplateId | null;
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
+      selectedTemplate: savedTemplate || 'classic',
     });
   },
 
@@ -428,5 +437,15 @@ export const useStore = create<AppState>((set) => ({
   canRedo: () => {
     const state = useStore.getState();
     return state.history.future.length > 0;
+  },
+
+  // Template state (Phase 5.1.3)
+  selectedTemplate: 'classic',
+  setSelectedTemplate: (template) => {
+    // LocalStorageに保存
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('journee_template', template);
+    }
+    set({ selectedTemplate: template });
   },
 }));
