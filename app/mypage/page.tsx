@@ -1,12 +1,14 @@
-import React from 'react';
-import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth/session';
-import { UserProfile } from '@/components/mypage/UserProfile';
-import { UserStats } from '@/components/mypage/UserStats';
-import { QuickActions } from '@/components/mypage/QuickActions';
-import { ItineraryCard } from '@/components/mypage/ItineraryCard';
-import { getMockUserStats } from '@/lib/mock-data/user-stats';
-import { getMockRecentItineraries } from '@/lib/mock-data/recent-itineraries';
+import React from "react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth/session";
+import { UserProfile } from "@/components/mypage/UserProfile";
+import { UserStats } from "@/components/mypage/UserStats";
+import { QuickActions } from "@/components/mypage/QuickActions";
+import { ItineraryCard } from "@/components/mypage/ItineraryCard";
+import { getMockUserStats } from "@/lib/mock-data/user-stats";
+import { getMockRecentItineraries } from "@/lib/mock-data/recent-itineraries";
 
 /**
  * マイページ
@@ -15,16 +17,16 @@ import { getMockRecentItineraries } from '@/lib/mock-data/recent-itineraries';
 export default async function MyPage() {
   // 認証チェック
   const user = await getCurrentUser();
-  
+
   if (!user) {
     // 未認証の場合はログインページへリダイレクト
-    redirect('/login');
+    redirect("/login");
   }
 
   // セッション情報の取得（UserProfileコンポーネント用）
   const session = {
     user,
-    expires: '', // 必要に応じて実際の有効期限を設定
+    expires: "", // 必要に応じて実際の有効期限を設定
   };
 
   // モックデータの取得
@@ -36,8 +38,21 @@ export default async function MyPage() {
       {/* ヘッダー */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">マイページ</h1>
-          <p className="mt-2 text-gray-600">あなたの旅行記録とアクティビティ</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">マイページ</h1>
+              <p className="mt-2 text-gray-600">
+                あなたの旅行記録とアクティビティ
+              </p>
+            </div>
+            <Link
+              href="/"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>しおり作成に戻る</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -56,7 +71,9 @@ export default async function MyPage() {
           {/* 最近のしおりセクション */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-800">最近のしおり</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                最近のしおり
+              </h2>
               <a
                 href="/itineraries"
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline"
