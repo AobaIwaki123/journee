@@ -739,6 +739,34 @@ journee/
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
 
+### BUG-002: Phase 5.1.3 時刻と順番の整合性バグ修正 ✅ **完了** (2025-10-07)
+**発生状況**: 
+1. 編集内容が即座にレンダリングされない
+2. 時刻を変更しても順番が変わらない、順番を変更しても時刻が変化しない
+
+**修正内容**:
+- [x] `EditableSpotCard.tsx` - useEffect追加でspot props変更を監視
+- [x] `EditableTitle.tsx` - コメント改善
+- [x] `lib/utils/time-utils.ts` - 時刻ユーティリティ関数の作成
+  - `timeToMinutes`: HH:mm → 分に変換
+  - `minutesToTime`: 分 → HH:mm に変換
+  - `sortSpotsByTime`: 時刻順にソート
+  - `adjustTimeAfterReorder`: 並び替え時の時刻自動調整
+- [x] `lib/store/useStore.ts` - 自動ソート・時刻調整ロジック追加
+  - `updateSpot`: 時刻変更時に自動ソート
+  - `addSpot`: 追加後に自動ソート
+  - `reorderSpots`: 並び替え後に時刻自動調整
+  - 全アクションにhistory更新を適用
+
+**実装結果**:
+- ✅ 編集内容が即座にUIに反映される
+- ✅ 時刻変更時に自動的に時刻順にソート
+- ✅ ドラッグ&ドロップ時に時刻が自動調整される
+- ✅ 時刻と順番の整合性が常に保たれる
+- ✅ すべての編集アクションでUndo/Redoが正常動作
+
+**詳細**: [docs/BUG_FIX_5.1.3_TIME_CONSISTENCY.md](./docs/BUG_FIX_5.1.3_TIME_CONSISTENCY.md)
+
 ### BUG-001: JSON削除バグ修正 ✅ **完了** (2025-10-07)
 **発生状況**: AIからのレスポンスに生のJSONブロックが表示される（ストリーミング中・完了後の両方）
 
