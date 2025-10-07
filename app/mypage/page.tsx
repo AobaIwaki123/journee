@@ -1,5 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/session';
 import { UserProfile } from '@/components/mypage/UserProfile';
 import { UserStats } from '@/components/mypage/UserStats';
@@ -36,8 +38,19 @@ export default async function MyPage() {
       {/* ヘッダー */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">マイページ</h1>
-          <p className="mt-2 text-gray-600">あなたの旅行記録とアクティビティ</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">マイページ</h1>
+              <p className="mt-2 text-gray-600">あなたの旅行記録とアクティビティ</p>
+            </div>
+            <Link
+              href="/"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>栞作成に戻る</span>
+            </Link>
+          </div>
         </div>
       </div>
 
