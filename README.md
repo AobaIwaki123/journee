@@ -677,4 +677,5 @@ MIT
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
-- [API ドキュメント](./PHASE3_API_DOCUMENTATION.md)
+- [API ドキュメント](./docs/PHASE3_API_DOCUMENTATION.md)
+- [クイックスタートガイド](./docs/QUICK_START.md)
