@@ -2,15 +2,15 @@
  * Google Gemini API統合
  */
 
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
-import type { ChatMessage } from '@/types/chat';
-import type { ItineraryData } from '@/types/itinerary';
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import type { ChatMessage } from "@/types/chat";
+import type { ItineraryData } from "@/types/itinerary";
 import {
   SYSTEM_PROMPT,
   createUpdatePrompt,
   parseAIResponse,
   formatChatHistory,
-} from './prompts';
+} from "./prompts";
 
 /**
  * Gemini APIクライアント
@@ -22,12 +22,12 @@ export class GeminiClient {
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY;
     if (!key) {
-      throw new Error('GEMINI_API_KEY is not configured');
+      throw new Error("GEMINI_API_KEY is not configured");
     }
-    
+
     this.client = new GoogleGenerativeAI(key);
-    // Gemini 1.5 Proを使用（より高性能）
-    this.model = this.client.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    // Gemini 2.5 Proを使用（より高性能）
+    this.model = this.client.getGenerativeModel({ model: "gemini-2.5-pro" });
   }
 
   /**
@@ -43,7 +43,11 @@ export class GeminiClient {
   }> {
     try {
       // プロンプトの構築
-      const prompt = this.buildPrompt(userMessage, chatHistory, currentItinerary);
+      const prompt = this.buildPrompt(
+        userMessage,
+        chatHistory,
+        currentItinerary
+      );
 
       // Gemini APIに送信
       const result = await this.model.generateContent(prompt);
@@ -58,7 +62,7 @@ export class GeminiClient {
         itinerary: itineraryData as ItineraryData | undefined,
       };
     } catch (error: any) {
-      console.error('Gemini API Error:', error);
+      console.error("Gemini API Error:", error);
       throw new Error(`Gemini API error: ${error.message}`);
     }
   }
@@ -73,7 +77,11 @@ export class GeminiClient {
   ): AsyncGenerator<string, void, unknown> {
     try {
       // プロンプトの構築
-      const prompt = this.buildPrompt(userMessage, chatHistory, currentItinerary);
+      const prompt = this.buildPrompt(
+        userMessage,
+        chatHistory,
+        currentItinerary
+      );
 
       // Gemini APIにストリーミングリクエスト
       const result = await this.model.generateContentStream(prompt);
@@ -86,7 +94,7 @@ export class GeminiClient {
         }
       }
     } catch (error: any) {
-      console.error('Gemini API Streaming Error:', error);
+      console.error("Gemini API Streaming Error:", error);
       throw new Error(`Gemini API streaming error: ${error.message}`);
     }
   }
@@ -99,12 +107,12 @@ export class GeminiClient {
     chatHistory: ChatMessage[],
     currentItinerary?: ItineraryData
   ): string {
-    let prompt = SYSTEM_PROMPT + '\n\n';
+    let prompt = SYSTEM_PROMPT + "\n\n";
 
     // チャット履歴がある場合は追加
     if (chatHistory.length > 0) {
       const historyText = formatChatHistory(
-        chatHistory.slice(-10).map(msg => ({
+        chatHistory.slice(-10).map((msg) => ({
           role: msg.role,
           content: msg.content,
         }))

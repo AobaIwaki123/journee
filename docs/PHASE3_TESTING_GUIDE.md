@@ -108,7 +108,7 @@ if (!apiKey) {
 }
 
 const client = new GoogleGenerativeAI(apiKey);
-const model = client.getGenerativeModel({ model: 'gemini-1.5-pro' });
+const model = client.getGenerativeModel({ model: 'gemini-2.5-pro' });
 
 async function test() {
   try {
