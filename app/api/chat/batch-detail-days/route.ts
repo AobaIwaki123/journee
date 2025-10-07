@@ -213,32 +213,37 @@ export async function POST(request: NextRequest) {
             processDayDetail(day, body, semaphore, encoder, controller, timeout)
           );
           
-          // 各タスクの完了を待つ
-          for (const taskPromise of tasks) {
-            const result = await taskPromise;
-            
-            if (result.success) {
-              completedDays.push(result.day);
+          // 🚀 真の並列実行: Promise.allSettledで全てのタスクを同時実行
+          const results = await Promise.allSettled(tasks);
+          
+          // 結果を集計
+          results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+              if (result.value.success) {
+                completedDays.push(result.value.day);
+              } else {
+                errorDays.push(result.value.day);
+              }
             } else {
-              errorDays.push(result.day);
+              // Promise自体が失敗した場合
+              errorDays.push(days[index].day);
+              console.error(`Task ${days[index].day} rejected:`, result.reason);
             }
-            
-            // 進捗を送信
-            const progressChunk: MultiStreamChunk = {
-              type: 'progress',
-              progress: {
-                completedDays,
-                processingDays: days
-                  .map(d => d.day)
-                  .filter(d => !completedDays.includes(d) && !errorDays.includes(d)),
-                errorDays,
-                totalDays: days.length,
-                progressRate: Math.round((completedDays.length / days.length) * 100),
-              },
-              timestamp: Date.now(),
-            };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(progressChunk)}\n\n`));
-          }
+          });
+          
+          // 最終進捗を送信
+          const finalProgressChunk: MultiStreamChunk = {
+            type: 'progress',
+            progress: {
+              completedDays,
+              processingDays: [],
+              errorDays,
+              totalDays: days.length,
+              progressRate: Math.round((completedDays.length / days.length) * 100),
+            },
+            timestamp: Date.now(),
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalProgressChunk)}\n\n`));
           
           const processingTime = Date.now() - startTime;
           

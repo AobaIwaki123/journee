@@ -6,6 +6,7 @@ import type { ItineraryPhase } from '@/types/itinerary';
 import { ArrowRight, RotateCcw, Check, AlertCircle } from 'lucide-react';
 import { sendChatMessageStream } from '@/lib/utils/api-client';
 import { mergeItineraryData } from '@/lib/ai/prompts';
+import { batchDetailDaysStream, createDayDetailTasks } from '@/lib/utils/batch-api-client';
 
 /**
  * Phase 4.4, 4.5, 4.8: 段階的旅程構築のクイックアクション
@@ -124,6 +125,9 @@ export const QuickActions: React.FC = () => {
     setError(null);
 
     try {
+      // 現在のフェーズを保存
+      const currentPhase = planningPhase;
+      
       // まず、フェーズを進める
       proceedToNextStep();
       
@@ -151,30 +155,114 @@ export const QuickActions: React.FC = () => {
       
       let fullResponse = '';
       
-      // ストリーミングレスポンスを処理
-      // パラメータ順序: message, chatHistory, currentItinerary, model, claudeApiKey, planningPhase, currentDetailingDay
-      for await (const chunk of sendChatMessageStream(
-        '次へ',
-        chatHistory,
-        useStore.getState().currentItinerary || undefined,
-        selectedAI,  // AIモデル（gemini / claude）
-        claudeApiKey,  // Claude APIキー
-        newPhase,  // planningPhase
-        newDetailingDay  // currentDetailingDay
-      )) {
-        if (chunk.type === 'message' && chunk.content) {
-          appendStreamingMessage(chunk.content);
-          fullResponse += chunk.content;
-        } else if (chunk.type === 'itinerary' && chunk.itinerary) {
-          const mergedItinerary = mergeItineraryData(
-            useStore.getState().currentItinerary || undefined,
-            chunk.itinerary
-          );
-          setItinerary(mergedItinerary);
-        } else if (chunk.type === 'error') {
-          throw new Error(chunk.error || 'Unknown error occurred');
-        } else if (chunk.type === 'done') {
-          break;
+      // Phase 4.9: skeleton → detailing への移行時は並列バッチ処理を使用
+      if (currentPhase === 'skeleton' && newPhase === 'detailing') {
+        console.log('🚀 並列バッチ処理開始: 全日程を並列で詳細化');
+        
+        // 骨組みメッセージを送信して取得
+        for await (const chunk of sendChatMessageStream(
+          '骨組みが完成しました。これから各日の詳細を作成します。',
+          chatHistory,
+          useStore.getState().currentItinerary || undefined,
+          selectedAI,
+          claudeApiKey,
+          'skeleton',
+          null
+        )) {
+          if (chunk.type === 'message' && chunk.content) {
+            appendStreamingMessage(chunk.content);
+            fullResponse += chunk.content;
+          } else if (chunk.type === 'itinerary' && chunk.itinerary) {
+            const mergedItinerary = mergeItineraryData(
+              useStore.getState().currentItinerary || undefined,
+              chunk.itinerary
+            );
+            setItinerary(mergedItinerary);
+          }
+        }
+        
+        // 現在のしおりを取得
+        const currentSkeleton = useStore.getState().currentItinerary;
+        if (!currentSkeleton || !currentSkeleton.schedule || currentSkeleton.schedule.length === 0) {
+          throw new Error('骨組みが作成されていません');
+        }
+        
+        // 並列バッチ処理タスクを作成
+        const tasks = createDayDetailTasks(currentSkeleton);
+        console.log(`📋 ${tasks.length}日分の詳細化タスクを作成`);
+        
+        // 並列バッチストリーミング処理
+        const updatedChatHistory = [
+          ...chatHistory,
+          {
+            id: `assistant-skeleton-${Date.now()}`,
+            role: 'assistant' as const,
+            content: fullResponse,
+            timestamp: new Date(),
+          }
+        ];
+        
+        const batchResponse: string[] = [];
+        
+        for await (const chunk of batchDetailDaysStream(
+          tasks,
+          updatedChatHistory,
+          currentSkeleton,
+          3 // 最大3並列
+        )) {
+          if (chunk.type === 'day_start') {
+            console.log(`📝 ${chunk.day}日目の詳細化開始`);
+            appendStreamingMessage(`\n\n### ${chunk.day}日目の詳細を作成中...\n`);
+          } else if (chunk.type === 'message' && chunk.content) {
+            appendStreamingMessage(chunk.content);
+            batchResponse.push(chunk.content);
+          } else if (chunk.type === 'itinerary' && chunk.itinerary) {
+            const mergedItinerary = mergeItineraryData(
+              useStore.getState().currentItinerary || undefined,
+              chunk.itinerary
+            );
+            setItinerary(mergedItinerary);
+          } else if (chunk.type === 'day_complete') {
+            console.log(`✅ ${chunk.day}日目の詳細化完了`);
+            appendStreamingMessage(`\n✓ ${chunk.day}日目完了\n`);
+          } else if (chunk.type === 'day_error') {
+            console.error(`❌ ${chunk.day}日目エラー:`, chunk.error);
+            appendStreamingMessage(`\n⚠️ ${chunk.day}日目でエラーが発生しました: ${chunk.error}\n`);
+          } else if (chunk.type === 'progress' && chunk.progress) {
+            console.log(`📊 進捗: ${chunk.progress.completedDays.length}/${chunk.progress.totalDays}日完了`);
+          } else if (chunk.type === 'done') {
+            console.log('🎉 並列バッチ処理完了');
+            break;
+          }
+        }
+        
+        fullResponse += '\n\n全ての日程の詳細化が完了しました！';
+        
+      } else {
+        // 通常のストリーミング処理（skeleton作成など）
+        for await (const chunk of sendChatMessageStream(
+          '次へ',
+          chatHistory,
+          useStore.getState().currentItinerary || undefined,
+          selectedAI,
+          claudeApiKey,
+          newPhase,
+          newDetailingDay
+        )) {
+          if (chunk.type === 'message' && chunk.content) {
+            appendStreamingMessage(chunk.content);
+            fullResponse += chunk.content;
+          } else if (chunk.type === 'itinerary' && chunk.itinerary) {
+            const mergedItinerary = mergeItineraryData(
+              useStore.getState().currentItinerary || undefined,
+              chunk.itinerary
+            );
+            setItinerary(mergedItinerary);
+          } else if (chunk.type === 'error') {
+            throw new Error(chunk.error || 'Unknown error occurred');
+          } else if (chunk.type === 'done') {
+            break;
+          }
         }
       }
       
