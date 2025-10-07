@@ -13,12 +13,6 @@ import { FileDown } from 'lucide-react';
 export const ItineraryPreview: React.FC = () => {
   const currentItinerary = useStore((state) => state.currentItinerary);
 
-  console.log('[ItineraryPreview] Render:', {
-    hasItinerary: !!currentItinerary,
-    title: currentItinerary?.title,
-    scheduleLength: currentItinerary?.schedule?.length || 0
-  });
-
   // 空状態: しおりがない場合
   if (!currentItinerary) {
     return <EmptyItinerary />;
