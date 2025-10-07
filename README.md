@@ -1008,7 +1008,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.1.1, 5.1.2, 5.1.3, 6, BUG-001 完了・統合済み → 次は Phase 3.5.2, 3.6, 4, 5.2
+**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.1, 5.4, 6, BUG-001, BUG-002 完了・統合済み → 次は Phase 3.5.2, 3.6, 4, 5.2
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -1025,12 +1025,16 @@ MIT
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
 - ✅ **Phase 5.1.1**: しおり基本表示コンポーネント（ヘッダー、サマリー、日程、スポット、空状態）
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
-- ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、パフォーマンス最適化）
+- ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
+- ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
+- ✅ **Phase 5.4.2**: 栞一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
+- ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
 - ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
   - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
   - ✅ Phase 6.2: Claude API完全統合（ストリーミング対応）
   - ✅ Phase 6.3: モデル設定の一元管理・型安全性向上
 - ✅ **BUG-001**: JSON削除バグ修正（3段階防御システム、完全対応）
+- ✅ **BUG-002**: Phase 5.1.3 時刻と順番の整合性バグ修正（イミュータブル更新、即座レンダリング）
 
 **次の実装**: 
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
@@ -1038,7 +1042,6 @@ MIT
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5.2** - 一時保存機能（LocalStorage版、自動保存）
 - **Phase 5.3** - PDF出力機能
-- **Phase 5.4** - マイページ・栞一覧・設定ページ（ユーザー管理、モックデータ） 🆕
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
@@ -1046,9 +1049,15 @@ MIT
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
-- [Phase 5.4 マイページ・栞一覧・設定ページ実装計画](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
+- [Phase 5.1.1 実装完了レポート](./docs/PHASE5.1.1_ITINERARY_COMPONENTS.md)
+- [Phase 5.1.2 実装完了レポート](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
+- [Phase 5.1.3 実装完了レポート](./docs/PHASE5.1.3_ADVANCED_FEATURES.md)
+- [Phase 5.4.1 実装完了レポート](./docs/PHASE5_4_1_IMPLEMENTATION_COMPLETE.md)
+- [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
+- [Phase 5.4.3 実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
+- [BUG-002修正レポート](./docs/BUG_FIX_5.1.3_TIME_CONSISTENCY.md)
 - [API ドキュメント](./docs/PHASE3_API_DOCUMENTATION.md)
 - [クイックスタートガイド](./docs/QUICK_START.md)

@@ -1,29 +1,54 @@
-import { create } from "zustand";
-import { Message } from "@/types/chat";
-import { ItineraryData, TouristSpot, DaySchedule } from "@/types/itinerary";
-import type { AIModelId } from "@/types/ai";
-import type { TemplateId } from "@/types/template";
+import { create } from 'zustand';
+import { Message } from '@/types/chat';
+import { ItineraryData, TouristSpot, DaySchedule } from '@/types/itinerary';
+import type { AIModelId } from '@/types/ai';
+import type { TemplateId } from '@/types/template';
+import type { AppSettings } from '@/types/settings';
+import { DEFAULT_SETTINGS } from '@/types/settings';
 import {
   saveClaudeApiKey,
   loadClaudeApiKey,
   removeClaudeApiKey,
   saveSelectedAI,
   loadSelectedAI,
-} from "@/lib/utils/storage";
-import { DEFAULT_AI_MODEL } from "@/lib/ai/models";
-import { createHistoryUpdate } from "./useStore-helper";
-import { sortSpotsByTime, adjustTimeAfterReorder } from "@/lib/utils/time-utils";
+  saveAppSettings,
+  loadAppSettings,
+} from '@/lib/utils/storage';
+import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
+import { createHistoryUpdate } from './useStore-helper';
+import { sortSpotsByTime, adjustTimeAfterReorder } from '@/lib/utils/time-utils';
 
 interface ToastMessage {
   id: string;
   message: string;
-  type: "success" | "error" | "info";
+  type: 'success' | 'error' | 'info';
 }
 
 interface HistoryState {
   past: ItineraryData[];
   present: ItineraryData | null;
   future: ItineraryData[];
+}
+
+/**
+ * しおりフィルター条件
+ */
+export interface ItineraryFilter {
+  status?: 'draft' | 'completed' | 'archived' | 'all';
+  destination?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+/**
+ * しおりソート条件
+ */
+export type ItinerarySortField = 'updatedAt' | 'createdAt' | 'title' | 'startDate';
+export type ItinerarySortOrder = 'asc' | 'desc';
+
+export interface ItinerarySort {
+  field: ItinerarySortField;
+  order: ItinerarySortOrder;
 }
 
 interface AppState {
@@ -61,6 +86,13 @@ interface AppState {
   ) => void;
   moveSpot: (fromDayIndex: number, toDayIndex: number, spotId: string) => void;
 
+  // Itinerary list state (Phase 5.4)
+  itineraryFilter: ItineraryFilter;
+  itinerarySort: ItinerarySort;
+  setItineraryFilter: (filter: ItineraryFilter) => void;
+  setItinerarySort: (sort: ItinerarySort) => void;
+  resetItineraryFilters: () => void;
+
   // UI state
   selectedAI: AIModelId;
   claudeApiKey: string;
@@ -69,13 +101,19 @@ interface AppState {
   removeClaudeApiKey: () => void;
   initializeFromStorage: () => void;
 
+  // Settings state (Phase 5.4.3)
+  settings: AppSettings;
+  updateSettings: (updates: Partial<AppSettings>) => void;
+  updateGeneralSettings: (updates: Partial<AppSettings['general']>) => void;
+  updateSoundSettings: (updates: Partial<AppSettings['sound']>) => void;
+
   // Error state
   error: string | null;
   setError: (error: string | null) => void;
 
   // Toast notifications (Phase 5.1.2)
   toasts: ToastMessage[];
-  addToast: (message: string, type: "success" | "error" | "info") => void;
+  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
 
   // Editing state (Phase 5.1.2)
@@ -99,7 +137,7 @@ export const useStore = create<AppState>((set) => ({
   messages: [],
   isLoading: false,
   isStreaming: false,
-  streamingMessage: "",
+  streamingMessage: '',
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -107,7 +145,7 @@ export const useStore = create<AppState>((set) => ({
   setStreamingMessage: (message) => set({ streamingMessage: message }),
   appendStreamingMessage: (chunk) =>
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
-  clearMessages: () => set({ messages: [], streamingMessage: "" }),
+  clearMessages: () => set({ messages: [], streamingMessage: '' }),
 
   // Itinerary state
   currentItinerary: null,
@@ -335,9 +373,25 @@ export const useStore = create<AppState>((set) => ({
       return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
 
+  // Itinerary list state (Phase 5.4)
+  itineraryFilter: {
+    status: 'all',
+  },
+  itinerarySort: {
+    field: 'updatedAt',
+    order: 'desc',
+  },
+  setItineraryFilter: (filter) => set({ itineraryFilter: filter }),
+  setItinerarySort: (sort) => set({ itinerarySort: sort }),
+  resetItineraryFilters: () =>
+    set({
+      itineraryFilter: { status: 'all' },
+      itinerarySort: { field: 'updatedAt', order: 'desc' },
+    }),
+
   // UI state
   selectedAI: DEFAULT_AI_MODEL,
-  claudeApiKey: "",
+  claudeApiKey: '',
   setSelectedAI: (ai) => {
     saveSelectedAI(ai);
     set({ selectedAI: ai });
@@ -350,7 +404,7 @@ export const useStore = create<AppState>((set) => ({
   },
   removeClaudeApiKey: () => {
     removeClaudeApiKey();
-    set({ claudeApiKey: "", selectedAI: DEFAULT_AI_MODEL });
+    set({ claudeApiKey: '', selectedAI: DEFAULT_AI_MODEL });
   },
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
@@ -358,10 +412,42 @@ export const useStore = create<AppState>((set) => ({
     const savedTemplate = (typeof window !== 'undefined' 
       ? localStorage.getItem('journee_template') 
       : null) as TemplateId | null;
+    const savedSettings = loadAppSettings();
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
       selectedTemplate: savedTemplate || 'classic',
+      settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
+    });
+  },
+
+  // Settings state (Phase 5.4.3)
+  settings: DEFAULT_SETTINGS,
+  updateSettings: (updates) => {
+    set((state) => {
+      const newSettings = { ...state.settings, ...updates };
+      saveAppSettings(newSettings);
+      return { settings: newSettings };
+    });
+  },
+  updateGeneralSettings: (updates) => {
+    set((state) => {
+      const newSettings = {
+        ...state.settings,
+        general: { ...state.settings.general, ...updates },
+      };
+      saveAppSettings(newSettings);
+      return { settings: newSettings };
+    });
+  },
+  updateSoundSettings: (updates) => {
+    set((state) => {
+      const newSettings = {
+        ...state.settings,
+        sound: { ...state.settings.sound, ...updates },
+      };
+      saveAppSettings(newSettings);
+      return { settings: newSettings };
     });
   },
 

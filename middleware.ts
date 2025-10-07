@@ -37,20 +37,29 @@ export default withAuth(
  * Phase 2では基本的な認証保護のみを実装
  * 以下のパスは認証が必要：
  * - /api/* (公開APIとNextAuth APIを除く)
+ * - /itineraries (栞一覧ページ)
+ * - /mypage (マイページ)
+ * - /settings (設定ページ)
  * 
  * 以下のパスは認証不要：
  * - /login
  * - /api/auth/*
+ * - /privacy
+ * - /terms
  * - 静的ファイル
  */
 export const config = {
   matcher: [
     /*
      * マッチするパス:
-     * - /api/以下のすべて (ただし /api/auth/* は除く)
+     * - /api/以下のすべて (ただし /api/auth/* と /api/health は除く)
+     * - /itineraries (栞一覧ページ)
+     * - /mypage (マイページ)
+     * - /settings (設定ページ)
      * 
      * マッチしないパス:
      * - /api/auth/* (NextAuth.js)
+     * - /api/health (ヘルスチェック)
      * - /_next/* (Next.jsの内部ファイル)
      * - /favicon.ico, /robots.txt などの静的ファイル
      */
@@ -58,5 +67,8 @@ export const config = {
     '/api/itinerary/:path*',
     '/api/generate-pdf/:path*',
     '/api/settings/:path*',
+    '/itineraries/:path*',
+    '/mypage/:path*',
+    '/settings/:path*',
   ],
 }

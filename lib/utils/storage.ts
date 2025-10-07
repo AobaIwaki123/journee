@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   CLAUDE_API_KEY: 'journee_claude_api_key',
   SELECTED_AI: 'journee_selected_ai',
   PANEL_WIDTH: 'journee_panel_width', // Phase 7用
+  APP_SETTINGS: 'journee_app_settings', // Phase 5.4.3用
 } as const;
 
 /**
@@ -135,6 +136,43 @@ export function loadSelectedAI(): AIModelId {
   } catch (error) {
     console.error('Failed to load selected AI:', error);
     return DEFAULT_AI_MODEL;
+  }
+}
+
+/**
+ * アプリケーション設定を保存
+ */
+export function saveAppSettings(settings: Record<string, any>): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  
+  try {
+    window.localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(settings));
+    return true;
+  } catch (error) {
+    console.error('Failed to save app settings:', error);
+    return false;
+  }
+}
+
+/**
+ * アプリケーション設定を取得
+ */
+export function loadAppSettings(): Record<string, any> | null {
+  if (!isLocalStorageAvailable()) {
+    return null;
+  }
+  
+  try {
+    const settings = window.localStorage.getItem(STORAGE_KEYS.APP_SETTINGS);
+    if (!settings) {
+      return null;
+    }
+    return JSON.parse(settings);
+  } catch (error) {
+    console.error('Failed to load app settings:', error);
+    return null;
   }
 }
 
