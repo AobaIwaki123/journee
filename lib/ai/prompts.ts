@@ -205,15 +205,17 @@ export const JSON_EXTRACTION_REGEX = /```json\s*([\s\S]*?)\s*```/;
 
 /**
  * AIの応答をパースして、メッセージとしおりデータに分離
- * Phase 4.5 & BUG-001: JSONブロックを完全に削除してクリーンなメッセージを返す
+ * BUG-001修正: JSONブロックを完全に削除してクリーンなメッセージを返す
  */
 export function parseAIResponse(response: string): {
   message: string;
   itineraryData: Partial<ItineraryData> | null;
 } {
-  const match = response.match(JSON_EXTRACTION_REGEX);
+  // すべてのJSONブロックを検出（グローバルフラグ付き）
+  const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/g;
+  const matches = Array.from(response.matchAll(jsonBlockRegex));
   
-  if (!match) {
+  if (matches.length === 0) {
     // JSONが含まれていない場合は、メッセージのみ
     return {
       message: response.trim(),
@@ -221,34 +223,43 @@ export function parseAIResponse(response: string): {
     };
   }
 
-  // JSONデータをパース
+  // 最初のJSONブロックからしおりデータを抽出
   let itineraryData: Partial<ItineraryData> | null = null;
+  
   try {
-    const jsonString = match[1];
+    const firstMatch = matches[0];
+    const jsonString = firstMatch[1];
     itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
   } catch (error) {
     console.error('Failed to parse itinerary JSON:', error);
+    // パースに失敗した場合はJSONを削除せずに元のメッセージを返す
+    return {
+      message: response.trim(),
+      itineraryData: null,
+    };
   }
 
-  // BUG-001修正: JSONブロック全体を削除してクリーンなメッセージを抽出
-  // すべてのJSONブロック（```json ... ```）を削除
-  let cleanMessage = response.replace(/```json[\s\S]*?```/g, '').trim();
+  // すべてのJSONブロックをメッセージから削除
+  let message = response;
+  for (const match of matches) {
+    message = message.replace(match[0], '');
+  }
   
-  // 余分な空白行を削除（3行以上の連続した改行を2行に）
-  cleanMessage = cleanMessage.replace(/\n{3,}/g, '\n\n');
+  // 余分な空白・改行を整理
+  message = message
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n')
+    .trim();
   
-  // 前後の空白を削除
-  cleanMessage = cleanMessage.trim();
-  
-  // メッセージが空の場合はデフォルトメッセージ
-  if (!cleanMessage) {
-    cleanMessage = itineraryData 
-      ? 'しおりを更新しました。' 
-      : 'メッセージを受け取りました。';
+  // メッセージが空の場合はデフォルトメッセージを設定
+  if (!message) {
+    message = 'しおりを更新しました。';
   }
   
   return {
-    message: cleanMessage,
+    message,
     itineraryData,
   };
 }

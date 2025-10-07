@@ -2,11 +2,13 @@
 
 ## 📋 実装概要
 
-Phase 4「段階的旅程構築システム」の第五段階として、チャットAPIにフェーズ判定ロジックと「次へ」キーワード検出を追加し、Phase 4で作成したプロンプト関数を統合しました。また、BUG-001（JSON削除バグ）も修正しました。
+Phase 4「段階的旅程構築システム」の第五段階として、チャットAPIにフェーズ判定ロジックと「次へ」キーワード検出を追加し、Phase 4で作成したプロンプト関数を統合しました。
 
 **実施日**: 2025-10-07  
-**対象フェーズ**: Phase 4.5 & BUG-001  
-**主な変更ファイル**: `app/api/chat/route.ts`, `lib/ai/gemini.ts`, `lib/ai/prompts.ts`
+**対象フェーズ**: Phase 4.5  
+**主な変更ファイル**: `app/api/chat/route.ts`, `lib/ai/gemini.ts`, `lib/utils/api-client.ts`, `components/chat/MessageInput.tsx`, `components/itinerary/QuickActions.tsx`
+
+**注**: BUG-001（JSON削除バグ）は別ブランチ（`cursor/resolve-bug-bug-001-238b`）で既に修正済みです。
 
 ---
 
@@ -34,66 +36,17 @@ export interface ChatAPIRequest {
 
 ---
 
-### 2. BUG-001修正: parseAIResponse 関数の改善
+### 2. ~~BUG-001修正~~ （既存の修正を使用）
 
-#### 2.1 問題
+**注**: BUG-001（JSON削除バグ）の修正は、別ブランチ（`cursor/resolve-bug-bug-001-238b`）で既に実装されているため、その実装を使用しています。
 
-AIからのレスポンスに生のJSONブロック（```json ... ```）が表示されていた。
+**参考**: 既存の実装では以下の処理を行っています：
+- すべてのJSONブロックを検出（`matchAll`使用）
+- 各JSONブロックをループで削除
+- 各行をトリムして空行を完全に削除
+- パース失敗時は元のメッセージを返す
 
-#### 2.2 修正内容
-
-**ファイル**: `lib/ai/prompts.ts`
-
-```typescript
-export function parseAIResponse(response: string): {
-  message: string;
-  itineraryData: Partial<ItineraryData> | null;
-} {
-  const match = response.match(JSON_EXTRACTION_REGEX);
-  
-  if (!match) {
-    return {
-      message: response.trim(),
-      itineraryData: null,
-    };
-  }
-
-  // JSONデータをパース
-  let itineraryData: Partial<ItineraryData> | null = null;
-  try {
-    const jsonString = match[1];
-    itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
-  } catch (error) {
-    console.error('Failed to parse itinerary JSON:', error);
-  }
-
-  // ✅ JSONブロック全体を削除してクリーンなメッセージを抽出
-  let cleanMessage = response.replace(/```json[\s\S]*?```/g, '').trim();
-  
-  // 余分な空白行を削除（3行以上の連続した改行を2行に）
-  cleanMessage = cleanMessage.replace(/\n{3,}/g, '\n\n');
-  
-  // 前後の空白を削除
-  cleanMessage = cleanMessage.trim();
-  
-  // メッセージが空の場合はデフォルトメッセージ
-  if (!cleanMessage) {
-    cleanMessage = itineraryData 
-      ? 'しおりを更新しました。' 
-      : 'メッセージを受け取りました。';
-  }
-  
-  return {
-    message: cleanMessage,
-    itineraryData,
-  };
-}
-```
-
-**修正ポイント**:
-- JSONブロック全体を正規表現で削除: `/```json[\s\S]*?```/g`
-- 余分な空白行を削除
-- メッセージが空の場合のデフォルトメッセージを設定
+詳細は別ブランチのコミット ae8ac7b, 9122843, 426188f を参照してください。
 
 ---
 
@@ -359,35 +312,6 @@ export const MessageInput: React.FC = () => {
 
 ---
 
-## 🐛 BUG-001 修正の詳細
-
-### 修正前
-
-```
-ユーザーへの表示:
-"東京の3日間の旅程を考えました。
-
-1日目は浅草・スカイツリー周辺を...
-
-```json
-{
-  "title": "東京3泊4日の旅",
-  "schedule": [...]
-}
-```"
-```
-
-### 修正後
-
-```
-ユーザーへの表示:
-"東京の3日間の旅程を考えました。
-
-1日目は浅草・スカイツリー周辺を..."
-```
-
-JSONブロックは完全に削除され、クリーンなメッセージのみ表示されます。
-
 ---
 
 ## 📊 フェーズ別プロンプトの使い分け
@@ -443,10 +367,6 @@ store.setCurrentDetailingDay(1);
 // → AIは1日目の具体的なスケジュールを提案
 ```
 
-### 4. BUG-001 修正のテスト
-
-チャットでしおりを作成し、AIの応答にJSONブロックが表示されないことを確認。
-
 ---
 
 ## 🎯 期待される効果
@@ -457,8 +377,8 @@ store.setCurrentDetailingDay(1);
 - ✅ ユーザーの意図を正確に理解
 
 ### 2. ユーザー体験の向上
-- ✅ 「次へ」と入力するだけで次のステップへ進める
-- ✅ JSONブロックが表示されず、クリーンなUI
+- ✅ 「次へ」と入力またはボタンクリックで次のステップへ進める
+- ✅ JSONブロックが表示されず、クリーンなUI（既存のBUG-001修正により実現）
 - ✅ フェーズごとに適切な情報が表示される
 
 ### 3. 開発者体験の向上
@@ -508,7 +428,7 @@ store.setCurrentDetailingDay(1);
 ---
 
 **Phase 4.5 完了**: ✅  
-**BUG-001 修正完了**: ✅  
+**BUG-001**: 別ブランチで修正済み（その実装を使用）  
 **進捗**: Phase 4.1, 4.2, 4.3, 4.4, 4.5 完了（5/7）  
 **次のフェーズ**: Phase 4.6（しおりマージロジックの改善）
 
