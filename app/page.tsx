@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session';
 import { Header } from '@/components/layout/Header';
 import { ChatBox } from '@/components/chat/ChatBox';
 import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
+import { ErrorNotification } from '@/components/ui/ErrorNotification';
 
 /**
  * メインページ（ホーム）
@@ -34,6 +35,9 @@ export default async function Home() {
           <ItineraryPreview />
         </div>
       </div>
+
+      {/* Error Notification */}
+      <ErrorNotification />
     </div>
   );
 }

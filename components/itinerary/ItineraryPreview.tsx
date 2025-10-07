@@ -27,39 +27,70 @@ export const ItineraryPreview: React.FC = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-8">
         <h1 className="text-3xl font-bold mb-2">{currentItinerary.title}</h1>
-        <div className="flex items-center space-x-4 text-blue-100">
+        <div className="flex flex-wrap items-center gap-4 text-blue-100">
           <div className="flex items-center">
             <MapPin className="w-4 h-4 mr-1" />
             <span>{currentItinerary.destination}</span>
           </div>
-          <div className="flex items-center">
-            <Calendar className="w-4 h-4 mr-1" />
-            <span>
-              {currentItinerary.startDate} - {currentItinerary.endDate}
-            </span>
-          </div>
+          {currentItinerary.startDate && currentItinerary.endDate && (
+            <div className="flex items-center">
+              <Calendar className="w-4 h-4 mr-1" />
+              <span>
+                {currentItinerary.startDate} - {currentItinerary.endDate}
+              </span>
+            </div>
+          )}
+          {currentItinerary.duration && (
+            <div className="flex items-center">
+              <span>{currentItinerary.duration}日間</span>
+            </div>
+          )}
         </div>
+        {currentItinerary.summary && (
+          <p className="mt-3 text-blue-50 text-sm">{currentItinerary.summary}</p>
+        )}
       </div>
 
       {/* Content */}
       <div className="p-6">
         {/* Days */}
-        <div className="space-y-6">
-          {currentItinerary.days.map((day) => (
-            <DaySchedule key={day.day} day={day} />
-          ))}
-        </div>
+        {currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
+          <div className="space-y-6">
+            {currentItinerary.schedule.map((day) => (
+              <DaySchedule key={day.day} day={day} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-8">
+            <p>スケジュールがまだ作成されていません</p>
+            <p className="text-sm mt-2">AIチャットで旅程を作成してみましょう</p>
+          </div>
+        )}
+
+        {/* Budget Info */}
+        {currentItinerary.totalBudget && currentItinerary.schedule.length > 0 && (
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-700">総予算</span>
+              <span className="text-lg font-bold text-blue-600">
+                ¥{currentItinerary.totalBudget.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* PDF Export Button */}
-        <div className="mt-8 flex justify-center">
-          <button
-            className="flex items-center space-x-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => alert('PDF出力機能はPhase 6で実装予定です')}
-          >
-            <FileDown className="w-5 h-5" />
-            <span>PDFで保存</span>
-          </button>
-        </div>
+        {currentItinerary.schedule.length > 0 && (
+          <div className="mt-8 flex justify-center">
+            <button
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              onClick={() => alert('PDF出力機能はPhase 6で実装予定です')}
+            >
+              <FileDown className="w-5 h-5" />
+              <span>PDFで保存</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -7,11 +7,13 @@ import { Bot, User } from 'lucide-react';
 export const MessageList: React.FC = () => {
   const messages = useStore((state) => state.messages);
   const isLoading = useStore((state) => state.isLoading);
+  const isStreaming = useStore((state) => state.isStreaming);
+  const streamingMessage = useStore((state) => state.streamingMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingMessage]);
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
@@ -73,11 +75,30 @@ export const MessageList: React.FC = () => {
               </div>
             </div>
           ))}
-          {isLoading && (
+          
+          {/* ストリーミング中のメッセージ */}
+          {isStreaming && streamingMessage && (
             <div className="flex justify-start">
               <div className="flex max-w-[80%]">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
                   <Bot className="w-5 h-5 text-gray-600" />
+                </div>
+                <div className="rounded-lg p-3 bg-gray-100 text-gray-800">
+                  <p className="whitespace-pre-wrap">{streamingMessage}</p>
+                  <div className="inline-flex mt-1">
+                    <span className="animate-pulse">▋</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* ローディング中（ストリーミング開始前） */}
+          {isLoading && !isStreaming && !streamingMessage && (
+            <div className="flex justify-start">
+              <div className="flex max-w-[80%]">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-gray-600 animate-pulse" />
                 </div>
                 <div className="rounded-lg p-3 bg-gray-100">
                   <div className="flex space-x-2">
