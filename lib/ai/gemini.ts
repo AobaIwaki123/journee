@@ -6,6 +6,7 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import type { ChatMessage } from "@/types/chat";
 import type { ItineraryData, ItineraryPhase } from "@/types/itinerary";
+import { getModelName } from "./models";
 import {
   SYSTEM_PROMPT,
   createUpdatePrompt,
@@ -31,8 +32,9 @@ export class GeminiClient {
     }
 
     this.client = new GoogleGenerativeAI(key);
-    // Gemini 2.5 Proを使用（より高性能）
-    this.model = this.client.getGenerativeModel({ model: "gemini-2.5-pro" });
+    // モデル設定から取得
+    const modelName = getModelName('gemini');
+    this.model = this.client.getGenerativeModel({ model: modelName });
   }
 
   /**

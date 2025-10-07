@@ -3,6 +3,7 @@
  */
 
 import type { ItineraryData } from "./itinerary";
+import type { AIModelId } from './ai';
 
 /**
  * メッセージの役割
@@ -44,16 +45,19 @@ export interface ChatSession {
   currentItineraryId?: string;
 }
 
+import type { AIModelId } from './ai';
+
 /**
  * AI モデルの種類
+ * @deprecated Use AIModelId from './ai' instead
  */
-export type AIModel = "gemini" | "claude";
+export type AIModel = AIModelId;
 
 /**
  * AI設定
  */
 export interface AISettings {
-  model: AIModel;
+  model: AIModelId;
   temperature?: number;
   maxTokens?: number;
   /** Claude APIキー（ユーザー提供） */
