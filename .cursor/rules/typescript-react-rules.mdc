@@ -1,0 +1,195 @@
+---
+globs: "*.ts,*.tsx,app/**/*,components/**/*"
+---
+
+# TypeScript & React コーディング規約
+
+## TypeScript規約
+
+### 型定義
+- **型定義の場所**: `/types` ディレクトリ
+- **命名規則**: PascalCase（例: `Message`, `Itinerary`, `AppState`）
+- **export**: 常にnamed export
+- **interface vs type**: interface優先（拡張性）
+
+```typescript
+// ✅ Good
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+// ❌ Bad
+type message = {
+  id: any;
+  content: string;
+}
+```
+
+### 型の厳格性
+- **any禁止**: 必ず具体的な型を指定
+- **strictモード**: tsconfig.jsonで有効化済み
+- **null/undefined**: 明示的に型定義
+
+```typescript
+// ✅ Good
+const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+
+// ❌ Bad
+const [itinerary, setItinerary] = useState(null);
+```
+
+## React規約
+
+### コンポーネント定義
+- **関数コンポーネント**: アロー関数 + React.FC
+- **export**: named export
+- **'use client'**: インタラクティブなコンポーネントで必須
+
+```typescript
+// ✅ Good
+'use client';
+
+import React from 'react';
+
+export const ChatBox: React.FC = () => {
+  return <div>...</div>;
+};
+
+// ❌ Bad
+export default function ChatBox() {
+  return <div>...</div>;
+}
+```
+
+### Props定義
+- **interface**: コンポーネント名 + Props
+- **分割代入**: propsの受け取り時
+
+```typescript
+// ✅ Good
+interface MessageListProps {
+  messages: Message[];
+  isLoading?: boolean;
+}
+
+export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading = false }) => {
+  // ...
+};
+```
+
+### State管理
+- **Zustand優先**: グローバルステートは[useStore.ts](mdc:lib/store/useStore.ts)
+- **useState**: ローカルステートのみ
+- **型定義**: 常に明示
+
+```typescript
+// ✅ Good - Global state
+const { messages, addMessage } = useStore();
+
+// ✅ Good - Local state
+const [isOpen, setIsOpen] = useState<boolean>(false);
+```
+
+### イベントハンドラ
+- **命名**: handleXxx
+- **型**: React.xxxEvent
+
+```typescript
+// ✅ Good
+const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  // ...
+};
+
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  setValue(e.target.value);
+};
+```
+
+## Hooks使用規則
+
+### カスタムHooks
+- **命名**: useXxx
+- **場所**: `/lib/hooks`（Phase 2以降で作成）
+- **型定義**: 戻り値の型を明示
+
+### Hooks順序
+1. useStore（Zustand）
+2. useState
+3. useEffect
+4. カスタムHooks
+5. useCallback / useMemo
+
+## Import規約
+
+### Import順序
+1. React
+2. Next.js
+3. 外部ライブラリ
+4. エイリアスimport (@/)
+5. 相対パス
+
+```typescript
+// ✅ Good
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { Send } from 'lucide-react';
+import { useStore } from '@/lib/store/useStore';
+import { Message } from '@/types/chat';
+import { formatDate } from './utils';
+```
+
+### パスエイリアス
+- **@/**: プロジェクトルート
+- tsconfig.jsonで設定済み
+
+```typescript
+// ✅ Good
+import { useStore } from '@/lib/store/useStore';
+import { Message } from '@/types/chat';
+
+// ❌ Bad
+import { useStore } from '../../../lib/store/useStore';
+```
+
+## エラーハンドリング
+- **try-catch**: API呼び出し・非同期処理
+- **エラーステート**: useState<string | null>
+- **ユーザーへの通知**: UIにエラーメッセージ表示
+
+```typescript
+const [error, setError] = useState<string | null>(null);
+
+try {
+  await apiCall();
+  setError(null);
+} catch (err) {
+  setError(err instanceof Error ? err.message : '不明なエラー');
+}
+```
+
+## パフォーマンス
+- **React.memo**: 頻繁に再レンダリングされるコンポーネント
+- **useCallback**: イベントハンドラ（子コンポーネントに渡す場合）
+- **useMemo**: 重い計算処理
+
+## アクセシビリティ
+- **セマンティックHTML**: div濫用を避ける
+- **aria属性**: 必要に応じて追加
+- **キーボード操作**: tabIndex, onKeyDown
+
+```typescript
+// ✅ Good
+<button 
+  onClick={handleClick}
+  aria-label="メッセージを送信"
+  disabled={isLoading}
+>
+  送信
+</button>
+```
