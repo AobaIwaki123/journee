@@ -7,6 +7,7 @@ import { SpotCard } from './SpotCard';
 import { EditableSpotCard } from './EditableSpotCard';
 import { AddSpotForm } from './AddSpotForm';
 import { useStore } from '@/lib/store/useStore';
+import { formatCurrency } from '@/lib/utils/currency';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -44,8 +45,10 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
   const [isExpanded, setIsExpanded] = useState(true);
   const reorderSpots = useStore((state: any) => state.reorderSpots);
   const addToast = useStore((state: any) => state.addToast);
+  const currentItinerary = useStore((state: any) => state.currentItinerary);
 
   const dayOfWeek = getDayOfWeek(day.date);
+  const currency = currentItinerary?.currency;
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -124,7 +127,7 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
               <div className="text-right">
                 <p className="text-xs text-gray-500">予算</p>
                 <p className="font-semibold text-blue-600 text-sm">
-                  ¥{day.totalCost.toLocaleString()}
+                  {formatCurrency(day.totalCost, currency)}
                 </p>
               </div>
             </div>

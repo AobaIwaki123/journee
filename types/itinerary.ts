@@ -111,6 +111,8 @@ export interface ItineraryData {
   schedule: DaySchedule[];
   /** 総予算（円） */
   totalBudget?: number;
+  /** 通貨（デフォルト: JPY） */
+  currency?: string;
   /** ステータス */
   status: "draft" | "completed" | "archived";
   /** 作成日時 */

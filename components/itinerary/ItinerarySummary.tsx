@@ -3,6 +3,7 @@
 import React, { memo, useMemo } from 'react';
 import { Wallet, Calendar, TrendingUp } from 'lucide-react';
 import { ItineraryData } from '@/types/itinerary';
+import { formatCurrency } from '@/lib/utils/currency';
 
 interface ItinerarySummaryProps {
   itinerary: ItineraryData;
@@ -46,11 +47,11 @@ export const ItinerarySummary: React.FC<ItinerarySummaryProps> = memo(({ itinera
               <span className="text-sm font-medium text-blue-700">総予算</span>
             </div>
             <div className="text-2xl font-bold text-blue-900">
-              ¥{(itinerary.totalBudget || totalCost).toLocaleString()}
+              {formatCurrency(itinerary.totalBudget || totalCost, itinerary.currency)}
             </div>
             {itinerary.totalBudget && totalCost > 0 && totalCost !== itinerary.totalBudget && (
               <div className="text-xs text-blue-600 mt-1">
-                使用予定: ¥{totalCost.toLocaleString()}
+                使用予定: {formatCurrency(totalCost, itinerary.currency)}
               </div>
             )}
           </div>

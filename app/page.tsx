@@ -5,6 +5,7 @@ import { ChatBox } from '@/components/chat/ChatBox';
 import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
 import { ErrorNotification } from '@/components/ui/ErrorNotification';
 import { StorageInitializer } from '@/components/layout/StorageInitializer';
+import { AutoSave } from '@/components/layout/AutoSave';
 
 /**
  * メインページ（ホーム）
@@ -23,6 +24,9 @@ export default async function Home() {
     <div className="flex flex-col h-screen">
       {/* LocalStorageからデータ復元 */}
       <StorageInitializer />
+      
+      {/* しおりの自動保存 */}
+      <AutoSave />
 
       {/* Header */}
       <Header />

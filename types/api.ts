@@ -25,6 +25,8 @@ export interface ChatAPIRequest {
   planningPhase?: ItineraryPhase;
   /** Phase 4: 現在詳細化中の日 */
   currentDetailingDay?: number | null;
+  /** 通貨設定 */
+  currency?: string;
 }
 
 /**
