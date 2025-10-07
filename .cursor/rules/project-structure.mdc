@@ -1,7 +1,7 @@
 ---
 alwaysApply: true
+description: "Basic project structure and organization rules"
 ---
-
 # Journee プロジェクト構造
 
 ## プロジェクト概要
@@ -22,273 +22,39 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - [app/page.tsx](mdc:app/page.tsx) - メインページ（認証保護、チャット40% / しおり60%）
 - [app/layout.tsx](mdc:app/layout.tsx) - ルートレイアウト（AuthProvider統合済み）
 - [app/globals.css](mdc:app/globals.css) - グローバルスタイル
-- `/app/login` - ログインページ
-  - [page.tsx](mdc:app/login/page.tsx) - Googleログイン画面
-- `/app/privacy` - プライバシーポリシー（Phase 2実装済み）
-- `/app/terms` - 利用規約（Phase 2実装済み）
-- `/app/api` - APIルート
-  - `/auth/[...nextauth]` - NextAuth.js認証エンドポイント
-    - [route.ts](mdc:app/api/auth/[...nextauth]/route.ts) - 認証API
-  - `/chat` - チャットAPI（Phase 3実装済み）
-    - [route.ts](mdc:app/api/chat/route.ts) - AIチャットエンドポイント（ストリーミング対応）
-  - `/health` - ヘルスチェック
-    - [route.ts](mdc:app/api/health/route.ts) - サービス稼働状況確認
-  - `/user/me` - ユーザー情報
-    - [route.ts](mdc:app/api/user/me/route.ts) - 現在のユーザー取得（認証必須）
 
 ### `/components` - Reactコンポーネント
-- `/auth` - 認証コンポーネント（Phase 2実装済み）
-  - [AuthProvider.tsx](mdc:components/auth/AuthProvider.tsx) - NextAuthセッションプロバイダー
-  - [LoginButton.tsx](mdc:components/auth/LoginButton.tsx) - Googleログインボタン
-  - [UserMenu.tsx](mdc:components/auth/UserMenu.tsx) - ユーザーメニュー（ドロップダウン）
+- `/auth` - 認証コンポーネント
 - `/chat` - チャット機能
-  - [ChatBox.tsx](mdc:components/chat/ChatBox.tsx) - チャットコンテナ
-  - [MessageList.tsx](mdc:components/chat/MessageList.tsx) - メッセージ一覧
-  - [MessageInput.tsx](mdc:components/chat/MessageInput.tsx) - メッセージ入力
-  - [AISelector.tsx](mdc:components/chat/AISelector.tsx) - AIモデル選択
 - `/itinerary` - しおり機能
-  - [ItineraryPreview.tsx](mdc:components/itinerary/ItineraryPreview.tsx) - しおりプレビュー
-  - [DaySchedule.tsx](mdc:components/itinerary/DaySchedule.tsx) - 日程表示
-  - [SpotCard.tsx](mdc:components/itinerary/SpotCard.tsx) - 観光スポットカード
 - `/layout` - レイアウト
-  - [Header.tsx](mdc:components/layout/Header.tsx) - ヘッダーナビゲーション（認証機能統合済み）
-- `/settings` - 設定コンポーネント（Phase 3.6予定）
-  - SoundSettings.tsx - 効果音設定UI（音量調整、ON/OFF）
-- `/sound` - サウンドコンポーネント（Phase 3.6予定）
-  - SoundProvider.tsx - グローバル音声管理プロバイダー
+- `/settings` - 設定コンポーネント
 - `/ui` - 共通UIコンポーネント
-  - [LoadingSpinner.tsx](mdc:components/ui/LoadingSpinner.tsx) - ローディングスピナー
-  - [ErrorNotification.tsx](mdc:components/ui/ErrorNotification.tsx) - エラー通知（Phase 3実装済み）
 
 ### `/lib` - ユーティリティ・ロジック
-- `/auth` - 認証ロジック（Phase 2実装済み）
-  - [auth-options.ts](mdc:lib/auth/auth-options.ts) - NextAuth設定（Google OAuth, JWT戦略）
-  - [session.ts](mdc:lib/auth/session.ts) - セッション管理ヘルパー（getSession, getCurrentUser）
-  - [README.md](mdc:lib/auth/README.md) - 認証機能ドキュメント
+- `/auth` - 認証ロジック
 - `/store` - Zustand状態管理
-  - [useStore.ts](mdc:lib/store/useStore.ts) - グローバルストア
-- `/ai` - AI統合（Phase 3実装済み）
-  - [gemini.ts](mdc:lib/ai/gemini.ts) - Google Gemini API統合（gemini-2.5-pro使用）
-  - [prompts.ts](mdc:lib/ai/prompts.ts) - プロンプト管理とレスポンスパース処理
-  - [test-client.ts](mdc:lib/ai/test-client.ts) - APIテスト用クライアント
-- `/sound` - サウンド管理（Phase 3.6予定）
-  - SoundManager.ts - 効果音再生・音量制御ユーティリティ
+- `/ai` - AI統合
 - `/utils` - ユーティリティ関数
-  - [api-client.ts](mdc:lib/utils/api-client.ts) - APIクライアントヘルパー
 
 ### `/types` - TypeScript型定義
-- [chat.ts](mdc:types/chat.ts) - チャット関連の型
-- [itinerary.ts](mdc:types/itinerary.ts) - しおり関連の型
-- [auth.ts](mdc:types/auth.ts) - 認証関連の型（NextAuth拡張型定義）
-- [api.ts](mdc:types/api.ts) - API共通型定義（レスポンス、エラー）
+- [types/chat.ts](mdc:types/chat.ts) - チャット関連の型
+- [types/itinerary.ts](mdc:types/itinerary.ts) - しおり関連の型
+- [types/auth.ts](mdc:types/auth.ts) - 認証関連の型
 
-### `/public` - 静的ファイル
-- `/images` - 画像・アイコン
-- `/sounds` - 効果音ファイル（Phase 3.6予定）
-  - notification.mp3 - AI返信通知音
-  - send.mp3 - メッセージ送信音
-  - update.mp3 - しおり更新音
-  - error.mp3 - エラー通知音
-  - success.mp3 - 成功通知音
+## コーディング規約
 
-### `/docs` - ドキュメント
-- [API.md](mdc:docs/API.md) - API仕様書
-- [QUICK_START.md](mdc:docs/QUICK_START.md) - クイックスタートガイド
+1. **型安全性**
+   - 全ての新規コードでTypeScriptの厳格モードを使用
+   - Union型を活用したフェーズと状態の管理
+   - 型ガードによる安全な型チェック
 
-### その他
-- [middleware.ts](mdc:middleware.ts) - 認証ミドルウェア（保護されたルート自動チェック）
+2. **コンポーネント設計**
+   - Atomic Designパターンの適用
+   - Props型の明示的な定義
+   - メモ化による不要な再レンダリングの防止
 
-## 開発フェーズ
-- ✅ **Phase 1-3（完了）**: 基礎構築、認証、AI統合
-- ✅ **Phase 5-6（完了）**: しおり機能、設定管理
-- 📋 **今後**: モバイル対応、DB統合、追加機能
-- 📋 詳細は[README.md](mdc:README.md)参照
-
-## 認証システム（Phase 2実装済み）
-### アーキテクチャ
-- **認証戦略**: JWT（JSON Web Token）
-- **プロバイダー**: Google OAuth 2.0
-- **セッション期限**: 30日間
-- **保存**: HTTPOnly Cookie（XSS対策）
-
-### 認証フロー
-1. ユーザーが `/api/auth/signin` にアクセス
-2. Google OAuth画面にリダイレクト
-3. 認証成功後、JWTトークンを生成してCookieに保存
-4. ホームページにリダイレクト
-
-### セッション管理ヘルパー
-```typescript
-import { getCurrentUser } from '@/lib/auth/session'
-
-// Server Component / Route Handler
-const user = await getCurrentUser()
-if (!user) {
-  return new Response('Unauthorized', { status: 401 })
-}
-```
-
-### 認証保護
-- **ミドルウェア**: `/api/*`（一部除外）、メインページは自動認証チェック
-- **未認証時**: 自動的に `/login` にリダイレクト
-
-### API一覧
-| エンドポイント | 説明 | 認証 | Phase |
-|------------|------|------|-------|
-| `GET /api/health` | ヘルスチェック | 不要 | 2 |
-| `GET /api/auth/signin` | サインインページ | 不要 | 2 |
-| `GET /api/auth/signout` | サインアウト | 必要 | 2 |
-| `GET /api/auth/session` | セッション情報取得 | 不要 | 2 |
-| `GET /api/user/me` | ユーザー情報取得 | 必要 | 2 |
-| `POST /api/chat` | AIチャット | 不要 | 3 |
-
-詳細は [docs/API.md](mdc:docs/API.md) 参照。
-
-## 重要なファイル
-- [package.json](mdc:package.json) - 依存関係・npm scripts
-- [tsconfig.json](mdc:tsconfig.json) - TypeScript設定
-- [tailwind.config.ts](mdc:tailwind.config.ts) - Tailwind CSS設定
-- [README.md](mdc:README.md) - プロジェクト全体の詳細
-- [DOCKER.md](mdc:DOCKER.md) - Docker使用方法
-
-## 状態管理（Zustand）
-### 主要な状態
-- **チャット状態**: `messages`, `isLoading`, `isStreaming`, `streamingMessage`
-- **しおり状態**: `currentItinerary`（`ItineraryData`型）
-- **UI状態**: `selectedAI`（gemini / claude）
-- **エラー状態**: `error`, `setError`
-- **APIキー管理**: `claudeApiKey`, `setClaudeApiKey`（Phase 6用）
-- **効果音設定**: `soundEnabled`, `soundVolume`（Phase 3.6用）
-
-### 主要な操作
-- `addMessage(message)` - メッセージ追加
-- `setItinerary(itinerary)` - しおり設定
-- `setStreaming(streaming)` - ストリーミング状態設定
-- `appendStreamingMessage(chunk)` - ストリーミングメッセージ追加
-- `setError(error)` - エラー設定
-- `setSoundEnabled(enabled)` - 効果音ON/OFF切り替え（Phase 3.6用）
-- `setSoundVolume(volume)` - 音量調整（0.0 - 1.0）（Phase 3.6用）
-
-全てのコンポーネントから `useStore()` でアクセス可能。
-
-## コンポーネント設計原則
-1. **Client Components**: 'use client'ディレクティブ必須（インタラクティブなUI）
-2. **Server Components**: 認証チェックなどサーバーサイド処理が必要な場合
-3. **ファイル命名**: PascalCase（例: ChatBox.tsx）
-4. **export**: named export（例: `export const ChatBox: React.FC = () => {}`）
-5. **型安全性**: すべてのpropsとstateに型定義
-6. **再利用性**: 単一責任の原則に従う
-
-## Docker環境
-- `npm run docker:start` - 開発サーバー起動
-- `npm run docker:stop` - 停止
-- `npm run docker:logs` - ログ確認
-- 詳細は[DOCKER.md](mdc:DOCKER.md)参照
-
-## AI統合システム（Phase 3実装済み）
-### アーキテクチャ
-- **AIモデル**: Google Gemini 2.5 Pro
-- **通信方式**: Server-Sent Events（SSE）ストリーミング
-- **レスポンス形式**: テキスト + JSON（しおりデータ）
-- **プロンプト管理**: システムプロンプト + 会話履歴 + 現在のしおり
-
-### AI統合フロー
-1. ユーザーがメッセージ入力
-2. チャット履歴（最新10件）を準備
-3. Gemini APIにストリーミングリクエスト
-4. レスポンスをリアルタイム表示
-5. しおりデータ（JSON）を抽出してマージ
-6. メッセージ履歴に追加
-
-### 主要なAI機能
-- **しおり生成**: 旅行先、期間、予算から自動生成
-- **しおり更新**: 既存のしおりに観光スポット追加・変更
-- **提案**: 観光スポット、レストラン、移動手段の提案
-- **最適化**: 移動時間、滞在時間、予算を考慮した最適化
-
-### しおりデータ構造
-```typescript
-interface ItineraryData {
-  id: string;
-  title: string;
-  destination: string;
-  startDate?: string;
-  endDate?: string;
-  duration?: number;
-  summary?: string;
-  schedule: DaySchedule[];
-  totalBudget?: number;
-  status: 'draft' | 'completed' | 'archived';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface DaySchedule {
-  day: number;
-  date?: string;
-  title?: string;
-  spots: TouristSpot[];
-  totalDistance?: number;
-  totalCost?: number;
-}
-
-interface TouristSpot {
-  id: string;
-  name: string;
-  description: string;
-  location?: Location;
-  scheduledTime?: string;
-  duration?: number;
-  category?: 'sightseeing' | 'dining' | 'transportation' | 'accommodation' | 'other';
-  estimatedCost?: number;
-  notes?: string;
-  imageUrl?: string;
-}
-```
-
-### ストリーミングレスポンス
-```typescript
-// Server-Sent Events形式
-data: {"type":"message","content":"テキストチャンク"}
-data: {"type":"itinerary","itinerary":{...}}
-data: {"type":"done"}
-data: {"type":"error","error":"エラーメッセージ"}
-```
-
-### AI利用パターン
-```typescript
-// フロントエンド（MessageInput.tsx）
-import { sendChatMessageStream } from '@/lib/utils/api-client';
-
-const handleSend = async (message: string) => {
-  const history = messages.slice(-10);
-  
-  for await (const chunk of sendChatMessageStream(
-    message,
-    history,
-    currentItinerary
-  )) {
-    if (chunk.type === 'message') {
-      appendStreamingMessage(chunk.content);
-    } else if (chunk.type === 'itinerary') {
-      setItinerary(chunk.itinerary);
-    }
-  }
-};
-```
-
-詳細は専用の`.cursor/rules/ai-integration.mdc`および[docs/API.md](mdc:docs/API.md)参照。
-
-## 環境変数（`.env.local`）
-```env
-# 認証（Phase 2）
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_secret_here
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# AI統合（Phase 3実装済み）
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-`.env.example` を参照して設定。
+3. **状態管理**
+   - Zustandストアの適切な分割
+   - 副作用の制御（useEffect）
+   - 非同期処理の適切な処理
