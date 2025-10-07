@@ -2,6 +2,8 @@
 
 import React, { memo } from 'react';
 import { TouristSpot } from '@/types/itinerary';
+import { useStore } from '@/lib/store/useStore';
+import { formatCurrency } from '@/lib/utils/currency';
 import { 
   Clock, 
   MapPin, 
@@ -64,6 +66,9 @@ const getCategoryGradient = (category?: string): string => {
 };
 
 export const SpotCard: React.FC<SpotCardProps> = memo(({ spot }) => {
+  const currentItinerary = useStore((state: any) => state.currentItinerary);
+  const currency = currentItinerary?.currency;
+
   return (
     <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-200 hover:border-blue-300">
       {/* Card Content */}
@@ -125,7 +130,7 @@ export const SpotCard: React.FC<SpotCardProps> = memo(({ spot }) => {
             {spot.estimatedCost !== undefined && spot.estimatedCost > 0 && (
               <div className="flex items-center gap-1.5 text-gray-600">
                 <Wallet className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span className="font-semibold">¥{spot.estimatedCost.toLocaleString()}</span>
+                <span className="font-semibold">{formatCurrency(spot.estimatedCost, currency)}</span>
               </div>
             )}
           </div>

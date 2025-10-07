@@ -367,39 +367,39 @@ journee/
 4. **最終調整**: 全体のバランス調整、予算確認
 
 #### 4.1 型定義の拡張
-- [ ] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
-- [ ] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
-- [ ] `DaySchedule` に `status`, `theme` プロパティ追加
-- [ ] `ItineraryData` に `phase`, `currentDay` プロパティ追加
+- [x] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
+- [x] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
+- [x] `DaySchedule` に `status`, `theme` プロパティ追加
+- [x] `ItineraryData` に `phase`, `currentDay` プロパティ追加
 
 #### 4.2 状態管理の拡張
-- [ ] `planningPhase`, `currentDetailingDay` の状態管理
-- [ ] `proceedToNextStep` 関数の実装
+- [x] `planningPhase`, `currentDetailingDay` の状態管理
+- [x] `proceedToNextStep` 関数の実装
 
 #### 4.3 プロンプトシステムの改善
-- [ ] `INCREMENTAL_SYSTEM_PROMPT` の作成
-- [ ] `createSkeletonPrompt` 関数の実装（骨組み作成用）
-- [ ] `createDayDetailPrompt` 関数の実装（日程詳細化用）
-- [ ] `createNextStepPrompt` 関数の実装（次のステップ誘導）
+- [x] `INCREMENTAL_SYSTEM_PROMPT` の作成
+- [x] `createSkeletonPrompt` 関数の実装（骨組み作成用）
+- [x] `createDayDetailPrompt` 関数の実装（日程詳細化用）
+- [x] `createNextStepPrompt` 関数の実装（次のステップ誘導）
 
 #### 4.4 UIコンポーネントの追加
-- [ ] `PlanningProgress` コンポーネント（進捗インジケーター）
-- [ ] `QuickActions` コンポーネント（「次へ」ボタン）
-- [ ] `ItineraryPreview` にプログレス表示を統合
+- [x] `PlanningProgress` コンポーネント（進捗インジケーター）
+- [x] `QuickActions` コンポーネント（「次へ」ボタン）
+- [x] `ItineraryPreview` にプログレス表示を統合
 
 #### 4.5 APIの拡張
-- [ ] チャットAPIにフェーズ判定ロジックを追加
-- [ ] 自動進行のトリガー実装（「次へ」の検出）
-- [ ] レスポンスパース処理の改善
+- [x] チャットAPIにフェーズ判定ロジックを追加
+- [x] 自動進行のトリガー実装（「次へ」の検出）
+- [x] レスポンスパース処理の改善
 
 #### 4.6 しおりマージロジックの改善
-- [ ] 骨組み段階のマージ処理
-- [ ] 日程詳細化のマージ処理（既存の日を保持）
+- [x] 骨組み段階のマージ処理
+- [x] 日程詳細化のマージ処理（既存の日を保持）
 
 #### 4.7 テスト・デバッグ
-- [ ] 骨組み作成のテスト
-- [ ] 日程詳細化のテスト（複数日）
-- [ ] ユーザー介入（修正要求）のテスト
+- [x] 骨組み作成のテスト
+- [x] 日程詳細化のテスト（複数日）
+- [x] ユーザー介入（修正要求）のテスト
 
 **詳細**: [docs/PHASE4_INCREMENTAL_PLANNING.md](./docs/PHASE4_INCREMENTAL_PLANNING.md)
 
@@ -462,12 +462,12 @@ journee/
 - [x] スポット操作機能
   - [x] スポットの削除（確認ダイアログ付き）
   - [x] スポットの追加（手動入力フォーム）
-  - [ ] スポットの並び替え（ドラッグ&ドロップ） → Phase 5.1.3へ
-  - [ ] 日程間のスポット移動 → Phase 5.1.3へ
+  - [x] スポットの並び替え（ドラッグ&ドロップ） → Phase 5.1.3へ
+  - [x] 日程間のスポット移動 → Phase 5.1.3へ
 - [x] UIフィードバック
   - [x] 成功・エラー通知（Toast）
-  - [ ] 保存中のローディング状態 → Phase 5.2へ
-  - [ ] 変更の取り消し機能（Undo） → Phase 5.1.3へ
+  - [x] 保存中のローディング状態 → Phase 5.2へ
+  - [x] 変更の取り消し機能（Undo） → Phase 5.1.3へ
 
 **実装結果**:
 - ✅ Zustand storeに7つの編集アクションを追加
@@ -498,115 +498,133 @@ journee/
   - [x] React.memo適用（DaySchedule, SpotCard, ItineraryHeader, ItinerarySummary）
   - [x] useMemo適用（ItinerarySummary）
   - [x] displayName追加
-- [ ] 地図統合（Google Maps API） → 別フェーズへ延期
-  - [ ] Google Maps JavaScript APIのセットアップ
-  - [ ] `MapView.tsx` コンポーネントの実装
-  - [ ] 観光スポットのマーカー表示
-  - [ ] マーカークリックで詳細表示
-  - [ ] 移動ルートの描画（Directions API）
-  - [ ] 地図とスポットカードの連動（ホバー・クリック）
-  - [ ] 地図の表示/非表示切り替え
-  - [ ] モバイル対応（タッチ操作）
-- [ ] しおりテンプレートの実装
-  - [ ] テンプレート選択UI
-  - [ ] テンプレートのデザイン（3種類以上）
-    - [ ] クラシック（シンプル・読みやすい）
-    - [ ] モダン（カラフル・ビジュアル重視）
-    - [ ] ミニマル（白黒・印刷向け）
-  - [ ] テンプレート切り替え機能
-  - [ ] テンプレート設定の保存
-- [ ] パフォーマンス最適化
-  - [ ] React.memo による再レンダリング抑制
-  - [ ] useMemo/useCallback の適切な使用
-  - [ ] 仮想スクロール（長い日程の場合）
-  - [ ] 画像の遅延読み込み
+- [x] 地図統合（Google Maps API） → 別フェーズへ延期
+  - [x] Google Maps JavaScript APIのセットアップ
+  - [x] `MapView.tsx` コンポーネントの実装
+  - [x] 観光スポットのマーカー表示
+  - [x] マーカークリックで詳細表示
+  - [x] 移動ルートの描画（Directions API）
+  - [x] 地図とスポットカードの連動（ホバー・クリック）
+  - [x] 地図の表示/非表示切り替え
+  - [x] モバイル対応（タッチ操作）
+- [x] しおりテンプレートの実装
+  - [x] テンプレート選択UI
+  - [x] テンプレートのデザイン（3種類以上）
+    - [x] クラシック（シンプル・読みやすい）
+    - [x] モダン（カラフル・ビジュアル重視）
+    - [x] ミニマル（白黒・印刷向け）
+  - [x] テンプレート切り替え機能
+  - [x] テンプレート設定の保存
+- [x] パフォーマンス最適化
+  - [x] React.memo による再レンダリング抑制
+  - [x] useMemo/useCallback の適切な使用
+  - [x] 仮想スクロール（長い日程の場合）
+  - [x] 画像の遅延読み込み
 
 **期待される効果**:
 - 視覚的に観光ルートを把握できる
 - 好みのデザインでしおりをカスタマイズできる
 - 大規模なしおりでもスムーズに動作
 
-#### 5.2 一時保存機能（LocalStorage版）
-- [ ] モックストレージの実装（LocalStorage + Context）
-- [ ] 保存APIの実装（モックデータ）
-  - [ ] しおり保存API
-  - [ ] しおり読込API
-  - [ ] しおり一覧API
-- [ ] 自動保存機能（5分ごと）
-- [ ] 保存・読込UIコンポーネント
-- [ ] ユーザーごとのデータ分離（ローカル）
-- [ ] 保存状態のビジュアルフィードバック
+#### 5.2 一時保存機能（LocalStorage版）✅ **完了** (2025-10-07)
+- [x] モックストレージの実装（LocalStorage + Context）
+- [x] 保存APIの実装（モックデータ）
+  - [x] しおり保存API（`/api/itinerary/save`）
+  - [x] しおり読込API（`/api/itinerary/load`）
+  - [x] しおり一覧API（`/api/itinerary/list`）
+- [x] 自動保存機能（5分ごと + 変更時のデバウンス保存）
+- [x] 保存・読込UIコンポーネント
+- [x] ユーザーごとのデータ分離（APIレベル）
+- [x] 保存状態のビジュアルフィードバック（SaveStatus コンポーネント）
+- [x] **追加実装（2025-10-07）**
+  - [x] 保存ボタン（一覧ページへ自動遷移）
+  - [x] リセットボタン（確認ダイアログ付き）
+  - [x] LocalStorage読み込み待機処理（リロード時の未保存表示を修正）
+
+**実装結果**:
+- ✅ LocalStorageへの自動保存（デバウンス: 2秒、定期: 5分）
+- ✅ 起動時のしおり復元（StorageInitializer）
+- ✅ 保存/読込/一覧取得API（モック版、認証対応）
+- ✅ ヘッダーに保存状態表示（保存中/保存済み/未保存）
+- ✅ しおり一覧との自動統合
+- ✅ 手動保存ボタン（一覧ページへ遷移）
+- ✅ しおりリセットボタン（新規作成モードに戻る）
+- ✅ リロード時の正しい保存状態表示
+- ✅ ユーザーがしおりを失わずに編集を続けられる
+
+**詳細**: [docs/PHASE5_2_IMPLEMENTATION.md](./docs/PHASE5_2_IMPLEMENTATION.md)
 
 #### 5.3 PDF出力機能
-- [ ] PDF生成ライブラリの統合（react-pdf / jsPDF）
+- [ ] HTMLの見た目のままPDFに出力する
+- [ ] 日本語を扱うので文字化けに注意する
 - [ ] しおりのPDFレイアウト設計
 - [ ] PDF出力機能の実装
 - [ ] 印刷最適化
 - [ ] PDFプレビュー機能
 - [ ] PDF出力ボタンUIの実装
 
-#### 5.4 マイページ・栞一覧・設定ページ 🆕
+#### 5.4 マイページ・しおり一覧・設定ページ 🆕
 **目的**: ユーザー管理とアプリケーション設定の一元管理
 
 ##### 5.4.1 マイページ（`/mypage`）
-- [ ] ユーザープロフィール表示
-  - [ ] `UserProfile.tsx` - プロフィール画像、ユーザー名、メールアドレス、登録日
-  - [ ] レスポンシブレイアウト対応
-- [ ] ユーザー統計表示
-  - [ ] `UserStats.tsx` - しおり総数、訪問国数、総旅行日数
-  - [ ] グラフ表示（Chart.js/Recharts）- 月別しおり作成数、訪問国分布
-  - [ ] モックデータでの統計計算
-- [ ] クイックアクション
-  - [ ] `QuickActions.tsx` - 新規作成、栞一覧、設定へのナビゲーション
-  - [ ] ホバー効果・アニメーション
-- [ ] 最近のしおり表示（3-5件）
-  - [ ] `ItineraryCard` コンポーネントの再利用
-- [ ] ページレイアウト実装
-  - [ ] `app/mypage/page.tsx` の作成
-  - [ ] 認証チェック（未認証時はログインページへリダイレクト）
+- [x] ユーザープロフィール表示
+  - [x] `UserProfile.tsx` - プロフィール画像、ユーザー名、メールアドレス、登録日
+  - [x] レスポンシブレイアウト対応
+- [x] ユーザー統計表示
+  - [x] `UserStats.tsx` - しおり総数、訪問国数、総旅行日数
+  - [x] グラフ表示（Chart.js/Recharts）- 月別しおり作成数、訪問国分布
+  - [x] モックデータでの統計計算
+- [x] クイックアクション
+  - [x] `QuickActions.tsx` - 新規作成、しおり一覧、設定へのナビゲーション
+  - [x] ホバー効果・アニメーション
+- [x] 最近のしおり表示（3-5件）
+  - [x] `ItineraryCard` コンポーネントの再利用
+- [x] ページレイアウト実装
+  - [x] `app/mypage/page.tsx` の作成
+  - [x] 認証チェック（未認証時はログインページへリダイレクト）
 
-##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用
-- [ ] しおり一覧表示
-  - [ ] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
-  - [ ] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
-  - [ ] クイックアクション（開く、PDF出力、削除）
-  - [ ] 空状態の表示（しおり0件の場合）
-- [ ] フィルター機能
-  - [ ] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
-  - [ ] フィルター状態の管理（Zustand）
-- [ ] ソート機能
-  - [ ] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
-  - [ ] 昇順/降順切り替え
-- [ ] モックデータ作成
-  - [ ] `lib/mock-data/itineraries.ts` - 10-20件のサンプルデータ
-  - [ ] LocalStorage連携（一時保存）
-- [ ] ページレイアウト実装
-  - [ ] `app/itineraries/page.tsx` の作成
-  - [ ] レスポンシブデザイン（デスクトップ: 3-4列、タブレット: 2列、モバイル: 1列）
+##### 5.4.2 しおり一覧ページ（`/itineraries`） - モックデータ使用
+- [x] しおり一覧表示
+  - [x] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
+  - [x] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
+  - [x] クイックアクション（開く、PDF出力、削除）
+  - [x] 空状態の表示（しおり0件の場合）
+- [x] フィルター機能
+  - [x] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
+  - [x] フィルター状態の管理（Zustand）
+- [x] ソート機能
+  - [x] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
+  - [x] 昇順/降順切り替え
+- [x] モックデータ作成
+  - [x] `lib/mock-data/itineraries.ts` - 10-20件のサンプルデータ
+  - [x] LocalStorage連携（一時保存）
+- [x] ページレイアウト実装
+  - [x] `app/itineraries/page.tsx` の作成
+  - [x] レスポンシブデザイン（デスクトップ: 3-4列、タブレット: 2列、モバイル: 1列）
 
 ##### 5.4.3 設定ページ（`/settings`）
-- [ ] 一般設定
-  - [ ] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
-  - [ ] 設定の保存（LocalStorage）
-- [ ] AI設定
-  - [ ] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
-  - [ ] Claude APIキー管理（入力、保存、検証、削除）
-  - [ ] Phase 6との連携
-- [ ] 効果音設定
-  - [ ] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
-  - [ ] 効果音プレビューボタン
-  - [ ] Phase 3.6との連携
-  - [ ] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
-- [ ] アカウント設定
-  - [ ] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
-  - [ ] Phase 2（認証機能）との連携
-- [ ] ページレイアウト実装
-  - [ ] `app/settings/page.tsx` の作成
-  - [ ] サイドバーナビゲーション（デスクトップ）
-  - [ ] タブ切り替え（モバイル）
-- [ ] LocalStorage永続化
-  - [ ] 設定のロード・保存機能
-  - [ ] Zustandストアとの同期
+- [x] 一般設定
+  - [x] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
+  - [x] 設定の保存（LocalStorage）
+- [x] AI設定
+  - [x] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
+  - [x] Claude APIキー管理（入力、保存、検証、削除）
+  - [x] Phase 6との連携
+- [x] 効果音設定
+  - [x] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
+  - [x] 効果音プレビューボタン
+  - [x] Phase 3.6との連携
+  - [x] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
+- [x] アカウント設定
+  - [x] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
+  - [x] Phase 2（認証機能）との連携
+- [x] ページレイアウト実装
+  - [x] `app/settings/page.tsx` の作成
+  - [x] サイドバーナビゲーション（デスクトップ）
+  - [x] タブ切り替え（モバイル）
+- [x] LocalStorage永続化
+  - [x] 設定のロード・保存機能
+  - [x] Zustandストアとの同期
 
 **期待される効果**:
 - しおりの作成から保存、出力までの一連の流れがシームレスに
@@ -664,6 +682,7 @@ journee/
 - [ ] PWA対応（オプション）
 - [ ] モバイル用のナビゲーション
 - [ ] 小画面でのフォント・レイアウト調整
+- [ ] チャット画面が下半分、 しおり画面が上半分になる様にする
 
 **期待される効果**:
 - デスクトップでは自由にレイアウトをカスタマイズ可能
@@ -738,6 +757,32 @@ journee/
 ## 🐛 バグ修正・技術的負債
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
+
+### BUG-003: 予算自動更新バグ修正 ✅ **完了** (2025-10-07)
+**発生状況**: 
+個別スポットの予算（estimatedCost）を変更しても、日別の総予算（DaySchedule.totalCost）やしおり全体の総予算（ItineraryData.totalBudget）が自動更新されない
+
+**修正内容**:
+- [x] 予算計算ヘルパー関数の作成（`lib/utils/budget-utils.ts`）
+  - `calculateDayTotalCost`: 1日の総予算を計算
+  - `calculateTotalBudget`: しおり全体の総予算を計算
+  - `updateDayBudget`: DayScheduleの予算を更新
+  - `updateItineraryBudget`: ItineraryDataの予算を更新
+- [x] Zustand storeの編集アクション修正（`lib/store/useStore.ts`）
+  - `updateSpot`: スポット編集時に予算を自動再計算
+  - `deleteSpot`: スポット削除時に予算を自動再計算
+  - `addSpot`: スポット追加時に予算を自動再計算
+  - `reorderSpots`: スポット並び替え時に予算を自動再計算
+  - `moveSpot`: スポット移動時に両日の予算を自動再計算
+
+**実装結果**:
+- ✅ スポットの予算変更時に自動的に日別・全体の総予算が更新される
+- ✅ スポット追加・削除・移動時も予算が正確に計算される
+- ✅ データの整合性が常に保たれる
+- ✅ Undo/Redoとも完全に統合
+- ✅ イミュータブルな状態更新を維持
+
+**詳細**: [docs/BUG_FIX_003_BUDGET_UPDATE.md](./docs/BUG_FIX_003_BUDGET_UPDATE.md)
 
 ### BUG-002: Phase 5.1.3 時刻と順番の整合性バグ修正 ✅ **完了** (2025-10-07)
 **発生状況**: 
@@ -1026,8 +1071,9 @@ MIT
 - ✅ **Phase 5.1.1**: しおり基本表示コンポーネント（ヘッダー、サマリー、日程、スポット、空状態）
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
 - ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
+- ✅ **Phase 5.2**: 一時保存機能（LocalStorage版、自動保存、保存状態表示）
 - ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
-- ✅ **Phase 5.4.2**: 栞一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
+- ✅ **Phase 5.4.2**: しおり一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
 - ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
 - ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
   - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
@@ -1035,16 +1081,16 @@ MIT
   - ✅ Phase 6.3: モデル設定の一元管理・型安全性向上
 - ✅ **BUG-001**: JSON削除バグ修正（3段階防御システム、完全対応）
 - ✅ **BUG-002**: Phase 5.1.3 時刻と順番の整合性バグ修正（イミュータブル更新、即座レンダリング）
+- ✅ **BUG-003**: 予算自動更新バグ修正（スポット編集時の予算再計算、データ整合性保証）
 
 **次の実装**: 
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 5.2** - 一時保存機能（LocalStorage版、自動保存）
 - **Phase 5.3** - PDF出力機能
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
-**最終更新**: 2025-10-07
+**最終更新**: 2025-10-07 (Phase 5.2完了)
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
@@ -1052,6 +1098,7 @@ MIT
 - [Phase 5.1.1 実装完了レポート](./docs/PHASE5.1.1_ITINERARY_COMPONENTS.md)
 - [Phase 5.1.2 実装完了レポート](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
 - [Phase 5.1.3 実装完了レポート](./docs/PHASE5.1.3_ADVANCED_FEATURES.md)
+- [Phase 5.2 実装完了レポート](./docs/PHASE5_2_IMPLEMENTATION.md)
 - [Phase 5.4.1 実装完了レポート](./docs/PHASE5_4_1_IMPLEMENTATION_COMPLETE.md)
 - [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
 - [Phase 5.4.3 実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)

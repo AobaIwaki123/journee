@@ -11,10 +11,10 @@ import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
 import { EmptyItinerary } from './EmptyItinerary';
 import { UndoRedoButtons } from './UndoRedoButtons';
-import { TemplateSelector } from './TemplateSelector';
+import { SaveButton } from './SaveButton';
+import { ResetButton } from './ResetButton';
 import { ToastContainer } from '@/components/ui/Toast';
 import { Calendar, MapPin, FileDown, List, Map as MapIcon } from 'lucide-react';
-import { TEMPLATES } from '@/types/template';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 
 type ViewMode = 'schedule' | 'map';
@@ -24,11 +24,9 @@ export const ItineraryPreview: React.FC = () => {
     currentItinerary, 
     planningPhase, 
     isAutoProgressing, 
-    autoProgressState,
-    selectedTemplate 
+    autoProgressState
   } = useStore();
   
-  const template = TEMPLATES[selectedTemplate as keyof typeof TEMPLATES];
   const [viewMode, setViewMode] = useState<ViewMode>('schedule');
 
   // 位置情報を持つスポットがあるかチェック
@@ -67,60 +65,61 @@ export const ItineraryPreview: React.FC = () => {
         {!isAutoProgressing && <PlanningProgress />}
         
         {/* メインコンテンツ（スクロール可能） */}
-        <div 
-          className="flex-1 overflow-y-auto"
-          style={{ 
-            background: `linear-gradient(to bottom right, ${template.colors.background}, ${template.colors.background})`
-          }}
-        >
+        <div className="flex-1 overflow-y-auto bg-gray-50">
           {/* Header */}
           <ItineraryHeader itinerary={currentItinerary} editable={true} />
 
           {/* Content */}
           <div className="p-6 max-w-5xl mx-auto">
-            {/* View Mode Switcher */}
-            {hasLocations && currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setViewMode('schedule')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                      viewMode === 'schedule'
-                        ? 'bg-blue-500 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                    <span className="text-sm font-medium">スケジュール</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('map')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                      viewMode === 'map'
-                        ? 'bg-blue-500 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <MapIcon className="w-4 h-4" />
-                    <span className="text-sm font-medium">地図</span>
-                  </button>
+            {/* Action Buttons & View Mode Switcher */}
+            {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  {/* View Mode Switcher (only if has locations) */}
+                  {hasLocations ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewMode('schedule')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          viewMode === 'schedule'
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <List className="w-4 h-4" />
+                        <span className="text-sm font-medium">スケジュール</span>
+                      </button>
+                      <button
+                        onClick={() => setViewMode('map')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          viewMode === 'map'
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <MapIcon className="w-4 h-4" />
+                        <span className="text-sm font-medium">地図</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-3">
+                      <SaveButton />
+                      <ResetButton />
+                    </div>
+                  )}
+
+                  {/* Undo/Redo Buttons */}
+                  <div className="flex gap-3 items-center">
+                    {hasLocations && (
+                      <>
+                        <SaveButton />
+                        <ResetButton />
+                      </>
+                    )}
+                    <UndoRedoButtons />
+                  </div>
                 </div>
-
-                {/* Undo/Redo Buttons */}
-                {viewMode === 'schedule' && <UndoRedoButtons />}
               </div>
-            )}
-
-            {/* Undo/Redo Buttons (when no map mode available) */}
-            {!hasLocations && currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
-              <div className="flex justify-end mb-4">
-                <UndoRedoButtons />
-              </div>
-            )}
-
-            {/* Template Selector */}
-            {viewMode === 'schedule' && currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
-              <TemplateSelector />
             )}
 
             {/* Summary */}
@@ -150,7 +149,7 @@ export const ItineraryPreview: React.FC = () => {
                   />
                 ))}
               </div>
-            ) : (
+            ) : viewMode === 'schedule' ? (
               <div className="bg-white rounded-lg shadow-sm p-12 text-center">
                 <p className="text-gray-600 text-lg font-medium mb-2">
                   スケジュールがまだ作成されていません
@@ -159,7 +158,7 @@ export const ItineraryPreview: React.FC = () => {
                   AIチャットで「〇日目の詳細を教えて」と聞いてみましょう
                 </p>
               </div>
-            )}
+            ) : null}
 
             {/* PDF Export Button */}
             {viewMode === 'schedule' && currentItinerary.schedule.length > 0 && planningPhase === 'completed' && (

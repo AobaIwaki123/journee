@@ -24,7 +24,17 @@ import { isValidModelId } from "@/lib/ai/models";
 /**
  * デバッグ用モックレスポンス生成関数
  */
-function handleMockResponse(stream: boolean) {
+function handleMockResponse(stream: boolean, currency: string = 'JPY') {
+  // 通貨記号のマッピング
+  const currencySymbols: Record<string, string> = {
+    JPY: '¥',
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+  };
+  
+  const symbol = currencySymbols[currency] || '¥';
+  
   const mockItinerary = {
     title: '京都2日間の旅',
     destination: '京都',
@@ -32,6 +42,7 @@ function handleMockResponse(stream: boolean) {
     endDate: '2025-11-02',
     duration: 2,
     summary: '古都京都を満喫する2日間の旅程です。歴史的な寺社仏閣を巡り、京都の文化と美食を楽しみます。',
+    currency: currency,
     schedule: [
       {
         day: 1,
@@ -170,7 +181,7 @@ function handleMockResponse(stream: boolean) {
     status: 'draft' as const
   };
 
-  const mockMessage = 'テストモードです。京都2日間の旅程を作成しました！清水寺や金閣寺などの定番スポットを巡る充実したプランです。';
+  const mockMessage = `テストモードです。京都2日間の旅程を作成しました！清水寺や金閣寺などの定番スポットを巡る充実したプランです。（通貨: ${currency}）`;
 
   if (stream) {
     // ストリーミングレスポンス
@@ -273,7 +284,8 @@ export async function POST(request: NextRequest) {
 
     // デバッグモード: "test"と入力したらモックレスポンスを返す
     if (message.trim().toLowerCase() === 'test') {
-      return handleMockResponse(stream);
+      const requestCurrency = body.currency || 'JPY';
+      return handleMockResponse(stream, requestCurrency);
     }
 
     // Phase 4.5: 「次へ」キーワードの検出
