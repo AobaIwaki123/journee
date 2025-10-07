@@ -706,6 +706,106 @@ journee/
 - [ ] 開発者向けドキュメント
 - [ ] トラブルシューティングガイド
 
+### Phase 11: ユーザーフィードバック & 自動Issue/PR作成ワークフロー（Week 20-22）🆕
+**目的**: ユーザーからの機能要望を受け取り、LLMで構造化してGitHub Issueに自動投稿し、Cursorを活用して自動的にPull Requestを作成する開発ワークフローの確立
+
+**アーキテクチャ**:
+```
+ユーザーフィードバック → LLM構造化 → GitHub Issue自動作成 
+  → GitHub Actions監視 → Cursor PR作成支援
+```
+
+#### 11.1 フィードバックフォームUI実装
+- [ ] フィードバックモーダルコンポーネント
+  - [ ] `FeedbackModal.tsx` - カテゴリー選択、タイトル、詳細入力、スクリーンショット添付
+  - [ ] `FeedbackButton.tsx` - ヘッダーの固定ボタン
+  - [ ] バリデーション（Zod + React Hook Form）
+  - [ ] アクセシビリティ対応
+- [ ] Zustand状態管理の拡張
+  - [ ] `feedbackModalOpen` 状態管理
+  - [ ] `openFeedbackModal()`, `closeFeedbackModal()` アクション
+
+#### 11.2 LLM構造化エンジン実装
+- [ ] プロンプトエンジニアリング
+  - [ ] `lib/feedback/prompts.ts` - フィードバック解析プロンプト
+  - [ ] カテゴリー別テンプレート（機能追加/バグ報告/UI改善）
+- [ ] LLM API統合
+  - [ ] `lib/feedback/analyzer.ts` - `analyzeFeedback()` 関数
+  - [ ] ユーザー入力をGitHub Issue用のフォーマットに変換
+    - Issueタイトル生成
+    - Issue本文生成（機能概要、実装要件、期待される効果）
+    - ラベル候補提案
+    - 優先度推定
+    - 関連ファイル候補抽出
+  - [ ] 型定義（`types/feedback.ts`）
+
+#### 11.3 GitHub Issue自動作成API実装
+- [ ] GitHub API統合
+  - [ ] `@octokit/rest` パッケージインストール
+  - [ ] `lib/github/client.ts` - `createIssue()` 関数
+  - [ ] `app/api/feedback/submit/route.ts` - フィードバック送信エンドポイント
+    - 認証チェック
+    - LLMで構造化
+    - GitHub Issueを自動作成
+    - ユーザー情報を埋め込み
+- [ ] スクリーンショット処理
+  - [ ] Base64エンコード
+  - [ ] GitHub Issueに画像埋め込み
+- [ ] 環境変数設定
+  - [ ] `GITHUB_TOKEN` - GitHub Personal Access Token
+  - [ ] `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`
+- [ ] エラーハンドリング
+  - [ ] レート制限対応
+  - [ ] リトライ処理
+
+#### 11.4 GitHub Actions - Issue監視ワークフロー
+- [ ] `.github/workflows/auto-issue-handler.yml` の作成
+  - [ ] 新しいIssueが作成されたらトリガー
+  - [ ] `auto-implement` ラベルでフィルタリング
+  - [ ] Webhook通知（Slack/Discord/メール）
+  - [ ] Issueにコメント追加（自動処理開始通知）
+- [ ] カテゴリー別処理分岐
+  - [ ] `bug`: バグ修正ワークフロー
+  - [ ] `enhancement`: 機能追加ワークフロー
+  - [ ] `UI`: UI改善ワークフロー
+
+#### 11.5 Cursor自動PR作成ワークフロー
+- [ ] Cursorルールの作成
+  - [ ] `.cursor/rules/auto-implement.mdc` - 自動実装ガイドライン
+  - [ ] PRテンプレート定義
+- [ ] 半自動化スクリプト
+  - [ ] `scripts/auto-implement.sh` - Issue番号を指定してCursor実装をサポート
+  - [ ] ブランチ自動作成
+  - [ ] Cursorプロンプト生成
+  - [ ] PR自動作成（GitHub CLI）
+- [ ] ワークフロー文書化
+  - [ ] 開発者向けガイド
+  - [ ] Cursor使用例
+
+#### 11.6 ユーザー通知システム
+- [ ] フィードバック送信完了画面
+  - [ ] `FeedbackSuccess.tsx` - Issue番号・URLを表示
+  - [ ] GitHubで確認ボタン
+- [ ] メール通知（オプション）
+  - [ ] Issue作成時にユーザーにメール送信
+  - [ ] PR作成時にユーザーにメール送信
+
+**技術スタック**:
+- **GitHub API**: `@octokit/rest`
+- **LLM**: Gemini/Claude API（構造化）
+- **GitHub Actions**: Issue監視・自動化
+- **Cursor**: AI支援コード編集
+- **GitHub CLI**: PR作成自動化
+
+**期待される効果**:
+- ユーザーが気軽にフィードバックを送信できる
+- 曖昧な要望がLLMで明確な要件に変換される
+- Issue作成の手間が削減される
+- Cursorとの連携で実装効率が向上する
+- 開発プロセスの透明性が向上する
+
+**詳細**: [docs/PHASE11_FEEDBACK_WORKFLOW.md](./docs/PHASE11_FEEDBACK_WORKFLOW.md)
+
 ## 🐛 バグ修正・技術的負債
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
@@ -977,8 +1077,9 @@ MIT
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
-- **Phase 5.4** - マイページ・栞一覧・設定ページ（ユーザー管理、モックデータ） 🆕
+- **Phase 5.4** - マイページ・栞一覧・設定ページ（ユーザー管理、モックデータ）
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
+- **Phase 11** - ユーザーフィードバック & 自動Issue/PR作成ワークフロー 🆕
 
 **最終更新**: 2025-10-07
 
@@ -989,5 +1090,6 @@ MIT
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
+- [Phase 11 ユーザーフィードバックワークフロー実装計画](./docs/PHASE11_FEEDBACK_WORKFLOW.md) 🆕
 - [API ドキュメント](./docs/PHASE3_API_DOCUMENTATION.md)
 - [クイックスタートガイド](./docs/QUICK_START.md)
