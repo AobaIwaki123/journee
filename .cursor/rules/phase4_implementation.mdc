@@ -1,0 +1,128 @@
+---
+alwaysApply: true
+description: Phase 4（段階的旅程構築システム）の実装ルール
+---
+
+# Phase 4: 段階的旅程構築システム
+
+## 実装ステータス
+- ✅ Phase 4.1: 型定義の拡張
+- ✅ Phase 4.2: 状態管理の拡張
+- ✅ Phase 4.3: プロンプトシステムの改善
+- ✅ Phase 4.4: UIコンポーネントの追加
+- ✅ Phase 4.5: APIの拡張
+- 🔄 Phase 4.6: しおりマージロジック改善（実装中）
+- 📋 Phase 4.7: テスト・デバッグ（予定）
+- 📋 Phase 4.8: フェーズ移動処理の半自動化（予定）
+- 📋 Phase 4.9: 日程作成処理の並列化（予定）
+
+## コアコンポーネント
+
+### 1. 型定義（[types/itinerary.ts](mdc:types/itinerary.ts)）
+```typescript
+export type DayStatus = 'draft' | 'skeleton' | 'detailed' | 'completed';
+export type ItineraryPhase = 'initial' | 'collecting' | 'skeleton' | 'detailing' | 'completed';
+
+interface DaySchedule {
+  status: DayStatus;
+  theme?: string;
+  // ... 他のプロパティ
+}
+
+interface ItineraryData {
+  phase: ItineraryPhase;
+  currentDay?: number;
+  // ... 他のプロパティ
+}
+```
+
+### 2. 状態管理（[lib/store/useStore.ts](mdc:lib/store/useStore.ts)）
+```typescript
+interface AppState {
+  planningPhase: ItineraryPhase;
+  currentDetailingDay: number | null;
+  setPlanningPhase: (phase: ItineraryPhase) => void;
+  setCurrentDetailingDay: (day: number | null) => void;
+  proceedToNextStep: () => void;
+}
+```
+
+### 3. UIコンポーネント
+- [PlanningProgress.tsx](mdc:components/itinerary/PlanningProgress.tsx): 進捗表示
+- [QuickActions.tsx](mdc:components/itinerary/QuickActions.tsx): 次のステップへの移行
+- [ItineraryPreview.tsx](mdc:components/itinerary/ItineraryPreview.tsx): しおりプレビュー
+
+### 4. APIエンドポイント
+- [route.ts](mdc:app/api/chat/route.ts): チャットAPI（フェーズ対応）
+
+## 実装ルール
+
+### 1. フェーズ管理
+- 各フェーズは明確に区別され、1つのフェーズのみがアクティブ
+- フェーズ遷移は`proceedToNextStep()`を通じて制御
+- 現在のフェーズに応じたUIとプロンプトを提供
+
+### 2. プロンプト設計
+- フェーズごとに専用のプロンプトテンプレートを使用
+- システムプロンプトには現在のフェーズと日程を含める
+- 出力形式は厳密なJSON形式を維持
+
+### 3. しおりマージ
+- 骨組み段階: テーマと状態を保持
+- 詳細化段階: 既存の日程を保持
+- 部分的な更新を許容（1日単位）
+
+### 4. エラーハンドリング
+- フェーズ遷移の失敗を適切に処理
+- 不完全なデータの検出と修正
+- ユーザーへの明確なフィードバック
+
+### 5. パフォーマンス考慮
+- 大規模な旅程（5日以上）でも安定動作
+- レスポンスタイムの最適化
+- メモリ使用量の管理
+
+## コーディング規約
+
+### 1. 型安全性
+- 全ての新規コードでTypeScriptの厳格モードを使用
+- Union型を活用したフェーズと状態の管理
+- 型ガードによる安全な型チェック
+
+### 2. コンポーネント設計
+- Atomic Designパターンの適用
+- Props型の明示的な定義
+- メモ化による不要な再レンダリングの防止
+
+### 3. 状態管理
+- Zustandストアの適切な分割
+- 副作用の制御（useEffect）
+- 非同期処理の適切な処理
+
+### 4. テスト要件
+- 各フェーズの遷移テスト
+- エッジケースのカバレッジ
+- ユーザー操作シナリオのE2Eテスト
+
+## 注意事項
+
+1. **フェーズ遷移**
+   - 必要な情報が揃っているか確認
+   - ユーザーの確認を得てから遷移
+   - エラー時は適切なフォールバック
+
+2. **データ整合性**
+   - 部分更新時のバリデーション
+   - 既存データの保護
+   - 不整合検出時の修復
+
+3. **UX考慮**
+   - 進捗の視覚的フィードバック
+   - 操作の直感性
+   - エラー時の明確なガイダンス
+
+## 関連ドキュメント
+- [PHASE4_INCREMENTAL_PLANNING.md](mdc:docs/PHASE4_INCREMENTAL_PLANNING.md)
+- [PHASE4_USAGE_GUIDE.md](mdc:docs/PHASE4_USAGE_GUIDE.md)
+- [PHASE4_8_AUTO_PHASE_TRANSITION.md](mdc:docs/PHASE4_8_AUTO_PHASE_TRANSITION.md)
+- [PHASE4_9_PARALLEL_DAY_CREATION.md](mdc:docs/PHASE4_9_PARALLEL_DAY_CREATION.md)

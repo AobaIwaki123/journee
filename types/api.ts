@@ -3,7 +3,7 @@
  */
 
 import type { ChatMessage, AIModel } from "./chat";
-import type { ItineraryData } from "./itinerary";
+import type { ItineraryData, ItineraryPhase } from "./itinerary";
 
 /**
  * チャットAPIリクエスト
@@ -21,6 +21,10 @@ export interface ChatAPIRequest {
   claudeApiKey?: string;
   /** ストリーミングレスポンスを使用するか */
   stream?: boolean;
+  /** Phase 4: 現在のプランニングフェーズ */
+  planningPhase?: ItineraryPhase;
+  /** Phase 4: 現在詳細化中の日 */
+  currentDetailingDay?: number | null;
 }
 
 /**
@@ -129,4 +133,100 @@ export interface UserMeResponse {
   name: string | null;
   image: string | null;
   googleId?: string;
+}
+
+/**
+ * Phase 4.9: 並列日程作成の型定義
+ */
+
+/**
+ * バッチ日程詳細化リクエスト
+ */
+export interface BatchDayDetailRequest {
+  /** 旅程ID */
+  itineraryId: string;
+  
+  /** 詳細化する日のリスト */
+  days: DayDetailTask[];
+  
+  /** チャット履歴 */
+  chatHistory: { role: string; content: string }[];
+  
+  /** 現在のしおり */
+  currentItinerary?: Partial<ItineraryData>;
+  
+  /** 並列数の制限（デフォルト: 3） */
+  maxParallel?: number;
+  
+  /** Phase 4.9.4: タイムアウト時間（ミリ秒、デフォルト: 120000） */
+  timeout?: number;
+}
+
+/**
+ * 各日の詳細化タスク
+ */
+export interface DayDetailTask {
+  /** 日番号 */
+  day: number;
+  
+  /** その日のテーマ */
+  theme?: string;
+  
+  /** 追加情報 */
+  additionalInfo?: string;
+  
+  /** 優先度（オプション） */
+  priority?: number;
+}
+
+/**
+ * バッチ日程詳細化レスポンス
+ */
+export interface BatchDayDetailResponse {
+  /** 成功した日のリスト */
+  successDays: number[];
+  
+  /** 失敗した日のリスト */
+  failedDays: number[];
+  
+  /** 更新されたしおり */
+  itinerary: ItineraryData;
+  
+  /** エラーメッセージ（失敗した日がある場合） */
+  errors?: Record<number, string>;
+  
+  /** 処理時間（ミリ秒） */
+  processingTime?: number;
+}
+
+/**
+ * マルチストリーミングチャンク
+ */
+export interface MultiStreamChunk {
+  /** チャンクタイプ */
+  type: 'message' | 'itinerary' | 'progress' | 'day_start' | 'day_complete' | 'day_error' | 'done' | 'error';
+  
+  /** 日番号（どの日のチャンクか） */
+  day?: number;
+  
+  /** メッセージ内容 */
+  content?: string;
+  
+  /** しおりデータ（部分更新） */
+  itinerary?: Partial<ItineraryData>;
+  
+  /** 進捗情報 */
+  progress?: {
+    completedDays: number[];
+    processingDays: number[];
+    errorDays: number[];
+    totalDays: number;
+    progressRate: number;
+  };
+  
+  /** エラーメッセージ */
+  error?: string;
+  
+  /** タイムスタンプ */
+  timestamp?: number;
 }

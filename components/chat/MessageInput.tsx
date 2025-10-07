@@ -5,6 +5,8 @@ import { useStore } from '@/lib/store/useStore';
 import { Send } from 'lucide-react';
 import { sendChatMessageStream } from '@/lib/utils/api-client';
 import { mergeItineraryData, parseAIResponse } from '@/lib/ai/prompts';
+import { executeSequentialItineraryCreation } from '@/lib/execution/sequential-itinerary-builder';
+import type { Message } from '@/types/chat';
 
 export const MessageInput: React.FC = () => {
   const [input, setInput] = useState('');
@@ -23,6 +25,17 @@ export const MessageInput: React.FC = () => {
   const selectedAI = useStore((state) => state.selectedAI);
   const claudeApiKey = useStore((state) => state.claudeApiKey);
   const setError = useStore((state) => state.setError);
+  
+  // Phase 4.5: プランニングフェーズ状態を取得
+  const planningPhase = useStore((state) => state.planningPhase);
+  const currentDetailingDay = useStore((state) => state.currentDetailingDay);
+  
+  // Phase 4.10: 自動進行機能
+  const updateChecklist = useStore((state) => state.updateChecklist);
+  const shouldTriggerAutoProgress = useStore((state) => state.shouldTriggerAutoProgress);
+  const isAutoProgressing = useStore((state) => state.isAutoProgressing);
+  const setIsAutoProgressing = useStore((state) => state.setIsAutoProgressing);
+  const setAutoProgressState = useStore((state) => state.setAutoProgressState);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +67,15 @@ export const MessageInput: React.FC = () => {
       let fullResponse = '';
       let receivedItinerary = false;
 
-      // ストリーミングレスポンスを処理
+      // Phase 4.5: フェーズ情報を含めてストリーミングレスポンスを処理
       for await (const chunk of sendChatMessageStream(
         userMessage.content,
         chatHistory,
         currentItinerary || undefined,
         selectedAI,
-        claudeApiKey || undefined
+        claudeApiKey || undefined,
+        planningPhase,
+        currentDetailingDay
       )) {
         if (chunk.type === 'message' && chunk.content) {
           // メッセージチャンクを追加
@@ -94,6 +109,20 @@ export const MessageInput: React.FC = () => {
       };
       addMessage(aiMessage);
       setStreamingMessage('');
+      
+      // Phase 4.10.2: 自動進行トリガーチェック
+      updateChecklist();
+      
+      // 自動進行モードが有効で、トリガー条件を満たしている場合
+      if (shouldTriggerAutoProgress() && !isAutoProgressing) {
+        console.log('🚀 Auto progress triggered');
+        setIsAutoProgressing(true);
+        
+        // 少し待ってから自動進行を開始
+        setTimeout(() => {
+          executeAutoProgress();
+        }, 500);
+      }
 
     } catch (error: any) {
       console.error('Chat error:', error);
@@ -114,8 +143,47 @@ export const MessageInput: React.FC = () => {
       setStreaming(false);
     }
   };
+  
+  /**
+   * Phase 4.10.2: 自動進行実行
+   */
+  const executeAutoProgress = async () => {
+    try {
+      await executeSequentialItineraryCreation(
+        messages,
+        currentItinerary || undefined,
+        selectedAI,
+        claudeApiKey || '',
+        {
+          onStateChange: (state) => {
+            console.log('Auto progress state:', state);
+            setAutoProgressState(state);
+          },
+          onMessage: (message: Message) => {
+            addMessage(message);
+          },
+          onItineraryUpdate: (itinerary) => {
+            setItinerary(itinerary);
+          },
+          onComplete: () => {
+            console.log('✅ Auto progress completed');
+            setIsAutoProgressing(false);
+          },
+          onError: (error) => {
+            console.error('❌ Auto progress error:', error);
+            setError(error);
+            setIsAutoProgressing(false);
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error('Auto progress execution error:', error);
+      setError(error.message);
+      setIsAutoProgressing(false);
+    }
+  };
 
-  const disabled = isLoading || isStreaming;
+  const disabled = isLoading || isStreaming || isAutoProgressing;
 
   return (
     <form onSubmit={handleSubmit} className="flex space-x-2">

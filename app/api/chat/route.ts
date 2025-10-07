@@ -1,15 +1,25 @@
 /**
  * チャットAPIルート
  * POST /api/chat
+ * Phase 4.5: フェーズ判定ロジックと「次へ」キーワード検出を追加
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import type { ChatAPIRequest, ChatAPIResponse, ChatStreamChunk } from '@/types/api';
-import type { AIModelId } from '@/types/ai';
-import { sendGeminiMessage, streamGeminiMessage } from '@/lib/ai/gemini';
-import { sendClaudeMessage, streamClaudeMessage } from '@/lib/ai/claude';
-import { parseAIResponse, mergeItineraryData, generateErrorMessage } from '@/lib/ai/prompts';
-import { isValidModelId } from '@/lib/ai/models';
+import { NextRequest, NextResponse } from "next/server";
+import type {
+  ChatAPIRequest,
+  ChatAPIResponse,
+  ChatStreamChunk,
+} from "@/types/api";
+import type { AIModelId } from "@/types/ai";
+import { sendGeminiMessage, streamGeminiMessage } from "@/lib/ai/gemini";
+import { sendClaudeMessage, streamClaudeMessage } from "@/lib/ai/claude";
+import {
+  parseAIResponse,
+  mergeItineraryData,
+  generateErrorMessage,
+  createNextStepPrompt,
+} from "@/lib/ai/prompts";
+import { isValidModelId } from "@/lib/ai/models";
 
 /**
  * デバッグ用モックレスポンス生成関数
@@ -187,7 +197,7 @@ function handleMockResponse(stream: boolean) {
 export async function POST(request: NextRequest) {
   try {
     // リクエストボディをパース
-    const body = await request.json() as ChatAPIRequest;
+    const body = (await request.json()) as ChatAPIRequest;
     const {
       message,
       chatHistory = [],
@@ -195,38 +205,60 @@ export async function POST(request: NextRequest) {
       model,
       claudeApiKey,
       stream = false,
+      planningPhase = "initial",
+      currentDetailingDay,
     } = body;
 
     // モデルIDの検証
     if (model && !isValidModelId(model)) {
       return NextResponse.json(
-        { error: 'Invalid model', message: `Unsupported AI model: ${model}` },
+        { error: "Invalid model", message: `Unsupported AI model: ${model}` },
         { status: 400 }
       );
     }
 
-    const selectedModel: AIModelId = model || 'gemini';
+    const selectedModel: AIModelId = model || "gemini";
 
     // バリデーション
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    if (
+      !message ||
+      typeof message !== "string" ||
+      message.trim().length === 0
+    ) {
       return NextResponse.json(
-        { error: 'Invalid request', message: 'Message is required' },
+        { error: "Invalid request", message: "Message is required" },
         { status: 400 }
       );
     }
 
+<<<<<<< HEAD
+    // Phase 4.5: 「次へ」キーワードの検出
+    const isNextStepTrigger = detectNextStepKeyword(message);
+    let enhancedMessage = message;
+
+    if (isNextStepTrigger) {
+      // 「次へ」が検出された場合、次のステップ誘導プロンプトを追加
+      const nextStepPrompt = createNextStepPrompt(
+        planningPhase,
+        currentItinerary
+      );
+      if (nextStepPrompt) {
+        enhancedMessage = `${message}\n\n【システムからの補足】\n${nextStepPrompt}`;
+      }
+=======
     // デバッグモード: "test"と入力したらモックレスポンスを返す
     if (message.trim().toLowerCase() === 'test') {
       return handleMockResponse(stream);
+>>>>>>> origin/main
     }
 
     // モデルがClaudeの場合はAPIキーが必要
-    if (selectedModel === 'claude') {
+    if (selectedModel === "claude") {
       if (!claudeApiKey) {
         return NextResponse.json(
-          { 
-            error: 'API key required', 
-            message: 'Claude API key is required for using Claude model' 
+          {
+            error: "API key required",
+            message: "Claude API key is required for using Claude model",
           },
           { status: 400 }
         );
@@ -234,25 +266,46 @@ export async function POST(request: NextRequest) {
 
       // Claudeのストリーミング/非ストリーミングレスポンス
       if (stream) {
-        return handleClaudeStreamingResponse(message, chatHistory, currentItinerary, claudeApiKey);
+        return handleClaudeStreamingResponse(
+          message,
+          chatHistory,
+          currentItinerary,
+          claudeApiKey
+        );
       }
-      return handleClaudeNonStreamingResponse(message, chatHistory, currentItinerary, claudeApiKey);
+      return handleClaudeNonStreamingResponse(
+        message,
+        chatHistory,
+        currentItinerary,
+        claudeApiKey
+      );
     }
 
     // Geminiのストリーミング/非ストリーミングレスポンス
     if (stream) {
-      return handleGeminiStreamingResponse(message, chatHistory, currentItinerary);
+      return handleGeminiStreamingResponse(
+        enhancedMessage,
+        chatHistory,
+        currentItinerary,
+        planningPhase,
+        currentDetailingDay
+      );
     }
 
     // 非ストリーミングレスポンス
-    return handleGeminiNonStreamingResponse(message, chatHistory, currentItinerary);
-
+    return handleGeminiNonStreamingResponse(
+      enhancedMessage,
+      chatHistory,
+      currentItinerary,
+      planningPhase,
+      currentDetailingDay
+    );
   } catch (error: any) {
-    console.error('Chat API Error:', error);
-    
+    console.error("Chat API Error:", error);
+
     return NextResponse.json(
       {
-        error: 'Internal server error',
+        error: "Internal server error",
         message: generateErrorMessage(error),
         details: error.message,
       },
@@ -263,15 +316,25 @@ export async function POST(request: NextRequest) {
 
 /**
  * Gemini: 非ストリーミングレスポンスを処理
+ * Phase 4.5: フェーズ情報を追加
  */
 async function handleGeminiNonStreamingResponse(
   message: string,
   chatHistory: any[],
-  currentItinerary: any
+  currentItinerary: any,
+  planningPhase: any,
+  currentDetailingDay: any
 ) {
   try {
     // Gemini APIにメッセージを送信
-    const result = await sendGeminiMessage(message, chatHistory, currentItinerary);
+    const result = await sendGeminiMessage(
+      message,
+      chatHistory,
+      currentItinerary,
+      undefined,
+      planningPhase,
+      currentDetailingDay
+    );
 
     // しおりデータをマージ
     let updatedItinerary = currentItinerary;
@@ -282,7 +345,7 @@ async function handleGeminiNonStreamingResponse(
     const response: ChatAPIResponse = {
       message: result.message,
       itinerary: updatedItinerary,
-      model: 'gemini',
+      model: "gemini",
     };
 
     return NextResponse.json(response);
@@ -302,7 +365,12 @@ async function handleClaudeNonStreamingResponse(
 ) {
   try {
     // Claude APIにメッセージを送信
-    const result = await sendClaudeMessage(apiKey, message, chatHistory, currentItinerary);
+    const result = await sendClaudeMessage(
+      apiKey,
+      message,
+      chatHistory,
+      currentItinerary
+    );
 
     // しおりデータをマージ
     let updatedItinerary = currentItinerary;
@@ -313,7 +381,7 @@ async function handleClaudeNonStreamingResponse(
     const response: ChatAPIResponse = {
       message: result.message,
       itinerary: updatedItinerary,
-      model: 'claude',
+      model: "claude",
     };
 
     return NextResponse.json(response);
@@ -328,7 +396,9 @@ async function handleClaudeNonStreamingResponse(
 async function handleGeminiStreamingResponse(
   message: string,
   chatHistory: any[],
-  currentItinerary: any
+  currentItinerary: any,
+  planningPhase: any,
+  currentDetailingDay: any
 ) {
   const encoder = new TextEncoder();
 
@@ -336,59 +406,70 @@ async function handleGeminiStreamingResponse(
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        let fullResponse = '';
+        let fullResponse = "";
 
         // Gemini APIからストリーミングレスポンスを取得
-        for await (const chunk of streamGeminiMessage(message, chatHistory, currentItinerary)) {
+        for await (const chunk of streamGeminiMessage(
+          message,
+          chatHistory,
+          currentItinerary,
+          undefined,
+          planningPhase,
+          currentDetailingDay
+        )) {
           fullResponse += chunk;
 
           // チャンクを送信
           const streamChunk: ChatStreamChunk = {
-            type: 'message',
+            type: "message",
             content: chunk,
           };
-          
+
           const data = `data: ${JSON.stringify(streamChunk)}\n\n`;
           controller.enqueue(encoder.encode(data));
         }
 
         // 完全なレスポンスからしおりデータを抽出
-        const { message: finalMessage, itineraryData } = parseAIResponse(fullResponse);
+        const { message: finalMessage, itineraryData } =
+          parseAIResponse(fullResponse);
 
         // しおりデータがある場合は送信
         if (itineraryData) {
-          const updatedItinerary = mergeItineraryData(currentItinerary, itineraryData);
-          
+          const updatedItinerary = mergeItineraryData(
+            currentItinerary,
+            itineraryData
+          );
+
           const itineraryChunk: ChatStreamChunk = {
-            type: 'itinerary',
+            type: "itinerary",
             itinerary: updatedItinerary,
           };
-          
+
           const data = `data: ${JSON.stringify(itineraryChunk)}\n\n`;
           controller.enqueue(encoder.encode(data));
         }
 
         // 完了を通知
         const doneChunk: ChatStreamChunk = {
-          type: 'done',
+          type: "done",
         };
-        
+
         const data = `data: ${JSON.stringify(doneChunk)}\n\n`;
         controller.enqueue(encoder.encode(data));
 
         controller.close();
       } catch (error: any) {
-        console.error('Gemini Streaming error:', error);
-        
+        console.error("Gemini Streaming error:", error);
+
         // エラーを送信
         const errorChunk: ChatStreamChunk = {
-          type: 'error',
+          type: "error",
           error: generateErrorMessage(error),
         };
-        
+
         const data = `data: ${JSON.stringify(errorChunk)}\n\n`;
         controller.enqueue(encoder.encode(data));
-        
+
         controller.close();
       }
     },
@@ -397,9 +478,9 @@ async function handleGeminiStreamingResponse(
   // Server-Sent Events (SSE)形式でレスポンスを返す
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
     },
   });
 }
@@ -419,59 +500,68 @@ async function handleClaudeStreamingResponse(
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        let fullResponse = '';
+        let fullResponse = "";
 
         // Claude APIからストリーミングレスポンスを取得
-        for await (const chunk of streamClaudeMessage(apiKey, message, chatHistory, currentItinerary)) {
+        for await (const chunk of streamClaudeMessage(
+          apiKey,
+          message,
+          chatHistory,
+          currentItinerary
+        )) {
           fullResponse += chunk;
 
           // チャンクを送信
           const streamChunk: ChatStreamChunk = {
-            type: 'message',
+            type: "message",
             content: chunk,
           };
-          
+
           const data = `data: ${JSON.stringify(streamChunk)}\n\n`;
           controller.enqueue(encoder.encode(data));
         }
 
         // 完全なレスポンスからしおりデータを抽出
-        const { message: finalMessage, itineraryData } = parseAIResponse(fullResponse);
+        const { message: finalMessage, itineraryData } =
+          parseAIResponse(fullResponse);
 
         // しおりデータがある場合は送信
         if (itineraryData) {
-          const updatedItinerary = mergeItineraryData(currentItinerary, itineraryData);
-          
+          const updatedItinerary = mergeItineraryData(
+            currentItinerary,
+            itineraryData
+          );
+
           const itineraryChunk: ChatStreamChunk = {
-            type: 'itinerary',
+            type: "itinerary",
             itinerary: updatedItinerary,
           };
-          
+
           const data = `data: ${JSON.stringify(itineraryChunk)}\n\n`;
           controller.enqueue(encoder.encode(data));
         }
 
         // 完了を通知
         const doneChunk: ChatStreamChunk = {
-          type: 'done',
+          type: "done",
         };
-        
+
         const data = `data: ${JSON.stringify(doneChunk)}\n\n`;
         controller.enqueue(encoder.encode(data));
 
         controller.close();
       } catch (error: any) {
-        console.error('Claude Streaming error:', error);
-        
+        console.error("Claude Streaming error:", error);
+
         // エラーを送信
         const errorChunk: ChatStreamChunk = {
-          type: 'error',
+          type: "error",
           error: generateErrorMessage(error),
         };
-        
+
         const data = `data: ${JSON.stringify(errorChunk)}\n\n`;
         controller.enqueue(encoder.encode(data));
-        
+
         controller.close();
       }
     },
@@ -480,11 +570,31 @@ async function handleClaudeStreamingResponse(
   // Server-Sent Events (SSE)形式でレスポンスを返す
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
     },
   });
+}
+
+/**
+ * Phase 4.5: 「次へ」キーワードを検出
+ */
+function detectNextStepKeyword(message: string): boolean {
+  const lowerMessage = message.toLowerCase().trim();
+  const nextKeywords = [
+    "次へ",
+    "次に",
+    "次",
+    "つぎ",
+    "進む",
+    "進んで",
+    "次のステップ",
+    "次の段階",
+    "next",
+  ];
+
+  return nextKeywords.some((keyword) => lowerMessage.includes(keyword));
 }
 
 /**
@@ -495,9 +605,9 @@ export async function OPTIONS(request: NextRequest) {
   return new Response(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 }
