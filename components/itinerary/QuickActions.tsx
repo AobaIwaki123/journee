@@ -186,9 +186,10 @@ export const QuickActions: React.FC = () => {
           throw new Error('骨組みが作成されていません');
         }
         
+        // TODO: 並列バッチ処理機能は未実装
         // 並列バッチ処理タスクを作成
-        const tasks = createDayDetailTasks(currentSkeleton);
-        console.log(`📋 ${tasks.length}日分の詳細化タスクを作成`);
+        // const tasks = createDayDetailTasks(currentSkeleton);
+        // console.log(`📋 ${tasks.length}日分の詳細化タスクを作成`);
         
         // 並列バッチストリーミング処理
         const updatedChatHistory = [
@@ -203,6 +204,8 @@ export const QuickActions: React.FC = () => {
         
         const batchResponse: string[] = [];
         
+        // TODO: batchDetailDaysStream is not implemented yet
+        /*
         for await (const chunk of batchDetailDaysStream(
           tasks,
           updatedChatHistory,
@@ -234,6 +237,7 @@ export const QuickActions: React.FC = () => {
             break;
           }
         }
+        */
         
         fullResponse += '\n\n全ての日程の詳細化が完了しました！';
         

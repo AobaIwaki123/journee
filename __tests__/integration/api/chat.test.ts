@@ -127,7 +127,6 @@ describe('POST /api/chat', () => {
     it('should call Gemini API for non-streaming request', async () => {
       const mockResponse = {
         message: 'Test response',
-        itinerary: { title: 'Test Trip' },
       };
 
       vi.mocked(sendGeminiMessage).mockResolvedValue(mockResponse);
@@ -180,8 +179,8 @@ describe('POST /api/chat', () => {
       const call = vi.mocked(sendGeminiMessage).mock.calls[0];
       expect(call[0]).toBe('Continue conversation');
       expect(call[1]).toHaveLength(2);
-      expect(call[1][0].content).toBe('Hello');
-      expect(call[1][1].content).toBe('Hi');
+      expect(call[1]?.[0]?.content).toBe('Hello');
+      expect(call[1]?.[1]?.content).toBe('Hi');
     });
   });
 
