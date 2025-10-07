@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
 import { APIKeyModal } from '@/components/settings/APIKeyModal';
 
@@ -36,14 +35,6 @@ export const AISelector: React.FC = () => {
             Claude 3.5 Sonnet {!claudeApiKey && '(APIキー必要)'}
           </option>
         </select>
-
-        {/* Claude選択時の警告表示 */}
-        {selectedAI === 'claude' && (
-          <div className="flex items-center space-x-1 text-yellow-600">
-            <AlertCircle className="w-4 h-4" />
-            <span className="text-xs">Phase 6.2で実装予定</span>
-          </div>
-        )}
       </div>
 
       {/* APIキー設定モーダル */}

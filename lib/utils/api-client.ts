@@ -157,7 +157,7 @@ export async function sendChatMessage(
  * 
  * 使用例:
  * ```typescript
- * for await (const chunk of sendChatMessageStream(message, history)) {
+ * for await (const chunk of sendChatMessageStream(message, history, itinerary, 'gemini')) {
  *   if (chunk.type === 'message') {
  *     setStreamingMessage(prev => prev + chunk.content);
  *   } else if (chunk.type === 'itinerary') {
@@ -169,10 +169,14 @@ export async function sendChatMessage(
 export async function* sendChatMessageStream(
   message: string,
   chatHistory?: ChatMessage[],
-  currentItinerary?: ItineraryData
+  currentItinerary?: ItineraryData,
+  model?: 'gemini' | 'claude',
+  claudeApiKey?: string
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   yield* chatApiClient.sendMessageStream(message, {
     chatHistory,
     currentItinerary,
+    model,
+    claudeApiKey,
   });
 }

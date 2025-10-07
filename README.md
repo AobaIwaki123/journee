@@ -315,10 +315,10 @@ journee/
 - [x] ローカルストレージでのAPIキー保存（暗号化）
 - [x] APIキーの検証機能
 
-#### 6.2 Claude API統合
-- [ ] Claude API クライアントの実装
-- [ ] ストリーミングレスポンス対応
-- [ ] Gemini APIと同じインターフェース実装
+#### 6.2 Claude API統合 ✅ **完了**
+- [x] Claude API クライアントの実装
+- [x] ストリーミングレスポンス対応
+- [x] Gemini APIと同じインターフェース実装
 
 #### 6.3 AIモデル切り替え機能
 - [ ] AIセレクターUIの拡張
@@ -644,7 +644,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 6.1 完了 → 次は Phase 6.2（Claude API統合）または Phase 3.5（UI/UX改善）
+**開発状況**: ✅ Phase 1, 2, 3, 6.1, 6.2 完了 → 次は Phase 3.5（UI/UX改善）または BUG-001（バグ修正）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -659,13 +659,14 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 6.1**: APIキー管理機能（暗号化保存、UI実装）
+- ✅ **Phase 6.2**: Claude API完全統合（ストリーミング対応、AI切り替え機能）
 
 **次の実装**: 
 - **BUG-001** - JSON削除バグ修正（優先）
 - **Phase 3.5** - UI/UX改善（マークダウンレンダリング）
-- **Phase 6.2** - Claude API統合（ストリーミング対応）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
+- **Phase 6.3** - AIモデル切り替え機能の強化（オプション）
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
@@ -673,4 +674,5 @@ MIT
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
+- [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [API ドキュメント](./PHASE3_API_DOCUMENTATION.md)
