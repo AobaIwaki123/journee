@@ -15,6 +15,8 @@ const STORAGE_KEYS = {
   AUTO_PROGRESS_MODE: 'journee_auto_progress_mode', // Phase 4.10用
   AUTO_PROGRESS_SETTINGS: 'journee_auto_progress_settings', // Phase 4.10用
   APP_SETTINGS: 'journee_app_settings', // Phase 5.4.3用
+  CURRENT_ITINERARY: 'journee_current_itinerary', // Phase 5.2用
+  LAST_SAVE_TIME: 'journee_last_save_time', // Phase 5.2用
 } as const;
 
 /**
@@ -293,4 +295,98 @@ export function loadAutoProgressSettings(): AutoProgressSettings {
     console.error('Failed to load auto progress settings:', error);
     return defaultSettings;
   }
+}
+
+/**
+ * Phase 5.2: 現在のしおり保存機能
+ */
+
+import type { ItineraryData } from '@/types/itinerary';
+
+/**
+ * 現在のしおりを保存
+ */
+export function saveCurrentItinerary(itinerary: ItineraryData | null): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  
+  try {
+    if (itinerary === null) {
+      window.localStorage.removeItem(STORAGE_KEYS.CURRENT_ITINERARY);
+      window.localStorage.removeItem(STORAGE_KEYS.LAST_SAVE_TIME);
+      return true;
+    }
+    
+    // しおりデータをJSON化して保存
+    const serialized = JSON.stringify({
+      ...itinerary,
+      createdAt: itinerary.createdAt.toISOString(),
+      updatedAt: itinerary.updatedAt.toISOString(),
+    });
+    
+    window.localStorage.setItem(STORAGE_KEYS.CURRENT_ITINERARY, serialized);
+    window.localStorage.setItem(STORAGE_KEYS.LAST_SAVE_TIME, new Date().toISOString());
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to save current itinerary:', error);
+    return false;
+  }
+}
+
+/**
+ * 現在のしおりを読込
+ */
+export function loadCurrentItinerary(): ItineraryData | null {
+  if (!isLocalStorageAvailable()) {
+    return null;
+  }
+  
+  try {
+    const serialized = window.localStorage.getItem(STORAGE_KEYS.CURRENT_ITINERARY);
+    if (!serialized) {
+      return null;
+    }
+    
+    const data = JSON.parse(serialized);
+    
+    // Date型に変換
+    return {
+      ...data,
+      createdAt: new Date(data.createdAt),
+      updatedAt: new Date(data.updatedAt),
+    } as ItineraryData;
+  } catch (error) {
+    console.error('Failed to load current itinerary:', error);
+    return null;
+  }
+}
+
+/**
+ * 最後に保存した時刻を取得
+ */
+export function getLastSaveTime(): Date | null {
+  if (!isLocalStorageAvailable()) {
+    return null;
+  }
+  
+  try {
+    const timeStr = window.localStorage.getItem(STORAGE_KEYS.LAST_SAVE_TIME);
+    if (!timeStr) {
+      return null;
+    }
+    
+    return new Date(timeStr);
+  } catch (error) {
+    console.error('Failed to load last save time:', error);
+    return null;
+  }
+}
+
+/**
+ * 現在のしおりをクリア
+ */
+export function clearCurrentItinerary(): boolean {
+  return saveCurrentItinerary(null);
 }

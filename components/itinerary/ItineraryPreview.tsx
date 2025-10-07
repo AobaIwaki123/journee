@@ -10,6 +10,8 @@ import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
 import { EmptyItinerary } from './EmptyItinerary';
 import { UndoRedoButtons } from './UndoRedoButtons';
+import { SaveButton } from './SaveButton';
+import { ResetButton } from './ResetButton';
 import { ToastContainer } from '@/components/ui/Toast';
 import { Calendar, MapPin, FileDown } from 'lucide-react';
 
@@ -58,9 +60,13 @@ export const ItineraryPreview: React.FC = () => {
 
           {/* Content */}
           <div className="p-6 max-w-5xl mx-auto">
-            {/* Undo/Redo Buttons */}
+            {/* Action Buttons */}
             {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
-              <div className="flex justify-end mb-4">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex gap-3">
+                  <SaveButton />
+                  <ResetButton />
+                </div>
                 <UndoRedoButtons />
               </div>
             )}

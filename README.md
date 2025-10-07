@@ -526,16 +526,33 @@ journee/
 - 好みのデザインでしおりをカスタマイズできる
 - 大規模なしおりでもスムーズに動作
 
-#### 5.2 一時保存機能（LocalStorage版）
-- [ ] モックストレージの実装（LocalStorage + Context）
-- [ ] 保存APIの実装（モックデータ）
-  - [ ] しおり保存API
-  - [ ] しおり読込API
-  - [ ] しおり一覧API
-- [ ] 自動保存機能（5分ごと）
-- [ ] 保存・読込UIコンポーネント
-- [ ] ユーザーごとのデータ分離（ローカル）
-- [ ] 保存状態のビジュアルフィードバック
+#### 5.2 一時保存機能（LocalStorage版）✅ **完了** (2025-10-07)
+- [x] モックストレージの実装（LocalStorage + Context）
+- [x] 保存APIの実装（モックデータ）
+  - [x] しおり保存API（`/api/itinerary/save`）
+  - [x] しおり読込API（`/api/itinerary/load`）
+  - [x] しおり一覧API（`/api/itinerary/list`）
+- [x] 自動保存機能（5分ごと + 変更時のデバウンス保存）
+- [x] 保存・読込UIコンポーネント
+- [x] ユーザーごとのデータ分離（APIレベル）
+- [x] 保存状態のビジュアルフィードバック（SaveStatus コンポーネント）
+- [x] **追加実装（2025-10-07）**
+  - [x] 保存ボタン（一覧ページへ自動遷移）
+  - [x] リセットボタン（確認ダイアログ付き）
+  - [x] LocalStorage読み込み待機処理（リロード時の未保存表示を修正）
+
+**実装結果**:
+- ✅ LocalStorageへの自動保存（デバウンス: 2秒、定期: 5分）
+- ✅ 起動時のしおり復元（StorageInitializer）
+- ✅ 保存/読込/一覧取得API（モック版、認証対応）
+- ✅ ヘッダーに保存状態表示（保存中/保存済み/未保存）
+- ✅ しおり一覧との自動統合
+- ✅ 手動保存ボタン（一覧ページへ遷移）
+- ✅ しおりリセットボタン（新規作成モードに戻る）
+- ✅ リロード時の正しい保存状態表示
+- ✅ ユーザーがしおりを失わずに編集を続けられる
+
+**詳細**: [docs/PHASE5_2_IMPLEMENTATION.md](./docs/PHASE5_2_IMPLEMENTATION.md)
 
 #### 5.3 PDF出力機能
 - [ ] PDF生成ライブラリの統合（react-pdf / jsPDF）
@@ -1052,6 +1069,7 @@ MIT
 - ✅ **Phase 5.1.1**: しおり基本表示コンポーネント（ヘッダー、サマリー、日程、スポット、空状態）
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
 - ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
+- ✅ **Phase 5.2**: 一時保存機能（LocalStorage版、自動保存、保存状態表示）
 - ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
 - ✅ **Phase 5.4.2**: しおり一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
 - ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
@@ -1067,11 +1085,10 @@ MIT
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 5.2** - 一時保存機能（LocalStorage版、自動保存）
 - **Phase 5.3** - PDF出力機能
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
-**最終更新**: 2025-10-07
+**最終更新**: 2025-10-07 (Phase 5.2完了)
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
@@ -1079,6 +1096,7 @@ MIT
 - [Phase 5.1.1 実装完了レポート](./docs/PHASE5.1.1_ITINERARY_COMPONENTS.md)
 - [Phase 5.1.2 実装完了レポート](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
 - [Phase 5.1.3 実装完了レポート](./docs/PHASE5.1.3_ADVANCED_FEATURES.md)
+- [Phase 5.2 実装完了レポート](./docs/PHASE5_2_IMPLEMENTATION.md)
 - [Phase 5.4.1 実装完了レポート](./docs/PHASE5_4_1_IMPLEMENTATION_COMPLETE.md)
 - [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
 - [Phase 5.4.3 実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)
