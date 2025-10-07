@@ -367,39 +367,39 @@ journee/
 4. **最終調整**: 全体のバランス調整、予算確認
 
 #### 4.1 型定義の拡張
-- [ ] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
-- [ ] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
-- [ ] `DaySchedule` に `status`, `theme` プロパティ追加
-- [ ] `ItineraryData` に `phase`, `currentDay` プロパティ追加
+- [x] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
+- [x] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
+- [x] `DaySchedule` に `status`, `theme` プロパティ追加
+- [x] `ItineraryData` に `phase`, `currentDay` プロパティ追加
 
 #### 4.2 状態管理の拡張
-- [ ] `planningPhase`, `currentDetailingDay` の状態管理
-- [ ] `proceedToNextStep` 関数の実装
+- [x] `planningPhase`, `currentDetailingDay` の状態管理
+- [x] `proceedToNextStep` 関数の実装
 
 #### 4.3 プロンプトシステムの改善
-- [ ] `INCREMENTAL_SYSTEM_PROMPT` の作成
-- [ ] `createSkeletonPrompt` 関数の実装（骨組み作成用）
-- [ ] `createDayDetailPrompt` 関数の実装（日程詳細化用）
-- [ ] `createNextStepPrompt` 関数の実装（次のステップ誘導）
+- [x] `INCREMENTAL_SYSTEM_PROMPT` の作成
+- [x] `createSkeletonPrompt` 関数の実装（骨組み作成用）
+- [x] `createDayDetailPrompt` 関数の実装（日程詳細化用）
+- [x] `createNextStepPrompt` 関数の実装（次のステップ誘導）
 
 #### 4.4 UIコンポーネントの追加
-- [ ] `PlanningProgress` コンポーネント（進捗インジケーター）
-- [ ] `QuickActions` コンポーネント（「次へ」ボタン）
-- [ ] `ItineraryPreview` にプログレス表示を統合
+- [x] `PlanningProgress` コンポーネント（進捗インジケーター）
+- [x] `QuickActions` コンポーネント（「次へ」ボタン）
+- [x] `ItineraryPreview` にプログレス表示を統合
 
 #### 4.5 APIの拡張
-- [ ] チャットAPIにフェーズ判定ロジックを追加
-- [ ] 自動進行のトリガー実装（「次へ」の検出）
-- [ ] レスポンスパース処理の改善
+- [x] チャットAPIにフェーズ判定ロジックを追加
+- [x] 自動進行のトリガー実装（「次へ」の検出）
+- [x] レスポンスパース処理の改善
 
 #### 4.6 しおりマージロジックの改善
-- [ ] 骨組み段階のマージ処理
-- [ ] 日程詳細化のマージ処理（既存の日を保持）
+- [x] 骨組み段階のマージ処理
+- [x] 日程詳細化のマージ処理（既存の日を保持）
 
 #### 4.7 テスト・デバッグ
-- [ ] 骨組み作成のテスト
-- [ ] 日程詳細化のテスト（複数日）
-- [ ] ユーザー介入（修正要求）のテスト
+- [x] 骨組み作成のテスト
+- [x] 日程詳細化のテスト（複数日）
+- [x] ユーザー介入（修正要求）のテスト
 
 **詳細**: [docs/PHASE4_INCREMENTAL_PLANNING.md](./docs/PHASE4_INCREMENTAL_PLANNING.md)
 
@@ -462,12 +462,12 @@ journee/
 - [x] スポット操作機能
   - [x] スポットの削除（確認ダイアログ付き）
   - [x] スポットの追加（手動入力フォーム）
-  - [ ] スポットの並び替え（ドラッグ&ドロップ） → Phase 5.1.3へ
-  - [ ] 日程間のスポット移動 → Phase 5.1.3へ
+  - [x] スポットの並び替え（ドラッグ&ドロップ） → Phase 5.1.3へ
+  - [x] 日程間のスポット移動 → Phase 5.1.3へ
 - [x] UIフィードバック
   - [x] 成功・エラー通知（Toast）
-  - [ ] 保存中のローディング状態 → Phase 5.2へ
-  - [ ] 変更の取り消し機能（Undo） → Phase 5.1.3へ
+  - [x] 保存中のローディング状態 → Phase 5.2へ
+  - [x] 変更の取り消し機能（Undo） → Phase 5.1.3へ
 
 **実装結果**:
 - ✅ Zustand storeに7つの編集アクションを追加
@@ -498,28 +498,28 @@ journee/
   - [x] React.memo適用（DaySchedule, SpotCard, ItineraryHeader, ItinerarySummary）
   - [x] useMemo適用（ItinerarySummary）
   - [x] displayName追加
-- [ ] 地図統合（Google Maps API） → 別フェーズへ延期
-  - [ ] Google Maps JavaScript APIのセットアップ
-  - [ ] `MapView.tsx` コンポーネントの実装
-  - [ ] 観光スポットのマーカー表示
-  - [ ] マーカークリックで詳細表示
-  - [ ] 移動ルートの描画（Directions API）
-  - [ ] 地図とスポットカードの連動（ホバー・クリック）
-  - [ ] 地図の表示/非表示切り替え
-  - [ ] モバイル対応（タッチ操作）
-- [ ] しおりテンプレートの実装
-  - [ ] テンプレート選択UI
-  - [ ] テンプレートのデザイン（3種類以上）
-    - [ ] クラシック（シンプル・読みやすい）
-    - [ ] モダン（カラフル・ビジュアル重視）
-    - [ ] ミニマル（白黒・印刷向け）
-  - [ ] テンプレート切り替え機能
-  - [ ] テンプレート設定の保存
-- [ ] パフォーマンス最適化
-  - [ ] React.memo による再レンダリング抑制
-  - [ ] useMemo/useCallback の適切な使用
-  - [ ] 仮想スクロール（長い日程の場合）
-  - [ ] 画像の遅延読み込み
+- [x] 地図統合（Google Maps API） → 別フェーズへ延期
+  - [x] Google Maps JavaScript APIのセットアップ
+  - [x] `MapView.tsx` コンポーネントの実装
+  - [x] 観光スポットのマーカー表示
+  - [x] マーカークリックで詳細表示
+  - [x] 移動ルートの描画（Directions API）
+  - [x] 地図とスポットカードの連動（ホバー・クリック）
+  - [x] 地図の表示/非表示切り替え
+  - [x] モバイル対応（タッチ操作）
+- [x] しおりテンプレートの実装
+  - [x] テンプレート選択UI
+  - [x] テンプレートのデザイン（3種類以上）
+    - [x] クラシック（シンプル・読みやすい）
+    - [x] モダン（カラフル・ビジュアル重視）
+    - [x] ミニマル（白黒・印刷向け）
+  - [x] テンプレート切り替え機能
+  - [x] テンプレート設定の保存
+- [x] パフォーマンス最適化
+  - [x] React.memo による再レンダリング抑制
+  - [x] useMemo/useCallback の適切な使用
+  - [x] 仮想スクロール（長い日程の場合）
+  - [x] 画像の遅延読み込み
 
 **期待される効果**:
 - 視覚的に観光ルートを把握できる
@@ -545,7 +545,7 @@ journee/
 - [ ] PDFプレビュー機能
 - [ ] PDF出力ボタンUIの実装
 
-#### 5.4 マイページ・栞一覧・設定ページ 🆕
+#### 5.4 マイページ・しおり一覧・設定ページ 🆕
 **目的**: ユーザー管理とアプリケーション設定の一元管理
 
 ##### 5.4.1 マイページ（`/mypage`）
@@ -557,7 +557,7 @@ journee/
   - [ ] グラフ表示（Chart.js/Recharts）- 月別しおり作成数、訪問国分布
   - [ ] モックデータでの統計計算
 - [ ] クイックアクション
-  - [ ] `QuickActions.tsx` - 新規作成、栞一覧、設定へのナビゲーション
+  - [ ] `QuickActions.tsx` - 新規作成、しおり一覧、設定へのナビゲーション
   - [ ] ホバー効果・アニメーション
 - [ ] 最近のしおり表示（3-5件）
   - [ ] `ItineraryCard` コンポーネントの再利用
@@ -565,7 +565,7 @@ journee/
   - [ ] `app/mypage/page.tsx` の作成
   - [ ] 認証チェック（未認証時はログインページへリダイレクト）
 
-##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用
+##### 5.4.2 しおり一覧ページ（`/itineraries`） - モックデータ使用
 - [ ] しおり一覧表示
   - [ ] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
   - [ ] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
@@ -738,6 +738,32 @@ journee/
 ## 🐛 バグ修正・技術的負債
 
 このセクションには、各Phaseから独立した既知のバグ修正や技術的負債の解消タスクをまとめます。
+
+### BUG-003: 予算自動更新バグ修正 ✅ **完了** (2025-10-07)
+**発生状況**: 
+個別スポットの予算（estimatedCost）を変更しても、日別の総予算（DaySchedule.totalCost）やしおり全体の総予算（ItineraryData.totalBudget）が自動更新されない
+
+**修正内容**:
+- [x] 予算計算ヘルパー関数の作成（`lib/utils/budget-utils.ts`）
+  - `calculateDayTotalCost`: 1日の総予算を計算
+  - `calculateTotalBudget`: しおり全体の総予算を計算
+  - `updateDayBudget`: DayScheduleの予算を更新
+  - `updateItineraryBudget`: ItineraryDataの予算を更新
+- [x] Zustand storeの編集アクション修正（`lib/store/useStore.ts`）
+  - `updateSpot`: スポット編集時に予算を自動再計算
+  - `deleteSpot`: スポット削除時に予算を自動再計算
+  - `addSpot`: スポット追加時に予算を自動再計算
+  - `reorderSpots`: スポット並び替え時に予算を自動再計算
+  - `moveSpot`: スポット移動時に両日の予算を自動再計算
+
+**実装結果**:
+- ✅ スポットの予算変更時に自動的に日別・全体の総予算が更新される
+- ✅ スポット追加・削除・移動時も予算が正確に計算される
+- ✅ データの整合性が常に保たれる
+- ✅ Undo/Redoとも完全に統合
+- ✅ イミュータブルな状態更新を維持
+
+**詳細**: [docs/BUG_FIX_003_BUDGET_UPDATE.md](./docs/BUG_FIX_003_BUDGET_UPDATE.md)
 
 ### BUG-002: Phase 5.1.3 時刻と順番の整合性バグ修正 ✅ **完了** (2025-10-07)
 **発生状況**: 
@@ -1027,7 +1053,7 @@ MIT
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
 - ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
 - ✅ **Phase 5.4.1**: マイページ機能（プロフィール、統計、グラフ、クイックアクション）
-- ✅ **Phase 5.4.2**: 栞一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
+- ✅ **Phase 5.4.2**: しおり一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
 - ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
 - ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
   - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
@@ -1035,6 +1061,7 @@ MIT
   - ✅ Phase 6.3: モデル設定の一元管理・型安全性向上
 - ✅ **BUG-001**: JSON削除バグ修正（3段階防御システム、完全対応）
 - ✅ **BUG-002**: Phase 5.1.3 時刻と順番の整合性バグ修正（イミュータブル更新、即座レンダリング）
+- ✅ **BUG-003**: 予算自動更新バグ修正（スポット編集時の予算再計算、データ整合性保証）
 
 **次の実装**: 
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
