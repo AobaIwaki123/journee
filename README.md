@@ -555,7 +555,8 @@ journee/
 **詳細**: [docs/PHASE5_2_IMPLEMENTATION.md](./docs/PHASE5_2_IMPLEMENTATION.md)
 
 #### 5.3 PDF出力機能
-- [ ] PDF生成ライブラリの統合（react-pdf / jsPDF）
+- [ ] HTMLの見た目のままPDFに出力する
+- [ ] 日本語を扱うので文字化けに注意する
 - [ ] しおりのPDFレイアウト設計
 - [ ] PDF出力機能の実装
 - [ ] 印刷最適化
