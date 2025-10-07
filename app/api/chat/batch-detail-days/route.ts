@@ -93,8 +93,9 @@ async function processDayDetail(
         userMessage,
         request.chatHistory,
         request.currentItinerary,
-        'detailing',
-        day.day
+        undefined,      // apiKey: サーバーサイドなので環境変数から自動取得
+        'detailing',    // planningPhase
+        day.day         // currentDetailingDay
       )) {
       if (chunk.type === 'message' && chunk.content) {
         fullResponse += chunk.content;
