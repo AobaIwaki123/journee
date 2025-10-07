@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { ChatBox } from '@/components/chat/ChatBox';
 import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
 import { ErrorNotification } from '@/components/ui/ErrorNotification';
+import { StorageInitializer } from '@/components/layout/StorageInitializer';
 
 /**
  * メインページ（ホーム）
@@ -20,6 +21,9 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col h-screen">
+      {/* LocalStorageからデータ復元 */}
+      <StorageInitializer />
+
       {/* Header */}
       <Header />
 

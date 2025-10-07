@@ -421,20 +421,20 @@ journee/
 ### Phase 6: Claude API統合（Week 11）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
 
-#### 6.1 APIキー管理
-- [ ] APIキー管理UIの実装
-- [ ] ローカルストレージでのAPIキー保存（暗号化）
-- [ ] APIキーの検証機能
+#### 6.1 APIキー管理 ✅ **完了**
+- [x] APIキー管理UIの実装
+- [x] ローカルストレージでのAPIキー保存（暗号化）
+- [x] APIキーの検証機能
 
-#### 6.2 Claude API統合
-- [ ] Claude API クライアントの実装
-- [ ] ストリーミングレスポンス対応
-- [ ] Gemini APIと同じインターフェース実装
+#### 6.2 Claude API統合 ✅ **完了**
+- [x] Claude API クライアントの実装
+- [x] ストリーミングレスポンス対応
+- [x] Gemini APIと同じインターフェース実装
 
-#### 6.3 AIモデル切り替え機能
-- [ ] AIセレクターUIの拡張
-- [ ] モデル切り替え時の状態管理
-- [ ] AI切り替え時の動作確認とテスト
+#### 6.3 AIモデル切り替え機能 ✅ **完了**
+- [x] AIモデル設定の一元管理
+- [x] 型安全性の向上
+- [x] 設定ベースの拡張可能なアーキテクチャ
 
 ### Phase 7: UI最適化・レスポンシブ対応（Week 12-13）
 **目的**: デスクトップとモバイルの両方で最適なUXを提供
@@ -781,7 +781,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5 完了・統合済み → 次は BUG-001（JSON削除バグ修正）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 6完了 → 次は Phase 3.5.2（UI/UX改善）または Phase 4（段階的旅程構築）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -796,16 +796,25 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
+  - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
+  - ✅ Phase 6.2: Claude API完全統合（ストリーミング対応）
+  - ✅ Phase 6.3: モデル設定の一元管理・型安全性向上
+- ✅ **BUG-001**: JSON削除バグ修正（完全対応）
 
 **次の実装**: 
-- **BUG-001** - JSON削除バグ修正（優先）
+- **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
-- **Phase 6** - Claude API統合
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
-- [API ドキュメント](./PHASE3_API_DOCUMENTATION.md)
+- [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
+- [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
+- [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
+- [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
+- [API ドキュメント](./docs/PHASE3_API_DOCUMENTATION.md)
+- [クイックスタートガイド](./docs/QUICK_START.md)
