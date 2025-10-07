@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { ChatBox } from '@/components/chat/ChatBox';
 import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
 import { ErrorNotification } from '@/components/ui/ErrorNotification';
+import { LoadSampleButton } from '@/components/debug/LoadSampleButton';
 
 /**
  * メインページ（ホーム）
@@ -38,6 +39,9 @@ export default async function Home() {
 
       {/* Error Notification */}
       <ErrorNotification />
+
+      {/* Debug: Load Sample Data (開発環境のみ) */}
+      <LoadSampleButton />
     </div>
   );
 }

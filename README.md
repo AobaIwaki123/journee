@@ -274,14 +274,27 @@ journee/
 ### Phase 5: しおり機能統合（Week 8-10）
 **目的**: しおりの詳細表示、一時保存、PDF出力を統合的に実装
 
-#### 5.1 しおりコンポーネントの詳細実装
-- [ ] タイトル・サマリーコンポーネント
-- [ ] 日程表コンポーネント
-- [ ] 観光スポット詳細カード
-- [ ] 地図統合（Google Maps API）
-- [ ] リアルタイム更新機能
-- [ ] 編集機能の追加
-- [ ] しおりテンプレートの実装
+#### 5.1 しおりコンポーネントの詳細実装 ✅ **完了** (2025-10-07)
+- [x] タイトル・サマリーコンポーネントの詳細実装
+  - [x] `ItineraryHeader.tsx` - しおりヘッダー（タイトル、目的地、期間、予算、ステータス）
+  - [x] 編集ボタンの統合
+  - [x] グラデーション背景でビジュアル強化
+- [x] 日程表コンポーネントの強化
+  - [x] `DaySchedule.tsx` - 折りたたみ、タイトル編集、統計情報表示
+- [x] 観光スポット詳細カードの改善
+  - [x] `SpotCard.tsx` - 画像表示、カテゴリアイコン、Google Mapsリンク、編集ボタン
+  - [x] `EditSpotModal.tsx` - 全フィールド編集可能なモーダル
+- [x] 地図統合（Google Maps API）
+  - [x] `MapView.tsx` - マーカー、情報ウィンドウ、ルート描画、日別フィルタ
+- [x] リアルタイム更新機能の確認・強化
+- [x] 編集機能の追加
+- [x] しおりテンプレートの実装
+  - [x] `ItineraryTemplates.tsx` - 5種類のテンプレート選択UI
+  - [x] Zustand状態管理に統合
+
+**実装結果**: ✅ 8つのコンポーネント作成/更新、地図統合、編集機能、テンプレート選択  
+**詳細**: [docs/PHASE5.1_IMPLEMENTATION.md](./docs/PHASE5.1_IMPLEMENTATION.md)  
+**モックデータ**: `lib/mock-data/sample-itinerary.ts` - 京都・東京サンプルデータ（位置情報・画像付き）
 
 #### 5.2 一時保存機能（LocalStorage版）
 - [ ] モックストレージの実装（LocalStorage + Context）
@@ -644,7 +657,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3 完了・統合済み → 次は Phase 3.5（UI/UX改善・バグ修正）
+**開発状況**: ✅ Phase 1, 2, 3, 5.1 完了・統合済み → 次は Phase 4, 5.2
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -658,17 +671,20 @@ MIT
 - ✅ **Phase 3**: AIチャット機能（リアルタイムストリーミング対応）
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
+- ✅ **Phase 5.1**: しおりコンポーネントの詳細実装
+  - ✅ ヘッダー・日程表・スポットカード（画像、カテゴリ、編集）
+  - ✅ 地図統合（Google Maps API、マーカー、ルート描画）
+  - ✅ 編集モーダル、テンプレート選択UI
 
 **次の実装**: 
-- **BUG-001** - JSON削除バグ修正（優先）
-- **Phase 3.5** - UI/UX改善（マークダウンレンダリング）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
-- **Phase 6** - Claude API統合
+- **Phase 5.2** - 一時保存機能（LocalStorage版、自動保存）
+- **Phase 5.3** - PDF出力機能
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
-- [API ドキュメント](./PHASE3_API_DOCUMENTATION.md)
+- [Phase 5.1 実装完了レポート](./docs/PHASE5.1_IMPLEMENTATION.md) 🆕
+- [API ドキュメント](./docs/PHASE3_API_DOCUMENTATION.md)
