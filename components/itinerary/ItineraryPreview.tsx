@@ -108,6 +108,7 @@ export const ItineraryPreview: React.FC = () => {
           </div>
         )}
       </div>
+      </div>
 
       {/* Phase 4: クイックアクション */}
       <QuickActions />
