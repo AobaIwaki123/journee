@@ -66,6 +66,16 @@ export interface DaySchedule {
 }
 
 /**
+ * しおりテンプレート種類
+ */
+export type ItineraryTemplate = 
+  | "standard" 
+  | "photo" 
+  | "foodie" 
+  | "adventure" 
+  | "culture";
+
+/**
  * 旅のしおりデータ（詳細版）
  */
 export interface ItineraryData {
@@ -93,6 +103,8 @@ export interface ItineraryData {
   updatedAt: Date;
   /** 公開設定 */
   isPublic?: boolean;
+  /** テンプレート種類 */
+  template?: ItineraryTemplate;
 }
 
 /**

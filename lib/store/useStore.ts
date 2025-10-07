@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
-import { ItineraryData } from '@/types/itinerary';
+import { ItineraryData, ItineraryTemplate } from '@/types/itinerary';
 
 interface AppState {
   // Chat state
@@ -19,6 +19,8 @@ interface AppState {
   currentItinerary: ItineraryData | null;
   setItinerary: (itinerary: ItineraryData | null) => void;
   updateItinerary: (updates: Partial<ItineraryData>) => void;
+  selectedTemplate: ItineraryTemplate;
+  setSelectedTemplate: (template: ItineraryTemplate) => void;
 
   // UI state
   selectedAI: 'gemini' | 'claude';
@@ -55,6 +57,8 @@ export const useStore = create<AppState>((set) => ({
         ? { ...state.currentItinerary, ...updates }
         : null,
     })),
+  selectedTemplate: 'standard',
+  setSelectedTemplate: (template) => set({ selectedTemplate: template }),
 
   // UI state
   selectedAI: 'gemini',
