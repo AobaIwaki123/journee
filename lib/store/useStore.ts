@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { Message } from '@/types/chat';
 import { ItineraryData, TouristSpot, DaySchedule, ItineraryPhase, DayStatus } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
-import type { TemplateId } from '@/types/template';
 import type { AppSettings } from '@/types/settings';
 import { DEFAULT_SETTINGS } from '@/types/settings';
 import type {
@@ -176,10 +175,6 @@ interface AppState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
-
-  // Template state (Phase 5.1.3)
-  selectedTemplate: TemplateId;
-  setSelectedTemplate: (template: TemplateId) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -637,16 +632,12 @@ export const useStore = create<AppState>((set, get) => ({
     const savedAI = loadSelectedAI();
     const autoProgressMode = loadAutoProgressMode();
     const autoProgressSettings = loadAutoProgressSettings();
-    const savedTemplate = (typeof window !== 'undefined' 
-      ? localStorage.getItem('journee_template') 
-      : null) as TemplateId | null;
     const savedSettings = loadAppSettings();
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
       autoProgressMode,
       autoProgressSettings,
-      selectedTemplate: savedTemplate || 'classic',
       settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
     });
   },
@@ -753,15 +744,5 @@ export const useStore = create<AppState>((set, get) => ({
   canRedo: () => {
     const state = useStore.getState();
     return state.history.future.length > 0;
-  },
-
-  // Template state (Phase 5.1.3)
-  selectedTemplate: 'classic',
-  setSelectedTemplate: (template) => {
-    // LocalStorageに保存
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('journee_template', template);
-    }
-    set({ selectedTemplate: template });
   },
 }));
