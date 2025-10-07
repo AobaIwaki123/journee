@@ -3,6 +3,25 @@
  */
 
 /**
+ * 日程の状態（Phase 4: 段階的旅程構築システム）
+ * - draft: 未作成
+ * - skeleton: 骨組み作成済み（テーマのみ）
+ * - detailed: 詳細化済み（スポット追加済み）
+ * - completed: 完成
+ */
+export type DayStatus = 'draft' | 'skeleton' | 'detailed' | 'completed';
+
+/**
+ * しおり作成のフェーズ（Phase 4: 段階的旅程構築システム）
+ * - initial: 初期状態（しおり未作成）
+ * - collecting: 基本情報収集中（行き先、期間、興味等）
+ * - skeleton: 骨組み作成中（各日のテーマ決定）
+ * - detailing: 詳細化中（各日の具体的なスポット追加）
+ * - completed: 完成
+ */
+export type ItineraryPhase = 'initial' | 'collecting' | 'skeleton' | 'detailing' | 'completed';
+
+/**
  * 座標情報
  */
 export interface Location {
@@ -63,6 +82,10 @@ export interface DaySchedule {
   totalDistance?: number;
   /** その日の総予算（円） */
   totalCost?: number;
+  /** Phase 4: 日程の作成状態 */
+  status?: DayStatus;
+  /** Phase 4: その日のテーマ・コンセプト（例: 「京都の歴史巡り」「大阪グルメ満喫」） */
+  theme?: string;
 }
 
 /**
@@ -93,6 +116,10 @@ export interface ItineraryData {
   updatedAt: Date;
   /** 公開設定 */
   isPublic?: boolean;
+  /** Phase 4: しおり作成の現在のフェーズ */
+  phase?: ItineraryPhase;
+  /** Phase 4: 現在詳細化中の日（detailingフェーズで使用） */
+  currentDay?: number;
 }
 
 /**
