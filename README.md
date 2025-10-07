@@ -42,6 +42,7 @@ Journeeは、AIアシスタントと対話しながら旅行計画を立て、�
 ### デプロイ
 - **ホスティング**: Vercel
 - **環境変数管理**: Vercel Environment Variables
+- **デプロイ手順**: [VERCEL_DEPLOYMENT_GUIDE.md](./docs/VERCEL_DEPLOYMENT_GUIDE.md)
 
 ## 🏗 アーキテクチャ設計
 
@@ -1061,3 +1062,5 @@ MIT
 - [BUG-002修正レポート](./docs/BUG_FIX_5.1.3_TIME_CONSISTENCY.md)
 - [API ドキュメント](./docs/PHASE3_API_DOCUMENTATION.md)
 - [クイックスタートガイド](./docs/QUICK_START.md)
+- [Vercelデプロイガイド](./docs/VERCEL_DEPLOYMENT_GUIDE.md)
+- [デプロイチェックリスト](./docs/DEPLOYMENT_CHECKLIST.md)
