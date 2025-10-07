@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { TouristSpot } from '@/types/itinerary';
 import { 
   Clock, 
@@ -63,7 +63,7 @@ const getCategoryGradient = (category?: string): string => {
   return category ? gradients[category] || gradients.other : gradients.other;
 };
 
-export const SpotCard: React.FC<SpotCardProps> = ({ spot }) => {
+export const SpotCard: React.FC<SpotCardProps> = memo(({ spot }) => {
   return (
     <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-200 hover:border-blue-300">
       {/* Card Content */}
@@ -155,4 +155,6 @@ export const SpotCard: React.FC<SpotCardProps> = ({ spot }) => {
       <div className="absolute inset-0 border-2 border-blue-400 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
     </div>
   );
-};
+});
+
+SpotCard.displayName = 'SpotCard';

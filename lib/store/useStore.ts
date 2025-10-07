@@ -1,11 +1,18 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
 import { ItineraryData, TouristSpot, DaySchedule } from '@/types/itinerary';
+import { createHistoryUpdate } from './useStore-helper';
 
 interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'info';
+}
+
+interface HistoryState {
+  past: ItineraryData[];
+  present: ItineraryData | null;
+  future: ItineraryData[];
 }
 
 interface AppState {
@@ -53,6 +60,13 @@ interface AppState {
   // Editing state (Phase 5.1.2)
   isSaving: boolean;
   setSaving: (saving: boolean) => void;
+
+  // Undo/Redo state (Phase 5.1.3)
+  history: HistoryState;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -72,17 +86,33 @@ export const useStore = create<AppState>((set) => ({
 
   // Itinerary state
   currentItinerary: null,
-  setItinerary: (itinerary) => set({ currentItinerary: itinerary }),
+  setItinerary: (itinerary) => set((state) => ({
+    currentItinerary: itinerary,
+    history: {
+      past: itinerary ? [...state.history.past, state.currentItinerary].filter(Boolean) as ItineraryData[] : [],
+      present: itinerary,
+      future: [],
+    },
+  })),
   updateItinerary: (updates) =>
-    set((state) => ({
-      currentItinerary: state.currentItinerary
+    set((state) => {
+      const newItinerary = state.currentItinerary
         ? { 
             ...state.currentItinerary, 
             ...updates,
             updatedAt: new Date()
           }
-        : null,
-    })),
+        : null;
+      
+      return {
+        currentItinerary: newItinerary,
+        history: {
+          past: state.currentItinerary ? [...state.history.past, state.currentItinerary] : state.history.past,
+          present: newItinerary,
+          future: [],
+        },
+      };
+    }),
 
   // Itinerary editing actions (Phase 5.1.2)
   updateItineraryTitle: (title) =>
@@ -241,4 +271,55 @@ export const useStore = create<AppState>((set) => ({
   // Editing state (Phase 5.1.2)
   isSaving: false,
   setSaving: (saving) => set({ isSaving: saving }),
+
+  // Undo/Redo state (Phase 5.1.3)
+  history: {
+    past: [],
+    present: null,
+    future: [],
+  },
+
+  undo: () =>
+    set((state) => {
+      if (state.history.past.length === 0) return state;
+
+      const previous = state.history.past[state.history.past.length - 1];
+      const newPast = state.history.past.slice(0, -1);
+
+      return {
+        currentItinerary: previous,
+        history: {
+          past: newPast,
+          present: previous,
+          future: state.currentItinerary ? [state.currentItinerary, ...state.history.future] : state.history.future,
+        },
+      };
+    }),
+
+  redo: () =>
+    set((state) => {
+      if (state.history.future.length === 0) return state;
+
+      const next = state.history.future[0];
+      const newFuture = state.history.future.slice(1);
+
+      return {
+        currentItinerary: next,
+        history: {
+          past: state.currentItinerary ? [...state.history.past, state.currentItinerary] : state.history.past,
+          present: next,
+          future: newFuture,
+        },
+      };
+    }),
+
+  canUndo: () => {
+    const state = useStore.getState();
+    return state.history.past.length > 0;
+  },
+
+  canRedo: () => {
+    const state = useStore.getState();
+    return state.history.future.length > 0;
+  },
 }));

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Wallet, Calendar, TrendingUp } from 'lucide-react';
 import { ItineraryData } from '@/types/itinerary';
 
@@ -8,23 +8,23 @@ interface ItinerarySummaryProps {
   itinerary: ItineraryData;
 }
 
-export const ItinerarySummary: React.FC<ItinerarySummaryProps> = ({ itinerary }) => {
+export const ItinerarySummary: React.FC<ItinerarySummaryProps> = memo(({ itinerary }) => {
   // 総移動距離を計算
-  const totalDistance = itinerary.schedule.reduce(
-    (sum, day) => sum + (day.totalDistance || 0),
-    0
+  const totalDistance = useMemo(
+    () => itinerary.schedule.reduce((sum, day) => sum + (day.totalDistance || 0), 0),
+    [itinerary.schedule]
   );
 
   // 総費用を計算
-  const totalCost = itinerary.schedule.reduce(
-    (sum, day) => sum + (day.totalCost || 0),
-    0
+  const totalCost = useMemo(
+    () => itinerary.schedule.reduce((sum, day) => sum + (day.totalCost || 0), 0),
+    [itinerary.schedule]
   );
 
   // スポット総数を計算
-  const totalSpots = itinerary.schedule.reduce(
-    (sum, day) => sum + day.spots.length,
-    0
+  const totalSpots = useMemo(
+    () => itinerary.schedule.reduce((sum, day) => sum + day.spots.length, 0),
+    [itinerary.schedule]
   );
 
   return (
@@ -97,4 +97,6 @@ export const ItinerarySummary: React.FC<ItinerarySummaryProps> = ({ itinerary })
       </div>
     </div>
   );
-};
+});
+
+ItinerarySummary.displayName = 'ItinerarySummary';

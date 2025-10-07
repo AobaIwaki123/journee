@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { SpotCard } from './SpotCard';
 import { EditableSpotCard } from './EditableSpotCard';
 import { AddSpotForm } from './AddSpotForm';
+import { useStore } from '@/lib/store/useStore';
 import { ChevronDown, ChevronUp, MapPin, Wallet } from 'lucide-react';
 
 interface DayScheduleProps {
@@ -26,10 +28,24 @@ const getDayOfWeek = (dateString?: string): string => {
   }
 };
 
-export const DaySchedule: React.FC<DayScheduleProps> = ({ day, dayIndex, editable = true }) => {
+export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, editable = true }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const reorderSpots = useStore((state) => state.reorderSpots);
+  const addToast = useStore((state) => state.addToast);
 
   const dayOfWeek = getDayOfWeek(day.date);
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    reorderSpots(dayIndex, sourceIndex, destinationIndex);
+    addToast('スポットの順序を変更しました', 'info');
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
@@ -102,28 +118,65 @@ export const DaySchedule: React.FC<DayScheduleProps> = ({ day, dayIndex, editabl
               {/* Timeline Line */}
               <div className="absolute left-3 top-8 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-transparent" />
 
-              {/* Spots */}
-              <div className="space-y-6">
-                {day.spots.map((spot, index) => (
-                  <div key={spot.id} className="relative">
-                    {/* Timeline Dot */}
-                    <div className="absolute -left-8 top-5 w-6 h-6 bg-blue-500 rounded-full border-4 border-white shadow-md flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
+              {/* Spots - with Drag & Drop */}
+              {editable ? (
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId={`day-${dayIndex}`}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-6 ${snapshot.isDraggingOver ? 'bg-blue-50/50 rounded-lg p-2' : ''}`}
+                      >
+                        {day.spots.map((spot, index) => (
+                          <Draggable key={spot.id} draggableId={spot.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className="relative"
+                                style={{
+                                  ...provided.draggableProps.style,
+                                  opacity: snapshot.isDragging ? 0.8 : 1,
+                                }}
+                              >
+                                {/* Timeline Dot */}
+                                <div className="absolute -left-8 top-5 w-6 h-6 bg-blue-500 rounded-full border-4 border-white shadow-md flex items-center justify-center">
+                                  <div className="w-2 h-2 bg-white rounded-full" />
+                                </div>
 
-                    {/* Spot Card */}
-                    {editable ? (
-                      <EditableSpotCard 
-                        spot={spot} 
-                        dayIndex={dayIndex} 
-                        spotIndex={index} 
-                      />
-                    ) : (
-                      <SpotCard spot={spot} />
+                                {/* Drag Handle & Spot Card */}
+                                <div {...provided.dragHandleProps}>
+                                  <EditableSpotCard 
+                                    spot={spot} 
+                                    dayIndex={dayIndex} 
+                                    spotIndex={index} 
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
                     )}
-                  </div>
-                ))}
-              </div>
+                  </Droppable>
+                </DragDropContext>
+              ) : (
+                <div className="space-y-6">
+                  {day.spots.map((spot, index) => (
+                    <div key={spot.id} className="relative">
+                      {/* Timeline Dot */}
+                      <div className="absolute -left-8 top-5 w-6 h-6 bg-blue-500 rounded-full border-4 border-white shadow-md flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      </div>
+
+                      {/* Spot Card */}
+                      <SpotCard spot={spot} />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Add Spot Form */}
               {editable && (
@@ -142,4 +195,6 @@ export const DaySchedule: React.FC<DayScheduleProps> = ({ day, dayIndex, editabl
       )}
     </div>
   );
-};
+});
+
+DaySchedule.displayName = 'DaySchedule';

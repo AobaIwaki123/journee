@@ -351,10 +351,24 @@ journee/
 
 **詳細**: [docs/PHASE5.1.2_INTERACTIVE_FEATURES.md](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
 
-##### 5.1.3 高度な機能（Step 3）
-**目的**: 地図統合とテンプレート機能で完成度を高める
+##### 5.1.3 高度な機能（Step 3）✅ **完了** (2025-10-07)
+**目的**: ドラッグ&ドロップ、Undo/Redo、パフォーマンス最適化で完成度を高める
 
-- [ ] 地図統合（Google Maps API）
+- [x] ドラッグ&ドロップ並び替え
+  - [x] @hello-pangea/dndライブラリ統合
+  - [x] スポットの並び替え機能
+  - [x] ドラッグ中の視覚的フィードバック
+  - [x] Toast通知
+- [x] Undo/Redo機能
+  - [x] History状態管理
+  - [x] Undoボタン
+  - [x] Redoボタン
+  - [x] キーボードショートカット（Cmd/Ctrl + Z, Shift + Z）
+- [x] パフォーマンス最適化
+  - [x] React.memo適用（DaySchedule, SpotCard, ItineraryHeader, ItinerarySummary）
+  - [x] useMemo適用（ItinerarySummary）
+  - [x] displayName追加
+- [ ] 地図統合（Google Maps API） → 別フェーズへ延期
   - [ ] Google Maps JavaScript APIのセットアップ
   - [ ] `MapView.tsx` コンポーネントの実装
   - [ ] 観光スポットのマーカー表示
@@ -769,7 +783,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5, BUG-001, 5.1.1, 5.1.2 完了・統合済み → 次は Phase 4（段階的旅程構築）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5, BUG-001, 5.1.1, 5.1.2, 5.1.3 完了・統合済み → 次は Phase 5.2（一時保存）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -787,12 +801,12 @@ MIT
 - ✅ **BUG-001**: JSON削除バグ修正（3段階防御システム）
 - ✅ **Phase 5.1.1**: しおり基本表示コンポーネント（ヘッダー、サマリー、日程、スポット、空状態）
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
+- ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、パフォーマンス最適化）
 
 **次の実装**: 
-- **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 5.1.3** - 高度な機能（ドラッグ&ドロップ、Undo/Redo）
-- **Phase 5.2** - 一時保存機能（LocalStorage版）
+- **Phase 5.2** - 一時保存機能（LocalStorage版、自動保存）
 - **Phase 5.3** - PDF出力機能
+- **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 6** - Claude API統合
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 

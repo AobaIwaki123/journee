@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Calendar, MapPin, Clock } from 'lucide-react';
 import { ItineraryData } from '@/types/itinerary';
 import { EditableTitle } from './EditableTitle';
@@ -10,7 +10,7 @@ interface ItineraryHeaderProps {
   editable?: boolean;
 }
 
-export const ItineraryHeader: React.FC<ItineraryHeaderProps> = ({ itinerary, editable = true }) => {
+export const ItineraryHeader: React.FC<ItineraryHeaderProps> = memo(({ itinerary, editable = true }) => {
   return (
     <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white p-8 shadow-lg">
       <div className="max-w-4xl mx-auto">
@@ -83,4 +83,6 @@ export const ItineraryHeader: React.FC<ItineraryHeaderProps> = ({ itinerary, edi
       </div>
     </div>
   );
-};
+});
+
+ItineraryHeader.displayName = 'ItineraryHeader';
