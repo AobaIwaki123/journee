@@ -15,6 +15,27 @@ import {
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 
+/**
+ * しおりフィルター条件
+ */
+export interface ItineraryFilter {
+  status?: 'draft' | 'completed' | 'archived' | 'all';
+  destination?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+/**
+ * しおりソート条件
+ */
+export type ItinerarySortField = 'updatedAt' | 'createdAt' | 'title' | 'startDate';
+export type ItinerarySortOrder = 'asc' | 'desc';
+
+export interface ItinerarySort {
+  field: ItinerarySortField;
+  order: ItinerarySortOrder;
+}
+
 interface AppState {
   // Chat state
   messages: Message[];
@@ -32,6 +53,13 @@ interface AppState {
   currentItinerary: ItineraryData | null;
   setItinerary: (itinerary: ItineraryData | null) => void;
   updateItinerary: (updates: Partial<ItineraryData>) => void;
+
+  // Itinerary list state
+  itineraryFilter: ItineraryFilter;
+  itinerarySort: ItinerarySort;
+  setItineraryFilter: (filter: ItineraryFilter) => void;
+  setItinerarySort: (sort: ItinerarySort) => void;
+  resetItineraryFilters: () => void;
 
   // UI state
   selectedAI: AIModelId;
@@ -76,6 +104,22 @@ export const useStore = create<AppState>((set) => ({
         ? { ...state.currentItinerary, ...updates }
         : null,
     })),
+
+  // Itinerary list state
+  itineraryFilter: {
+    status: 'all',
+  },
+  itinerarySort: {
+    field: 'updatedAt',
+    order: 'desc',
+  },
+  setItineraryFilter: (filter) => set({ itineraryFilter: filter }),
+  setItinerarySort: (sort) => set({ itinerarySort: sort }),
+  resetItineraryFilters: () =>
+    set({
+      itineraryFilter: { status: 'all' },
+      itinerarySort: { field: 'updatedAt', order: 'desc' },
+    }),
 
   // UI state
   selectedAI: DEFAULT_AI_MODEL,

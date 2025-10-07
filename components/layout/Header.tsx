@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Plane, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Plane, Settings, BookOpen } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { UserMenu } from '@/components/auth/UserMenu';
@@ -15,16 +16,30 @@ export const Header: React.FC = () => {
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="bg-blue-500 rounded-lg p-2">
-            <Plane className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Journee</h1>
-            <p className="text-xs text-gray-500">AI旅のしおり作成</p>
-          </div>
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="bg-blue-500 rounded-lg p-2">
+              <Plane className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Journee</h1>
+              <p className="text-xs text-gray-500">AI旅のしおり作成</p>
+            </div>
+          </Link>
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* しおり一覧ボタン */}
+          {session && (
+            <Link
+              href="/itineraries"
+              className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="しおり一覧"
+            >
+              <BookOpen className="w-5 h-5" />
+              <span className="hidden sm:inline">しおり一覧</span>
+            </Link>
+          )}
+
           {/* 設定ボタン */}
           {session && (
             <button
@@ -45,6 +60,7 @@ export const Header: React.FC = () => {
           ) : (
             <LoginButton />
           )}
+          </div>
         </div>
       </div>
     </header>

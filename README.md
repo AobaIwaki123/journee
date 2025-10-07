@@ -536,24 +536,29 @@ journee/
   - [ ] `app/mypage/page.tsx` の作成
   - [ ] 認証チェック（未認証時はログインページへリダイレクト）
 
-##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用
-- [ ] しおり一覧表示
-  - [ ] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
-  - [ ] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
-  - [ ] クイックアクション（開く、PDF出力、削除）
-  - [ ] 空状態の表示（しおり0件の場合）
-- [ ] フィルター機能
-  - [ ] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
-  - [ ] フィルター状態の管理（Zustand）
-- [ ] ソート機能
-  - [ ] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
-  - [ ] 昇順/降順切り替え
-- [ ] モックデータ作成
-  - [ ] `lib/mock-data/itineraries.ts` - 10-20件のサンプルデータ
-  - [ ] LocalStorage連携（一時保存）
-- [ ] ページレイアウト実装
-  - [ ] `app/itineraries/page.tsx` の作成
-  - [ ] レスポンシブデザイン（デスクトップ: 3-4列、タブレット: 2列、モバイル: 1列）
+##### 5.4.2 栞一覧ページ（`/itineraries`） - モックデータ使用 ✅ **完了**
+- [x] しおり一覧表示
+  - [x] `ItineraryList.tsx` - グリッドレイアウト（レスポンシブ）
+  - [x] `ItineraryCard.tsx` - サムネイル、タイトル、目的地、期間、ステータスバッジ
+  - [x] クイックアクション（開く、PDF出力、削除）
+  - [x] 空状態の表示（しおり0件の場合）
+- [x] フィルター機能
+  - [x] `ItineraryFilters.tsx` - ステータス、期間、目的地検索
+  - [x] フィルター状態の管理（Zustand）
+- [x] ソート機能
+  - [x] `ItinerarySortMenu.tsx` - 更新日、作成日、タイトル、旅行開始日
+  - [x] 昇順/降順切り替え
+- [x] モックデータ作成
+  - [x] `lib/mock-data/itineraries.ts` - 15件のサンプルデータ
+  - [x] LocalStorage連携（一時保存）
+- [x] ページレイアウト実装
+  - [x] `app/itineraries/page.tsx` の作成
+  - [x] レスポンシブデザイン（デスクトップ: 4列、タブレット: 2-3列、モバイル: 1列）
+- [x] 認証保護（ミドルウェア設定）
+- [x] Headerコンポーネントの更新（しおり一覧リンク）
+- [x] StorageInitializerの更新（URLパラメータ対応）
+
+**詳細**: [docs/PHASE5_4_2_IMPLEMENTATION.md](./docs/PHASE5_4_2_IMPLEMENTATION.md)
 
 ##### 5.4.3 設定ページ（`/settings`） ✅ **完了** (2025-10-07)
 - [x] 一般設定
@@ -965,7 +970,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.4.3, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）または Phase 4（段階的旅程構築）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.4.2, 5.4.3, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）、Phase 4（段階的旅程構築）または Phase 5.4.1（マイページ）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -980,6 +985,7 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 5.4.2**: 栞一覧ページ（フィルター・ソート機能、モックデータ、LocalStorage連携）
 - ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
   - ✅ 一般設定（言語、タイムゾーン、日付フォーマット、通貨）
   - ✅ AI設定（モデル選択、APIキー管理）
@@ -997,7 +1003,7 @@ MIT
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
-- **Phase 5.4.1/5.4.2** - マイページ・栞一覧ページ（ユーザー管理、モックデータ）
+- **Phase 5.4.1** - マイページ（ユーザー統計、プロフィール）
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
@@ -1006,7 +1012,8 @@ MIT
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
 - [Phase 5.4 マイページ・栞一覧・設定ページ実装計画](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
-- [Phase 5.4.3 設定ページ実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md) 🆕
+- [Phase 5.4.2 実装完了レポート](./docs/PHASE5_4_2_IMPLEMENTATION.md)
+- [Phase 5.4.3 設定ページ実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
