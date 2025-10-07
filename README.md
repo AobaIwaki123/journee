@@ -277,43 +277,46 @@ journee/
 - [ ] 日程詳細化のテスト（複数日）
 - [ ] ユーザー介入（修正要求）のテスト
 
-#### 4.8 フェーズ移動処理の半自動化 🆕
+#### 4.8 フェーズ移動処理の半自動化 🆕 ✅ **部分完了**（4.8.1-4.8.3）
 **目的**: チャット内容から自動的に必要情報の充足度を判定し、次のフェーズへ進むタイミングを視覚的に示す
 
-##### 4.8.1 情報充足度チェックシステム
-- [ ] チェックリスト型定義の作成
-  - [ ] `RequirementChecklistItem` 型（項目名、必須/オプション、充足状態）
-  - [ ] `PhaseRequirements` 型（各フェーズで必要な情報のリスト）
-  - [ ] `ChecklistStatus` 型（全体の充足率、必須項目の充足状態）
-- [ ] 状態管理の拡張（Zustand）
-  - [ ] `requirementsChecklist` 状態の追加
-  - [ ] `checklistStatus` 状態の追加
-  - [ ] `updateChecklist` アクション
-  - [ ] `calculateCompletionRate` 関数
+##### 4.8.1 情報充足度チェックシステム ✅ **完了**
+- [x] チェックリスト型定義の作成
+  - [x] `RequirementChecklistItem` 型（項目名、必須/オプション、充足状態）
+  - [x] `PhaseRequirements` 型（各フェーズで必要な情報のリスト）
+  - [x] `ChecklistStatus` 型（全体の充足率、必須項目の充足状態）
+  - [x] `ButtonReadiness` 型（ボタンの準備度）
+- [x] 状態管理の拡張（Zustand）
+  - [x] `requirementsChecklist` 状態の追加
+  - [x] `checklistStatus` 状態の追加
+  - [x] `buttonReadiness` 状態の追加
+  - [x] `updateChecklist` アクション
+  - [x] `getChecklistForPhase` 関数
 
-##### 4.8.2 チャット内容の自動解析
-- [ ] 情報抽出ロジックの実装
-  - [ ] `extractTravelInfo` 関数（チャット履歴から旅行情報を抽出）
-  - [ ] 場所（destination）の検出
-  - [ ] 日程（startDate, endDate, duration）の検出
-  - [ ] 人数（travelersCount）の検出
-  - [ ] 予算（budget）の検出
-  - [ ] 興味・テーマ（interests）の検出
-- [ ] リアルタイム更新
-  - [ ] メッセージ追加時にチェックリストを自動更新
-  - [ ] しおりデータ更新時にチェックリストを自動更新
+##### 4.8.2 チャット内容の自動解析 ✅ **完了**
+- [x] 情報抽出ロジックの実装
+  - [x] `extractDestination` 関数（行き先の検出）
+  - [x] `extractDuration` 関数（日程の検出）
+  - [x] `extractBudget` 関数（予算の検出）
+  - [x] `extractTravelers` 関数（人数の検出）
+  - [x] `extractInterests` 関数（興味・テーマの検出）
+  - [x] `extractThemeIdeas`, `extractAreaPreferences` など
+- [x] リアルタイム更新
+  - [x] メッセージ追加時にチェックリストを自動更新
+  - [x] しおりデータ更新時にチェックリストを自動更新
+  - [x] `useEffect`でチェックリストを監視
 
-##### 4.8.3 QuickActionsボタンの動的スタイリング
-- [ ] ボタンスタイルの条件分岐
-  - [ ] 必須情報が揃っている場合: 強調表示（緑/脈動アニメーション）
-  - [ ] 一部情報が不足: 通常表示（青）
-  - [ ] 情報が大幅に不足: 抑制表示（グレー + 警告アイコン）
-- [ ] ツールチップの動的表示
-  - [ ] 不足している情報を列挙
-  - [ ] 「このまま進む」オプションの表示
-- [ ] アテンション効果
-  - [ ] 必須情報が揃った瞬間にアニメーション
-  - [ ] 通知音（オプション）
+##### 4.8.3 QuickActionsボタンの動的スタイリング ✅ **完了**
+- [x] ボタンスタイルの条件分岐
+  - [x] 必須情報が揃っている場合: 強調表示（緑/脈動アニメーション）
+  - [x] 一部情報が不足: 通常表示（青）
+  - [x] 情報が大幅に不足: 抑制表示（グレー + 警告アイコン）
+- [x] ツールチップの動的表示
+  - [x] 不足している情報を列挙（`buttonReadiness.tooltip`）
+  - [x] 画面下部に不足情報のヒント表示
+- [x] アテンション効果
+  - [x] 必須情報が揃った瞬間に脈動アニメーション（`animate-pulse`）
+  - [x] アイコンの動的変化（Check/AlertCircle/ArrowRight）
 
 ##### 4.8.4 チェックリスト表示UI
 - [ ] `RequirementsChecklist` コンポーネント

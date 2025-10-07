@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
 import { ItineraryData, ItineraryPhase, DayStatus } from '@/types/itinerary';
+import type {
+  RequirementChecklistItem,
+  ChecklistStatus,
+  ButtonReadiness,
+} from '@/types/requirements';
+import { getRequirementsForPhase } from '@/lib/requirements/checklist-config';
+import {
+  calculateChecklistStatus,
+  determineButtonReadiness,
+} from '@/lib/requirements/checklist-utils';
 
 interface AppState {
   // Chat state
@@ -27,6 +37,13 @@ interface AppState {
   setCurrentDetailingDay: (day: number | null) => void;
   proceedToNextStep: () => void;
   resetPlanning: () => void;
+  
+  // Phase 4.8: Requirements checklist state
+  requirementsChecklist: RequirementChecklistItem[];
+  checklistStatus: ChecklistStatus | null;
+  buttonReadiness: ButtonReadiness | null;
+  updateChecklist: () => void;
+  getChecklistForPhase: (phase: ItineraryPhase) => RequirementChecklistItem[];
 
   // UI state
   selectedAI: 'gemini' | 'claude';
@@ -39,7 +56,7 @@ interface AppState {
   setError: (error: string | null) => void;
 }
 
-export const useStore = create<AppState>((set) => ({
+export const useStore = create<AppState>((set, get) => ({
   // Chat state
   messages: [],
   isLoading: false,
@@ -135,7 +152,55 @@ export const useStore = create<AppState>((set) => ({
     set({
       planningPhase: 'initial',
       currentDetailingDay: null,
+      requirementsChecklist: [],
+      checklistStatus: null,
+      buttonReadiness: null,
     }),
+  
+  // Phase 4.8: Requirements checklist state
+  requirementsChecklist: [],
+  checklistStatus: null,
+  buttonReadiness: null,
+  
+  // Phase 4.8: Update requirements checklist
+  updateChecklist: () => {
+    const { messages, currentItinerary, planningPhase } = get();
+    
+    // 現在のフェーズの要件を取得
+    const requirements = getRequirementsForPhase(planningPhase);
+    
+    // 各項目を評価
+    const updatedItems = requirements.items.map(item => {
+      if (item.extractor) {
+        const value = item.extractor(messages, currentItinerary || undefined);
+        const status = value ? 'filled' : 'empty';
+        return {
+          ...item,
+          value,
+          status,
+        } as RequirementChecklistItem;
+      }
+      return item;
+    });
+    
+    // 充足率を計算
+    const status = calculateChecklistStatus(updatedItems, requirements);
+    
+    // ボタンの準備度を決定
+    const readiness = determineButtonReadiness(status, planningPhase);
+    
+    set({
+      requirementsChecklist: updatedItems,
+      checklistStatus: status,
+      buttonReadiness: readiness,
+    });
+  },
+  
+  // Get checklist for specific phase
+  getChecklistForPhase: (phase: ItineraryPhase) => {
+    const requirements = getRequirementsForPhase(phase);
+    return requirements.items;
+  },
 
   // UI state
   selectedAI: 'gemini',
