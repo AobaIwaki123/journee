@@ -276,13 +276,16 @@ export const useStore = create<AppState>((set) => ({
       const [spot] = fromDay.spots.splice(spotIndex, 1);
       toDay.spots.push(spot);
 
-      return {
-        currentItinerary: {
-          ...state.currentItinerary,
-          schedule: newSchedule,
-          updatedAt: new Date(),
-        },
+      // スポット追加後、移動先の日を時刻順にソート
+      toDay.spots = sortSpotsByTime(toDay.spots);
+
+      const newItinerary = {
+        ...state.currentItinerary,
+        schedule: newSchedule,
+        updatedAt: new Date(),
       };
+
+      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
     }),
 
   // UI state

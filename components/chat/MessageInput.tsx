@@ -73,6 +73,10 @@ export const MessageInput: React.FC = () => {
             currentItinerary || undefined,
             chunk.itinerary
           );
+          console.log('[MessageInput] Received itinerary:', {
+            title: mergedItinerary.title,
+            scheduleLength: mergedItinerary.schedule?.length || 0
+          });
           setItinerary(mergedItinerary);
         } else if (chunk.type === 'error') {
           // エラーを受信
@@ -84,7 +88,15 @@ export const MessageInput: React.FC = () => {
       }
 
       // ストリーミング完了後、JSONブロックを削除してAIメッセージを追加
-      const { message: cleanMessage } = parseAIResponse(fullResponse);
+      const { message: cleanMessage, itineraryData } = parseAIResponse(fullResponse);
+      
+      console.log('[MessageInput] Stream complete:', {
+        fullResponse: fullResponse.substring(0, 200),
+        cleanMessage: cleanMessage.substring(0, 200),
+        hasItineraryData: !!itineraryData,
+        receivedItinerary,
+        currentItinerary: !!currentItinerary
+      });
       
       const aiMessage = {
         id: `assistant-${Date.now()}`,
