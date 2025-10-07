@@ -18,6 +18,11 @@ import {
   removeClaudeApiKey,
   saveSelectedAI,
   loadSelectedAI,
+  saveAutoProgressMode,
+  loadAutoProgressMode,
+  saveAutoProgressSettings,
+  loadAutoProgressSettings,
+  type AutoProgressSettings,
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 
@@ -53,6 +58,16 @@ interface AppState {
   buttonReadiness: ButtonReadiness | null;
   updateChecklist: () => void;
   getChecklistForPhase: (phase: ItineraryPhase) => RequirementChecklistItem[];
+
+  // Phase 4.10: Auto progress state
+  autoProgressMode: boolean;
+  autoProgressSettings: AutoProgressSettings;
+  isAutoProgressing: boolean;
+  enableAutoProgress: () => void;
+  disableAutoProgress: () => void;
+  setAutoProgressSettings: (settings: AutoProgressSettings) => void;
+  setIsAutoProgressing: (value: boolean) => void;
+  shouldTriggerAutoProgress: () => boolean;
 
   // UI state
   selectedAI: AIModelId;
@@ -212,6 +227,50 @@ export const useStore = create<AppState>((set, get) => ({
     const requirements = getRequirementsForPhase(phase);
     return requirements.items;
   },
+  
+  // Phase 4.10: Auto progress actions
+  enableAutoProgress: () => {
+    saveAutoProgressMode(true);
+    set({ autoProgressMode: true });
+  },
+  disableAutoProgress: () => {
+    saveAutoProgressMode(false);
+    set({ autoProgressMode: false });
+  },
+  setAutoProgressSettings: (settings) => {
+    saveAutoProgressSettings(settings);
+    set({ autoProgressSettings: settings });
+  },
+  setIsAutoProgressing: (value) => set({ isAutoProgressing: value }),
+  
+  /**
+   * Phase 4.10.1: 自動進行をトリガーすべきか判定
+   */
+  shouldTriggerAutoProgress: () => {
+    const state = get();
+    
+    // 自動進行モードがOFFなら false
+    if (!state.autoProgressMode || !state.autoProgressSettings.enabled) {
+      return false;
+    }
+    
+    // すでに自動進行中なら false
+    if (state.isAutoProgressing) {
+      return false;
+    }
+    
+    // collecting フェーズでのみトリガー
+    if (state.planningPhase !== 'collecting') {
+      return false;
+    }
+    
+    // 必須情報が揃っているかチェック
+    if (!state.checklistStatus?.allRequiredFilled) {
+      return false;
+    }
+    
+    return true;
+  },
 
   // UI state
   selectedAI: DEFAULT_AI_MODEL,
@@ -233,9 +292,13 @@ export const useStore = create<AppState>((set, get) => ({
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
     const savedAI = loadSelectedAI();
+    const autoProgressMode = loadAutoProgressMode();
+    const autoProgressSettings = loadAutoProgressSettings();
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
+      autoProgressMode,
+      autoProgressSettings,
     });
   },
 
