@@ -83,6 +83,12 @@ export interface DaySchedule {
   status?: DayStatus;
   /** Phase 4: この日のテーマ・コンセプト（骨組み作成時に使用） */
   theme?: string;
+  /** Phase 4.9.3: ローディング状態 */
+  isLoading?: boolean;
+  /** Phase 4.9.3: エラー情報 */
+  error?: string;
+  /** Phase 4.9.3: 進捗率（0-100） */
+  progress?: number;
 }
 
 /**

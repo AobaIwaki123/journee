@@ -3,13 +3,15 @@
 import React from 'react';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { SpotCard } from './SpotCard';
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { Sparkles, CheckCircle2, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface DayScheduleProps {
   day: DayScheduleType;
+  /** Phase 4.9.4: 再試行コールバック */
+  onRetry?: (dayNumber: number) => void;
 }
 
-export const DaySchedule: React.FC<DayScheduleProps> = ({ day }) => {
+export const DaySchedule: React.FC<DayScheduleProps> = ({ day, onRetry }) => {
   // Phase 4: ステータスに応じたバッジ表示
   const getStatusBadge = () => {
     if (!day.status) return null;
@@ -78,8 +80,52 @@ export const DaySchedule: React.FC<DayScheduleProps> = ({ day }) => {
         </div>
       </div>
 
+      {/* Phase 4.9.3: ローディング状態・エラー表示 */}
+      {day.isLoading && (
+        <div className="ml-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-center space-x-3">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900">詳細化中...</p>
+              {day.progress !== undefined && day.progress > 0 && (
+                <div className="mt-2">
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${day.progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-700 mt-1">{day.progress}%</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {day.error && (
+        <div className="ml-8 p-4 bg-red-50 rounded-lg border border-red-200">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900">エラーが発生しました</p>
+              <p className="text-xs text-red-700 mt-1">{day.error}</p>
+            </div>
+            {onRetry && (
+              <button
+                onClick={() => onRetry(day.day)}
+                className="flex items-center space-x-1 px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>再試行</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Spots */}
-      {day.spots.length > 0 ? (
+      {!day.isLoading && !day.error && day.spots.length > 0 ? (
         <div className="space-y-4 ml-8">
           {day.spots.map((spot, index) => (
             <React.Fragment key={spot.id}>
@@ -92,7 +138,7 @@ export const DaySchedule: React.FC<DayScheduleProps> = ({ day }) => {
             </React.Fragment>
           ))}
         </div>
-      ) : (
+      ) : !day.isLoading && !day.error ? (
         <div className="ml-8 p-4 bg-gray-50 rounded-lg text-center">
           {day.status === 'skeleton' ? (
             <div className="text-gray-600 text-sm">
@@ -108,7 +154,7 @@ export const DaySchedule: React.FC<DayScheduleProps> = ({ day }) => {
             </p>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

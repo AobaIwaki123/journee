@@ -45,17 +45,23 @@ class Semaphore {
 
 /**
  * 各日の詳細化を並列実行
+ * Phase 4.9.4: タイムアウトとリトライ処理を追加
  */
 async function processDayDetail(
   day: DayDetailTask,
   request: BatchDayDetailRequest,
   semaphore: Semaphore,
   encoder: TextEncoder,
-  controller: ReadableStreamDefaultController
+  controller: ReadableStreamDefaultController,
+  timeout: number = 120000 // デフォルト120秒
 ): Promise<{ day: number; success: boolean; error?: string }> {
-  try {
-    // セマフォを取得（並列数制限）
-    await semaphore.acquire();
+  const maxRetries = 2;
+  let retryCount = 0;
+  
+  while (retryCount <= maxRetries) {
+    try {
+      // セマフォを取得（並列数制限）
+      await semaphore.acquire();
     
     // 開始通知
     const startChunk: MultiStreamChunk = {
@@ -77,14 +83,20 @@ async function processDayDetail(
     let fullResponse = '';
     let dayItinerary: Partial<ItineraryData> | undefined;
     
-    // Gemini APIをストリーミングで呼び出し
-    for await (const chunk of streamGeminiMessage(
-      userMessage,
-      request.chatHistory,
-      request.currentItinerary,
-      'detailing',
-      day.day
-    )) {
+    // Phase 4.9.4: タイムアウト処理
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`Timeout after ${timeout}ms`)), timeout);
+    });
+    
+    const streamPromise = (async () => {
+      // Gemini APIをストリーミングで呼び出し
+      for await (const chunk of streamGeminiMessage(
+        userMessage,
+        request.chatHistory,
+        request.currentItinerary,
+        'detailing',
+        day.day
+      )) {
       if (chunk.type === 'message' && chunk.content) {
         fullResponse += chunk.content;
         
@@ -108,7 +120,11 @@ async function processDayDetail(
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(itineraryChunk)}\n\n`));
       }
-    }
+      }
+    })();
+    
+    // タイムアウトとストリーミングをレース
+    await Promise.race([streamPromise, timeoutPromise]);
     
     // 完了通知
     const completeChunk: MultiStreamChunk = {
@@ -121,13 +137,39 @@ async function processDayDetail(
     return { day: day.day, success: true };
     
   } catch (error: any) {
-    console.error(`Error processing day ${day.day}:`, error);
+    console.error(`Error processing day ${day.day} (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
     
-    // エラー通知
+    // Phase 4.9.4: リトライ判定
+    const isRetryable = retryCount < maxRetries && 
+      (error.message?.includes('Timeout') || 
+       error.message?.includes('rate limit') ||
+       error.message?.includes('429'));
+    
+    if (isRetryable) {
+      retryCount++;
+      const waitTime = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff (最大5秒)
+      console.log(`Retrying day ${day.day} after ${waitTime}ms...`);
+      
+      // 再試行通知
+      const retryChunk: MultiStreamChunk = {
+        type: 'message',
+        day: day.day,
+        content: `\n[再試行中... (${retryCount}/${maxRetries})]`,
+        timestamp: Date.now(),
+      };
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(retryChunk)}\n\n`));
+      
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      continue; // リトライ
+    }
+    
+    // リトライ不可またはリトライ回数超過 - エラー通知
     const errorChunk: MultiStreamChunk = {
       type: 'day_error',
       day: day.day,
-      error: error.message || 'Unknown error',
+      error: retryCount > 0 
+        ? `${error.message} (${retryCount}回の再試行後に失敗)`
+        : error.message || 'Unknown error',
       timestamp: Date.now(),
     };
     controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`));
@@ -138,6 +180,10 @@ async function processDayDetail(
     // セマフォを解放
     semaphore.release();
   }
+  }
+  
+  // すべてのリトライが失敗した場合
+  return { day: day.day, success: false, error: 'Max retries exceeded' };
 }
 
 /**
@@ -147,7 +193,7 @@ async function processDayDetail(
 export async function POST(request: NextRequest) {
   try {
     const body: BatchDayDetailRequest = await request.json();
-    const { days, maxParallel = 3 } = body;
+    const { days, maxParallel = 3, timeout = 120000 } = body; // Phase 4.9.4: タイムアウト設定
     
     // セマフォを作成（並列数を制限）
     const semaphore = new Semaphore(maxParallel);
@@ -162,9 +208,9 @@ export async function POST(request: NextRequest) {
         let errorDays: number[] = [];
         
         try {
-          // 全ての日を並列処理
+          // 全ての日を並列処理（Phase 4.9.4: タイムアウト付き）
           const tasks = days.map(day =>
-            processDayDetail(day, body, semaphore, encoder, controller)
+            processDayDetail(day, body, semaphore, encoder, controller, timeout)
           );
           
           // 各タスクの完了を待つ

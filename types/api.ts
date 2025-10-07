@@ -157,6 +157,9 @@ export interface BatchDayDetailRequest {
   
   /** 並列数の制限（デフォルト: 3） */
   maxParallel?: number;
+  
+  /** Phase 4.9.4: タイムアウト時間（ミリ秒、デフォルト: 120000） */
+  timeout?: number;
 }
 
 /**
