@@ -404,26 +404,33 @@ journee/
 - [ ] セキュリティ監査
 - [ ] コードレビュー・リファクタリング
 
-### Phase 10: デプロイ・運用（Week 17-18）
+### Phase 10: デプロイ・運用（Week 17-18）✅ **完了**
 **目的**: 本番環境へのデプロイと運用体制の確立
 
-#### 10.1 デプロイ設定
-- [ ] Vercelへのデプロイ
-- [ ] 環境変数の設定
-- [ ] ドメイン設定
-- [ ] SSL証明書の設定
+#### 10.1 デプロイ設定 ✅
+- [x] 依存関係の修正（react-markdown追加）
+- [x] ビルドスクリプトの最適化
+- [x] next.config.jsの本番環境設定
+- [x] vercel.json設定ファイルの作成
+- [x] .env.exampleの更新
+- [x] ローカルでのプロダクションビルドテスト
+- [x] セキュリティヘッダーの実装
+- [x] Vercelデプロイ準備完了
 
-#### 10.2 モニタリング・ログ
+#### 10.2 ドキュメント整備 ✅
+- [x] Vercelデプロイ手順書（docs/VERCEL_DEPLOYMENT.md）
+- [x] 環境変数設定ガイド（docs/ENVIRONMENT_VARIABLES.md）
+- [x] デプロイチェックリスト
+- [x] トラブルシューティングガイド
+
+#### 10.3 今後の運用タスク（デプロイ後）
+- [ ] 実際のVercelデプロイ実行
+- [ ] カスタムドメインの設定（オプション）
 - [ ] モニタリング設定（Vercel Analytics）
 - [ ] エラートラッキング（Sentry等）
-- [ ] ログ管理
-- [ ] アラート設定
+- [ ] ログ管理・アラート設定
 
-#### 10.3 ドキュメント整備
-- [ ] API ドキュメント
-- [ ] ユーザーガイド作成
-- [ ] 開発者向けドキュメント
-- [ ] トラブルシューティングガイド
+**詳細**: [docs/PHASE10_DEPLOYMENT_COMPLETE.md](./docs/PHASE10_DEPLOYMENT_COMPLETE.md)
 
 ## 🐛 バグ修正・技術的負債
 
@@ -644,7 +651,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3 完了・統合済み → 次は Phase 3.5（UI/UX改善・バグ修正）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5, 10 完了 → 次は BUG-001（JSON削除バグ修正）または Phase 4（段階的旅程構築）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -658,10 +665,16 @@ MIT
 - ✅ **Phase 3**: AIチャット機能（リアルタイムストリーミング対応）
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
+- ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 10**: Vercelデプロイ準備完了
+  - 本番環境設定（next.config.js、vercel.json）
+  - セキュリティヘッダー実装
+  - デプロイドキュメント作成
+  - 環境変数ガイド作成
 
 **次の実装**: 
-- **BUG-001** - JSON削除バグ修正（優先）
-- **Phase 3.5** - UI/UX改善（マークダウンレンダリング）
+- **実際のVercelデプロイ** - [デプロイ手順書](./docs/VERCEL_DEPLOYMENT.md)を参照
+- **BUG-001** - JSON削除バグ修正
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
 - **Phase 6** - Claude API統合
@@ -671,4 +684,7 @@ MIT
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
+- [Phase 10 デプロイ完了レポート](./docs/PHASE10_DEPLOYMENT_COMPLETE.md)
+- [Vercelデプロイ手順](./docs/VERCEL_DEPLOYMENT.md)
+- [環境変数設定ガイド](./docs/ENVIRONMENT_VARIABLES.md)
 - [API ドキュメント](./PHASE3_API_DOCUMENTATION.md)
