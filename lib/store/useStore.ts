@@ -163,23 +163,32 @@ export const useStore = create<AppState>((set) => ({
       if (!state.currentItinerary) return state;
 
       const newSchedule = [...state.currentItinerary.schedule];
-      const daySchedule = newSchedule[dayIndex];
+      const oldDaySchedule = newSchedule[dayIndex];
 
-      if (!daySchedule) return state;
+      if (!oldDaySchedule) return state;
 
-      const spotIndex = daySchedule.spots.findIndex((s) => s.id === spotId);
+      const spotIndex = oldDaySchedule.spots.findIndex((s) => s.id === spotId);
       if (spotIndex === -1) return state;
 
+      // 新しいspots配列を作成（イミュータブル）
+      const newSpots = [...oldDaySchedule.spots];
+      
       // スポット情報を更新
-      daySchedule.spots[spotIndex] = {
-        ...daySchedule.spots[spotIndex],
+      newSpots[spotIndex] = {
+        ...newSpots[spotIndex],
         ...updates,
       };
 
       // 時刻が変更された場合、時刻順にソート
-      if (updates.scheduledTime !== undefined) {
-        daySchedule.spots = sortSpotsByTime(daySchedule.spots);
-      }
+      const sortedSpots = updates.scheduledTime !== undefined 
+        ? sortSpotsByTime(newSpots)
+        : newSpots;
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: sortedSpots,
+      };
 
       const newItinerary = {
         ...state.currentItinerary,
@@ -195,11 +204,18 @@ export const useStore = create<AppState>((set) => ({
       if (!state.currentItinerary) return state;
 
       const newSchedule = [...state.currentItinerary.schedule];
-      const daySchedule = newSchedule[dayIndex];
+      const oldDaySchedule = newSchedule[dayIndex];
 
-      if (!daySchedule) return state;
+      if (!oldDaySchedule) return state;
 
-      daySchedule.spots = daySchedule.spots.filter((s) => s.id !== spotId);
+      // 新しいspots配列を作成（イミュータブル）
+      const newSpots = oldDaySchedule.spots.filter((s) => s.id !== spotId);
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: newSpots,
+      };
 
       const newItinerary = {
         ...state.currentItinerary,
@@ -215,14 +231,21 @@ export const useStore = create<AppState>((set) => ({
       if (!state.currentItinerary) return state;
 
       const newSchedule = [...state.currentItinerary.schedule];
-      const daySchedule = newSchedule[dayIndex];
+      const oldDaySchedule = newSchedule[dayIndex];
 
-      if (!daySchedule) return state;
+      if (!oldDaySchedule) return state;
 
-      daySchedule.spots.push(spot);
+      // 新しいspots配列を作成（イミュータブル）
+      const newSpots = [...oldDaySchedule.spots, spot];
 
       // スポット追加後、時刻順にソート
-      daySchedule.spots = sortSpotsByTime(daySchedule.spots);
+      const sortedSpots = sortSpotsByTime(newSpots);
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: sortedSpots,
+      };
 
       const newItinerary = {
         ...state.currentItinerary,
@@ -238,18 +261,23 @@ export const useStore = create<AppState>((set) => ({
       if (!state.currentItinerary) return state;
 
       const newSchedule = [...state.currentItinerary.schedule];
-      const daySchedule = newSchedule[dayIndex];
+      const oldDaySchedule = newSchedule[dayIndex];
 
-      if (!daySchedule) return state;
+      if (!oldDaySchedule) return state;
 
-      const spots = [...daySchedule.spots];
+      // 新しいspots配列を作成（イミュータブル）
+      const spots = [...oldDaySchedule.spots];
       const [removed] = spots.splice(startIndex, 1);
       spots.splice(endIndex, 0, removed);
 
       // 並び替え後、移動したスポットの時刻を自動調整
       const adjustedSpots = adjustTimeAfterReorder(spots, endIndex);
 
-      daySchedule.spots = adjustedSpots;
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[dayIndex] = {
+        ...oldDaySchedule,
+        spots: adjustedSpots,
+      };
 
       const newItinerary = {
         ...state.currentItinerary,
@@ -265,19 +293,33 @@ export const useStore = create<AppState>((set) => ({
       if (!state.currentItinerary) return state;
 
       const newSchedule = [...state.currentItinerary.schedule];
-      const fromDay = newSchedule[fromDayIndex];
-      const toDay = newSchedule[toDayIndex];
+      const oldFromDay = newSchedule[fromDayIndex];
+      const oldToDay = newSchedule[toDayIndex];
 
-      if (!fromDay || !toDay) return state;
+      if (!oldFromDay || !oldToDay) return state;
 
-      const spotIndex = fromDay.spots.findIndex((s) => s.id === spotId);
+      const spotIndex = oldFromDay.spots.findIndex((s) => s.id === spotId);
       if (spotIndex === -1) return state;
 
-      const [spot] = fromDay.spots.splice(spotIndex, 1);
-      toDay.spots.push(spot);
+      // 新しいspots配列を作成（イミュータブル）
+      const newFromSpots = [...oldFromDay.spots];
+      const [spot] = newFromSpots.splice(spotIndex, 1);
+
+      const newToSpots = [...oldToDay.spots, spot];
 
       // スポット追加後、移動先の日を時刻順にソート
-      toDay.spots = sortSpotsByTime(toDay.spots);
+      const sortedToSpots = sortSpotsByTime(newToSpots);
+
+      // 新しいdayScheduleオブジェクトを作成（イミュータブル）
+      newSchedule[fromDayIndex] = {
+        ...oldFromDay,
+        spots: newFromSpots,
+      };
+
+      newSchedule[toDayIndex] = {
+        ...oldToDay,
+        spots: sortedToSpots,
+      };
 
       const newItinerary = {
         ...state.currentItinerary,

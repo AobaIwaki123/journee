@@ -55,25 +55,33 @@ export const adjustTimeAfterReorder = (
   const prevSpot = movedIndex > 0 ? newSpots[movedIndex - 1] : null;
   const nextSpot = movedIndex < newSpots.length - 1 ? newSpots[movedIndex + 1] : null;
 
+  let newScheduledTime: string | undefined = movedSpot.scheduledTime;
+
   // 前後のスポットに時刻がある場合、その間の時刻を設定
   if (prevSpot?.scheduledTime && nextSpot?.scheduledTime) {
     const prevTime = timeToMinutes(prevSpot.scheduledTime);
     const nextTime = timeToMinutes(nextSpot.scheduledTime);
     const avgTime = Math.floor((prevTime + nextTime) / 2);
-    movedSpot.scheduledTime = minutesToTime(avgTime);
+    newScheduledTime = minutesToTime(avgTime);
   }
   // 前のスポットのみ時刻がある場合、その後の時刻を設定
   else if (prevSpot?.scheduledTime) {
     const prevTime = timeToMinutes(prevSpot.scheduledTime);
     const duration = prevSpot.duration || 60; // デフォルト60分
-    movedSpot.scheduledTime = minutesToTime(prevTime + duration);
+    newScheduledTime = minutesToTime(prevTime + duration);
   }
   // 次のスポットのみ時刻がある場合、その前の時刻を設定
   else if (nextSpot?.scheduledTime) {
     const nextTime = timeToMinutes(nextSpot.scheduledTime);
     const duration = movedSpot.duration || 60; // デフォルト60分
-    movedSpot.scheduledTime = minutesToTime(Math.max(0, nextTime - duration));
+    newScheduledTime = minutesToTime(Math.max(0, nextTime - duration));
   }
+
+  // イミュータブルな更新: 新しいオブジェクトを作成
+  newSpots[movedIndex] = {
+    ...movedSpot,
+    scheduledTime: newScheduledTime,
+  };
 
   return newSpots;
 };
