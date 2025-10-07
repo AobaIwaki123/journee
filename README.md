@@ -635,18 +635,25 @@ journee/
   - [x] `unpublishItinerary` アクション
   - [x] `updatePublicSettings` アクション
 
-##### 5.5.2 閲覧用ページ
-- [ ] `/app/share/[slug]/page.tsx` の実装
-  - [ ] 動的ルーティング（スラッグベース）
-  - [ ] OGPメタデータ生成（SNS共有対応）
-  - [ ] 閲覧数カウント（Phase 8以降）
-  - [ ] 404ページ（非公開・存在しないしおり）
-- [ ] `PublicItineraryView.tsx` コンポーネント
-  - [ ] Read-only表示（編集ボタン非表示）
-  - [ ] 共有ボタン（URLコピー、Web Share API対応）
-  - [ ] PDF ダウンロードボタン（Phase 5.3連携）
-  - [ ] カスタムメッセージ表示
-  - [ ] 閲覧数表示
+##### 5.5.2 閲覧用ページ ✅ **完了** (2025-10-07)
+- [x] `/app/share/[slug]/page.tsx` の実装
+  - [x] 動的ルーティング（スラッグベース）
+  - [x] OGPメタデータ生成（SNS共有対応）
+  - [x] 閲覧数カウント（Phase 8以降）
+  - [x] 404ページ（非公開・存在しないしおり）
+- [x] `PublicItineraryView.tsx` コンポーネント
+  - [x] Read-only表示（編集ボタン非表示）
+  - [x] 共有ボタン（URLコピー、Web Share API対応）
+  - [x] PDF ダウンロードボタン（Phase 5.3連携）
+  - [x] カスタムメッセージ表示
+  - [x] 閲覧数表示
+- [x] LocalStorage公開しおり管理
+  - [x] `savePublicItinerary` 関数
+  - [x] `getPublicItinerary` 関数
+  - [x] `removePublicItinerary` 関数
+- [x] Zustand連携
+  - [x] 公開時にLocalStorage保存
+  - [x] 非公開時にLocalStorage削除
 
 ##### 5.5.3 公開設定UI
 - [ ] `ShareButton.tsx` コンポーネント

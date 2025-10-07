@@ -27,6 +27,8 @@ import {
   type AutoProgressSettings,
   saveAppSettings,
   loadAppSettings,
+  savePublicItinerary,
+  removePublicItinerary,
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 import { createHistoryUpdate } from './useStore-helper';
@@ -784,6 +786,7 @@ export const useStore = create<AppState>()((set, get) => ({
         publishedAt: new Date(data.publishedAt),
         allowPdfDownload: settings.allowPdfDownload,
         customMessage: settings.customMessage,
+        viewCount: 0, // 初期閲覧数
         updatedAt: new Date(),
       };
 
@@ -794,6 +797,9 @@ export const useStore = create<AppState>()((set, get) => ({
           present: updatedItinerary,
         },
       });
+
+      // Phase 5-7: LocalStorageに公開しおりを保存
+      savePublicItinerary(data.slug, updatedItinerary);
 
       return {
         success: true,
@@ -837,6 +843,7 @@ export const useStore = create<AppState>()((set, get) => ({
         publishedAt: undefined,
         allowPdfDownload: undefined,
         customMessage: undefined,
+        viewCount: undefined,
         updatedAt: new Date(),
       };
 
@@ -847,6 +854,11 @@ export const useStore = create<AppState>()((set, get) => ({
           present: updatedItinerary,
         },
       });
+
+      // Phase 5-7: LocalStorageから公開しおりを削除
+      if (currentItinerary.publicSlug) {
+        removePublicItinerary(currentItinerary.publicSlug);
+      }
 
       return { success: true };
     } catch (error) {

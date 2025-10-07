@@ -15,6 +15,7 @@ const STORAGE_KEYS = {
   AUTO_PROGRESS_MODE: 'journee_auto_progress_mode', // Phase 4.10用
   AUTO_PROGRESS_SETTINGS: 'journee_auto_progress_settings', // Phase 4.10用
   APP_SETTINGS: 'journee_app_settings', // Phase 5.4.3用
+  PUBLIC_ITINERARIES: 'journee_public_itineraries', // Phase 5.5用
 } as const;
 
 /**
@@ -292,5 +293,90 @@ export function loadAutoProgressSettings(): AutoProgressSettings {
   } catch (error) {
     console.error('Failed to load auto progress settings:', error);
     return defaultSettings;
+  }
+}
+
+/**
+ * Phase 5.5: 公開しおり管理
+ */
+
+/**
+ * 公開しおりを保存
+ */
+export function savePublicItinerary(slug: string, itinerary: any): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  
+  try {
+    const publicItineraries = loadPublicItineraries();
+    publicItineraries[slug] = itinerary;
+    window.localStorage.setItem(
+      STORAGE_KEYS.PUBLIC_ITINERARIES,
+      JSON.stringify(publicItineraries)
+    );
+    return true;
+  } catch (error) {
+    console.error('Failed to save public itinerary:', error);
+    return false;
+  }
+}
+
+/**
+ * 公開しおりを取得
+ */
+export function getPublicItinerary(slug: string): any | null {
+  if (!isLocalStorageAvailable()) {
+    return null;
+  }
+  
+  try {
+    const publicItineraries = loadPublicItineraries();
+    return publicItineraries[slug] || null;
+  } catch (error) {
+    console.error('Failed to get public itinerary:', error);
+    return null;
+  }
+}
+
+/**
+ * すべての公開しおりを取得
+ */
+export function loadPublicItineraries(): Record<string, any> {
+  if (!isLocalStorageAvailable()) {
+    return {};
+  }
+  
+  try {
+    const data = window.localStorage.getItem(STORAGE_KEYS.PUBLIC_ITINERARIES);
+    if (!data) {
+      return {};
+    }
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Failed to load public itineraries:', error);
+    return {};
+  }
+}
+
+/**
+ * 公開しおりを削除
+ */
+export function removePublicItinerary(slug: string): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  
+  try {
+    const publicItineraries = loadPublicItineraries();
+    delete publicItineraries[slug];
+    window.localStorage.setItem(
+      STORAGE_KEYS.PUBLIC_ITINERARIES,
+      JSON.stringify(publicItineraries)
+    );
+    return true;
+  } catch (error) {
+    console.error('Failed to remove public itinerary:', error);
+    return false;
   }
 }
