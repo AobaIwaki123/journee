@@ -1,0 +1,683 @@
+---
+globs: "lib/ai/**/*,app/api/chat/**/*"
+---
+
+# AI統合パターン - Gemini API
+
+## 概要
+Phase 3で実装されたGoogle Gemini API統合の使用方法とパターン。
+
+## アーキテクチャ
+
+### コンポーネント構成
+```
+┌─────────────────────────────────────────┐
+│ フロントエンド                           │
+│ ┌─────────────────────────────────────┐ │
+│ │ MessageInput.tsx                    │ │
+│ │ - ユーザー入力                       │ │
+│ │ - sendChatMessageStream()呼び出し   │ │
+│ └───────────────┬─────────────────────┘ │
+└─────────────────┼───────────────────────┘
+                  │ fetch('/api/chat')
+┌─────────────────▼───────────────────────┐
+│ APIルート                                │
+│ ┌─────────────────────────────────────┐ │
+│ │ app/api/chat/route.ts               │ │
+│ │ - リクエスト処理                     │ │
+│ │ - streamGeminiMessage()呼び出し     │ │
+│ │ - SSEストリーミングレスポンス        │ │
+│ └───────────────┬─────────────────────┘ │
+└─────────────────┼───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│ AIライブラリ                             │
+│ ┌─────────────────────────────────────┐ │
+│ │ lib/ai/gemini.ts                    │ │
+│ │ - GeminiClient                      │ │
+│ │ - Google AI SDK統合                 │ │
+│ └───────────────┬─────────────────────┘ │
+│ ┌───────────────▼─────────────────────┐ │
+│ │ lib/ai/prompts.ts                   │ │
+│ │ - プロンプト構築                     │ │
+│ │ - レスポンスパース                   │ │
+│ │ - しおりデータマージ                 │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+```
+
+## ファイル構成
+
+### lib/ai/gemini.ts
+Google Gemini API統合のメインファイル。
+
+#### GeminiClient クラス
+```typescript
+import { GeminiClient } from '@/lib/ai/gemini';
+
+// シングルトンインスタンス取得
+const client = getGeminiClient();
+
+// 非ストリーミング
+const { message, itinerary } = await client.chat(
+  'ユーザーメッセージ',
+  chatHistory,
+  currentItinerary
+);
+
+// ストリーミング
+for await (const chunk of client.chatStream(
+  'ユーザーメッセージ',
+  chatHistory,
+  currentItinerary
+)) {
+  console.log(chunk);
+}
+```
+
+#### ヘルパー関数
+```typescript
+import { sendGeminiMessage, streamGeminiMessage } from '@/lib/ai/gemini';
+
+// 非ストリーミング
+const result = await sendGeminiMessage(
+  message,
+  chatHistory,
+  currentItinerary,
+  apiKey // オプショナル
+);
+
+// ストリーミング
+for await (const chunk of streamGeminiMessage(
+  message,
+  chatHistory,
+  currentItinerary,
+  apiKey // オプショナル
+)) {
+  // チャンク処理
+}
+```
+
+### lib/ai/prompts.ts
+プロンプト管理とレスポンス処理。
+
+#### システムプロンプト
+```typescript
+import { SYSTEM_PROMPT, INITIAL_PROMPT } from '@/lib/ai/prompts';
+
+// AIの役割と振る舞いを定義
+console.log(SYSTEM_PROMPT);
+
+// 初回メッセージプロンプト
+console.log(INITIAL_PROMPT);
+```
+
+#### プロンプト構築
+```typescript
+import { createUpdatePrompt, formatChatHistory } from '@/lib/ai/prompts';
+
+// しおり更新用プロンプト
+const prompt = createUpdatePrompt(currentItinerary);
+
+// チャット履歴フォーマット
+const historyText = formatChatHistory([
+  { role: 'user', content: 'こんにちは' },
+  { role: 'assistant', content: 'こんにちは！' },
+]);
+```
+
+#### レスポンスパース
+```typescript
+import { parseAIResponse } from '@/lib/ai/prompts';
+
+const aiResponse = `
+素敵な旅行計画ですね！
+
+\`\`\`json
+{
+  "title": "東京3日間の旅",
+  "destination": "東京",
+  "schedule": [...]
+}
+\`\`\`
+`;
+
+const { message, itineraryData } = parseAIResponse(aiResponse);
+// message: "素敵な旅行計画ですね！"
+// itineraryData: { title: "東京3日間の旅", ... }
+```
+
+#### データマージ
+```typescript
+import { mergeItineraryData } from '@/lib/ai/prompts';
+
+const updated = mergeItineraryData(
+  currentItinerary,  // 既存データ
+  itineraryData      // 新しいデータ
+);
+// - IDが同じ日程は更新
+// - 新しい日程は追加
+// - スポットにIDを自動付与
+// - updatedAtを更新
+```
+
+#### エラーメッセージ生成
+```typescript
+import { generateErrorMessage } from '@/lib/ai/prompts';
+
+try {
+  // AI処理
+} catch (error) {
+  const userMessage = generateErrorMessage(error);
+  // "申し訳ございません。エラーが発生しました。"
+  // "APIキーの設定に問題があるようです。"
+  // "現在アクセスが集中しております。"
+}
+```
+
+## APIルート実装パターン
+
+### app/api/chat/route.ts
+
+#### 非ストリーミングレスポンス
+```typescript
+async function handleNonStreamingResponse(
+  message: string,
+  chatHistory: ChatMessage[],
+  currentItinerary?: ItineraryData
+) {
+  // Gemini APIに送信
+  const result = await sendGeminiMessage(
+    message,
+    chatHistory,
+    currentItinerary
+  );
+
+  // しおりデータをマージ
+  let updatedItinerary = currentItinerary;
+  if (result.itinerary) {
+    updatedItinerary = mergeItineraryData(
+      currentItinerary,
+      result.itinerary
+    );
+  }
+
+  return NextResponse.json({
+    message: result.message,
+    itinerary: updatedItinerary,
+    model: 'gemini',
+  });
+}
+```
+
+#### ストリーミングレスポンス
+```typescript
+async function handleStreamingResponse(
+  message: string,
+  chatHistory: ChatMessage[],
+  currentItinerary?: ItineraryData
+) {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        let fullResponse = '';
+
+        // Gemini APIからストリーミング取得
+        for await (const chunk of streamGeminiMessage(
+          message,
+          chatHistory,
+          currentItinerary
+        )) {
+          fullResponse += chunk;
+
+          // メッセージチャンクを送信
+          const data = `data: ${JSON.stringify({
+            type: 'message',
+            content: chunk,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(data));
+        }
+
+        // レスポンスをパースしてしおりデータ抽出
+        const { itineraryData } = parseAIResponse(fullResponse);
+        
+        if (itineraryData) {
+          const updatedItinerary = mergeItineraryData(
+            currentItinerary,
+            itineraryData
+          );
+          
+          const data = `data: ${JSON.stringify({
+            type: 'itinerary',
+            itinerary: updatedItinerary,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(data));
+        }
+
+        // 完了通知
+        const data = `data: ${JSON.stringify({ type: 'done' })}\n\n`;
+        controller.enqueue(encoder.encode(data));
+
+        controller.close();
+      } catch (error) {
+        const data = `data: ${JSON.stringify({
+          type: 'error',
+          error: generateErrorMessage(error),
+        })}\n\n`;
+        controller.enqueue(encoder.encode(data));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+}
+```
+
+## クライアント実装パターン
+
+### lib/utils/api-client.ts
+
+#### ストリーミングクライアント
+```typescript
+export async function* sendChatMessageStream(
+  message: string,
+  chatHistory: Message[],
+  currentItinerary?: ItineraryData
+): AsyncGenerator<ChatStreamChunk> {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      chatHistory,
+      currentItinerary,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'API request failed');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('Response body is not readable');
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const chunk = JSON.parse(line.slice(6));
+        yield chunk;
+      }
+    }
+  }
+}
+```
+
+### コンポーネント統合
+
+#### components/chat/MessageInput.tsx
+```typescript
+const handleSend = async (message: string) => {
+  const userMessage: Message = {
+    id: `msg-${Date.now()}`,
+    role: 'user',
+    content: message,
+    timestamp: new Date(),
+  };
+
+  // ユーザーメッセージを追加
+  addMessage(userMessage);
+  setLoading(true);
+  setStreaming(true);
+  setStreamingMessage('');
+
+  try {
+    // チャット履歴（最新10件）
+    const history = messages.slice(-10).map((msg) => ({
+      ...msg,
+      itineraryData: undefined,
+    }));
+
+    let fullMessage = '';
+
+    // ストリーミングレスポンスを処理
+    for await (const chunk of sendChatMessageStream(
+      message,
+      history,
+      currentItinerary
+    )) {
+      switch (chunk.type) {
+        case 'message':
+          fullMessage += chunk.content;
+          setStreamingMessage(fullMessage);
+          break;
+
+        case 'itinerary':
+          // しおりデータを更新
+          setItinerary(chunk.itinerary);
+          break;
+
+        case 'error':
+          throw new Error(chunk.error);
+
+        case 'done':
+          // 完了: AIメッセージを履歴に追加
+          const aiMessage: Message = {
+            id: `msg-${Date.now()}`,
+            role: 'assistant',
+            content: fullMessage,
+            timestamp: new Date(),
+          };
+          addMessage(aiMessage);
+          break;
+      }
+    }
+  } catch (error) {
+    console.error('Chat error:', error);
+    setError(
+      error instanceof Error ? error.message : '不明なエラーが発生しました'
+    );
+  } finally {
+    setLoading(false);
+    setStreaming(false);
+    setStreamingMessage('');
+  }
+};
+```
+
+## 型定義
+
+### ChatStreamChunk
+```typescript
+// types/api.ts
+export type ChatStreamChunk =
+  | { type: 'message'; content: string }
+  | { type: 'itinerary'; itinerary: ItineraryData }
+  | { type: 'error'; error: string }
+  | { type: 'done' };
+```
+
+### ChatAPIRequest
+```typescript
+export interface ChatAPIRequest {
+  message: string;
+  chatHistory?: ChatMessage[];
+  currentItinerary?: ItineraryData;
+  model?: 'gemini' | 'claude';
+  claudeApiKey?: string;
+  stream?: boolean;
+}
+```
+
+### ChatAPIResponse
+```typescript
+export interface ChatAPIResponse {
+  message: string;
+  itinerary?: ItineraryData;
+  model: 'gemini' | 'claude';
+}
+```
+
+## プロンプトエンジニアリング
+
+### システムプロンプトの構造
+```typescript
+const SYSTEM_PROMPT = `
+あなたは旅行計画のエキスパートAIアシスタントです。
+
+【役割】
+- ユーザーの希望を丁寧にヒアリング
+- 魅力的な観光スポットを提案
+- 効率的で実現可能な旅程を作成
+- 予算や移動時間を考慮
+
+【応答形式】
+1. 自然で親しみやすい日本語
+2. しおり生成時は以下のJSON形式で出力：
+
+\`\`\`json
+{
+  "title": "旅行のタイトル",
+  "destination": "旅行先",
+  "schedule": [...]
+}
+\`\`\`
+
+【重要事項】
+- 実在する観光スポットのみ提案
+- 移動時間と滞在時間を現実的に設定
+- 食事の時間を確保
+- 予算は現実的な金額
+`;
+```
+
+### プロンプト構築パターン
+```typescript
+function buildPrompt(
+  userMessage: string,
+  chatHistory: ChatMessage[],
+  currentItinerary?: ItineraryData
+): string {
+  let prompt = SYSTEM_PROMPT + '\n\n';
+
+  // 会話履歴（最新10件）
+  if (chatHistory.length > 0) {
+    const historyText = formatChatHistory(
+      chatHistory.slice(-10).map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }))
+    );
+    prompt += `## 会話履歴\n${historyText}\n\n`;
+  }
+
+  // 現在のしおり
+  if (currentItinerary) {
+    const itineraryContext = createUpdatePrompt(currentItinerary);
+    prompt += `## ${itineraryContext}\n\n`;
+  }
+
+  // 新しいメッセージ
+  prompt += `## ユーザーの新しいメッセージ\n${userMessage}\n\n`;
+  prompt += `上記のメッセージに対して、親切に応答してください。必要に応じて旅のしおりデータをJSON形式で出力してください。`;
+
+  return prompt;
+}
+```
+
+## エラーハンドリング
+
+### エラーの種類と対応
+```typescript
+export function generateErrorMessage(error: any): string {
+  // APIキーエラー
+  if (error.message?.includes('API key')) {
+    return '申し訳ございません。APIキーの設定に問題があるようです。設定をご確認ください。';
+  }
+  
+  // レート制限エラー
+  if (error.message?.includes('rate limit')) {
+    return '申し訳ございません。現在アクセスが集中しております。少し時間をおいて再度お試しください。';
+  }
+  
+  // 一般的なエラー
+  return '申し訳ございません。エラーが発生しました。もう一度お試しいただくか、別の表現で質問してみてください。';
+}
+```
+
+### コンポーネントでのエラー処理
+```typescript
+try {
+  for await (const chunk of sendChatMessageStream(...)) {
+    // 処理
+  }
+} catch (error) {
+  console.error('Chat error:', error);
+  setError(
+    error instanceof Error 
+      ? error.message 
+      : '不明なエラーが発生しました'
+  );
+}
+```
+
+## テストパターン
+
+### テストクライアント
+```typescript
+// lib/ai/test-client.ts
+import { sendGeminiMessage, streamGeminiMessage } from './gemini';
+
+// 非ストリーミングテスト
+export async function testNonStreaming() {
+  const result = await sendGeminiMessage(
+    '東京で3日間の旅行計画を立てたいです',
+    [],
+    undefined
+  );
+  console.log('Message:', result.message);
+  console.log('Itinerary:', result.itinerary);
+}
+
+// ストリーミングテスト
+export async function testStreaming() {
+  console.log('Streaming test started...');
+  
+  for await (const chunk of streamGeminiMessage(
+    '京都で2日間の旅行計画を立てたいです',
+    [],
+    undefined
+  )) {
+    process.stdout.write(chunk);
+  }
+  
+  console.log('\nStreaming test completed!');
+}
+```
+
+### APIテスト (curl)
+```bash
+# 非ストリーミング
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "東京で3日間の旅行計画を立てたいです",
+    "model": "gemini",
+    "stream": false
+  }'
+
+# ストリーミング
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "京都で2日間の旅行計画を立てたいです",
+    "model": "gemini",
+    "stream": true
+  }'
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ チャット履歴は最新10件に制限（コンテキスト長管理）
+- ✅ しおりデータは常にマージ（既存データを保持）
+- ✅ ストリーミング中はUI状態を明確に表示
+- ✅ エラーはユーザーフレンドリーなメッセージに変換
+- ✅ プロンプトにシステムプロンプト + 履歴 + 現在のしおりを含める
+- ✅ JSONパース失敗時はメッセージのみ返す
+- ✅ 環境変数でAPIキーを管理
+
+### DON'T（非推奨）
+- ❌ チャット履歴全件をAPIに送信（コスト増・レスポンス遅延）
+- ❌ しおりデータを完全に上書き（既存データ消失）
+- ❌ ストリーミング中にローディングを非表示
+- ❌ 技術的なエラーメッセージをそのまま表示
+- ❌ プロンプトにコンテキストを含めない
+- ❌ JSONパース失敗でエラーをthrow
+- ❌ APIキーをハードコード
+
+## 環境変数
+
+### 必須設定
+```env
+# .env.local
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### 取得方法
+1. [Google AI Studio](https://makersuite.google.com/app/apikey)にアクセス
+2. Googleアカウントでログイン
+3. "Get API Key"をクリック
+4. 生成されたAPIキーをコピー
+5. `.env.local`に設定
+
+## パフォーマンス最適化
+
+### チャット履歴の制限
+```typescript
+// 最新10件のみ送信
+const history = messages.slice(-10);
+```
+
+### プロンプトの最適化
+- システムプロンプト: 簡潔に（現在約400文字）
+- 会話履歴: 最新10件のみ
+- しおりコンテキスト: 必要な情報のみ
+
+### ストリーミングチャンクサイズ
+- Gemini APIのデフォルトチャンクサイズを使用
+- バッファリングで効率的に送信
+
+## 今後の拡張
+
+### Phase 7: Claude API統合
+```typescript
+// claude APIキー管理（Phase 7実装予定）
+if (model === 'claude') {
+  if (!claudeApiKey) {
+    return NextResponse.json(
+      { error: 'API key required' },
+      { status: 400 }
+    );
+  }
+  // Claude統合処理
+}
+```
+
+### 機能拡張候補
+- 画像生成統合（DALL-E、Stable Diffusion）
+- 音声入力対応（Whisper API）
+- 多言語対応（翻訳API）
+- カスタムプロンプトテンプレート
+
+## 参考リンク
+
+- [Google AI Studio](https://makersuite.google.com/app/apikey)
+- [Gemini API Documentation](https://ai.google.dev/docs)
+- [lib/ai/gemini.ts](mdc:lib/ai/gemini.ts)
+- [lib/ai/prompts.ts](mdc:lib/ai/prompts.ts)
+- [app/api/chat/route.ts](mdc:app/api/chat/route.ts)
+- [PHASE3_API_DOCUMENTATION.md](mdc:PHASE3_API_DOCUMENTATION.md)
+- [docs/PHASE3_INTEGRATION_COMPLETE.md](mdc:docs/PHASE3_INTEGRATION_COMPLETE.md)

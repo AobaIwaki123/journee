@@ -1,33 +1,50 @@
 import { create } from 'zustand';
 import { Message } from '@/types/chat';
-import { Itinerary } from '@/types/itinerary';
+import { ItineraryData } from '@/types/itinerary';
 
 interface AppState {
   // Chat state
   messages: Message[];
   isLoading: boolean;
+  isStreaming: boolean;
+  streamingMessage: string;
   addMessage: (message: Message) => void;
   setLoading: (loading: boolean) => void;
+  setStreaming: (streaming: boolean) => void;
+  setStreamingMessage: (message: string) => void;
+  appendStreamingMessage: (chunk: string) => void;
   clearMessages: () => void;
 
   // Itinerary state
-  currentItinerary: Itinerary | null;
-  setItinerary: (itinerary: Itinerary | null) => void;
-  updateItinerary: (updates: Partial<Itinerary>) => void;
+  currentItinerary: ItineraryData | null;
+  setItinerary: (itinerary: ItineraryData | null) => void;
+  updateItinerary: (updates: Partial<ItineraryData>) => void;
 
   // UI state
   selectedAI: 'gemini' | 'claude';
+  claudeApiKey: string;
   setSelectedAI: (ai: 'gemini' | 'claude') => void;
+  setClaudeApiKey: (key: string) => void;
+
+  // Error state
+  error: string | null;
+  setError: (error: string | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
   // Chat state
   messages: [],
   isLoading: false,
+  isStreaming: false,
+  streamingMessage: '',
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setLoading: (loading) => set({ isLoading: loading }),
-  clearMessages: () => set({ messages: [] }),
+  setStreaming: (streaming) => set({ isStreaming: streaming }),
+  setStreamingMessage: (message) => set({ streamingMessage: message }),
+  appendStreamingMessage: (chunk) =>
+    set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
+  clearMessages: () => set({ messages: [], streamingMessage: '' }),
 
   // Itinerary state
   currentItinerary: null,
@@ -41,5 +58,11 @@ export const useStore = create<AppState>((set) => ({
 
   // UI state
   selectedAI: 'gemini',
+  claudeApiKey: '',
   setSelectedAI: (ai) => set({ selectedAI: ai }),
+  setClaudeApiKey: (key) => set({ claudeApiKey: key }),
+
+  // Error state
+  error: null,
+  setError: (error) => set({ error }),
 }));

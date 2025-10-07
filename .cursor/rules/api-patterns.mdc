@@ -423,30 +423,162 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-## ストリーミングレスポンス（Phase 3 - AI統合で使用予定）
+## ストリーミングレスポンス（Phase 3実装済み）
+
+### Server-Sent Events (SSE) パターン
+
+**実装例**: [app/api/chat/route.ts](mdc:app/api/chat/route.ts)
 
 ```typescript
 export async function POST(req: NextRequest) {
-  const body = await req.json()
+  const body = await req.json();
+  const { message, chatHistory, currentItinerary } = body;
+
+  const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
-      // AIストリーミングレスポンス
-      for await (const chunk of aiStream(body.prompt)) {
-        controller.enqueue(new TextEncoder().encode(chunk))
-      }
-      controller.close()
-    },
-  })
+      try {
+        let fullResponse = '';
 
-  return new NextResponse(stream, {
+        // Gemini APIからストリーミング
+        for await (const chunk of streamGeminiMessage(
+          message,
+          chatHistory,
+          currentItinerary
+        )) {
+          fullResponse += chunk;
+
+          // メッセージチャンクを送信
+          const streamChunk = {
+            type: 'message',
+            content: chunk,
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(streamChunk)}\n\n`)
+          );
+        }
+
+        // しおりデータを抽出・送信
+        const { itineraryData } = parseAIResponse(fullResponse);
+        if (itineraryData) {
+          const itineraryChunk = {
+            type: 'itinerary',
+            itinerary: mergeItineraryData(currentItinerary, itineraryData),
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(itineraryChunk)}\n\n`)
+          );
+        }
+
+        // 完了通知
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
+        );
+
+        controller.close();
+      } catch (error) {
+        // エラー送信
+        const errorChunk = {
+          type: 'error',
+          error: generateErrorMessage(error),
+        };
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`)
+        );
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     },
-  })
+  });
 }
+```
+
+### クライアント側の処理
+
+**実装例**: [lib/utils/api-client.ts](mdc:lib/utils/api-client.ts)
+
+```typescript
+export async function* sendChatMessageStream(
+  message: string,
+  chatHistory: Message[],
+  currentItinerary?: ItineraryData
+): AsyncGenerator<ChatStreamChunk> {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      chatHistory,
+      currentItinerary,
+      stream: true,
+    }),
+  });
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader!.read();
+    if (done) break;
+
+    const text = decoder.decode(value);
+    const lines = text.split('\n');
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const chunk = JSON.parse(line.slice(6));
+        yield chunk;
+      }
+    }
+  }
+}
+```
+
+### コンポーネントでの使用
+
+```typescript
+// components/chat/MessageInput.tsx
+const handleSend = async (message: string) => {
+  setLoading(true);
+  setStreaming(true);
+
+  try {
+    const history = messages.slice(-10);
+
+    for await (const chunk of sendChatMessageStream(
+      message,
+      history,
+      currentItinerary
+    )) {
+      switch (chunk.type) {
+        case 'message':
+          appendStreamingMessage(chunk.content);
+          break;
+        case 'itinerary':
+          setItinerary(chunk.itinerary);
+          break;
+        case 'error':
+          throw new Error(chunk.error);
+        case 'done':
+          // 完了処理
+          break;
+      }
+    }
+  } catch (error) {
+    setError(error.message);
+  } finally {
+    setLoading(false);
+    setStreaming(false);
+  }
+};
 ```
 
 ## HTTPステータスコード
@@ -544,11 +676,69 @@ export async function POST(req: NextRequest) {
 ### ユーザーAPI
 - `GET /api/user/me` - 現在のユーザー情報取得（認証必須）
 
-## 今後の実装予定
+## 実装済みAPI（Phase 3）
 
-### Phase 3: AI統合
-- `POST /api/chat` - AIチャット（ストリーミング）
-- `GET /api/chat/history` - チャット履歴
+### チャットAPI
+- `POST /api/chat` - AIチャット（ストリーミング対応）
+
+#### 詳細
+**ファイル**: [app/api/chat/route.ts](mdc:app/api/chat/route.ts)
+
+**リクエスト例**:
+```typescript
+const response = await fetch('/api/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    message: '東京で3日間の旅行計画を立てたいです',
+    chatHistory: [
+      {
+        id: 'msg-1',
+        role: 'user',
+        content: 'こんにちは',
+        timestamp: new Date(),
+      }
+    ],
+    currentItinerary: { /* 既存のしおりデータ */ },
+    model: 'gemini',
+    stream: true,
+  }),
+});
+```
+
+**レスポンス（ストリーミング）**:
+```typescript
+// Server-Sent Events形式
+data: {"type":"message","content":"東京での"}
+data: {"type":"message","content":"3日間の旅"}
+data: {"type":"itinerary","itinerary":{...}}
+data: {"type":"done"}
+```
+
+**レスポンス（非ストリーミング）**:
+```json
+{
+  "message": "東京での3日間の旅行、素敵ですね！...",
+  "itinerary": {
+    "id": "itinerary-1234567890",
+    "title": "東京3日間の旅",
+    "destination": "東京",
+    "schedule": [...]
+  },
+  "model": "gemini"
+}
+```
+
+**エラーレスポンス**:
+```json
+{
+  "error": "InternalServerError",
+  "message": "申し訳ございません。エラーが発生しました。",
+  "details": "Gemini API error: ..."
+}
+```
+
+## 今後の実装予定
 
 ### Phase 4: しおり管理
 - `POST /api/itinerary` - しおり作成
