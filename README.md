@@ -555,38 +555,52 @@ journee/
   - [ ] `app/itineraries/page.tsx` の作成
   - [ ] レスポンシブデザイン（デスクトップ: 3-4列、タブレット: 2列、モバイル: 1列）
 
-##### 5.4.3 設定ページ（`/settings`）
-- [ ] 一般設定
-  - [ ] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
-  - [ ] 設定の保存（LocalStorage）
-- [ ] AI設定
-  - [ ] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
-  - [ ] Claude APIキー管理（入力、保存、検証、削除）
-  - [ ] Phase 6との連携
-- [ ] 効果音設定
-  - [ ] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
-  - [ ] 効果音プレビューボタン
-  - [ ] Phase 3.6との連携
-  - [ ] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
-- [ ] アカウント設定
-  - [ ] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
-  - [ ] Phase 2（認証機能）との連携
-- [ ] ページレイアウト実装
-  - [ ] `app/settings/page.tsx` の作成
-  - [ ] サイドバーナビゲーション（デスクトップ）
-  - [ ] タブ切り替え（モバイル）
-- [ ] LocalStorage永続化
-  - [ ] 設定のロード・保存機能
-  - [ ] Zustandストアとの同期
+##### 5.4.3 設定ページ（`/settings`） ✅ **完了** (2025-10-07)
+- [x] 一般設定
+  - [x] `GeneralSettings.tsx` - 言語、タイムゾーン、日付フォーマット、通貨
+  - [x] 設定の保存（LocalStorage）
+- [x] AI設定
+  - [x] `AISettings.tsx` - デフォルトAIモデル選択（Gemini/Claude）
+  - [x] Claude APIキー管理（入力、保存、検証、削除）
+  - [x] Phase 6との連携
+- [x] 効果音設定
+  - [x] `SoundSettings.tsx` - 効果音ON/OFF、音量調整スライダー
+  - [x] 効果音プレビューボタン（Phase 3.6で実装予定）
+  - [x] Phase 3.6との連携
+  - [x] Zustand状態管理連携（`soundEnabled`, `soundVolume`）
+- [x] アカウント設定
+  - [x] `AccountSettings.tsx` - ユーザー情報表示、ログアウト
+  - [x] Phase 2（認証機能）との連携
+- [x] ページレイアウト実装
+  - [x] `app/settings/page.tsx` の作成
+  - [x] サイドバーナビゲーション（デスクトップ）
+  - [x] タブ切り替え（モバイル）
+- [x] LocalStorage永続化
+  - [x] 設定のロード・保存機能
+  - [x] Zustandストアとの同期
+
+**実装結果**: 
+- ✅ 4つの設定セクション（一般、AI、効果音、アカウント）を実装
+- ✅ レスポンシブデザイン対応（デスクトップ：サイドバー、モバイル：タブ）
+- ✅ LocalStorageとZustandストアの完全連携
+- ✅ 設定変更が即座に保存され、ページリロード後も保持
+- ✅ 認証チェックと未認証時のリダイレクト
+- ✅ Phase 2（認証）、Phase 6（Claude API）との連携完了
+- ✅ Phase 3.6（効果音システム）への準備完了
+
+**コミット履歴**: 未コミット（実装完了）
+
+**詳細**: [docs/PHASE5_4_3_IMPLEMENTATION.md](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 
 **期待される効果**:
 - しおりの作成から保存、出力までの一連の流れがシームレスに
 - ユーザーは作成中のしおりを失うことなく、いつでも再開可能
 - 美しいPDFで旅のしおりを印刷・共有できる
 - ユーザーが自分の作成したしおりを一元管理できる
-- アプリケーション全体の設定を柔軟にカスタマイズ可能
+- ✅ アプリケーション全体の設定を柔軟にカスタマイズ可能（Phase 5.4.3完了）
 
-**詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
+**詳細**: [docs/PHASE5_4_PAGES_IMPLEMENTATION.md](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)  
+**実装完了**: [docs/PHASE5_4_3_IMPLEMENTATION.md](./docs/PHASE5_4_3_IMPLEMENTATION.md)
 
 ### Phase 6: Claude API統合（Week 12）
 **目的**: Gemini APIに加えて、Claude APIを選択可能にする
@@ -951,7 +965,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）または Phase 4（段階的旅程構築）
+**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.4.3, 6完了 → 次は Phase 3.5.2（UI/UX改善）、Phase 3.6（効果音システム）または Phase 4（段階的旅程構築）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -966,6 +980,12 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 5.4.3**: 設定ページ実装（一般、AI、効果音、アカウント）
+  - ✅ 一般設定（言語、タイムゾーン、日付フォーマット、通貨）
+  - ✅ AI設定（モデル選択、APIキー管理）
+  - ✅ 効果音設定（ON/OFF、音量調整）
+  - ✅ アカウント設定（ユーザー情報、ログアウト、データ削除）
+  - ✅ レスポンシブデザイン（デスクトップ：サイドバー、モバイル：タブ）
 - ✅ **Phase 6**: Claude API統合・モデル切り替え機能（完全実装）
   - ✅ Phase 6.1: APIキー管理（暗号化保存、UI実装）
   - ✅ Phase 6.2: Claude API完全統合（ストリーミング対応）
@@ -977,7 +997,7 @@ MIT
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
 - **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
 - **Phase 5** - しおり機能統合（詳細実装 + 一時保存 + PDF出力）
-- **Phase 5.4** - マイページ・栞一覧・設定ページ（ユーザー管理、モックデータ） 🆕
+- **Phase 5.4.1/5.4.2** - マイページ・栞一覧ページ（ユーザー管理、モックデータ）
 - **Phase 7** - UI最適化・レスポンシブ対応（リサイザー + モバイル）
 
 **最終更新**: 2025-10-07
@@ -986,6 +1006,7 @@ MIT
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
 - [Phase 5.4 マイページ・栞一覧・設定ページ実装計画](./docs/PHASE5_4_PAGES_IMPLEMENTATION.md)
+- [Phase 5.4.3 設定ページ実装完了レポート](./docs/PHASE5_4_3_IMPLEMENTATION.md) 🆕
 - [Phase 6.1 実装完了レポート](./docs/PHASE6_1_IMPLEMENTATION.md)
 - [Phase 6.2 実装完了レポート](./docs/PHASE6_2_IMPLEMENTATION.md)
 - [Phase 6.3 実装完了レポート](./docs/PHASE6_3_IMPLEMENTATION.md)
