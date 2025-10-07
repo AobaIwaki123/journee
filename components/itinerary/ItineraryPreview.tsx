@@ -41,7 +41,7 @@ export const ItineraryPreview: React.FC = () => {
     <div className="h-full flex flex-col bg-gray-50">
       {/* Phase 4: プランニング進捗 */}
       <PlanningProgress />
-
+      
       {/* メインコンテンツ（スクロール可能） */}
       <div className="flex-1 overflow-y-auto">
       {/* Header */}
