@@ -4,6 +4,53 @@ import React, { useState, memo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { SpotCard } from './SpotCard';
+<<<<<<< HEAD
+import { Sparkles, CheckCircle2, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+
+interface DayScheduleProps {
+  day: DayScheduleType;
+  /** Phase 4.9.4: 再試行コールバック */
+  onRetry?: (dayNumber: number) => void;
+}
+
+export const DaySchedule: React.FC<DayScheduleProps> = ({ day, onRetry }) => {
+  // Phase 4: ステータスに応じたバッジ表示
+  const getStatusBadge = () => {
+    if (!day.status) return null;
+
+    const badges = {
+      draft: { label: '下書き', color: 'bg-gray-100 text-gray-600' },
+      skeleton: { label: '骨組み', color: 'bg-yellow-100 text-yellow-700' },
+      detailed: { label: '詳細化済み', color: 'bg-blue-100 text-blue-700' },
+      completed: { label: '完成', color: 'bg-green-100 text-green-700' },
+    };
+
+    const badge = badges[day.status];
+    if (!badge) return null;
+
+    return (
+      <span className={`text-xs px-2 py-1 rounded-full font-medium ${badge.color}`}>
+        {badge.label}
+      </span>
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center flex-1">
+          <div className="bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-lg mr-4 flex-shrink-0">
+            Day{day.day}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {day.title || `${day.day}日目`}
+              </h3>
+              {getStatusBadge()}
+            </div>
+=======
 import { EditableSpotCard } from './EditableSpotCard';
 import { AddSpotForm } from './AddSpotForm';
 import { useStore } from '@/lib/store/useStore';
@@ -65,9 +112,17 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
             <h3 className="text-xl font-bold text-gray-800">
               {day.title || `${day.day}日目`}
             </h3>
+>>>>>>> origin/main
             {day.date && (
               <p className="text-sm text-gray-500 mt-1">
                 {day.date} {dayOfWeek}
+              </p>
+            )}
+            {/* Phase 4: テーマ表示 */}
+            {day.theme && (
+              <p className="text-sm text-blue-600 mt-1 flex items-center">
+                <Sparkles className="w-3 h-3 mr-1" />
+                {day.theme}
               </p>
             )}
           </div>
@@ -99,6 +154,80 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
           )}
         </div>
 
+<<<<<<< HEAD
+      {/* Phase 4.9.3: ローディング状態・エラー表示 */}
+      {day.isLoading && (
+        <div className="ml-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-center space-x-3">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900">詳細化中...</p>
+              {day.progress !== undefined && day.progress > 0 && (
+                <div className="mt-2">
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${day.progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-700 mt-1">{day.progress}%</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {day.error && (
+        <div className="ml-8 p-4 bg-red-50 rounded-lg border border-red-200">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900">エラーが発生しました</p>
+              <p className="text-xs text-red-700 mt-1">{day.error}</p>
+            </div>
+            {onRetry && (
+              <button
+                onClick={() => onRetry(day.day)}
+                className="flex items-center space-x-1 px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>再試行</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Spots */}
+      {!day.isLoading && !day.error && day.spots.length > 0 ? (
+        <div className="space-y-4 ml-8">
+          {day.spots.map((spot, index) => (
+            <React.Fragment key={spot.id}>
+              <SpotCard spot={spot} />
+              {index < day.spots.length - 1 && (
+                <div className="flex items-center my-2">
+                  <div className="w-px h-8 bg-gray-300 ml-6"></div>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      ) : !day.isLoading && !day.error ? (
+        <div className="ml-8 p-4 bg-gray-50 rounded-lg text-center">
+          {day.status === 'skeleton' ? (
+            <div className="text-gray-600 text-sm">
+              <Sparkles className="w-5 h-5 mx-auto mb-2 text-yellow-500" />
+              <p className="font-medium">骨組みが決まりました</p>
+              <p className="text-xs text-gray-500 mt-1">
+                次のステップで具体的なスケジュールを作成します
+              </p>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm">
+              この日のスケジュールはまだ設定されていません
+            </p>
+=======
         {/* Expand/Collapse Icon */}
         <div className="flex-shrink-0">
           {isExpanded ? (
@@ -190,9 +319,10 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
               <p className="font-medium">この日のスケジュールはまだ設定されていません</p>
               <p className="text-xs mt-1">AIチャットで詳細を追加できます</p>
             </div>
+>>>>>>> origin/main
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 });

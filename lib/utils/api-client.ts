@@ -1,6 +1,7 @@
 /**
  * フロントエンド用のAPIクライアントユーティリティ
- * Phase 1,2のUI実装で使用
+ * Phase 1,2,3,4のUI実装で使用
+ * Phase 4.5: フェーズ情報の送信をサポート
  */
 
 import type { 
@@ -9,7 +10,7 @@ import type {
   ChatStreamChunk 
 } from '@/types/api';
 import type { ChatMessage } from '@/types/chat';
-import type { ItineraryData } from '@/types/itinerary';
+import type { ItineraryData, ItineraryPhase } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 
@@ -25,6 +26,7 @@ export class ChatAPIClient {
 
   /**
    * メッセージを送信（非ストリーミング）
+   * Phase 4.5: フェーズ情報を追加
    */
   async sendMessage(
     message: string,
@@ -33,6 +35,8 @@ export class ChatAPIClient {
       currentItinerary?: ItineraryData;
       model?: AIModelId;
       claudeApiKey?: string;
+      planningPhase?: ItineraryPhase;
+      currentDetailingDay?: number | null;
     }
   ): Promise<ChatAPIResponse> {
     const request: ChatAPIRequest = {
@@ -42,6 +46,8 @@ export class ChatAPIClient {
       model: options?.model || 'gemini',
       claudeApiKey: options?.claudeApiKey,
       stream: false,
+      planningPhase: options?.planningPhase,
+      currentDetailingDay: options?.currentDetailingDay,
     };
 
     const response = await fetch(`${this.baseUrl}/chat`, {
@@ -62,14 +68,17 @@ export class ChatAPIClient {
 
   /**
    * メッセージを送信（ストリーミング）
+   * Phase 4.5: フェーズ情報を追加
    */
   async *sendMessageStream(
     message: string,
     options?: {
       chatHistory?: ChatMessage[];
       currentItinerary?: ItineraryData;
-      model?: 'gemini' | 'claude';
+      model?: AIModelId;
       claudeApiKey?: string;
+      planningPhase?: ItineraryPhase;
+      currentDetailingDay?: number | null;
     }
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     const request: ChatAPIRequest = {
@@ -79,6 +88,8 @@ export class ChatAPIClient {
       model: options?.model || DEFAULT_AI_MODEL,
       claudeApiKey: options?.claudeApiKey,
       stream: true,
+      planningPhase: options?.planningPhase,
+      currentDetailingDay: options?.currentDetailingDay,
     };
 
     const response = await fetch(`${this.baseUrl}/chat`, {
@@ -156,10 +167,11 @@ export async function sendChatMessage(
 
 /**
  * ストリーミングメッセージ送信
+ * Phase 4.5: フェーズ情報を追加
  * 
  * 使用例:
  * ```typescript
- * for await (const chunk of sendChatMessageStream(message, history, itinerary, 'gemini')) {
+ * for await (const chunk of sendChatMessageStream(message, history, itinerary, 'gemini', apiKey, phase, day)) {
  *   if (chunk.type === 'message') {
  *     setStreamingMessage(prev => prev + chunk.content);
  *   } else if (chunk.type === 'itinerary') {
@@ -173,12 +185,16 @@ export async function* sendChatMessageStream(
   chatHistory?: ChatMessage[],
   currentItinerary?: ItineraryData,
   model?: AIModelId,
-  claudeApiKey?: string
+  claudeApiKey?: string,
+  planningPhase?: ItineraryPhase,
+  currentDetailingDay?: number | null
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   yield* chatApiClient.sendMessageStream(message, {
     chatHistory,
     currentItinerary,
     model,
     claudeApiKey,
+    planningPhase,
+    currentDetailingDay,
   });
 }
