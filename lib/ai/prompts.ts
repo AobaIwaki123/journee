@@ -131,23 +131,37 @@ export function parseAIResponse(response: string): {
     };
   }
 
-  // JSONの前のテキストをメッセージとして抽出
-  const jsonStartIndex = match.index || 0;
-  const message = response.substring(0, jsonStartIndex).trim();
-  
   // JSONデータをパース
   try {
     const jsonString = match[1];
     const itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
     
+    // JSONブロック全体をメッセージから削除
+    // すべてのJSONブロック（```json ... ```）を削除
+    let message = response.replace(JSON_EXTRACTION_REGEX, '').trim();
+    
+    // 複数のJSONブロックがある場合も対応（グローバルフラグ付きで再度削除）
+    const globalJsonRegex = /```json\s*([\s\S]*?)\s*```/g;
+    message = message.replace(globalJsonRegex, '').trim();
+    
+    // 前後の余分な空白・改行を削除
+    message = message.replace(/^\s+|\s+$/g, '').replace(/\n{3,}/g, '\n\n');
+    
+    // メッセージが空の場合はデフォルトメッセージ
+    if (!message) {
+      message = 'しおりを更新しました。ご確認ください。';
+    }
+    
     return {
-      message: message || 'しおりを更新しました。',
+      message,
       itineraryData,
     };
   } catch (error) {
     console.error('Failed to parse itinerary JSON:', error);
+    // JSON解析に失敗した場合は、JSONブロックを除去したメッセージを返す
+    const cleanMessage = response.replace(/```json\s*([\s\S]*?)\s*```/g, '').trim();
     return {
-      message: response.trim(),
+      message: cleanMessage || 'しおりの更新に失敗しました。もう一度お試しください。',
       itineraryData: null,
     };
   }
