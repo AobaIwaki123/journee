@@ -19,7 +19,8 @@
     "docker:shell": "bash scripts/docker-dev.sh shell",
     "docker:build": "bash scripts/docker-dev.sh build",
     "docker:clean": "bash scripts/docker-dev.sh clean",
-    "docker:status": "bash scripts/docker-dev.sh status"
+    "docker:status": "bash scripts/docker-dev.sh status",
+    "deploy:gcr": "bash scripts/deploy-gcr.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
