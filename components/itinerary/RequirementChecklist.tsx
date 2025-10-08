@@ -6,7 +6,15 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Circle,
+  AlertCircle,
+  Info,
+  Sparkles,
+} from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
 
 interface RequirementChecklistProps {
@@ -94,31 +102,112 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
           className="checklist-body"
         >
           {requirementsChecklist.length === 0 ? (
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-sm text-center py-4">
               チェックリスト項目がありません
             </p>
           ) : (
-            <ul className="space-y-2">
-              {requirementsChecklist.map((item) => (
-                <li key={item.id} className="checklist-item">
-                  {item.label}
-                  {item.required && (
-                    <span className="text-red-500 text-xs ml-1">(必須)</span>
-                  )}
-                </li>
-              ))}
+            <ul className="space-y-3">
+              {requirementsChecklist.map((item) => {
+                const isFilled = item.status === 'filled';
+                const isPartial = item.status === 'partial';
+                
+                return (
+                  <li
+                    key={item.id}
+                    className={`
+                      flex items-start gap-3 p-3 rounded-lg
+                      transition-all duration-200
+                      hover:bg-gray-50
+                      ${isFilled ? 'bg-green-50/50' : ''}
+                      ${!isFilled && !isPartial ? 'bg-gray-50/30' : ''}
+                    `}
+                  >
+                    {/* ステータスアイコン */}
+                    <div className="flex-shrink-0 mt-0.5">
+                      {isFilled ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Circle className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                    
+                    {/* 項目内容 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`
+                            font-medium text-sm
+                            ${isFilled ? 'text-green-700' : 'text-gray-700'}
+                          `}
+                        >
+                          {item.label}
+                        </span>
+                        
+                        {/* 必須/推奨/オプションバッジ */}
+                        {item.required ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">
+                            <AlertCircle className="w-3 h-3" />
+                            必須
+                          </span>
+                        ) : item.description?.includes('推奨') ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+                            <Info className="w-3 h-3" />
+                            推奨
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                            <Sparkles className="w-3 h-3" />
+                            オプション
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* 説明文 */}
+                      {item.description && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {item.description}
+                        </p>
+                      )}
+                      
+                      {/* 抽出された値 */}
+                      {item.value && (
+                        <p className="text-sm text-gray-700 mt-1 font-medium">
+                          {typeof item.value === 'object'
+                            ? JSON.stringify(item.value)
+                            : String(item.value)}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
           
+          {/* プログレスバー */}
           {checklistStatus && (
-            <div className="checklist-footer mt-4">
-              <div className="text-sm text-gray-600">
-                <p>
-                  必須項目: {checklistStatus.requiredFilled} / {checklistStatus.requiredTotal}
-                </p>
-                <p>
-                  オプション: {checklistStatus.optionalFilled} / {checklistStatus.optionalTotal}
-                </p>
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-gray-700">全体の進捗</span>
+                <span className="font-bold text-lg text-gray-900">
+                  {checklistStatus.completionRate}%
+                </span>
+              </div>
+              
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500 ease-out"
+                  style={{ width: `${checklistStatus.completionRate}%` }}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-gray-600">
+                <span>
+                  必須: {checklistStatus.requiredFilled}/{checklistStatus.requiredTotal}
+                </span>
+                <span>
+                  オプション: {checklistStatus.optionalFilled}/{checklistStatus.optionalTotal}
+                </span>
               </div>
             </div>
           )}
