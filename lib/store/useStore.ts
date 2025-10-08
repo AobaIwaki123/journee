@@ -924,6 +924,7 @@ export const useStore = create<AppState>()((set, get) => ({
       // しおりの公開情報を更新
       const updatedItinerary: ItineraryData = {
         ...currentItinerary,
+        id: data.itineraryId, // 新規作成された場合は新しいIDに更新
         isPublic: settings.isPublic,
         publicSlug: data.slug,
         publishedAt: new Date(data.publishedAt),

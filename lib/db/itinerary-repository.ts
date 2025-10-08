@@ -189,10 +189,10 @@ export class ItineraryRepository {
     itinerary: ItineraryData
   ): Promise<ItineraryData> {
     // 1. しおり本体を作成
+    // 注: idは指定せず、Supabaseに自動生成させる（UUID）
     const { data: dbItinerary, error: itineraryError } = await supabase
       .from("itineraries")
       .insert({
-        id: itinerary.id,
         user_id: userId,
         title: itinerary.title,
         destination: itinerary.destination,

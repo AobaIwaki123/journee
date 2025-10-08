@@ -95,11 +95,12 @@ export async function POST(req: NextRequest) {
         user.id,
         itineraryWithUser
       );
-      console.log("[DEBUG] Itinerary created successfully");
+      console.log("[DEBUG] Itinerary created successfully with new ID:", itinerary.id);
+      // 新規作成の場合、公開情報は既にcreateItineraryで設定済みなので更新不要
     } else {
       // 既存のしおりを更新
       console.log("[DEBUG] Updating existing itinerary");
-      await itineraryRepository.updateItinerary(itineraryId, user.id, {
+      itinerary = await itineraryRepository.updateItinerary(itineraryId, user.id, {
         isPublic: settings.isPublic,
         publicSlug: slug,
         publishedAt,
@@ -117,6 +118,7 @@ export async function POST(req: NextRequest) {
       publicUrl,
       slug,
       publishedAt: publishedAt.toISOString(),
+      itineraryId: itinerary.id, // 新規作成された場合の新しいIDを返す
     });
   } catch (error) {
     console.error("[DEBUG] Error publishing itinerary:", error);
