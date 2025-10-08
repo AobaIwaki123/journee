@@ -6,6 +6,7 @@ import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
 import { ErrorNotification } from '@/components/ui/ErrorNotification';
 import { StorageInitializer } from '@/components/layout/StorageInitializer';
 import { AutoSave } from '@/components/layout/AutoSave';
+import { ResizableLayout } from '@/components/layout/ResizableLayout';
 
 /**
  * メインページ（ホーム）
@@ -34,18 +35,8 @@ export default async function Home() {
       {/* Header */}
       <Header />
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Chat Box - Left Side (40%) */}
-        <div className="w-2/5 border-r border-gray-200">
-          <ChatBox />
-        </div>
-
-        {/* Itinerary Preview - Right Side (60%) */}
-        <div className="w-3/5">
-          <ItineraryPreview />
-        </div>
-      </div>
+      {/* Main Content - Resizable Layout */}
+      <ResizableLayout />
 
       {/* Error Notification */}
       <ErrorNotification />
