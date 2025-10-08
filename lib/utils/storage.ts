@@ -3,35 +3,35 @@
  * ブラウザのLocalStorageへの安全なアクセスを提供
  */
 
-import { encrypt, decrypt } from './encryption';
-import type { AIModelId } from '@/types/ai';
-import { isValidModelId, DEFAULT_AI_MODEL } from '@/lib/ai/models';
-import type { ItineraryData } from '@/types/itinerary';
+import { encrypt, decrypt } from "./encryption";
+import type { AIModelId } from "@/types/ai";
+import { isValidModelId, DEFAULT_AI_MODEL } from "@/lib/ai/models";
+import type { ItineraryData } from "@/types/itinerary";
 
 // LocalStorageキー
 const STORAGE_KEYS = {
-  CLAUDE_API_KEY: 'journee_claude_api_key',
-  SELECTED_AI: 'journee_selected_ai',
-  PANEL_WIDTH: 'journee_panel_width', // Phase 7用
-  AUTO_PROGRESS_MODE: 'journee_auto_progress_mode', // Phase 4.10用
-  AUTO_PROGRESS_SETTINGS: 'journee_auto_progress_settings', // Phase 4.10用
-  APP_SETTINGS: 'journee_app_settings', // Phase 5.4.3用
-  PUBLIC_ITINERARIES: 'journee_public_itineraries', // Phase 5.5用
-  CURRENT_ITINERARY: 'journee_current_itinerary', // Phase 5.2用
-  LAST_SAVE_TIME: 'journee_last_save_time', // Phase 5.2用
+  CLAUDE_API_KEY: "journee_claude_api_key",
+  SELECTED_AI: "journee_selected_ai",
+  PANEL_WIDTH: "journee_panel_width", // Phase 7用
+  AUTO_PROGRESS_MODE: "journee_auto_progress_mode", // Phase 4.10用
+  AUTO_PROGRESS_SETTINGS: "journee_auto_progress_settings", // Phase 4.10用
+  APP_SETTINGS: "journee_app_settings", // Phase 5.4.3用
+  PUBLIC_ITINERARIES: "journee_public_itineraries", // Phase 5.5用
+  CURRENT_ITINERARY: "journee_current_itinerary", // Phase 5.2用
+  LAST_SAVE_TIME: "journee_last_save_time", // Phase 5.2用
 } as const;
 
 /**
  * LocalStorageが利用可能かチェック
  */
 function isLocalStorageAvailable(): boolean {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return false;
   }
-  
+
   try {
-    const testKey = '__test__';
-    window.localStorage.setItem(testKey, 'test');
+    const testKey = "__test__";
+    window.localStorage.setItem(testKey, "test");
     window.localStorage.removeItem(testKey);
     return true;
   } catch (e) {
@@ -44,16 +44,16 @@ function isLocalStorageAvailable(): boolean {
  */
 export function saveClaudeApiKey(apiKey: string): boolean {
   if (!isLocalStorageAvailable()) {
-    console.warn('LocalStorage is not available');
+    console.warn("LocalStorage is not available");
     return false;
   }
-  
+
   try {
     const encrypted = encrypt(apiKey);
     window.localStorage.setItem(STORAGE_KEYS.CLAUDE_API_KEY, encrypted);
     return true;
   } catch (error) {
-    console.error('Failed to save Claude API key:', error);
+    console.error("Failed to save Claude API key:", error);
     return false;
   }
 }
@@ -63,18 +63,18 @@ export function saveClaudeApiKey(apiKey: string): boolean {
  */
 export function loadClaudeApiKey(): string {
   if (!isLocalStorageAvailable()) {
-    return '';
+    return "";
   }
-  
+
   try {
     const encrypted = window.localStorage.getItem(STORAGE_KEYS.CLAUDE_API_KEY);
     if (!encrypted) {
-      return '';
+      return "";
     }
     return decrypt(encrypted);
   } catch (error) {
-    console.error('Failed to load Claude API key:', error);
-    return '';
+    console.error("Failed to load Claude API key:", error);
+    return "";
   }
 }
 
@@ -85,12 +85,12 @@ export function removeClaudeApiKey(): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
     window.localStorage.removeItem(STORAGE_KEYS.CLAUDE_API_KEY);
     return true;
   } catch (error) {
-    console.error('Failed to remove Claude API key:', error);
+    console.error("Failed to remove Claude API key:", error);
     return false;
   }
 }
@@ -102,7 +102,7 @@ export function hasClaudeApiKey(): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   const key = loadClaudeApiKey();
   return key.length > 0;
 }
@@ -114,12 +114,12 @@ export function saveSelectedAI(ai: AIModelId): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
     window.localStorage.setItem(STORAGE_KEYS.SELECTED_AI, ai);
     return true;
   } catch (error) {
-    console.error('Failed to save selected AI:', error);
+    console.error("Failed to save selected AI:", error);
     return false;
   }
 }
@@ -131,7 +131,7 @@ export function loadSelectedAI(): AIModelId {
   if (!isLocalStorageAvailable()) {
     return DEFAULT_AI_MODEL;
   }
-  
+
   try {
     const ai = window.localStorage.getItem(STORAGE_KEYS.SELECTED_AI);
     // 有効なモデルIDかチェック
@@ -140,7 +140,7 @@ export function loadSelectedAI(): AIModelId {
     }
     return DEFAULT_AI_MODEL;
   } catch (error) {
-    console.error('Failed to load selected AI:', error);
+    console.error("Failed to load selected AI:", error);
     return DEFAULT_AI_MODEL;
   }
 }
@@ -152,12 +152,15 @@ export function saveAppSettings(settings: Record<string, any>): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
-    window.localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(settings));
+    window.localStorage.setItem(
+      STORAGE_KEYS.APP_SETTINGS,
+      JSON.stringify(settings)
+    );
     return true;
   } catch (error) {
-    console.error('Failed to save app settings:', error);
+    console.error("Failed to save app settings:", error);
     return false;
   }
 }
@@ -169,7 +172,7 @@ export function loadAppSettings(): Record<string, any> | null {
   if (!isLocalStorageAvailable()) {
     return null;
   }
-  
+
   try {
     const settings = window.localStorage.getItem(STORAGE_KEYS.APP_SETTINGS);
     if (!settings) {
@@ -177,7 +180,7 @@ export function loadAppSettings(): Record<string, any> | null {
     }
     return JSON.parse(settings);
   } catch (error) {
-    console.error('Failed to load app settings:', error);
+    console.error("Failed to load app settings:", error);
     return null;
   }
 }
@@ -189,14 +192,14 @@ export function clearAllAppData(): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
     Object.values(STORAGE_KEYS).forEach((key) => {
       window.localStorage.removeItem(key);
     });
     return true;
   } catch (error) {
-    console.error('Failed to clear app data:', error);
+    console.error("Failed to clear app data:", error);
     return false;
   }
 }
@@ -216,15 +219,21 @@ export function saveChatPanelWidth(width: number): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   // 範囲チェック
-  const clampedWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, width));
-  
+  const clampedWidth = Math.max(
+    MIN_PANEL_WIDTH,
+    Math.min(MAX_PANEL_WIDTH, width)
+  );
+
   try {
-    window.localStorage.setItem(STORAGE_KEYS.PANEL_WIDTH, clampedWidth.toString());
+    window.localStorage.setItem(
+      STORAGE_KEYS.PANEL_WIDTH,
+      clampedWidth.toString()
+    );
     return true;
   } catch (error) {
-    console.error('Failed to save panel width:', error);
+    console.error("Failed to save panel width:", error);
     return false;
   }
 }
@@ -236,22 +245,22 @@ export function loadChatPanelWidth(): number {
   if (!isLocalStorageAvailable()) {
     return DEFAULT_CHAT_PANEL_WIDTH;
   }
-  
+
   try {
     const width = window.localStorage.getItem(STORAGE_KEYS.PANEL_WIDTH);
     if (!width) {
       return DEFAULT_CHAT_PANEL_WIDTH;
     }
-    
+
     const parsedWidth = parseFloat(width);
     if (isNaN(parsedWidth)) {
       return DEFAULT_CHAT_PANEL_WIDTH;
     }
-    
+
     // 範囲チェック
     return Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, parsedWidth));
   } catch (error) {
-    console.error('Failed to load panel width:', error);
+    console.error("Failed to load panel width:", error);
     return DEFAULT_CHAT_PANEL_WIDTH;
   }
 }
@@ -273,12 +282,15 @@ export function saveAutoProgressMode(enabled: boolean): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
-    window.localStorage.setItem(STORAGE_KEYS.AUTO_PROGRESS_MODE, enabled.toString());
+    window.localStorage.setItem(
+      STORAGE_KEYS.AUTO_PROGRESS_MODE,
+      enabled.toString()
+    );
     return true;
   } catch (error) {
-    console.error('Failed to save auto progress mode:', error);
+    console.error("Failed to save auto progress mode:", error);
     return false;
   }
 }
@@ -290,15 +302,15 @@ export function loadAutoProgressMode(): boolean {
   if (!isLocalStorageAvailable()) {
     return true; // デフォルトはON
   }
-  
+
   try {
     const mode = window.localStorage.getItem(STORAGE_KEYS.AUTO_PROGRESS_MODE);
     if (mode === null) {
       return true; // デフォルトはON
     }
-    return mode === 'true';
+    return mode === "true";
   } catch (error) {
-    console.error('Failed to load auto progress mode:', error);
+    console.error("Failed to load auto progress mode:", error);
     return true;
   }
 }
@@ -306,11 +318,13 @@ export function loadAutoProgressMode(): boolean {
 /**
  * 自動進行詳細設定を保存
  */
-export function saveAutoProgressSettings(settings: AutoProgressSettings): boolean {
+export function saveAutoProgressSettings(
+  settings: AutoProgressSettings
+): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
     window.localStorage.setItem(
       STORAGE_KEYS.AUTO_PROGRESS_SETTINGS,
@@ -318,7 +332,7 @@ export function saveAutoProgressSettings(settings: AutoProgressSettings): boolea
     );
     return true;
   } catch (error) {
-    console.error('Failed to save auto progress settings:', error);
+    console.error("Failed to save auto progress settings:", error);
     return false;
   }
 }
@@ -332,24 +346,26 @@ export function loadAutoProgressSettings(): AutoProgressSettings {
     parallelCount: 3,
     showNotifications: true,
   };
-  
+
   if (!isLocalStorageAvailable()) {
     return defaultSettings;
   }
-  
+
   try {
-    const settingsStr = window.localStorage.getItem(STORAGE_KEYS.AUTO_PROGRESS_SETTINGS);
+    const settingsStr = window.localStorage.getItem(
+      STORAGE_KEYS.AUTO_PROGRESS_SETTINGS
+    );
     if (!settingsStr) {
       return defaultSettings;
     }
-    
+
     const settings = JSON.parse(settingsStr) as AutoProgressSettings;
     return {
       ...defaultSettings,
       ...settings,
     };
   } catch (error) {
-    console.error('Failed to load auto progress settings:', error);
+    console.error("Failed to load auto progress settings:", error);
     return defaultSettings;
   }
 }
@@ -365,25 +381,29 @@ export function saveCurrentItinerary(itinerary: ItineraryData | null): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
     if (itinerary === null) {
       window.localStorage.removeItem(STORAGE_KEYS.CURRENT_ITINERARY);
       window.localStorage.removeItem(STORAGE_KEYS.LAST_SAVE_TIME);
       return true;
     }
-    
+
     // 日付フィールドを文字列に変換（既に文字列の場合はそのまま使用）
-    const createdAtStr = itinerary.createdAt instanceof Date 
-      ? itinerary.createdAt.toISOString()
-      : itinerary.createdAt;
-    const updatedAtStr = itinerary.updatedAt instanceof Date
-      ? itinerary.updatedAt.toISOString()
-      : itinerary.updatedAt;
-    const publishedAtStr = itinerary.publishedAt 
-      ? (itinerary.publishedAt instanceof Date ? itinerary.publishedAt.toISOString() : itinerary.publishedAt)
+    const createdAtStr =
+      itinerary.createdAt instanceof Date
+        ? itinerary.createdAt.toISOString()
+        : itinerary.createdAt;
+    const updatedAtStr =
+      itinerary.updatedAt instanceof Date
+        ? itinerary.updatedAt.toISOString()
+        : itinerary.updatedAt;
+    const publishedAtStr = itinerary.publishedAt
+      ? itinerary.publishedAt instanceof Date
+        ? itinerary.publishedAt.toISOString()
+        : itinerary.publishedAt
       : undefined;
-    
+
     // しおりデータをJSON化して保存
     const serialized = JSON.stringify({
       ...itinerary,
@@ -391,13 +411,16 @@ export function saveCurrentItinerary(itinerary: ItineraryData | null): boolean {
       updatedAt: updatedAtStr,
       publishedAt: publishedAtStr,
     });
-    
+
     window.localStorage.setItem(STORAGE_KEYS.CURRENT_ITINERARY, serialized);
-    window.localStorage.setItem(STORAGE_KEYS.LAST_SAVE_TIME, new Date().toISOString());
-    
+    window.localStorage.setItem(
+      STORAGE_KEYS.LAST_SAVE_TIME,
+      new Date().toISOString()
+    );
+
     return true;
   } catch (error) {
-    console.error('Failed to save current itinerary:', error);
+    console.error("Failed to save current itinerary:", error);
     return false;
   }
 }
@@ -409,15 +432,17 @@ export function loadCurrentItinerary(): ItineraryData | null {
   if (!isLocalStorageAvailable()) {
     return null;
   }
-  
+
   try {
-    const serialized = window.localStorage.getItem(STORAGE_KEYS.CURRENT_ITINERARY);
+    const serialized = window.localStorage.getItem(
+      STORAGE_KEYS.CURRENT_ITINERARY
+    );
     if (!serialized) {
       return null;
     }
-    
+
     const data = JSON.parse(serialized);
-    
+
     // Date型に変換
     return {
       ...data,
@@ -426,7 +451,7 @@ export function loadCurrentItinerary(): ItineraryData | null {
       publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
     } as ItineraryData;
   } catch (error) {
-    console.error('Failed to load current itinerary:', error);
+    console.error("Failed to load current itinerary:", error);
     return null;
   }
 }
@@ -438,16 +463,16 @@ export function getLastSaveTime(): Date | null {
   if (!isLocalStorageAvailable()) {
     return null;
   }
-  
+
   try {
     const timeStr = window.localStorage.getItem(STORAGE_KEYS.LAST_SAVE_TIME);
     if (!timeStr) {
       return null;
     }
-    
+
     return new Date(timeStr);
   } catch (error) {
-    console.error('Failed to load last save time:', error);
+    console.error("Failed to load last save time:", error);
     return null;
   }
 }
@@ -470,7 +495,7 @@ export function savePublicItinerary(slug: string, itinerary: any): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
     const publicItineraries = loadPublicItineraries();
     publicItineraries[slug] = itinerary;
@@ -480,7 +505,7 @@ export function savePublicItinerary(slug: string, itinerary: any): boolean {
     );
     return true;
   } catch (error) {
-    console.error('Failed to save public itinerary:', error);
+    console.error("Failed to save public itinerary:", error);
     return false;
   }
 }
@@ -492,12 +517,12 @@ export function getPublicItinerary(slug: string): any | null {
   if (!isLocalStorageAvailable()) {
     return null;
   }
-  
+
   try {
     const publicItineraries = loadPublicItineraries();
     return publicItineraries[slug] || null;
   } catch (error) {
-    console.error('Failed to get public itinerary:', error);
+    console.error("Failed to get public itinerary:", error);
     return null;
   }
 }
@@ -509,28 +534,29 @@ export function loadPublicItineraries(): Record<string, any> {
   if (!isLocalStorageAvailable()) {
     return {};
   }
-  
+
   try {
     const data = window.localStorage.getItem(STORAGE_KEYS.PUBLIC_ITINERARIES);
     if (!data) {
       return {};
     }
     const parsed = JSON.parse(data);
-    
+
     // 各しおりの日付フィールドをDateオブジェクトに変換
     const result: Record<string, any> = {};
     for (const [slug, itinerary] of Object.entries(parsed)) {
+      const item = itinerary as any;
       result[slug] = {
-        ...itinerary,
-        createdAt: (itinerary as any).createdAt ? new Date((itinerary as any).createdAt) : new Date(),
-        updatedAt: (itinerary as any).updatedAt ? new Date((itinerary as any).updatedAt) : new Date(),
-        publishedAt: (itinerary as any).publishedAt ? new Date((itinerary as any).publishedAt) : undefined,
+        ...item,
+        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+        updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
+        publishedAt: item.publishedAt ? new Date(item.publishedAt) : undefined,
       };
     }
-    
+
     return result;
   } catch (error) {
-    console.error('Failed to load public itineraries:', error);
+    console.error("Failed to load public itineraries:", error);
     return {};
   }
 }
@@ -542,7 +568,7 @@ export function removePublicItinerary(slug: string): boolean {
   if (!isLocalStorageAvailable()) {
     return false;
   }
-  
+
   try {
     const publicItineraries = loadPublicItineraries();
     delete publicItineraries[slug];
@@ -552,7 +578,7 @@ export function removePublicItinerary(slug: string): boolean {
     );
     return true;
   } catch (error) {
-    console.error('Failed to remove public itinerary:', error);
+    console.error("Failed to remove public itinerary:", error);
     return false;
   }
 }

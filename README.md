@@ -186,6 +186,35 @@ journee/
 - [x] しおりプレビューの基本レイアウト
 - [x] 状態管理の実装（Zustand / Context API）
 
+## 🧪 テスト
+
+### 自動テスト（E2E）
+
+フロー改善機能の自動テストを実装済み：
+
+```bash
+# 開発サーバーを起動（別ターミナル）
+npm run dev
+
+# テストを実行
+npm run test:flow
+
+# ブラウザを表示してテスト
+npm run test:flow:headed
+
+# UIモードでテスト（推奨）
+npm run test:flow:ui
+```
+
+**テストカバレッジ**:
+- ✅ 基本情報収集フロー
+- ✅ 詳細情報収集フロー
+- ✅ 骨組み作成フロー
+- ✅ エッジケース（情報不足、永続化）
+- ✅ パフォーマンステスト
+
+詳細は [TESTING.md](./TESTING.md) と [e2e/README.md](./e2e/README.md) を参照してください。
+
 ### Phase 2: 認証機能（Week 3）✅ **完了**
 - [x] NextAuth.jsのセットアップ
 - [x] Google OAuth設定

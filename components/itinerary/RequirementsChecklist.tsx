@@ -1,12 +1,15 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Check, Circle, AlertCircle } from 'lucide-react';
-import type { RequirementChecklistItem, CompletionStatus } from '@/types/requirements';
+import React from "react";
+import { Check, Circle, AlertCircle } from "lucide-react";
+import type {
+  RequirementChecklistItem,
+  ChecklistStatus,
+} from "@/types/requirements";
 
 interface RequirementsChecklistProps {
   items: RequirementChecklistItem[];
-  completionStatus: CompletionStatus | null;
+  completionStatus: ChecklistStatus | null;
   phase: string;
 }
 
@@ -27,9 +30,7 @@ export const RequirementsChecklist: React.FC<RequirementsChecklistProps> = ({
     <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700">
-          情報収集の進捗
-        </h3>
+        <h3 className="text-sm font-semibold text-gray-700">情報収集の進捗</h3>
         <div className="text-xs text-gray-500">
           {Math.round(completionStatus.completionRate)}%
         </div>
@@ -46,14 +47,14 @@ export const RequirementsChecklist: React.FC<RequirementsChecklistProps> = ({
       {/* チェックリスト */}
       <div className="space-y-2">
         {items.map((item) => {
-          const isFilled = item.status === 'filled';
+          const isFilled = item.status === "filled";
           const isRequired = item.required;
 
           return (
             <div
               key={item.id}
               className={`flex items-start space-x-2 p-2 rounded-lg transition-colors ${
-                isFilled ? 'bg-green-50' : 'bg-gray-50'
+                isFilled ? "bg-green-50" : "bg-gray-50"
               }`}
             >
               {/* アイコン */}
@@ -72,7 +73,7 @@ export const RequirementsChecklist: React.FC<RequirementsChecklistProps> = ({
                 <div className="flex items-center space-x-1">
                   <span
                     className={`text-sm font-medium ${
-                      isFilled ? 'text-green-700' : 'text-gray-700'
+                      isFilled ? "text-green-700" : "text-gray-700"
                     }`}
                   >
                     {item.label}
@@ -93,7 +94,7 @@ export const RequirementsChecklist: React.FC<RequirementsChecklistProps> = ({
                 {isFilled && item.value && (
                   <div className="mt-1">
                     <span className="text-xs font-medium text-green-600">
-                      {typeof item.value === 'object'
+                      {typeof item.value === "object"
                         ? JSON.stringify(item.value)
                         : String(item.value)}
                     </span>
@@ -115,7 +116,7 @@ export const RequirementsChecklist: React.FC<RequirementsChecklistProps> = ({
                 以下の必須情報が不足しています：
               </p>
               <p className="text-xs text-orange-700 mt-1">
-                {completionStatus.missingRequired.join('、')}
+                {completionStatus.missingRequired.join("、")}
               </p>
             </div>
           </div>
@@ -133,7 +134,7 @@ export const RequirementsChecklist: React.FC<RequirementsChecklistProps> = ({
                   さらに詳しい情報を追加すると、より良いプランが作成できます：
                 </p>
                 <p className="text-xs text-blue-700 mt-1">
-                  {completionStatus.missingOptional.join('、')}
+                  {completionStatus.missingOptional.join("、")}
                 </p>
               </div>
             </div>

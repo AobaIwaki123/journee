@@ -21,6 +21,11 @@ export default withAuth(
        * @returns 認証済みの場合はtrue
        */
       authorized: ({ token }) => {
+        // E2Eテストモード時は認証をバイパス
+        if (process.env.PLAYWRIGHT_TEST_MODE === "true") {
+          return true;
+        }
+
         // トークンが存在する場合は認証済みとみなす
         return !!token;
       },

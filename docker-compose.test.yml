@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.56.0-noble
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - CI=true
+      - BASE_URL=http://localhost:3001
+    command: npx playwright test e2e/flow-improvement.spec.ts --reporter=list
+    network_mode: "host"
+

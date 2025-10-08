@@ -8,8 +8,8 @@ import type {
   ChecklistStatus,
   ButtonReadiness,
   ButtonReadinessLevel,
-} from '@/types/requirements';
-import type { ItineraryPhase } from '@/types/itinerary';
+} from "@/types/requirements";
+import type { ItineraryPhase } from "@/types/itinerary";
 
 /**
  * チェックリストの状態を計算
@@ -19,42 +19,48 @@ export function calculateChecklistStatus(
   requirements: PhaseRequirements
 ): ChecklistStatus {
   // 必須項目とオプション項目を分離
-  const requiredItems = items.filter(item => item.required);
-  const optionalItems = items.filter(item => !item.required);
-  
+  const requiredItems = items.filter((item) => item.required);
+  const optionalItems = items.filter((item) => !item.required);
+
   // 必須項目の充足数
   const requiredFilled = requiredItems.filter(
-    item => item.status === 'filled'
+    (item) => item.status === "filled"
   ).length;
-  
+
   // オプション項目の充足数
   const optionalFilled = optionalItems.filter(
-    item => item.status === 'filled'
+    (item) => item.status === "filled"
   ).length;
-  
+
   // すべての必須項目が充足されているか
-  const allRequiredFilled = requiredItems.length === 0 || 
-    requiredFilled === requiredItems.length;
-  
+  const allRequiredFilled =
+    requiredItems.length === 0 || requiredFilled === requiredItems.length;
+
   // 不足している必須項目のリスト
   const missingRequired = requiredItems
-    .filter(item => item.status !== 'filled')
-    .map(item => item.label);
-  
+    .filter((item) => item.status !== "filled")
+    .map((item) => item.label);
+
+  // 不足しているオプション項目のリスト
+  const missingOptional = optionalItems
+    .filter((item) => item.status !== "filled")
+    .map((item) => item.label);
+
   // 全体の充足率を計算
   const totalItems = items.length;
   const totalFilled = requiredFilled + optionalFilled;
-  const completionRate = totalItems === 0 ? 0 : Math.round((totalFilled / totalItems) * 100);
-  
+  const completionRate =
+    totalItems === 0 ? 0 : Math.round((totalFilled / totalItems) * 100);
+
   // 推奨されるアクション
-  let recommendedAction: 'proceed' | 'collect_more' | 'wait' = 'wait';
-  
+  let recommendedAction: "proceed" | "collect_more" | "wait" = "wait";
+
   if (allRequiredFilled) {
-    recommendedAction = 'proceed';
+    recommendedAction = "proceed";
   } else if (requiredFilled > 0) {
-    recommendedAction = 'collect_more';
+    recommendedAction = "collect_more";
   }
-  
+
   return {
     completionRate,
     allRequiredFilled,
@@ -63,6 +69,7 @@ export function calculateChecklistStatus(
     optionalFilled,
     optionalTotal: optionalItems.length,
     missingRequired,
+    missingOptional,
     recommendedAction,
   };
 }
@@ -75,44 +82,45 @@ export function determineButtonReadiness(
   phase: ItineraryPhase
 ): ButtonReadiness {
   const { allRequiredFilled, missingRequired, completionRate } = status;
-  
+
   // フェーズごとのボタンラベル
   const phaseLabels: Record<ItineraryPhase, string> = {
-    initial: '情報収集を開始',
-    collecting: '骨組みを作成',
-    skeleton: '日程の詳細化',
-    detailing: '次の日へ',
-    completed: '完成',
+    initial: "情報収集を開始",
+    collecting_basic: "詳細情報を収集",
+    collecting_detailed: "骨組みを作成",
+    skeleton: "日程の詳細化",
+    detailing: "次の日へ",
+    completed: "完成",
   };
-  
+
   let level: ButtonReadinessLevel;
-  let color: 'green' | 'blue' | 'gray';
+  let color: "green" | "blue" | "gray";
   let animate: boolean;
   let tooltip: string;
-  
+
   if (allRequiredFilled) {
     // すべての必須情報が揃っている
-    level = 'ready';
-    color = 'green';
+    level = "ready";
+    color = "green";
     animate = true;
-    tooltip = '必要な情報が揃いました！次のステップへ進めます';
+    tooltip = "必要な情報が揃いました！次のステップへ進めます";
   } else if (completionRate >= 50) {
     // 一部の情報が揃っている
-    level = 'partial';
-    color = 'blue';
+    level = "partial";
+    color = "blue";
     animate = false;
-    tooltip = `次へ進めますが、${missingRequired.join('、')}が未設定です`;
+    tooltip = `次へ進めますが、${missingRequired.join("、")}が未設定です`;
   } else {
     // 情報が大幅に不足
-    level = 'not_ready';
-    color = 'gray';
+    level = "not_ready";
+    color = "gray";
     animate = false;
-    tooltip = `次へ進むには、${missingRequired.join('、')}の情報が必要です`;
+    tooltip = `次へ進むには、${missingRequired.join("、")}の情報が必要です`;
   }
-  
+
   return {
     level,
-    label: phaseLabels[phase] || '次へ',
+    label: phaseLabels[phase] || "次へ",
     color,
     animate,
     tooltip,
@@ -125,44 +133,44 @@ export function determineButtonReadiness(
  */
 export function formatChecklistValue(value: any): string {
   if (value === null || value === undefined) {
-    return '';
+    return "";
   }
-  
-  if (typeof value === 'string') {
+
+  if (typeof value === "string") {
     return value;
   }
-  
-  if (typeof value === 'number') {
+
+  if (typeof value === "number") {
     return value.toString();
   }
-  
-  if (typeof value === 'boolean') {
-    return value ? 'はい' : 'いいえ';
+
+  if (typeof value === "boolean") {
+    return value ? "はい" : "いいえ";
   }
-  
+
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return '';
+      return "";
     }
-    return value.join('、');
+    return value.join("、");
   }
-  
-  if (typeof value === 'object') {
+
+  if (typeof value === "object") {
     // traveler オブジェクトの場合
-    if ('count' in value && 'type' in value) {
+    if ("count" in value && "type" in value) {
       const typeLabels: Record<string, string> = {
-        solo: '一人旅',
-        couple: 'カップル',
-        family: '家族',
-        friends: '友人',
+        solo: "一人旅",
+        couple: "カップル",
+        family: "家族",
+        friends: "友人",
       };
-      const typeLabel = typeLabels[value.type] || '';
-      return `${value.count}人${typeLabel ? `（${typeLabel}）` : ''}`;
+      const typeLabel = typeLabels[value.type] || "";
+      return `${value.count}人${typeLabel ? `（${typeLabel}）` : ""}`;
     }
-    
+
     // 他のオブジェクトの場合はJSON文字列化
     return JSON.stringify(value);
   }
-  
+
   return String(value);
 }
