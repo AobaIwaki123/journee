@@ -215,7 +215,26 @@ export const useStore = create<AppState>()((set, get) => ({
 
   // Itinerary state
   currentItinerary: null,
-  setItinerary: (itinerary) =>
+  setItinerary: (itinerary) => {
+    // LocalStorageに保存
+    if (typeof window !== 'undefined') {
+      try {
+        const currentStorage = localStorage.getItem('journee-storage');
+        const parsed = currentStorage ? JSON.parse(currentStorage) : {};
+        const newStorage = {
+          ...parsed,
+          state: {
+            ...(parsed.state || {}),
+            currentItinerary: itinerary,
+          },
+          version: 0,
+        };
+        localStorage.setItem('journee-storage', JSON.stringify(newStorage));
+      } catch (e) {
+        console.error('Failed to save itinerary to localStorage:', e);
+      }
+    }
+    
     set((state) => ({
       currentItinerary: itinerary,
       history: {
@@ -227,7 +246,8 @@ export const useStore = create<AppState>()((set, get) => ({
         present: itinerary,
         future: [],
       },
-    })),
+    }));
+  },
   updateItinerary: (updates) =>
     set((state) => {
       const newItinerary = state.currentItinerary
@@ -237,6 +257,25 @@ export const useStore = create<AppState>()((set, get) => ({
             updatedAt: new Date(),
           }
         : null;
+
+      // LocalStorageに保存
+      if (typeof window !== 'undefined' && newItinerary) {
+        try {
+          const currentStorage = localStorage.getItem('journee-storage');
+          const parsed = currentStorage ? JSON.parse(currentStorage) : {};
+          const newStorage = {
+            ...parsed,
+            state: {
+              ...(parsed.state || {}),
+              currentItinerary: newItinerary,
+            },
+            version: 0,
+          };
+          localStorage.setItem('journee-storage', JSON.stringify(newStorage));
+        } catch (e) {
+          console.error('Failed to save itinerary to localStorage:', e);
+        }
+      }
 
       return {
         currentItinerary: newItinerary,
@@ -655,6 +694,21 @@ export const useStore = create<AppState>()((set, get) => ({
     const autoProgressSettings = loadAutoProgressSettings();
     const savedSettings = loadAppSettings();
     const savedPanelWidth = loadChatPanelWidth();
+    
+    // currentItineraryも復元する
+    let savedItinerary = null;
+    if (typeof window !== 'undefined') {
+      const journeeStorage = localStorage.getItem('journee-storage');
+      if (journeeStorage) {
+        try {
+          const parsed = JSON.parse(journeeStorage);
+          savedItinerary = parsed?.state?.currentItinerary || null;
+        } catch (e) {
+          console.error('Failed to parse journee-storage:', e);
+        }
+      }
+    }
+    
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
@@ -662,6 +716,7 @@ export const useStore = create<AppState>()((set, get) => ({
       autoProgressSettings,
       settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
       chatPanelWidth: savedPanelWidth,
+      currentItinerary: savedItinerary,
     });
   },
 
@@ -768,12 +823,12 @@ export const useStore = create<AppState>()((set, get) => ({
     }),
 
   canUndo: () => {
-    const state: AppState = useStore.getState();
+    const state = get();
     return state.history.past.length > 0;
   },
 
   canRedo: () => {
-    const state: AppState = useStore.getState();
+    const state = get();
     return state.history.future.length > 0;
   },
 

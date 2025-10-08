@@ -9,8 +9,8 @@ import { useStore } from '@/lib/store/useStore';
  * Phase 3.6で実装される効果音システムとの連携を想定
  */
 export const SoundSettings: React.FC = () => {
-  const settings = useStore((state) => state.settings);
-  const updateSoundSettings = useStore((state) => state.updateSoundSettings);
+  const settings = useStore((state: any) => state.settings);
+  const updateSoundSettings = useStore((state: any) => state.updateSoundSettings);
   
   const [localEnabled, setLocalEnabled] = useState(settings.sound.enabled);
   const [localVolume, setLocalVolume] = useState(settings.sound.volume);

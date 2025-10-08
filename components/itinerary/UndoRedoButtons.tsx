@@ -5,10 +5,10 @@ import { useStore } from '@/lib/store/useStore';
 import { Undo2, Redo2 } from 'lucide-react';
 
 export const UndoRedoButtons: React.FC = () => {
-  const undo = useStore((state) => state.undo);
-  const redo = useStore((state) => state.redo);
-  const canUndo = useStore((state) => state.canUndo);
-  const canRedo = useStore((state) => state.canRedo);
+  const undo = useStore((state: any) => state.undo);
+  const redo = useStore((state: any) => state.redo);
+  const canUndo = useStore((state: any) => state.canUndo);
+  const canRedo = useStore((state: any) => state.canRedo);
 
   const handleUndo = () => {
     if (canUndo()) {
