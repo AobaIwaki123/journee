@@ -29,6 +29,8 @@ export const MessageInput: React.FC = () => {
   // Phase 4.5: プランニングフェーズ状態を取得
   const planningPhase = useStore((state: any) => state.planningPhase);
   const currentDetailingDay = useStore((state: any) => state.currentDetailingDay);
+  const setPlanningPhase = useStore((state: any) => state.setPlanningPhase);
+  const setCurrentDetailingDay = useStore((state: any) => state.setCurrentDetailingDay);
   
   // Phase 4.10: 自動進行機能
   const updateChecklist = useStore((state: any) => state.updateChecklist);
@@ -196,6 +198,9 @@ export const MessageInput: React.FC = () => {
           onComplete: () => {
             console.log('✅ Auto progress completed');
             setIsAutoProgressing(false);
+            // フェーズを完了状態に更新
+            setPlanningPhase('completed');
+            setCurrentDetailingDay(null);
           },
           onError: (error) => {
             console.error('❌ Auto progress error:', error);
