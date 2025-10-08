@@ -4,6 +4,560 @@
 
 本ドキュメントは、現在のしおり作成フローを分析し、UXを大幅に改善するための実装計画を定義します。
 
+## フローとメソッドの連なり
+
+### 現在のフロー（As-Is）
+
+#### 1. ユーザー起動 → 初期化
+
+```
+User Action: アプリを開く
+  ↓
+App.tsx
+  └─ useStore.initializeFromStorage()
+       └─ loadChatPanelWidth()
+       └─ loadSelectedAI()
+       └─ loadAutoProgressMode()
+       └─ loadAppSettings()
+       └─ loadCurrentItinerary() from localStorage
+  ↓
+ChatBox mounted
+  └─ messages: []
+  └─ planningPhase: 'initial'
+```
+
+#### 2. ユーザーメッセージ送信
+
+```
+User Action: 「京都に3日間行きたい」と入力
+  ↓
+MessageInput.handleSubmit()
+  ├─ useStore.addMessage(userMessage)
+  ├─ useStore.setLoading(true)
+  ├─ useStore.setStreaming(true)
+  └─ sendChatMessageStream()
+       ↓
+       POST /api/chat
+         ├─ body: { message, chatHistory, currentItinerary, planningPhase: 'initial' }
+         └─ model: 'gemini'
+       ↓
+       route.ts.POST()
+         ├─ detectNextStepKeyword(message) → false
+         ├─ handleGeminiStreamingResponse()
+         └─ streamGeminiMessage()
+              ↓
+              gemini.ts.streamGeminiMessage()
+                ├─ buildSystemPrompt(planningPhase: 'initial')
+                │    └─ SYSTEM_PROMPT + INCREMENTAL_SYSTEM_PROMPT
+                ├─ buildConversationHistory()
+                └─ generativeModel.generateContentStream()
+                     ↓
+                     for await (chunk of response.stream)
+                       └─ yield chunk.text()
+       ↓
+       Client: MessageInput
+         └─ for await (chunk of sendChatMessageStream())
+              ├─ if (chunk.type === 'message')
+              │    └─ useStore.appendStreamingMessage(chunk.content)
+              ├─ if (chunk.type === 'itinerary')
+              │    └─ useStore.setItinerary(chunk.itinerary)
+              └─ if (chunk.type === 'done')
+                   ├─ useStore.addMessage(assistantMessage)
+                   ├─ useStore.setStreaming(false)
+                   └─ useStore.setLoading(false)
+```
+
+**問題点**:
+- LLMは受動的に応答するだけ
+- フェーズは`initial`のまま（自動遷移なし）
+- 情報抽出が行われない
+- ユーザーが次に何をすべきか不明確
+
+#### 3. 「次へ」ボタンクリック（現在のフロー）
+
+```
+User Action: QuickActionsの「次へ」ボタンをクリック
+  ↓
+QuickActions.handleNextStep()
+  ├─ if (buttonReadiness.level === 'not_ready')
+  │    └─ setShowWarning(true) → ユーザーに警告表示
+  └─ else: proceedAndSendMessage()
+       ↓
+       useStore.proceedToNextStep()
+         ├─ switch (planningPhase)
+         │    case 'initial': → planningPhase = 'collecting'
+         │    case 'collecting': → planningPhase = 'skeleton'
+         │    case 'skeleton': → planningPhase = 'detailing', currentDay = 1
+         │    case 'detailing': → currentDay++
+         └─ updateItinerary({ phase, currentDay })
+       ↓
+       sendChatMessageStream('次へ', ...)
+         ↓
+         POST /api/chat
+           ├─ detectNextStepKeyword('次へ') → true
+           ├─ enhancedMessage = message + createNextStepPrompt()
+           └─ streamGeminiMessage(enhancedMessage, ..., newPhase)
+                ↓
+                gemini.ts
+                  ├─ buildSystemPrompt(planningPhase: 'skeleton')
+                  │    └─ INCREMENTAL_SYSTEM_PROMPT + skeletonInstructions
+                  └─ generateContentStream()
+       ↓
+       LLM generates skeleton with themes
+       ↓
+       parseAIResponse(fullResponse)
+         └─ Extract { message, itineraryData }
+       ↓
+       mergeItineraryData(currentItinerary, itineraryData)
+         ├─ Merge schedule with status: 'skeleton'
+         └─ Preserve existing data
+       ↓
+       useStore.setItinerary(mergedItinerary)
+```
+
+**問題点**:
+- ユーザーが手動で「次へ」を押す必要がある
+- 情報収集が不十分でも進める
+- LLMが自発的に質問しない
+- 骨組み作成の品質が情報量に依存
+
+#### 4. 情報抽出（現在の実装）
+
+```
+useEffect in QuickActions
+  └─ updateChecklist()
+       ↓
+       useStore.updateChecklist()
+         ├─ getRequirementsForPhase(planningPhase)
+         │    └─ PHASE_REQUIREMENTS[planningPhase].items
+         ├─ for each item:
+         │    └─ item.extractor(messages, currentItinerary)
+         │         ├─ extractDestination() → 正規表現で「京都」を抽出
+         │         ├─ extractDuration() → 正規表現で「3日間」を抽出
+         │         ├─ extractBudget() → null
+         │         ├─ extractTravelers() → null
+         │         └─ extractInterests() → []
+         ├─ calculateChecklistStatus(items)
+         │    ├─ requiredFilled = 2/2
+         │    ├─ optionalFilled = 0/3
+         │    └─ completionRate = 66%
+         └─ determineButtonReadiness(status, phase)
+              └─ level: 'partial', label: '骨組みを作成'
+```
+
+**問題点**:
+- 正規表現ベースで精度が低い
+- 抽出結果がLLMにフィードバックされない
+- LLMが不足情報を尋ねるロジックがない
+
+---
+
+### あるべきフロー（To-Be）
+
+#### 1. ユーザー起動 → 初期化（変更なし）
+
+```
+User Action: アプリを開く
+  ↓
+App.tsx
+  └─ useStore.initializeFromStorage()
+  ↓
+ChatBox mounted
+  └─ messages: []
+  └─ planningPhase: 'initial'
+  └─ conversationManager: new ConversationManager('initial')
+```
+
+#### 2. ウェルカムメッセージの自動送信
+
+```
+useEffect in ChatBox (planningPhase === 'initial' && messages.length === 0)
+  ↓
+  sendInitialGreeting()
+    ├─ greeting = INITIAL_GREETING
+    ├─ useStore.addMessage(assistantMessage: greeting)
+    └─ useStore.setPlanningPhase('collecting_basic')
+```
+
+**新規メソッド**:
+- `sendInitialGreeting()` - 初回ウェルカムメッセージ
+
+#### 3. ユーザーメッセージ送信 → 自動情報抽出
+
+```
+User Action: 「京都に3日間行きたい」と入力
+  ↓
+MessageInput.handleSubmit()
+  ├─ useStore.addMessage(userMessage)
+  ├─ useStore.setLoading(true)
+  └─ sendChatMessageStream()
+       ↓
+       POST /api/chat
+         ├─ body: { message, chatHistory, currentItinerary, planningPhase: 'collecting_basic' }
+         └─ model: 'gemini'
+       ↓
+       route.ts.POST()
+         ├─ extractInformationFromMessage(message) // 🆕 新規
+         │    ├─ extractDestination() → '京都'
+         │    ├─ extractDuration() → 3
+         │    ├─ extractBudget() → null
+         │    ├─ extractTravelers() → null
+         │    └─ extractInterests() → []
+         ├─ updateExtractionCache(extractedInfo) // 🆕 新規
+         ├─ calculateCompletionStatus() // 🆕 新規
+         │    └─ { requiredFilled: true, optionalFilled: 0/5 }
+         └─ handleGeminiStreamingResponse()
+              ↓
+              gemini.ts.streamGeminiMessage()
+                ├─ buildSystemPrompt(planningPhase: 'collecting_basic')
+                │    └─ INCREMENTAL_SYSTEM_PROMPT
+                │         + extractedInformation
+                │         + completionStatus
+                ├─ buildConversationContext() // 🆕 拡張
+                │    └─ Include extraction results
+                └─ generativeModel.generateContentStream()
+       ↓
+       LLM Response: 「かしこまりました！京都に3日間の旅ですね。」
+       ↓
+       Client: MessageInput
+         └─ for await (chunk of sendChatMessageStream())
+              ├─ useStore.appendStreamingMessage(chunk.content)
+              └─ if (chunk.type === 'done')
+                   ├─ checkAutoTransition() // 🆕 新規
+                   └─ if (requiredInfoComplete)
+                        └─ autoTransitionToDetailedCollection() // 🆕 新規
+```
+
+**新規メソッド**:
+- `extractInformationFromMessage()` - リアルタイム情報抽出
+- `updateExtractionCache()` - 抽出結果のキャッシング
+- `calculateCompletionStatus()` - 充足度計算
+- `checkAutoTransition()` - 自動遷移判定
+- `autoTransitionToDetailedCollection()` - 自動フェーズ遷移
+
+#### 4. 自動フェーズ遷移 → 詳細情報収集開始
+
+```
+autoTransitionToDetailedCollection()
+  ↓
+  useStore.setPlanningPhase('collecting_detailed')
+  ↓
+  conversationManager.initialize('collecting_detailed') // 🆕 新規
+    ├─ loadQuestionQueue(planningPhase)
+    │    └─ [travelers, interests, budget, pace, specific_spots]
+    ├─ loadAskedQuestions(chatHistory)
+    └─ prioritizeQuestions(extractionCache)
+  ↓
+  sendNextQuestion() // 🆕 新規
+    ├─ nextQuestion = conversationManager.getNextQuestion()
+    │    └─ { category: 'travelers', question: '誰と行かれますか？...' }
+    ├─ buildQuestionPrompt(nextQuestion, context)
+    └─ sendChatMessageStream(questionPrompt, ...)
+         ↓
+         POST /api/chat
+           ├─ conversationManager.getPromptHint()
+           │    └─ 「次に聞くべき質問: 誰と行かれますか？」
+           └─ streamGeminiMessage(..., promptHint)
+                ↓
+                LLM Response: 「誰と行かれますか？（一人旅、カップル...）」
+```
+
+**新規クラス・メソッド**:
+- `ConversationManager` クラス
+  - `initialize(phase)` - 会話フロー初期化
+  - `loadQuestionQueue(phase)` - 質問キューの読み込み
+  - `getNextQuestion()` - 次の質問を取得
+  - `markAsAsked(category)` - 質問済みマーク
+  - `getPromptHint()` - LLMへのヒント生成
+- `sendNextQuestion()` - 次の質問を送信
+
+#### 5. ユーザー応答 → 情報更新 → 次の質問
+
+```
+User Action: 「彼女と二人で行きます」と入力
+  ↓
+MessageInput.handleSubmit()
+  ↓
+  sendChatMessageStream()
+    ↓
+    POST /api/chat
+      ├─ extractInformationFromMessage('彼女と二人で行きます')
+      │    └─ extractTravelers() → { count: 2, type: 'couple' }
+      ├─ updateExtractionCache({ travelers: 'couple' })
+      ├─ conversationManager.markAsAsked('travelers')
+      ├─ calculateCompletionStatus()
+      │    └─ { requiredFilled: true, optionalFilled: 1/5 }
+      └─ handleGeminiStreamingResponse()
+           ↓
+           buildSystemPrompt()
+             ├─ currentExtractionState
+             └─ nextQuestionHint = conversationManager.getPromptHint()
+                  └─ 「次: どんなことに興味がありますか？」
+           ↓
+           LLM Response: 
+             「楽しそうですね！カップル旅行ですね。
+              どんなことに興味がありますか？（観光、グルメ...）」
+    ↓
+    Client receives response
+      ├─ updateUI with completionStatus
+      │    └─ Checklist: travelers ✅
+      └─ continue conversation loop
+```
+
+#### 6. 情報収集完了 → 骨組み作成ボタンアクティブ化
+
+```
+POST /api/chat (after multiple exchanges)
+  ├─ extractInformationFromMessage(latestMessage)
+  ├─ updateExtractionCache()
+  ├─ calculateCompletionStatus()
+  │    └─ { requiredFilled: true, optionalFilled: 4/5, completionRate: 90% }
+  └─ if (completionRate >= 80%) // 🆕 閾値判定
+       ├─ conversationManager.allQuestionsAsked() → true
+       └─ suggestNextPhase() // 🆕 新規
+            ↓
+            LLM Response: 
+              「ありがとうございます！
+               十分な情報が揃いました。
+               それでは、各日の骨組みを作成しましょう。
+               「骨組みを作成」ボタンを押してください。」
+  ↓
+  Client updates UI
+    ├─ buttonReadiness.level = 'ready'
+    ├─ buttonReadiness.animate = true (pulse)
+    └─ buttonReadiness.label = '骨組みを作成 ✨'
+```
+
+**新規メソッド**:
+- `suggestNextPhase()` - 次のフェーズを提案
+
+#### 7. 骨組み作成ボタンクリック
+
+```
+User Action: QuickActionsの「骨組みを作成」ボタンをクリック
+  ↓
+QuickActions.handleNextStep()
+  └─ proceedAndSendMessage()
+       ↓
+       useStore.proceedToNextStep()
+         └─ planningPhase = 'skeleton'
+       ↓
+       sendChatMessageStream('骨組みを作成してください', ...)
+         ↓
+         POST /api/chat
+           ├─ buildSystemPrompt(planningPhase: 'skeleton')
+           │    ├─ INCREMENTAL_SYSTEM_PROMPT
+           │    └─ Include all extractedInformation // 🆕 強化
+           │         ├─ destination: '京都'
+           │         ├─ duration: 3
+           │         ├─ travelers: 'couple'
+           │         ├─ interests: ['寺社巡り', 'グルメ']
+           │         ├─ budget: 50000
+           │         └─ pace: 'relaxed'
+           └─ streamGeminiMessage()
+                ↓
+                LLM generates skeleton with rich context
+                  ├─ Day 1: 東山エリア - 歴史と文化（寺社巡り重視）
+                  ├─ Day 2: 嵐山・金閣寺 - 自然と絶景
+                  └─ Day 3: 祇園・河原町 - グルメ満喫
+       ↓
+       mergeItineraryData()
+       ↓
+       useStore.setItinerary(mergedItinerary)
+```
+
+**改善点**:
+- 全ての収集情報がLLMに渡される
+- 骨組みの品質が大幅に向上
+- ユーザーの希望が正確に反映される
+
+#### 8. 日程詳細化（並列処理）
+
+```
+User Action: 「日程の詳細化」ボタンをクリック
+  ↓
+QuickActions.handleNextStep()
+  └─ proceedAndSendMessage()
+       ↓
+       useStore.proceedToNextStep()
+         └─ planningPhase = 'detailing', currentDay = 1
+       ↓
+       if (autoProgressMode && autoProgressSettings.enabled)
+         └─ startParallelDetailing() // 🆕 Phase 4.9
+              ↓
+              parallelItineraryBuilder.buildAll() // 🆕 新規
+                ├─ tasks = schedule.map(day => ({
+                │    day: day.day,
+                │    theme: day.theme,
+                │    extractedInfo,
+                │    preferences
+                │  }))
+                ├─ maxConcurrency = 3
+                └─ Promise.allSettled(
+                     tasks.map(task => buildDayDetail(task))
+                   )
+                     ↓
+                     for each day (parallel):
+                       POST /api/chat/day-detail // 🆕 新規エンドポイント
+                         ├─ buildDayDetailPrompt(day, theme, preferences)
+                         └─ streamGeminiMessage()
+                              ↓
+                              Generate spots, times, costs
+                       ↓
+                       onProgress(dayNumber, spotGenerated)
+                         └─ updateDayProgress(dayNumber, progress)
+       ↓
+       Client: Real-time progress display
+         ├─ Day 1: [████████░░] 80% (4/5 spots)
+         ├─ Day 2: [██████░░░░] 60% (3/5 spots)
+         └─ Day 3: [███░░░░░░░] 30% (2/5 spots)
+       ↓
+       All days completed
+         ├─ useStore.setPlanningPhase('completed')
+         └─ showCompletionMessage()
+```
+
+**新規クラス・メソッド**:
+- `ParallelItineraryBuilder` クラス
+  - `buildAll(tasks, options)` - 並列実行
+  - `buildDayDetail(task)` - 1日の詳細生成
+  - `onProgress(callback)` - 進捗コールバック
+- `/api/chat/day-detail` - 日程詳細化専用エンドポイント
+
+---
+
+### メソッド定義対比表
+
+| カテゴリ | 現在（As-Is） | あるべき姿（To-Be） | 変更内容 |
+|---------|--------------|-------------------|----------|
+| **初期化** | `initializeFromStorage()` | `initializeFromStorage()`<br>`sendInitialGreeting()` | ウェルカムメッセージ追加 |
+| **情報抽出** | `updateChecklist()`<br>（手動、useEffect内） | `extractInformationFromMessage()`<br>`updateExtractionCache()`<br>`calculateCompletionStatus()` | リアルタイム、サーバー側で実行 |
+| **会話管理** | なし | `ConversationManager.initialize()`<br>`getNextQuestion()`<br>`markAsAsked()`<br>`getPromptHint()` | 🆕 新規追加 |
+| **フェーズ遷移** | `proceedToNextStep()`<br>（手動、ボタンクリック） | `checkAutoTransition()`<br>`autoTransitionToDetailedCollection()`<br>`suggestNextPhase()` | 自動判定、提案機能追加 |
+| **質問送信** | なし | `sendNextQuestion()`<br>`buildQuestionPrompt()` | 🆕 新規追加 |
+| **プロンプト生成** | `buildSystemPrompt(phase)`<br>（基本のみ） | `buildSystemPrompt(phase)`<br>+ `extractedInformation`<br>+ `conversationContext`<br>+ `nextQuestionHint` | コンテキストの充実化 |
+| **並列処理** | なし | `ParallelItineraryBuilder.buildAll()`<br>`buildDayDetail()`<br>`onProgress()` | 🆕 Phase 4.9連携 |
+| **進捗表示** | `getProgress()`<br>（フェーズのみ） | `getProgress()`<br>`updateDayProgress()`<br>`calculateOverallProgress()` | 日ごとの詳細表示 |
+| **ボタン制御** | `determineButtonReadiness()` | `determineButtonReadiness()`<br>+ 動的アニメーション<br>+ 自動遷移提案 | UX強化 |
+
+---
+
+### データフロー対比
+
+#### 現在のデータフロー
+
+```
+User Input (text)
+  ↓
+MessageInput
+  ↓
+sendChatMessageStream()
+  ↓
+POST /api/chat
+  ├─ message: string
+  ├─ chatHistory: Message[]
+  ├─ currentItinerary: ItineraryData
+  └─ planningPhase: string
+  ↓
+gemini.ts
+  └─ generateContentStream()
+  ↓
+LLM Response (text + JSON)
+  ↓
+parseAIResponse()
+  ├─ message: string
+  └─ itineraryData: Partial<ItineraryData>
+  ↓
+mergeItineraryData()
+  ↓
+useStore.setItinerary()
+  ↓
+UI Update
+```
+
+**問題**: 情報の一方通行、LLMが情報不足を認識できない
+
+#### あるべきデータフロー
+
+```
+User Input (text)
+  ↓
+MessageInput
+  ↓
+extractInformationFromMessage() // サーバー側
+  ├─ destination: string | null
+  ├─ duration: number | null
+  ├─ travelers: object | null
+  ├─ interests: string[]
+  ├─ budget: number | null
+  └─ ...
+  ↓
+updateExtractionCache() // 累積
+  └─ ExtractionCache {
+       destination: '京都',
+       duration: 3,
+       travelers: { count: 2, type: 'couple' },
+       interests: ['寺社巡り', 'グルメ'],
+       budget: 50000,
+       lastUpdated: timestamp
+     }
+  ↓
+calculateCompletionStatus()
+  └─ CompletionStatus {
+       requiredFilled: true,
+       optionalFilled: 4/5,
+       completionRate: 90%,
+       missingRequired: [],
+       missingOptional: ['pace']
+     }
+  ↓
+ConversationManager.getPromptHint()
+  └─ PromptHint {
+       extractedInfo: ExtractionCache,
+       completionStatus: CompletionStatus,
+       nextQuestion: Question | null,
+       shouldTransition: boolean
+     }
+  ↓
+buildSystemPrompt(phase, promptHint)
+  └─ Enhanced System Prompt with context
+  ↓
+sendChatMessageStream()
+  ↓
+POST /api/chat
+  ├─ message: string
+  ├─ chatHistory: Message[]
+  ├─ currentItinerary: ItineraryData
+  ├─ planningPhase: string
+  └─ 🆕 extractionContext: {
+       cache: ExtractionCache,
+       status: CompletionStatus,
+       hint: PromptHint
+     }
+  ↓
+gemini.ts with full context
+  └─ generateContentStream()
+  ↓
+LLM Response (contextual, guided)
+  ↓
+parseAIResponse()
+  ├─ message: string
+  ├─ itineraryData: Partial<ItineraryData>
+  └─ 🆕 extractedInfo: Partial<ExtractionCache>
+  ↓
+mergeItineraryData() + updateExtractionCache()
+  ↓
+useStore.setItinerary() + updateChecklist()
+  ↓
+UI Update (rich feedback)
+  ├─ Checklist update
+  ├─ Progress bar
+  ├─ Button state
+  └─ Next question display
+```
+
+**改善**: 双方向、コンテキスト保持、LLMが状況を理解
+
 ## 現在のフローの課題
 
 ### 1. 情報収集プロセスの問題点
