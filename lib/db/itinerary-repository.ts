@@ -76,7 +76,7 @@ export class ItineraryRepository {
       } else if (dbDays) {
         // 各日のスポットを取得
         schedule = await Promise.all(
-          dbDays.map(async (dbDay) => {
+          dbDays.map(async (dbDay: DbDaySchedule) => {
             const { data: dbSpots, error: spotsError } = await supabase
               .from('tourist_spots')
               .select('*')
@@ -195,7 +195,7 @@ export class ItineraryRepository {
         current_day: itinerary.currentDay,
       })
       .select()
-      .single();
+      .single());
 
     if (itineraryError) {
       throw new Error(`Failed to create itinerary: ${itineraryError.message}`);
@@ -350,7 +350,7 @@ export class ItineraryRepository {
     }
 
     const itineraries = await Promise.all(
-      (data || []).map((item) => this.dbToItinerary(item, false))
+      (data || []).map((item: DbItinerary) => this.dbToItinerary(item, false))
     );
 
     return {

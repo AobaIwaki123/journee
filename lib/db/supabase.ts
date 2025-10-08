@@ -1,21 +1,37 @@
 /**
  * Supabaseクライアント設定（Phase 8）
- * 
+ *
  * データベース接続とクエリ操作を提供します。
  */
 
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 // 環境変数チェック
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+console.log("[SUPABASE DEBUG] Checking environment variables:");
+console.log(
+  "[SUPABASE DEBUG] NEXT_PUBLIC_SUPABASE_URL:",
+  supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : "NOT SET"
+);
+console.log(
+  "[SUPABASE DEBUG] NEXT_PUBLIC_SUPABASE_ANON_KEY:",
+  supabaseAnonKey ? "SET" : "NOT SET"
+);
+console.log(
+  "[SUPABASE DEBUG] SUPABASE_SERVICE_ROLE_KEY:",
+  supabaseServiceRoleKey ? "SET" : "NOT SET"
+);
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+  const error = new Error(
+    "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
   );
+  console.error("[SUPABASE DEBUG] Error:", error.message);
+  throw error;
 }
 
 /**
@@ -28,7 +44,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: false, // NextAuth.jsで管理するためfalse
   },
   db: {
-    schema: 'public',
+    schema: "public",
   },
 });
 
@@ -49,7 +65,7 @@ export const supabaseAdmin = supabaseServiceRoleKey
 
 if (!supabaseAdmin) {
   console.warn(
-    'Supabase Service Role Key is not set. Admin operations will not be available.'
+    "Supabase Service Role Key is not set. Admin operations will not be available."
   );
 }
 
@@ -58,14 +74,14 @@ if (!supabaseAdmin) {
  */
 export async function testSupabaseConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from('users').select('count').limit(1);
+    const { error } = await supabase.from("users").select("count").limit(1);
     if (error) {
-      console.error('Supabase connection test failed:', error.message);
+      console.error("Supabase connection test failed:", error.message);
       return false;
     }
     return true;
   } catch (err) {
-    console.error('Supabase connection test error:', err);
+    console.error("Supabase connection test error:", err);
     return false;
   }
 }

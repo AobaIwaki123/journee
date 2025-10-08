@@ -856,6 +856,7 @@ export const useStore = create<AppState>()((set, get) => ({
         body: JSON.stringify({
           itineraryId: currentItinerary.id,
           settings,
+          itinerary: currentItinerary, // しおりデータ全体を送信（DB未保存の場合に備えて）
         }),
       });
 
