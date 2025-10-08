@@ -11,9 +11,9 @@ interface APIKeyModalProps {
 }
 
 export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => {
-  const claudeApiKey = useStore((state) => state.claudeApiKey);
-  const setClaudeApiKey = useStore((state) => state.setClaudeApiKey);
-  const removeClaudeApiKey = useStore((state) => state.removeClaudeApiKey);
+  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
+  const setClaudeApiKey = useStore((state: any) => state.setClaudeApiKey);
+  const removeClaudeApiKey = useStore((state: any) => state.removeClaudeApiKey);
 
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);

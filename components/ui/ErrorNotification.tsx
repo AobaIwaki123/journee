@@ -5,8 +5,8 @@ import { useStore } from '@/lib/store/useStore';
 import { AlertCircle, X } from 'lucide-react';
 
 export const ErrorNotification: React.FC = () => {
-  const error = useStore((state) => state.error);
-  const setError = useStore((state) => state.setError);
+  const error = useStore((state: any) => state.error);
+  const setError = useStore((state: any) => state.setError);
 
   useEffect(() => {
     if (error) {

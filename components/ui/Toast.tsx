@@ -13,20 +13,16 @@ export const showToast = (options: {
   duration?: number;
 }) => {
   const { addToast } = useStore.getState();
-  addToast({
-    id: Date.now().toString(),
-    type: options.type,
-    message: options.message,
-  });
+  addToast(options.message, options.type);
 };
 
 export const ToastContainer: React.FC = () => {
-  const toasts = useStore((state) => state.toasts);
-  const removeToast = useStore((state) => state.removeToast);
+  const toasts = useStore((state: any) => state.toasts);
+  const removeToast = useStore((state: any) => state.removeToast);
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-      {toasts.map((toast) => (
+      {toasts.map((toast: any) => (
         <Toast
           key={toast.id}
           id={toast.id}
