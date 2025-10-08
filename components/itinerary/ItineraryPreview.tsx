@@ -61,11 +61,11 @@ export const ItineraryPreview: React.FC = () => {
           <ItineraryHeader itinerary={currentItinerary} editable={true} />
 
           {/* Content */}
-          <div className="p-6 max-w-5xl mx-auto">
+          <div className="p-4 md:p-6 max-w-5xl mx-auto">
             {/* Action Buttons */}
             {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                <div className="flex flex-wrap gap-2 md:gap-3">
                   <ShareButton />
                   <SaveButton />
                   <ResetButton />
@@ -92,8 +92,8 @@ export const ItineraryPreview: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                <p className="text-gray-600 text-lg font-medium mb-2">
+              <div className="bg-white rounded-lg shadow-sm p-6 md:p-12 text-center">
+                <p className="text-gray-600 text-base md:text-lg font-medium mb-2">
                   スケジュールがまだ作成されていません
                 </p>
                 <p className="text-sm text-gray-500">

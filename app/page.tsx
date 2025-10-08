@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/session';
 import { Header } from '@/components/layout/Header';
-import { ChatBox } from '@/components/chat/ChatBox';
-import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
+import { MobileLayout } from '@/components/layout/MobileLayout';
+import { DesktopLayout } from '@/components/layout/DesktopLayout';
 import { ErrorNotification } from '@/components/ui/ErrorNotification';
 import { StorageInitializer } from '@/components/layout/StorageInitializer';
 import { AutoSave } from '@/components/layout/AutoSave';
@@ -11,7 +11,13 @@ import { AutoSave } from '@/components/layout/AutoSave';
  * メインページ（ホーム）
  * 
  * 認証済みユーザー向けのメインアプリケーション画面。
- * 左側にチャットボックス、右側に旅のしおりプレビューを表示します。
+ * 
+ * **デスクトップ (≥768px)**:
+ * - 左側にチャットボックス（40%）、右側に旅のしおりプレビュー（60%）
+ * 
+ * **モバイル (<768px)**:
+ * - タブ切り替えで「しおり」または「チャット」を表示
+ * - しおりタブがデフォルト
  */
 export default async function Home() {
   // 認証チェック
@@ -31,17 +37,14 @@ export default async function Home() {
       {/* Header */}
       <Header />
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Chat Box - Left Side (40%) */}
-        <div className="w-2/5 border-r border-gray-200">
-          <ChatBox />
-        </div>
+      {/* Desktop Layout - 横並び (≥768px) */}
+      <div className="hidden md:block flex-1 overflow-hidden">
+        <DesktopLayout />
+      </div>
 
-        {/* Itinerary Preview - Right Side (60%) */}
-        <div className="w-3/5">
-          <ItineraryPreview />
-        </div>
+      {/* Mobile Layout - タブ切り替え (<768px) */}
+      <div className="md:hidden flex-1 overflow-hidden">
+        <MobileLayout />
       </div>
 
       {/* Error Notification */}
