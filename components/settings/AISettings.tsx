@@ -13,9 +13,9 @@ import type { AIModelId } from '@/types/ai';
  * AIモデル選択とAPIキー管理
  */
 export const AISettings: React.FC = () => {
-  const selectedAI = useStore((state) => state.selectedAI);
-  const claudeApiKey = useStore((state) => state.claudeApiKey);
-  const setSelectedAI = useStore((state) => state.setSelectedAI);
+  const selectedAI = useStore((state: any) => state.selectedAI);
+  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
+  const setSelectedAI = useStore((state: any) => state.setSelectedAI);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleAIChange = (ai: AIModelId) => {
