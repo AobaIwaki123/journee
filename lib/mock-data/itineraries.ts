@@ -494,3 +494,12 @@ export const initializeMockData = (): void => {
     saveItinerariesToStorage(mockItineraries);
   }
 };
+
+/**
+ * 全てのしおりをクリア（マイグレーション後に使用）
+ */
+export const clearAllItineraries = (): void => {
+  if (typeof window === 'undefined') return;
+  
+  localStorage.removeItem(STORAGE_KEY);
+};

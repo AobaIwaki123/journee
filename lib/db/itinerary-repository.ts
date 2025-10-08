@@ -171,7 +171,7 @@ export class ItineraryRepository {
    */
   async createItinerary(userId: string, itinerary: ItineraryData): Promise<ItineraryData> {
     // 1. しおり本体を作成
-    const { data: dbItinerary, error: itineraryError } = await supabase
+    const { data: dbItinerary, error: itineraryError } = await (supabase
       .from('itineraries')
       .insert({
         id: itinerary.id,

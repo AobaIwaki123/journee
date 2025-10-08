@@ -27,6 +27,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: false, // NextAuth.jsで管理するためfalse
   },
+  db: {
+    schema: 'public',
+  },
 });
 
 /**
