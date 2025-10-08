@@ -20,7 +20,11 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     console.log("[DEBUG] Request body:", JSON.stringify(body, null, 2));
-    const { itineraryId, settings, itinerary: itineraryData } = body as {
+    const {
+      itineraryId,
+      settings,
+      itinerary: itineraryData,
+    } = body as {
       itineraryId: string;
       settings: PublicItinerarySettings;
       itinerary?: ItineraryData;
@@ -54,11 +58,13 @@ export async function POST(req: NextRequest) {
       user.id
     );
     console.log("[DEBUG] Itinerary found:", itinerary ? "Yes" : "No");
-    
+
     // しおりが存在しない場合は、リクエストボディから作成
     if (!itinerary) {
-      console.log("[DEBUG] Itinerary not found in database, attempting to create from request data");
-      
+      console.log(
+        "[DEBUG] Itinerary not found in database, attempting to create from request data"
+      );
+
       if (!itineraryData) {
         console.log("[DEBUG] Error: No itinerary data provided for creation");
         return NextResponse.json(
@@ -75,8 +81,11 @@ export async function POST(req: NextRequest) {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
-      itinerary = await itineraryRepository.createItinerary(user.id, itineraryWithUser);
+
+      itinerary = await itineraryRepository.createItinerary(
+        user.id,
+        itineraryWithUser
+      );
       console.log("[DEBUG] Itinerary created successfully");
     }
 

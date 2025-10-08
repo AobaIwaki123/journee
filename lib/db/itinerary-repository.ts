@@ -1,22 +1,26 @@
 /**
  * Itinerary Repository (Phase 8.2)
- * 
+ *
  * しおりデータのCRUD操作を提供するリポジトリクラス
  */
 
-import { supabase, supabaseAdmin } from './supabase';
-import type { ItineraryData, TouristSpot, DaySchedule } from '@/types/itinerary';
-import type { Database } from '@/types/database';
+import { supabase, supabaseAdmin } from "./supabase";
+import type {
+  ItineraryData,
+  TouristSpot,
+  DaySchedule,
+} from "@/types/itinerary";
+import type { Database } from "@/types/database";
 
-type DbItinerary = Database['public']['Tables']['itineraries']['Row'];
-type DbDaySchedule = Database['public']['Tables']['day_schedules']['Row'];
-type DbTouristSpot = Database['public']['Tables']['tourist_spots']['Row'];
+type DbItinerary = Database["public"]["Tables"]["itineraries"]["Row"];
+type DbDaySchedule = Database["public"]["Tables"]["day_schedules"]["Row"];
+type DbTouristSpot = Database["public"]["Tables"]["tourist_spots"]["Row"];
 
 /**
  * フィルター条件
  */
 export interface ItineraryFilters {
-  status?: 'draft' | 'completed' | 'archived';
+  status?: "draft" | "completed" | "archived";
   startDateFrom?: Date;
   startDateTo?: Date;
   destination?: string;
@@ -26,8 +30,8 @@ export interface ItineraryFilters {
 /**
  * ソート条件
  */
-export type SortBy = 'created_at' | 'updated_at' | 'title' | 'start_date';
-export type SortOrder = 'asc' | 'desc';
+export type SortBy = "created_at" | "updated_at" | "title" | "start_date";
+export type SortOrder = "asc" | "desc";
 
 /**
  * ページネーション設定
@@ -66,25 +70,25 @@ export class ItineraryRepository {
     if (includeDays) {
       // 日程詳細を取得
       const { data: dbDays, error: daysError } = await supabase
-        .from('day_schedules')
-        .select('*')
-        .eq('itinerary_id', dbItinerary.id)
-        .order('day', { ascending: true });
+        .from("day_schedules")
+        .select("*")
+        .eq("itinerary_id", dbItinerary.id)
+        .order("day", { ascending: true });
 
       if (daysError) {
-        console.error('Failed to fetch day schedules:', daysError);
+        console.error("Failed to fetch day schedules:", daysError);
       } else if (dbDays) {
         // 各日のスポットを取得
         schedule = await Promise.all(
           dbDays.map(async (dbDay: DbDaySchedule) => {
             const { data: dbSpots, error: spotsError } = await supabase
-              .from('tourist_spots')
-              .select('*')
-              .eq('day_schedule_id', dbDay.id)
-              .order('order_index', { ascending: true });
+              .from("tourist_spots")
+              .select("*")
+              .eq("day_schedule_id", dbDay.id)
+              .order("order_index", { ascending: true });
 
             if (spotsError) {
-              console.error('Failed to fetch tourist spots:', spotsError);
+              console.error("Failed to fetch tourist spots:", spotsError);
             }
 
             const spots: TouristSpot[] = (dbSpots || []).map(this.dbToSpot);
@@ -99,24 +103,28 @@ export class ItineraryRepository {
       id: dbItinerary.id,
       userId: dbItinerary.user_id,
       title: dbItinerary.title,
-      destination: dbItinerary.destination || '',
+      destination: dbItinerary.destination || "",
       startDate: dbItinerary.start_date || undefined,
       endDate: dbItinerary.end_date || undefined,
       duration: dbItinerary.duration || undefined,
       summary: dbItinerary.summary || undefined,
       schedule,
-      totalBudget: dbItinerary.total_budget ? Number(dbItinerary.total_budget) : undefined,
-      currency: dbItinerary.currency || 'JPY',
+      totalBudget: dbItinerary.total_budget
+        ? Number(dbItinerary.total_budget)
+        : undefined,
+      currency: dbItinerary.currency || "JPY",
       status: dbItinerary.status,
       createdAt: new Date(dbItinerary.created_at),
       updatedAt: new Date(dbItinerary.updated_at),
       isPublic: dbItinerary.is_public || undefined,
       publicSlug: dbItinerary.public_slug || undefined,
-      publishedAt: dbItinerary.published_at ? new Date(dbItinerary.published_at) : undefined,
+      publishedAt: dbItinerary.published_at
+        ? new Date(dbItinerary.published_at)
+        : undefined,
       viewCount: dbItinerary.view_count || undefined,
       allowPdfDownload: dbItinerary.allow_pdf_download || undefined,
       customMessage: dbItinerary.custom_message || undefined,
-      phase: (dbItinerary.phase as ItineraryData['phase']) || undefined,
+      phase: (dbItinerary.phase as ItineraryData["phase"]) || undefined,
       currentDay: dbItinerary.current_day || undefined,
     };
   }
@@ -124,15 +132,20 @@ export class ItineraryRepository {
   /**
    * DaySchedule変換
    */
-  private dbToDaySchedule(dbDay: DbDaySchedule, spots: TouristSpot[]): DaySchedule {
+  private dbToDaySchedule(
+    dbDay: DbDaySchedule,
+    spots: TouristSpot[]
+  ): DaySchedule {
     return {
       day: dbDay.day,
       date: dbDay.date || undefined,
       title: dbDay.title || undefined,
       spots,
-      totalDistance: dbDay.total_distance ? Number(dbDay.total_distance) : undefined,
+      totalDistance: dbDay.total_distance
+        ? Number(dbDay.total_distance)
+        : undefined,
       totalCost: dbDay.total_cost ? Number(dbDay.total_cost) : undefined,
-      status: (dbDay.status as DaySchedule['status']) || undefined,
+      status: (dbDay.status as DaySchedule["status"]) || undefined,
       theme: dbDay.theme || undefined,
       isLoading: dbDay.is_loading || undefined,
       error: dbDay.error || undefined,
@@ -147,7 +160,7 @@ export class ItineraryRepository {
     return {
       id: dbSpot.id,
       name: dbSpot.name,
-      description: dbSpot.description || '',
+      description: dbSpot.description || "",
       location:
         dbSpot.location_lat && dbSpot.location_lng
           ? {
@@ -159,8 +172,10 @@ export class ItineraryRepository {
           : undefined,
       scheduledTime: dbSpot.scheduled_time || undefined,
       duration: dbSpot.duration || undefined,
-      category: (dbSpot.category as TouristSpot['category']) || undefined,
-      estimatedCost: dbSpot.estimated_cost ? Number(dbSpot.estimated_cost) : undefined,
+      category: (dbSpot.category as TouristSpot["category"]) || undefined,
+      estimatedCost: dbSpot.estimated_cost
+        ? Number(dbSpot.estimated_cost)
+        : undefined,
       notes: dbSpot.notes || undefined,
       imageUrl: dbSpot.image_url || undefined,
     };
@@ -169,10 +184,13 @@ export class ItineraryRepository {
   /**
    * しおりの作成
    */
-  async createItinerary(userId: string, itinerary: ItineraryData): Promise<ItineraryData> {
+  async createItinerary(
+    userId: string,
+    itinerary: ItineraryData
+  ): Promise<ItineraryData> {
     // 1. しおり本体を作成
-    const { data: dbItinerary, error: itineraryError } = await (supabase
-      .from('itineraries')
+    const { data: dbItinerary, error: itineraryError } = await supabase
+      .from("itineraries")
       .insert({
         id: itinerary.id,
         user_id: userId,
@@ -183,19 +201,19 @@ export class ItineraryRepository {
         duration: itinerary.duration,
         summary: itinerary.summary,
         total_budget: itinerary.totalBudget,
-        currency: itinerary.currency || 'JPY',
-        status: itinerary.status || 'draft',
+        currency: itinerary.currency || "JPY",
+        status: itinerary.status || "draft",
         is_public: itinerary.isPublic,
         public_slug: itinerary.publicSlug,
         published_at: itinerary.publishedAt?.toISOString(),
         view_count: itinerary.viewCount || 0,
         allow_pdf_download: itinerary.allowPdfDownload,
         custom_message: itinerary.customMessage,
-        phase: itinerary.phase || 'initial',
+        phase: itinerary.phase || "initial",
         current_day: itinerary.currentDay,
       })
       .select()
-      .single());
+      .single();
 
     if (itineraryError) {
       throw new Error(`Failed to create itinerary: ${itineraryError.message}`);
@@ -205,7 +223,7 @@ export class ItineraryRepository {
     if (itinerary.schedule && itinerary.schedule.length > 0) {
       for (const day of itinerary.schedule) {
         const { data: dbDay, error: dayError } = await supabase
-          .from('day_schedules')
+          .from("day_schedules")
           .insert({
             itinerary_id: dbItinerary.id,
             day: day.day,
@@ -213,7 +231,7 @@ export class ItineraryRepository {
             title: day.title,
             total_distance: day.totalDistance,
             total_cost: day.totalCost,
-            status: day.status || 'draft',
+            status: day.status || "draft",
             theme: day.theme,
             is_loading: day.isLoading,
             error: day.error,
@@ -223,7 +241,7 @@ export class ItineraryRepository {
           .single();
 
         if (dayError) {
-          console.error('Failed to create day schedule:', dayError);
+          console.error("Failed to create day schedule:", dayError);
           continue;
         }
 
@@ -247,11 +265,11 @@ export class ItineraryRepository {
           }));
 
           const { error: spotsError } = await supabase
-            .from('tourist_spots')
+            .from("tourist_spots")
             .insert(spotsToInsert);
 
           if (spotsError) {
-            console.error('Failed to create tourist spots:', spotsError);
+            console.error("Failed to create tourist spots:", spotsError);
           }
         }
       }
@@ -263,11 +281,14 @@ export class ItineraryRepository {
   /**
    * しおりの取得
    */
-  async getItinerary(itineraryId: string, userId: string): Promise<ItineraryData | null> {
+  async getItinerary(
+    itineraryId: string,
+    userId: string
+  ): Promise<ItineraryData | null> {
     const { data, error } = await supabase
-      .from('itineraries')
-      .select('*')
-      .eq('id', itineraryId)
+      .from("itineraries")
+      .select("*")
+      .eq("id", itineraryId)
       .or(`user_id.eq.${userId},is_public.eq.true`)
       .single();
 
@@ -283,10 +304,10 @@ export class ItineraryRepository {
    */
   async getPublicItinerary(slug: string): Promise<ItineraryData | null> {
     const { data, error } = await supabase
-      .from('itineraries')
-      .select('*')
-      .eq('public_slug', slug)
-      .eq('is_public', true)
+      .from("itineraries")
+      .select("*")
+      .eq("public_slug", slug)
+      .eq("is_public", true)
       .single();
 
     if (error || !data) {
@@ -302,27 +323,33 @@ export class ItineraryRepository {
   async listItineraries(
     userId: string,
     filters?: ItineraryFilters,
-    sortBy: SortBy = 'updated_at',
-    sortOrder: SortOrder = 'desc',
+    sortBy: SortBy = "updated_at",
+    sortOrder: SortOrder = "desc",
     pagination?: PaginationOptions
   ): Promise<PaginatedResponse<ItineraryData>> {
     let query = supabase
-      .from('itineraries')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId);
+      .from("itineraries")
+      .select("*", { count: "exact" })
+      .eq("user_id", userId);
 
     // フィルター適用
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq("status", filters.status);
     }
     if (filters?.startDateFrom) {
-      query = query.gte('start_date', filters.startDateFrom.toISOString().split('T')[0]);
+      query = query.gte(
+        "start_date",
+        filters.startDateFrom.toISOString().split("T")[0]
+      );
     }
     if (filters?.startDateTo) {
-      query = query.lte('start_date', filters.startDateTo.toISOString().split('T')[0]);
+      query = query.lte(
+        "start_date",
+        filters.startDateTo.toISOString().split("T")[0]
+      );
     }
     if (filters?.destination) {
-      query = query.ilike('destination', `%${filters.destination}%`);
+      query = query.ilike("destination", `%${filters.destination}%`);
     }
     if (filters?.search) {
       query = query.or(
@@ -331,7 +358,7 @@ export class ItineraryRepository {
     }
 
     // ソート
-    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+    query = query.order(sortBy, { ascending: sortOrder === "asc" });
 
     // ページネーション
     const page = pagination?.page || 1;
@@ -374,7 +401,7 @@ export class ItineraryRepository {
   ): Promise<ItineraryData> {
     // 1. しおり本体を更新
     const { data: dbItinerary, error: itineraryError } = await supabase
-      .from('itineraries')
+      .from("itineraries")
       .update({
         title: updates.title,
         destination: updates.destination,
@@ -394,8 +421,8 @@ export class ItineraryRepository {
         phase: updates.phase,
         current_day: updates.currentDay,
       })
-      .eq('id', itineraryId)
-      .eq('user_id', userId)
+      .eq("id", itineraryId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -406,12 +433,15 @@ export class ItineraryRepository {
     // 2. 日程詳細を更新（必要に応じて）
     if (updates.schedule) {
       // 既存の日程を削除
-      await supabase.from('day_schedules').delete().eq('itinerary_id', itineraryId);
+      await supabase
+        .from("day_schedules")
+        .delete()
+        .eq("itinerary_id", itineraryId);
 
       // 新しい日程を作成
       for (const day of updates.schedule) {
         const { data: dbDay, error: dayError } = await supabase
-          .from('day_schedules')
+          .from("day_schedules")
           .insert({
             itinerary_id: itineraryId,
             day: day.day,
@@ -429,7 +459,7 @@ export class ItineraryRepository {
           .single();
 
         if (dayError) {
-          console.error('Failed to update day schedule:', dayError);
+          console.error("Failed to update day schedule:", dayError);
           continue;
         }
 
@@ -452,7 +482,7 @@ export class ItineraryRepository {
             order_index: index,
           }));
 
-          await supabase.from('tourist_spots').insert(spotsToInsert);
+          await supabase.from("tourist_spots").insert(spotsToInsert);
         }
       }
     }
@@ -465,10 +495,10 @@ export class ItineraryRepository {
    */
   async deleteItinerary(itineraryId: string, userId: string): Promise<boolean> {
     const { error } = await supabase
-      .from('itineraries')
+      .from("itineraries")
       .delete()
-      .eq('id', itineraryId)
-      .eq('user_id', userId);
+      .eq("id", itineraryId)
+      .eq("user_id", userId);
 
     if (error) {
       throw new Error(`Failed to delete itinerary: ${error.message}`);
@@ -481,10 +511,10 @@ export class ItineraryRepository {
    * 閲覧数のインクリメント
    */
   async incrementViewCount(slug: string): Promise<void> {
-    const { error } = await supabase.rpc('increment_view_count', { slug });
+    const { error } = await supabase.rpc("increment_view_count", { slug });
 
     if (error) {
-      console.error('Failed to increment view count:', error);
+      console.error("Failed to increment view count:", error);
     }
   }
 }
