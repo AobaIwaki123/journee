@@ -366,6 +366,12 @@ journee/
 3. **日程詳細化**: 1日ずつ具体的な観光スポット、時間、移動手段を追加
 4. **最終調整**: 全体のバランス調整、予算確認
 
+**🆕 改善計画**: [しおり作成フローの改善計画](./docs/ITINERARY_CREATION_FLOW_IMPROVEMENT.md)
+- LLM主導の対話的情報収集
+- 必須情報と任意情報の明確化
+- リアルタイムプログレス表示
+- 並列処理による高速化
+
 #### 4.1 型定義の拡張
 - [x] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
 - [x] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
