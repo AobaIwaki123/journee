@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: journee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: journee
+  template:
+    metadata:
+      labels:
+        app: journee
+    spec:
+      imagePullSecrets:
+      - name: gcr-pull-secret
+      containers:
+      - name: journee
+        image: gcr.io/my-docker-471807/journee:v3.2.6
+        volumeMounts:
+        - name: gcp-sa-volume
+          mountPath: /app/secret
+          readOnly: true
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /app/secret/key.json
+        - name: NEXTAUTH_URL
+          value: https://journee.aooba.net
+        # Secretから環境変数を注入
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: journee-env
+              key: GEMINI_API_KEY
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: journee-env
+              key: GOOGLE_CLIENT_ID
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: journee-env
+              key: GOOGLE_CLIENT_SECRET
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: journee-env
+              key: NEXTAUTH_SECRET
+        - name: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: journee-env
+              key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+        ports:
+        - containerPort: 3000
+      volumes:
+      - name: gcp-sa-volume
+        secret:
+          secretName: gcp-sa-key
