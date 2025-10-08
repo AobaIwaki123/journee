@@ -7,6 +7,7 @@ import { MapView } from './MapView';
 import { PlanningProgress } from './PlanningProgress';
 import { QuickActions } from './QuickActions';
 import { PhaseStatusBar } from './PhaseStatusBar';
+import { RequirementsChecklist } from './RequirementsChecklist';
 import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
 import { EmptyItinerary } from './EmptyItinerary';
@@ -26,7 +27,9 @@ export const ItineraryPreview: React.FC = () => {
     currentItinerary, 
     planningPhase, 
     isAutoProgressing, 
-    autoProgressState
+    autoProgressState,
+    requirementsChecklist,
+    checklistStatus,
   } = useStore();
   
   const [viewMode, setViewMode] = useState<ViewMode>('schedule');
@@ -42,6 +45,17 @@ export const ItineraryPreview: React.FC = () => {
       <div className="h-full flex flex-col bg-gray-50">
         {/* Phase 4: プランニング進捗（初期状態でも表示） */}
         {planningPhase !== 'initial' && <PlanningProgress />}
+
+        {/* Phase 4.8改善: 要件チェックリスト（情報収集フェーズのみ） */}
+        {(planningPhase === 'collecting_basic' || planningPhase === 'collecting_detailed') && (
+          <div className="px-4 pt-4">
+            <RequirementsChecklist
+              items={requirementsChecklist}
+              completionStatus={checklistStatus}
+              phase={planningPhase}
+            />
+          </div>
+        )}
 
         {/* 空状態 */}
         <EmptyItinerary />

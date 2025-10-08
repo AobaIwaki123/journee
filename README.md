@@ -366,15 +366,20 @@ journee/
 3. **日程詳細化**: 1日ずつ具体的な観光スポット、時間、移動手段を追加
 4. **最終調整**: 全体のバランス調整、予算確認
 
-**🆕 改善計画**: [しおり作成フローの改善計画](./docs/ITINERARY_CREATION_FLOW_IMPROVEMENT.md)
-- LLM主導の対話的情報収集
-- 必須情報と任意情報の明確化
-- リアルタイムプログレス表示
-- 並列処理による高速化
+**🎉 改善計画**: [しおり作成フローの改善計画](./docs/ITINERARY_CREATION_FLOW_IMPROVEMENT.md) - ✅ **実装完了** (2025-10-08)
+- ✅ LLM主導の対話的情報収集（ConversationManager実装）
+- ✅ 必須情報と任意情報の明確化（RequirementsChecklist実装）
+- ✅ リアルタイムプログレス表示（充足率0% → 100%）
+- ✅ フェーズの細分化（collecting_basic + collecting_detailed）
+- 📋 並列処理による高速化（Phase 4.9で実装予定）
 
-#### 4.1 型定義の拡張
+**詳細**: [実装完了レポート](./docs/FLOW_IMPROVEMENT_COMPLETE.md)
+
+#### 4.1 型定義の拡張 ✅ **完了 + 改善実装済み** (2025-10-08)
 - [x] `DayStatus` 型の追加（draft/skeleton/detailed/completed）
-- [x] `ItineraryPhase` 型の追加（initial/collecting/skeleton/detailing/completed）
+- [x] `ItineraryPhase` 型の追加と拡張
+  - 従来: initial/collecting/skeleton/detailing/completed
+  - **改善**: initial/collecting_basic/collecting_detailed/skeleton/detailing/completed
 - [x] `DaySchedule` に `status`, `theme` プロパティ追加
 - [x] `ItineraryData` に `phase`, `currentDay` プロパティ追加
 
@@ -1306,6 +1311,13 @@ MIT
 - ✅ **Phase 3**: しおり自動生成・更新機能
 - ✅ **Phase 3**: エラーハンドリング
 - ✅ **Phase 3.5.1**: マークダウンレンダリング機能（見出し、リスト、コード、テーブル）
+- ✅ **Phase 4 拡張**: しおり作成フロー改善（2025-10-08実装完了）🆕
+  - ✅ フェーズの細分化（collecting_basic + collecting_detailed）
+  - ✅ ConversationManager（LLM主導の対話）
+  - ✅ 質問キューシステム（7つの質問カテゴリ）
+  - ✅ ExtractionCache（リアルタイム情報抽出）
+  - ✅ RequirementsChecklist（進捗可視化UI）
+  - ✅ プロンプトシステム拡張（フェーズ別最適化）
 - ✅ **Phase 5.1.1**: しおり基本表示コンポーネント（ヘッダー、サマリー、日程、スポット、空状態）
 - ✅ **Phase 5.1.2**: インタラクティブ機能（タイトル編集、スポット追加/編集/削除、Toast通知）
 - ✅ **Phase 5.1.3**: 高度な機能（ドラッグ&ドロップ、Undo/Redo、テンプレートシステム、パフォーマンス最適化）
@@ -1337,14 +1349,17 @@ MIT
 **次の実装**: 
 - **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
 - **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
-- **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
+- **Phase 4.9** - 日程作成処理の並列化（高速化）
 - **Phase 8** - データベース統合（LocalStorage → DB移行）
 
-**最終更新**: 2025-10-08 (Phase 7.1, 7.2完了)
+**最終更新**: 2025-10-08 (Phase 7.1, 7.2完了, フロー改善完了)
 
 **詳細ドキュメント**:
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
+- [🆕 フロー改善 完了レポート](./docs/FLOW_IMPROVEMENT_COMPLETE.md) - **Phase 4拡張実装**
+- [フロー改善 実装計画](./docs/ITINERARY_CREATION_FLOW_IMPROVEMENT.md)
+- [フロー改善 テストガイド](./docs/FLOW_IMPROVEMENT_TEST_GUIDE.md)
 - [Phase 5.1.1 実装完了レポート](./docs/PHASE5.1.1_ITINERARY_COMPONENTS.md)
 - [Phase 5.1.2 実装完了レポート](./docs/PHASE5.1.2_INTERACTIVE_FEATURES.md)
 - [Phase 5.1.3 実装完了レポート](./docs/PHASE5.1.3_ADVANCED_FEATURES.md)

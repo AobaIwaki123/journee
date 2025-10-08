@@ -151,6 +151,16 @@ export class GeminiClient {
     let phaseSpecificPrompt = '';
     
     switch (planningPhase) {
+      case 'collecting_basic':
+        // 基本情報収集フェーズ
+        phaseSpecificPrompt = '行き先と日数を確認してください。それ以外の詳細情報はまだ聞かないでください。';
+        break;
+        
+      case 'collecting_detailed':
+        // 詳細情報収集フェーズ
+        phaseSpecificPrompt = '同行者、興味、予算、ペースなど詳細情報を1つずつ自然な会話で質問してください。一度に複数の質問をせず、ユーザーの回答に応じて次の質問をしてください。';
+        break;
+        
       case 'skeleton':
         // 骨組み作成フェーズ
         if (currentItinerary) {
@@ -165,9 +175,9 @@ export class GeminiClient {
         }
         break;
         
-      case 'collecting':
       case 'completed':
-        // 他のフェーズでは特別なプロンプトなし
+        // 完成フェーズ
+        phaseSpecificPrompt = '全体の調整や微修正を行ってください。';
         break;
     }
     
@@ -179,12 +189,25 @@ export class GeminiClient {
     prompt += `## ユーザーの新しいメッセージ\n${userMessage}\n\n`;
     
     // Phase 4: フェーズに応じた応答指示
-    if (planningPhase === 'skeleton') {
-      prompt += `上記のメッセージに対して応答してください。骨組み作成フェーズでは、各日のテーマ・エリアを決定し、JSON形式で出力してください。具体的な観光スポット名はまだ出さないでください。`;
-    } else if (planningPhase === 'detailing') {
-      prompt += `上記のメッセージに対して応答してください。${currentDetailingDay}日目の詳細なスケジュールを作成し、実在する観光スポット、時間、費用を含めてJSON形式で出力してください。`;
-    } else {
-      prompt += `上記のメッセージに対して、親切に応答してください。必要に応じて旅のしおりデータをJSON形式で出力してください。`;
+    switch (planningPhase) {
+      case 'collecting_basic':
+        prompt += `上記のメッセージに対して、行き先と日数を確認してください。簡潔に応答し、まだ詳細な質問はしないでください。`;
+        break;
+        
+      case 'collecting_detailed':
+        prompt += `上記のメッセージに対して、自然な会話で1つの質問をしてください。ユーザーの回答に対して適切にフォローアップし、次の質問に移ってください。一度に複数の質問をしないでください。`;
+        break;
+        
+      case 'skeleton':
+        prompt += `上記のメッセージに対して応答してください。骨組み作成フェーズでは、各日のテーマ・エリアを決定し、JSON形式で出力してください。具体的な観光スポット名はまだ出さないでください。`;
+        break;
+        
+      case 'detailing':
+        prompt += `上記のメッセージに対して応答してください。${currentDetailingDay}日目の詳細なスケジュールを作成し、実在する観光スポット、時間、費用を含めてJSON形式で出力してください。`;
+        break;
+        
+      default:
+        prompt += `上記のメッセージに対して、親切に応答してください。必要に応じて旅のしおりデータをJSON形式で出力してください。`;
     }
 
     return prompt;
