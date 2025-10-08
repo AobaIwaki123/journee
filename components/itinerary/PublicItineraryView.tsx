@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { ItineraryData } from '@/types/itinerary';
-import { ItineraryHeader } from './ItineraryHeader';
-import { ItinerarySummary } from './ItinerarySummary';
-import { DaySchedule } from './DaySchedule';
-import { Download, Share2, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { ItineraryData } from "@/types/itinerary";
+import { ItineraryHeader } from "./ItineraryHeader";
+import { ItinerarySummary } from "./ItinerarySummary";
+import { DaySchedule } from "./DaySchedule";
+import { Download, Share2, Copy, Check } from "lucide-react";
 
 interface PublicItineraryViewProps {
   slug: string;
@@ -15,34 +15,39 @@ interface PublicItineraryViewProps {
 /**
  * Phase 8: 公開しおり閲覧用コンポーネント（Read-only、Database版）
  */
-export default function PublicItineraryView({ slug, itinerary }: PublicItineraryViewProps) {
+export default function PublicItineraryView({
+  slug,
+  itinerary,
+}: PublicItineraryViewProps) {
   const [copied, setCopied] = useState(false);
-  const [publishedDate, setPublishedDate] = useState<string>('');
+  const [publishedDate, setPublishedDate] = useState<string>("");
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
     if (itinerary.publishedAt) {
-      setPublishedDate(new Date(itinerary.publishedAt).toLocaleDateString('ja-JP'));
+      setPublishedDate(
+        new Date(itinerary.publishedAt).toLocaleDateString("ja-JP")
+      );
     }
   }, [itinerary.publishedAt]);
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
-    const shareText = itinerary 
-      ? `${itinerary.destination}への旅行計画を見てください！` 
-      : '旅のしおりを共有します';
+    const shareText = itinerary
+      ? `${itinerary.destination}への旅行計画を見てください！`
+      : "旅のしおりを共有します";
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: itinerary?.title || '旅のしおり',
+          title: itinerary?.title || "旅のしおり",
           text: shareText,
           url: shareUrl,
         });
       } catch (error) {
         // ユーザーがキャンセルした場合は何もしない
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
+        if ((error as Error).name !== "AbortError") {
+          console.error("Error sharing:", error);
         }
       }
     } else {
@@ -57,15 +62,15 @@ export default function PublicItineraryView({ slug, itinerary }: PublicItinerary
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying URL:', error);
+      console.error("Error copying URL:", error);
     }
   };
 
   const handleDownloadPDF = () => {
     // Phase 5.3: PDF出力機能と連携
     // TODO: PDF生成機能の実装後に有効化
-    console.log('PDF ダウンロード（Phase 5.3で実装予定）');
-    alert('PDF出力機能は近日実装予定です');
+    console.log("PDF ダウンロード（Phase 5.3で実装予定）");
+    alert("PDF出力機能は近日実装予定です");
   };
 
   return (
@@ -97,7 +102,9 @@ export default function PublicItineraryView({ slug, itinerary }: PublicItinerary
               {copied ? (
                 <>
                   <Check className="w-4 h-4 text-green-600" />
-                  <span className="hidden sm:inline text-green-600">コピー済み</span>
+                  <span className="hidden sm:inline text-green-600">
+                    コピー済み
+                  </span>
                 </>
               ) : (
                 <>
@@ -133,10 +140,10 @@ export default function PublicItineraryView({ slug, itinerary }: PublicItinerary
 
         {/* しおりヘッダー */}
         <ItineraryHeader itinerary={itinerary} editable={false} />
-        
+
         {/* しおりサマリー */}
         <ItinerarySummary itinerary={itinerary} />
-        
+
         {/* 日程表 */}
         <div className="mt-8 space-y-6">
           {itinerary.schedule.map((day, index) => (
@@ -152,13 +159,10 @@ export default function PublicItineraryView({ slug, itinerary }: PublicItinerary
         {/* フッター */}
         <div className="mt-12 pt-6 border-t text-center">
           <p className="text-sm text-gray-500">
-            このしおりは{' '}
-            <a
-              href="/"
-              className="text-blue-600 hover:underline font-medium"
-            >
+            このしおりは{" "}
+            <a href="/" className="text-blue-600 hover:underline font-medium">
               Journee
-            </a>{' '}
+            </a>{" "}
             で作成されました
           </p>
           {itinerary.viewCount !== undefined && (
