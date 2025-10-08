@@ -210,9 +210,7 @@ interface AppState {
   canRedo: () => boolean;
 
   // Phase 5.5: Itinerary sharing/publishing actions
-  publishItinerary: (
-    settings: PublicItinerarySettings
-  ) => Promise<{
+  publishItinerary: (settings: PublicItinerarySettings) => Promise<{
     success: boolean;
     publicUrl?: string;
     slug?: string;

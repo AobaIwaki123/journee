@@ -59,6 +59,10 @@ export async function POST(req: NextRequest) {
     );
     console.log("[DEBUG] Itinerary found:", itinerary ? "Yes" : "No");
 
+    // ユニークなスラッグ生成（10文字、URL-safe）
+    const slug = itinerary?.publicSlug || nanoid(10);
+    const publishedAt = new Date();
+
     // しおりが存在しない場合は、リクエストボディから作成
     if (!itinerary) {
       console.log(
@@ -73,11 +77,16 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // しおりを新規作成
+      // しおりを新規作成（公開情報を含めて）
       console.log("[DEBUG] Creating new itinerary:", itineraryData.id);
       const itineraryWithUser: ItineraryData = {
         ...itineraryData,
         userId: user.id,
+        isPublic: settings.isPublic,
+        publicSlug: slug,
+        publishedAt,
+        allowPdfDownload: settings.allowPdfDownload ?? true,
+        customMessage: settings.customMessage,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -87,20 +96,17 @@ export async function POST(req: NextRequest) {
         itineraryWithUser
       );
       console.log("[DEBUG] Itinerary created successfully");
+    } else {
+      // 既存のしおりを更新
+      console.log("[DEBUG] Updating existing itinerary");
+      await itineraryRepository.updateItinerary(itineraryId, user.id, {
+        isPublic: settings.isPublic,
+        publicSlug: slug,
+        publishedAt,
+        allowPdfDownload: settings.allowPdfDownload ?? true,
+        customMessage: settings.customMessage,
+      });
     }
-
-    // ユニークなスラッグ生成（10文字、URL-safe）
-    const slug = itinerary.publicSlug || nanoid(10);
-    const publishedAt = new Date();
-
-    // データベースに保存
-    await itineraryRepository.updateItinerary(itineraryId, user.id, {
-      isPublic: settings.isPublic,
-      publicSlug: slug,
-      publishedAt,
-      allowPdfDownload: settings.allowPdfDownload ?? true,
-      customMessage: settings.customMessage,
-    });
 
     const publicUrl = `${
       process.env.NEXTAUTH_URL || "http://localhost:3000"
