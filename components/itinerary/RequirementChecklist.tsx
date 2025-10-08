@@ -68,6 +68,7 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
       className={`flex flex-col ${className}`}
       role="region"
       aria-label="必要情報チェックリスト"
+      aria-describedby="checklist-description"
     >
       {/* アコーディオンヘッダー */}
       <button
@@ -79,6 +80,7 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
           text-white
           border-b border-white/20
           hover:from-blue-600 hover:to-purple-700
+          focus:outline-none focus:ring-2 focus:ring-white/50
           transition-all duration-200
           cursor-pointer
         "
@@ -86,17 +88,27 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
         aria-controls="checklist-content"
+        aria-labelledby="checklist-header-title"
+        tabIndex={0}
       >
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold">必要情報チェックリスト</h3>
+          <h3 
+            id="checklist-header-title"
+            className="text-sm font-semibold"
+          >
+            必要情報チェックリスト
+          </h3>
           {checklistStatus && (
-            <span className="
-              inline-flex items-center justify-center
-              min-w-[3rem] px-2 py-0.5
-              bg-white/20 backdrop-blur-sm
-              rounded-full
-              text-xs font-bold
-            ">
+            <span 
+              className="
+                inline-flex items-center justify-center
+                min-w-[3rem] px-2 py-0.5
+                bg-white/20 backdrop-blur-sm
+                rounded-full
+                text-xs font-bold
+              "
+              aria-label={`充足率 ${checklistStatus.completionRate}パーセント`}
+            >
               {checklistStatus.completionRate}%
             </span>
           )}
@@ -115,13 +127,30 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
         <div
           id="checklist-content"
           className="flex-1 overflow-y-auto p-4"
+          role="tabpanel"
         >
+          {/* スクリーンリーダー用の説明 */}
+          <p 
+            id="checklist-description" 
+            className="sr-only"
+          >
+            旅のしおり作成に必要な情報のチェックリストです。
+            各項目の充足状態を確認できます。
+          </p>
+          
           {requirementsChecklist.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-4">
+            <p 
+              className="text-gray-500 text-sm text-center py-4"
+              role="status"
+            >
               チェックリスト項目がありません
             </p>
           ) : (
-            <ul className="space-y-3">
+            <ul 
+              className="space-y-3"
+              role="list"
+              aria-label="必要情報の一覧"
+            >
               {requirementsChecklist.map((item) => {
                 const isFilled = item.status === 'filled';
                 const isPartial = item.status === 'partial';
@@ -136,9 +165,18 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
                       ${isFilled ? 'bg-green-50/50' : ''}
                       ${!isFilled && !isPartial ? 'bg-gray-50/30' : ''}
                     `}
+                    role="listitem"
+                    aria-label={`
+                      ${item.label}。
+                      ${item.required ? '必須項目' : 'オプション項目'}。
+                      ${isFilled ? '入力済み' : '未入力'}。
+                    `}
                   >
                     {/* ステータスアイコン */}
-                    <div className="flex-shrink-0 mt-0.5">
+                    <div 
+                      className="flex-shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    >
                       {isFilled ? (
                         <CheckCircle2 className="w-5 h-5 text-green-600" />
                       ) : (
@@ -204,23 +242,37 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
             <div className="mt-6 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium text-gray-700">全体の進捗</span>
-                <span className="font-bold text-lg text-gray-900">
+                <span 
+                  className="font-bold text-lg text-gray-900"
+                  aria-label={`充足率 ${checklistStatus.completionRate}パーセント`}
+                >
                   {checklistStatus.completionRate}%
                 </span>
               </div>
               
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="w-full h-2 bg-gray-200 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={checklistStatus.completionRate}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="全体の充足率"
+              >
                 <div
                   className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500 ease-out"
                   style={{ width: `${checklistStatus.completionRate}%` }}
                 />
               </div>
               
-              <div className="flex items-center justify-between text-xs text-gray-600">
-                <span>
+              <div 
+                className="flex items-center justify-between text-xs text-gray-600"
+                role="status"
+                aria-live="polite"
+              >
+                <span aria-label={`必須項目 ${checklistStatus.requiredFilled}個中${checklistStatus.requiredTotal}個完了`}>
                   必須: {checklistStatus.requiredFilled}/{checklistStatus.requiredTotal}
                 </span>
-                <span>
+                <span aria-label={`オプション項目 ${checklistStatus.optionalFilled}個中${checklistStatus.optionalTotal}個完了`}>
                   オプション: {checklistStatus.optionalFilled}/{checklistStatus.optionalTotal}
                 </span>
               </div>
