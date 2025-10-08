@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/session';
 import { Header } from '@/components/layout/Header';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { DesktopLayout } from '@/components/layout/DesktopLayout';
+import { ResizableLayout } from '@/components/layout/ResizableLayout';
 import { ErrorNotification } from '@/components/ui/ErrorNotification';
 import { StorageInitializer } from '@/components/layout/StorageInitializer';
 import { AutoSave } from '@/components/layout/AutoSave';
@@ -20,10 +20,13 @@ import { AutoSave } from '@/components/layout/AutoSave';
  * - しおりタブがデフォルト
  */
 export default async function Home() {
-  // 認証チェック
-  const session = await getSession();
-  if (!session) {
-    redirect('/login');
+  // 認証チェック（E2Eテスト時はスキップ）
+  const isE2ETest = process.env.PLAYWRIGHT_TEST_MODE === 'true';
+  if (!isE2ETest) {
+    const session = await getSession();
+    if (!session) {
+      redirect('/login');
+    }
   }
 
   return (
@@ -37,9 +40,9 @@ export default async function Home() {
       {/* Header */}
       <Header />
 
-      {/* Desktop Layout - 横並び (≥768px) */}
+      {/* Desktop Layout - Resizable Layout (≥768px) */}
       <div className="hidden md:block flex-1 overflow-hidden">
-        <DesktopLayout />
+        <ResizableLayout />
       </div>
 
       {/* Mobile Layout - タブ切り替え (<768px) */}

@@ -33,11 +33,11 @@ export const AISelector: React.FC = () => {
   return (
     <>
       <div className="flex items-center space-x-2">
-        <span className="text-sm text-gray-600">AIモデル:</span>
+        <span className="text-sm font-medium text-gray-700">AIモデル:</span>
         <select
           value={selectedAI}
           onChange={(e) => handleAIChange(e.target.value)}
-          className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer hover:border-gray-400"
         >
           {enabledModels.map((model) => (
             <option key={model.id} value={model.id}>
