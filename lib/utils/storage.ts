@@ -373,11 +373,23 @@ export function saveCurrentItinerary(itinerary: ItineraryData | null): boolean {
       return true;
     }
     
+    // 日付フィールドを文字列に変換（既に文字列の場合はそのまま使用）
+    const createdAtStr = itinerary.createdAt instanceof Date 
+      ? itinerary.createdAt.toISOString()
+      : itinerary.createdAt;
+    const updatedAtStr = itinerary.updatedAt instanceof Date
+      ? itinerary.updatedAt.toISOString()
+      : itinerary.updatedAt;
+    const publishedAtStr = itinerary.publishedAt 
+      ? (itinerary.publishedAt instanceof Date ? itinerary.publishedAt.toISOString() : itinerary.publishedAt)
+      : undefined;
+    
     // しおりデータをJSON化して保存
     const serialized = JSON.stringify({
       ...itinerary,
-      createdAt: itinerary.createdAt.toISOString(),
-      updatedAt: itinerary.updatedAt.toISOString(),
+      createdAt: createdAtStr,
+      updatedAt: updatedAtStr,
+      publishedAt: publishedAtStr,
     });
     
     window.localStorage.setItem(STORAGE_KEYS.CURRENT_ITINERARY, serialized);
@@ -409,8 +421,9 @@ export function loadCurrentItinerary(): ItineraryData | null {
     // Date型に変換
     return {
       ...data,
-      createdAt: new Date(data.createdAt),
-      updatedAt: new Date(data.updatedAt),
+      createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+      updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
+      publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
     } as ItineraryData;
   } catch (error) {
     console.error('Failed to load current itinerary:', error);
@@ -502,7 +515,20 @@ export function loadPublicItineraries(): Record<string, any> {
     if (!data) {
       return {};
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    
+    // 各しおりの日付フィールドをDateオブジェクトに変換
+    const result: Record<string, any> = {};
+    for (const [slug, itinerary] of Object.entries(parsed)) {
+      result[slug] = {
+        ...itinerary,
+        createdAt: (itinerary as any).createdAt ? new Date((itinerary as any).createdAt) : new Date(),
+        updatedAt: (itinerary as any).updatedAt ? new Date((itinerary as any).updatedAt) : new Date(),
+        publishedAt: (itinerary as any).publishedAt ? new Date((itinerary as any).publishedAt) : undefined,
+      };
+    }
+    
+    return result;
   } catch (error) {
     console.error('Failed to load public itineraries:', error);
     return {};

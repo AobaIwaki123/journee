@@ -305,11 +305,23 @@ export function mergeItineraryData(
     });
   }
 
+  // 日付フィールドを常にDateオブジェクトに変換
+  // APIレスポンスでは文字列になっている可能性があるため
+  const createdAt = updates.createdAt 
+    ? (updates.createdAt instanceof Date ? updates.createdAt : new Date(updates.createdAt))
+    : baseData.createdAt;
+  
+  const publishedAt = updates.publishedAt
+    ? (updates.publishedAt instanceof Date ? updates.publishedAt : new Date(updates.publishedAt))
+    : baseData.publishedAt;
+
   return {
     ...baseData,
     ...updates,
     schedule: mergedSchedule,
+    createdAt,
     updatedAt: now,
+    publishedAt,
   };
 }
 
