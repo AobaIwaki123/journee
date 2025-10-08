@@ -37,6 +37,12 @@ export const MessageInput: React.FC = () => {
   const setIsAutoProgressing = useStore((state: any) => state.setIsAutoProgressing);
   const setAutoProgressState = useStore((state: any) => state.setAutoProgressState);
   const currency = useStore((state: any) => state.settings.general.currency);
+  
+  // Phase 3.5.3: 詳細なローディング状態管理
+  const setLoadingStage = useStore((state: any) => state.setLoadingStage);
+  const setEstimatedWaitTime = useStore((state: any) => state.setEstimatedWaitTime);
+  const updateStreamProgress = useStore((state: any) => state.updateStreamProgress);
+  const resetLoadingState = useStore((state: any) => state.resetLoadingState);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +61,11 @@ export const MessageInput: React.FC = () => {
     setStreaming(true);
     setStreamingMessage('');
     setError(null);
+    
+    // Phase 3.5.3: ローディング状態を初期化
+    setLoadingStage('thinking');
+    setEstimatedWaitTime(15); // 平均15秒と推定
+    updateStreamProgress(0);
 
     try {
       // チャット履歴を準備（最新10件）
@@ -69,6 +80,10 @@ export const MessageInput: React.FC = () => {
       let receivedItinerary = false;
 
       // Phase 4.5: フェーズ情報を含めてストリーミングレスポンスを処理
+      // Phase 3.5.3: ストリーミング開始
+      setLoadingStage('streaming');
+      
+      let chunkCount = 0;
       for await (const chunk of sendChatMessageStream(
         userMessage.content,
         chatHistory,
@@ -83,6 +98,11 @@ export const MessageInput: React.FC = () => {
           // メッセージチャンクを追加
           appendStreamingMessage(chunk.content);
           fullResponse += chunk.content;
+          
+          // Phase 3.5.3: プログレス更新（チャンク数に応じて）
+          chunkCount++;
+          const progress = Math.min(90, chunkCount * 5); // 最大90%まで
+          updateStreamProgress(progress);
         } else if (chunk.type === 'itinerary' && chunk.itinerary) {
           // しおりデータを受信
           receivedItinerary = true;
@@ -99,6 +119,10 @@ export const MessageInput: React.FC = () => {
           break;
         }
       }
+      
+      // Phase 3.5.3: 最終調整中
+      setLoadingStage('finalizing');
+      updateStreamProgress(100);
 
       // ストリーミング完了後、JSONブロックを削除してAIメッセージを追加
       const { message: cleanMessage } = parseAIResponse(fullResponse);
@@ -143,6 +167,8 @@ export const MessageInput: React.FC = () => {
     } finally {
       setLoading(false);
       setStreaming(false);
+      // Phase 3.5.3: ローディング状態をリセット
+      resetLoadingState();
     }
   };
   

@@ -6,6 +6,8 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useStore } from "@/lib/store/useStore";
 import { Bot, User } from "lucide-react";
+import LoadingMessage from "./LoadingMessage";
+import WaitingTips from "./WaitingTips";
 
 /**
  * リアルタイムでJSONブロックを除去する関数
@@ -335,21 +337,14 @@ export const MessageList: React.FC = () => {
             </div>
           )}
 
-          {/* ローディング中（ストリーミング開始前） */}
+          {/* ローディング中（ストリーミング開始前） - Phase 3.5.3 */}
           {isLoading && !isStreaming && !streamingMessage && (
-            <div className="flex justify-start">
-              <div className="flex max-w-[80%]">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-gray-600 animate-pulse" />
-                </div>
-                <div className="rounded-lg p-3 bg-gray-100">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-4">
+              {/* タイピングアニメーション */}
+              <LoadingMessage />
+              
+              {/* 待機中のTips */}
+              <WaitingTips />
             </div>
           )}
         </>
