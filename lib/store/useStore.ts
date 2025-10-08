@@ -48,6 +48,22 @@ interface HistoryState {
 }
 
 /**
+ * Phase 3.5.3: ローディングステージ
+ */
+export type LoadingStage = 'idle' | 'thinking' | 'streaming' | 'finalizing';
+
+/**
+ * Phase 3.5.3: 詳細なローディング状態
+ */
+interface LoadingState {
+  stage: LoadingStage;
+  estimatedWaitTime: number; // 秒
+  streamProgress: number; // 0-100%
+  currentTip: string;
+  startTime: number | null; // タイムスタンプ
+}
+
+/**
  * しおりフィルター条件
  */
 export interface ItineraryFilter {
@@ -80,6 +96,14 @@ interface AppState {
   setStreamingMessage: (message: string) => void;
   appendStreamingMessage: (chunk: string) => void;
   clearMessages: () => void;
+
+  // Phase 3.5.3: Detailed loading state
+  loadingState: LoadingState;
+  setLoadingStage: (stage: LoadingStage) => void;
+  setEstimatedWaitTime: (seconds: number) => void;
+  updateStreamProgress: (progress: number) => void;
+  setCurrentTip: (tip: string) => void;
+  resetLoadingState: () => void;
 
   // Itinerary state
   currentItinerary: ItineraryData | null;
@@ -206,6 +230,45 @@ export const useStore = create<AppState>()((set, get) => ({
   appendStreamingMessage: (chunk) =>
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
   clearMessages: () => set({ messages: [], streamingMessage: '' }),
+
+  // Phase 3.5.3: Detailed loading state
+  loadingState: {
+    stage: 'idle',
+    estimatedWaitTime: 0,
+    streamProgress: 0,
+    currentTip: '',
+    startTime: null,
+  },
+  setLoadingStage: (stage) =>
+    set((state) => ({
+      loadingState: {
+        ...state.loadingState,
+        stage,
+        startTime: stage === 'thinking' ? Date.now() : state.loadingState.startTime,
+      },
+    })),
+  setEstimatedWaitTime: (seconds) =>
+    set((state) => ({
+      loadingState: { ...state.loadingState, estimatedWaitTime: seconds },
+    })),
+  updateStreamProgress: (progress) =>
+    set((state) => ({
+      loadingState: { ...state.loadingState, streamProgress: progress },
+    })),
+  setCurrentTip: (tip) =>
+    set((state) => ({
+      loadingState: { ...state.loadingState, currentTip: tip },
+    })),
+  resetLoadingState: () =>
+    set({
+      loadingState: {
+        stage: 'idle',
+        estimatedWaitTime: 0,
+        streamProgress: 0,
+        currentTip: '',
+        startTime: null,
+      },
+    }),
 
   // Itinerary state
   currentItinerary: null,
