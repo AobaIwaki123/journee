@@ -417,8 +417,9 @@ export const loadItinerariesFromStorage = (): ItineraryData[] => {
     // Date型に変換
     return parsed.map((item: any) => ({
       ...item,
-      createdAt: new Date(item.createdAt),
-      updatedAt: new Date(item.updatedAt),
+      createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+      updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
+      publishedAt: item.publishedAt ? new Date(item.publishedAt) : undefined,
     }));
   } catch (error) {
     console.error('Failed to load itineraries from storage:', error);
