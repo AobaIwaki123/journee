@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '@/lib/store/useStore';
 import { DaySchedule } from './DaySchedule';
+import { MapView } from './MapView';
 import { PlanningProgress } from './PlanningProgress';
 import { QuickActions } from './QuickActions';
 import { PhaseStatusBar } from './PhaseStatusBar';
@@ -13,10 +14,13 @@ import { UndoRedoButtons } from './UndoRedoButtons';
 import { ShareButton } from './ShareButton';
 import { SaveButton } from './SaveButton';
 import { ResetButton } from './ResetButton';
-import { ToastContainer } from '@/components/ui/Toast';
 import { PDFExportButton } from './PDFExportButton';
 import { RequirementChecklist } from './RequirementChecklist';
-import { Calendar, MapPin } from 'lucide-react';
+import { ToastContainer } from '@/components/ui/Toast';
+import { Calendar, MapPin, List, Map as MapIcon } from 'lucide-react';
+import { DaySchedule as DayScheduleType } from '@/types/itinerary';
+
+type ViewMode = 'schedule' | 'map';
 
 export const ItineraryPreview: React.FC = () => {
   const { 
@@ -26,6 +30,13 @@ export const ItineraryPreview: React.FC = () => {
     autoProgressState,
     requirementChecklistVisible
   } = useStore();
+  
+  const [viewMode, setViewMode] = useState<ViewMode>('schedule');
+
+  // 位置情報を持つスポットがあるかチェック
+  const hasLocations = currentItinerary?.schedule.some((day: DayScheduleType) =>
+    day.spots.some(spot => spot.location?.lat && spot.location?.lng)
+  ) || false;
 
   // 空状態: しおりがない場合
   if (!currentItinerary) {
@@ -64,27 +75,78 @@ export const ItineraryPreview: React.FC = () => {
 
           {/* Content */}
           <div className="p-6 max-w-5xl mx-auto">
-            {/* Action Buttons */}
+            {/* Action Buttons & View Mode Switcher */}
             {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-3">
-                  <ShareButton />
-                  <SaveButton />
-                  <ResetButton />
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  {/* View Mode Switcher (only if has locations) */}
+                  {hasLocations ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewMode('schedule')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          viewMode === 'schedule'
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <List className="w-4 h-4" />
+                        <span className="text-sm font-medium">スケジュール</span>
+                      </button>
+                      <button
+                        onClick={() => setViewMode('map')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          viewMode === 'map'
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <MapIcon className="w-4 h-4" />
+                        <span className="text-sm font-medium">地図</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-3">
+                      <ShareButton />
+                      <SaveButton />
+                      <ResetButton />
+                    </div>
+                  )}
+
+                  {/* Action Buttons (right side) */}
+                  <div className="flex gap-3 items-center">
+                    {hasLocations && (
+                      <>
+                        <ShareButton />
+                        <SaveButton />
+                        <ResetButton />
+                      </>
+                    )}
+                    <UndoRedoButtons />
+                  </div>
                 </div>
-                <UndoRedoButtons />
               </div>
             )}
 
             {/* Summary */}
-            {currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
+            {viewMode === 'schedule' && currentItinerary.schedule && currentItinerary.schedule.length > 0 && (
               <ItinerarySummary itinerary={currentItinerary} />
             )}
 
-            {/* Days */}
-            {currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
+            {/* Map View */}
+            {viewMode === 'map' && hasLocations && (
+              <div className="mb-6">
+                <MapView 
+                  days={currentItinerary.schedule} 
+                  height="600px"
+                />
+              </div>
+            )}
+
+            {/* Days (Schedule View) */}
+            {viewMode === 'schedule' && currentItinerary.schedule && currentItinerary.schedule.length > 0 ? (
               <div className="space-y-6">
-                {currentItinerary.schedule.map((day: any, index: number) => (
+                {currentItinerary.schedule.map((day: DayScheduleType, index: number) => (
                   <DaySchedule 
                     key={day.day} 
                     day={day} 
@@ -93,7 +155,7 @@ export const ItineraryPreview: React.FC = () => {
                   />
                 ))}
               </div>
-            ) : (
+            ) : viewMode === 'schedule' ? (
               <div className="bg-white rounded-lg shadow-sm p-12 text-center">
                 <p className="text-gray-600 text-lg font-medium mb-2">
                   スケジュールがまだ作成されていません
@@ -102,10 +164,10 @@ export const ItineraryPreview: React.FC = () => {
                   AIチャットで「〇日目の詳細を教えて」と聞いてみましょう
                 </p>
               </div>
-            )}
+            ) : null}
 
             {/* PDF Export Button */}
-            {currentItinerary.schedule.length > 0 && (
+            {viewMode === 'schedule' && currentItinerary.schedule.length > 0 && (
               <div className="mt-10 mb-6 flex justify-center">
                 <PDFExportButton itinerary={currentItinerary} />
               </div>
