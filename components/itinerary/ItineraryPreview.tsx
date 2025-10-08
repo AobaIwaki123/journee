@@ -116,22 +116,44 @@ export const ItineraryPreview: React.FC = () => {
           {requirementChecklistVisible && planningPhase === 'collecting' && (
             <div 
               className="
-                absolute top-0 right-0
-                w-1/2 h-1/2
-                p-4
+                absolute
+                
+                // デスクトップ: 右上、幅50% x 高さ50%
+                hidden lg:block
+                lg:top-0 lg:right-0
+                lg:w-1/2 lg:h-1/2
+                lg:p-4
+                
+                // タブレット: 上部、幅100% x 高さ40%
+                md:block md:hidden
+                md:top-0 md:left-0 md:right-0
+                md:w-full md:h-[40%]
+                md:p-3
+                
+                // モバイル: ボトムシート風（全幅）
+                block sm:hidden
+                bottom-0 left-0 right-0
+                w-full
+                max-h-[60vh]
+                p-0
+                
                 animate-fadeIn
+                z-50
               "
-              style={{ 
-                maxWidth: '50%',
-                maxHeight: '50%',
-              }}
             >
               <RequirementChecklist 
                 className="
                   h-full
                   bg-white/90 backdrop-blur-md
                   border border-gray-200/50
-                  rounded-lg shadow-xl
+                  
+                  // デスクトップ・タブレット: 角丸
+                  lg:rounded-lg md:rounded-lg
+                  
+                  // モバイル: 上部のみ角丸
+                  rounded-t-xl
+                  
+                  shadow-xl
                   overflow-hidden
                   flex flex-col
                 "
