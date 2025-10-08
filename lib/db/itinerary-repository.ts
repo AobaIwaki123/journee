@@ -189,7 +189,7 @@ export class ItineraryRepository {
     itinerary: ItineraryData
   ): Promise<ItineraryData> {
     // RLSをバイパスするためAdmin権限を使用
-    const client = supabaseAdmin || supabase;
+    const client = (supabaseAdmin || supabase) as typeof supabase;
 
     // 1. しおり本体を作成
     // 注: idは指定せず、Supabaseに自動生成させる（UUID）
@@ -214,7 +214,7 @@ export class ItineraryRepository {
         custom_message: itinerary.customMessage,
         phase: itinerary.phase || "initial",
         current_day: itinerary.currentDay,
-      })
+      } as any)
       .select()
       .single();
 
@@ -222,13 +222,15 @@ export class ItineraryRepository {
       throw new Error(`Failed to create itinerary: ${itineraryError.message}`);
     }
 
+    const typedItinerary = dbItinerary as DbItinerary;
+
     // 2. 日程詳細を作成
     if (itinerary.schedule && itinerary.schedule.length > 0) {
       for (const day of itinerary.schedule) {
         const { data: dbDay, error: dayError } = await client
           .from("day_schedules")
           .insert({
-            itinerary_id: dbItinerary.id,
+            itinerary_id: typedItinerary.id,
             day: day.day,
             date: day.date,
             title: day.title,
@@ -239,7 +241,7 @@ export class ItineraryRepository {
             is_loading: day.isLoading,
             error: day.error,
             progress: day.progress,
-          })
+          } as any)
           .select()
           .single();
 
@@ -248,10 +250,12 @@ export class ItineraryRepository {
           continue;
         }
 
+        const typedDay = dbDay as DbDaySchedule;
+
         // 3. 観光スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
-            day_schedule_id: dbDay.id,
+            day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,
             scheduled_time: spot.scheduledTime,
@@ -269,7 +273,7 @@ export class ItineraryRepository {
 
           const { error: spotsError } = await client
             .from("tourist_spots")
-            .insert(spotsToInsert);
+            .insert(spotsToInsert as any);
 
           if (spotsError) {
             console.error("Failed to create tourist spots:", spotsError);
@@ -278,7 +282,7 @@ export class ItineraryRepository {
       }
     }
 
-    return this.dbToItinerary(dbItinerary);
+    return this.dbToItinerary(typedItinerary);
   }
 
   /**
@@ -403,10 +407,10 @@ export class ItineraryRepository {
     updates: Partial<ItineraryData>
   ): Promise<ItineraryData> {
     // RLSをバイパスするためAdmin権限を使用
-    const client = supabaseAdmin || supabase;
+    const client = (supabaseAdmin || supabase) as typeof supabase;
 
     // 1. しおり本体を更新
-    const { data: dbItinerary, error: itineraryError } = await client
+    const { data: dbItinerary, error: itineraryError } = await (client as any)
       .from("itineraries")
       .update({
         title: updates.title,
@@ -426,7 +430,7 @@ export class ItineraryRepository {
         custom_message: updates.customMessage,
         phase: updates.phase,
         current_day: updates.currentDay,
-      })
+      } as any)
       .eq("id", itineraryId)
       .eq("user_id", userId)
       .select()
@@ -460,7 +464,7 @@ export class ItineraryRepository {
             is_loading: day.isLoading,
             error: day.error,
             progress: day.progress,
-          })
+          } as any)
           .select()
           .single();
 
@@ -469,10 +473,12 @@ export class ItineraryRepository {
           continue;
         }
 
+        const typedDay = dbDay as DbDaySchedule;
+
         // スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
-            day_schedule_id: dbDay.id,
+            day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,
             scheduled_time: spot.scheduledTime,
@@ -488,7 +494,7 @@ export class ItineraryRepository {
             order_index: index,
           }));
 
-          await client.from("tourist_spots").insert(spotsToInsert);
+          await client.from("tourist_spots").insert(spotsToInsert as any);
         }
       }
     }
@@ -501,7 +507,7 @@ export class ItineraryRepository {
    */
   async deleteItinerary(itineraryId: string, userId: string): Promise<boolean> {
     // RLSをバイパスするためAdmin権限を使用
-    const client = supabaseAdmin || supabase;
+    const client = (supabaseAdmin || supabase) as typeof supabase;
 
     const { error } = await client
       .from("itineraries")
@@ -521,9 +527,11 @@ export class ItineraryRepository {
    */
   async incrementViewCount(slug: string): Promise<void> {
     // RLSをバイパスするためAdmin権限を使用
-    const client = supabaseAdmin || supabase;
+    const client = (supabaseAdmin || supabase) as typeof supabase;
 
-    const { error } = await client.rpc("increment_view_count", { slug });
+    const { error } = await (client as any).rpc("increment_view_count", {
+      slug,
+    });
 
     if (error) {
       console.error("Failed to increment view count:", error);

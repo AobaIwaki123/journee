@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { supabase, supabaseAdmin } from "@/lib/db/supabase";
+import type { Database } from "@/types/database";
 
 /**
  * NextAuth設定オプション
@@ -61,14 +62,20 @@ export const authOptions: NextAuthOptions = {
               return token;
             }
 
-            const { data: supabaseUser } = await supabaseAdmin
-              .from("users")
-              .select("id")
-              .eq("google_id", account.providerAccountId)
-              .single();
+            type UserRow = Database["public"]["Tables"]["users"]["Row"];
+            const { data: supabaseUser, error: fetchError } =
+              await supabaseAdmin!
+                .from("users")
+                .select("*")
+                .eq("google_id", account.providerAccountId)
+                .single();
 
-            if (supabaseUser) {
-              token.id = supabaseUser.id; // SupabaseのUUID
+            if (fetchError && fetchError.code !== "PGRST116") {
+              // PGRST116 = "Row not found" (許容されるエラー)
+              console.error("Error fetching Supabase user ID:", fetchError);
+              token.id = user.id; // フォールバック
+            } else if (supabaseUser) {
+              token.id = (supabaseUser as UserRow).id; // SupabaseのUUID
             } else {
               console.error(
                 "Supabase user not found for googleId:",
@@ -146,7 +153,10 @@ export const authOptions: NextAuthOptions = {
           }
 
           // google_idでユーザーを検索
-          const { data: existingUser, error: fetchError } = await supabaseAdmin
+          type UserRow = Database["public"]["Tables"]["users"]["Row"];
+          type UserInsert = Database["public"]["Tables"]["users"]["Insert"];
+
+          const { data: existingUser, error: fetchError } = await supabaseAdmin!
             .from("users")
             .select("*")
             .eq("google_id", googleId)
@@ -160,14 +170,14 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser) {
             // ユーザーが存在しない場合は新規作成（Admin権限で）
-            const { data: newUser, error: insertError } = await supabaseAdmin
+            const { data: newUser, error: insertError } = await supabaseAdmin!
               .from("users")
               .insert({
                 email,
-                name: googleProfile.name || user.name,
-                image: googleProfile.picture || user.image,
+                name: googleProfile.name || user.name || null,
+                image: googleProfile.picture || user.image || null,
                 google_id: googleId,
-              })
+              } as any)
               .select()
               .single();
 
@@ -176,9 +186,15 @@ export const authOptions: NextAuthOptions = {
               return false;
             }
 
-            console.log("New user created in Supabase:", newUser.id);
+            console.log(
+              "New user created in Supabase:",
+              (newUser as UserRow).id
+            );
           } else {
-            console.log("Existing user found in Supabase:", existingUser.id);
+            console.log(
+              "Existing user found in Supabase:",
+              (existingUser as UserRow).id
+            );
           }
 
           return true;
