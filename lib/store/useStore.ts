@@ -198,8 +198,11 @@ export const useStore = create<AppState>()((set, get) => ({
   isLoading: false,
   isStreaming: false,
   streamingMessage: '',
-  addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
+  addMessage: (message) => {
+    set((state) => ({ messages: [...state.messages, message] }));
+    // Phase 4.8: メッセージ追加後にチェックリストを更新
+    get().updateChecklist();
+  },
   setLoading: (loading) => set({ isLoading: loading }),
   setStreaming: (streaming) => set({ isStreaming: streaming }),
   setStreamingMessage: (message) => set({ streamingMessage: message }),
@@ -209,7 +212,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
   // Itinerary state
   currentItinerary: null,
-  setItinerary: (itinerary) =>
+  setItinerary: (itinerary) => {
     set((state) => ({
       currentItinerary: itinerary,
       history: {
@@ -221,8 +224,11 @@ export const useStore = create<AppState>()((set, get) => ({
         present: itinerary,
         future: [],
       },
-    })),
-  updateItinerary: (updates) =>
+    }));
+    // Phase 4.8: しおり変更後にチェックリストを更新
+    get().updateChecklist();
+  },
+  updateItinerary: (updates) => {
     set((state) => {
       const newItinerary = state.currentItinerary
         ? {
@@ -242,7 +248,10 @@ export const useStore = create<AppState>()((set, get) => ({
           future: [],
         },
       };
-    }),
+    });
+    // Phase 4.8: しおり更新後にチェックリストを更新
+    get().updateChecklist();
+  },
 
   // Phase 4: Planning phase state
   planningPhase: 'initial',
