@@ -860,8 +860,17 @@ journee/
 
 #### 8.1 データベースセットアップ
 - [ ] データベーススキーマ設計
-- [ ] Vercel PostgresまたはSupabaseのセットアップ
+- [ ] Vercel Postgresのセットアップ
 - [ ] マイグレーションスクリプトの作成
+
+```js
+
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://wbyjomvjpsuqlbhyxomy.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
+```
 
 #### 8.2 データベースストレージの実装
 - [ ] データベースクライアントの実装
