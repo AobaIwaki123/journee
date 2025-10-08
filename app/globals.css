@@ -105,3 +105,30 @@ body {
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
+
+/* PDF印刷用スタイル (Phase 5.3) */
+.pdf-layout {
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ページ分割の最適化 */
+.pdf-layout .break-inside-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* 印刷時の背景色保持 */
+@media print {
+  .pdf-layout {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .pdf-layout * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
