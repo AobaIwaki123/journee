@@ -57,7 +57,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             duration: 90,
             category: 'sightseeing',
             estimatedCost: 400,
-            notes: '早朝がおすすめです'
+            notes: '早朝がおすすめです',
+            location: {
+              lat: 34.9949,
+              lng: 135.7850,
+              address: '京都府京都市東山区清水1-294'
+            }
           },
           {
             id: 'test-spot-1-2',
@@ -66,7 +71,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             scheduledTime: '10:30',
             duration: 60,
             category: 'sightseeing',
-            estimatedCost: 0
+            estimatedCost: 0,
+            location: {
+              lat: 34.9962,
+              lng: 135.7804,
+              address: '京都府京都市東山区桝屋町清水2丁目'
+            }
           },
           {
             id: 'test-spot-1-3',
@@ -75,7 +85,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             scheduledTime: '12:00',
             duration: 60,
             category: 'dining',
-            estimatedCost: 2000
+            estimatedCost: 2000,
+            location: {
+              lat: 35.0036,
+              lng: 135.7756,
+              address: '京都府京都市東山区祇園町'
+            }
           },
           {
             id: 'test-spot-1-4',
@@ -85,7 +100,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             duration: 120,
             category: 'sightseeing',
             estimatedCost: 0,
-            notes: '歩きやすい靴がおすすめ'
+            notes: '歩きやすい靴がおすすめ',
+            location: {
+              lat: 34.9671,
+              lng: 135.7727,
+              address: '京都府京都市伏見区深草藪之内町68'
+            }
           }
         ],
         totalDistance: 15,
@@ -103,7 +123,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             scheduledTime: '09:00',
             duration: 60,
             category: 'sightseeing',
-            estimatedCost: 500
+            estimatedCost: 500,
+            location: {
+              lat: 35.0394,
+              lng: 135.7292,
+              address: '京都府京都市北区金閣寺町1'
+            }
           },
           {
             id: 'test-spot-2-2',
@@ -112,7 +137,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             scheduledTime: '11:00',
             duration: 45,
             category: 'sightseeing',
-            estimatedCost: 0
+            estimatedCost: 0,
+            location: {
+              lat: 35.0170,
+              lng: 135.6722,
+              address: '京都府京都市右京区嵯峨小倉山田淵山町'
+            }
           },
           {
             id: 'test-spot-2-3',
@@ -121,7 +151,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             scheduledTime: '12:30',
             duration: 60,
             category: 'dining',
-            estimatedCost: 2500
+            estimatedCost: 2500,
+            location: {
+              lat: 35.0147,
+              lng: 135.6778,
+              address: '京都府京都市右京区嵯峨天龍寺芒ノ馬場町'
+            }
           },
           {
             id: 'test-spot-2-4',
@@ -130,7 +165,12 @@ function handleMockResponse(stream: boolean, currency: string = 'JPY') {
             scheduledTime: '14:00',
             duration: 60,
             category: 'sightseeing',
-            estimatedCost: 500
+            estimatedCost: 500,
+            location: {
+              lat: 35.0156,
+              lng: 135.6739,
+              address: '京都府京都市右京区嵯峨天龍寺芒ノ馬場町68'
+            }
           }
         ],
         totalDistance: 12,

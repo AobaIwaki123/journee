@@ -10,8 +10,8 @@ import type { Currency } from '@/types/settings';
  * 通貨設定のみ
  */
 export const GeneralSettings: React.FC = () => {
-  const settings = useStore((state) => state.settings);
-  const updateGeneralSettings = useStore((state) => state.updateGeneralSettings);
+  const settings = useStore((state: any) => state.settings);
+  const updateGeneralSettings = useStore((state: any) => state.updateGeneralSettings);
   const [localCurrency, setLocalCurrency] = useState<Currency>(settings.general.currency);
   const [saved, setSaved] = useState(false);
 
