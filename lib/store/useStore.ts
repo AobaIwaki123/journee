@@ -98,8 +98,11 @@ interface AppState {
   requirementsChecklist: RequirementChecklistItem[];
   checklistStatus: ChecklistStatus | null;
   buttonReadiness: ButtonReadiness | null;
+  requirementChecklistVisible: boolean;
   updateChecklist: () => void;
   getChecklistForPhase: (phase: ItineraryPhase) => RequirementChecklistItem[];
+  toggleRequirementChecklist: () => void;
+  setRequirementChecklistVisible: (visible: boolean) => void;
 
   // Phase 4.10: Auto progress state
   autoProgressMode: boolean;
@@ -333,6 +336,7 @@ export const useStore = create<AppState>()((set, get) => ({
   requirementsChecklist: [],
   checklistStatus: null,
   buttonReadiness: null,
+  requirementChecklistVisible: true, // デフォルトで表示
   
   // Phase 4.10: Auto progress state
   autoProgressMode: true,
@@ -382,6 +386,16 @@ export const useStore = create<AppState>()((set, get) => ({
   getChecklistForPhase: (phase: ItineraryPhase) => {
     const requirements = getRequirementsForPhase(phase);
     return requirements.items;
+  },
+  
+  toggleRequirementChecklist: () => {
+    set((state) => ({
+      requirementChecklistVisible: !state.requirementChecklistVisible,
+    }));
+  },
+  
+  setRequirementChecklistVisible: (visible: boolean) => {
+    set({ requirementChecklistVisible: visible });
   },
   
   // Phase 4.10: Auto progress actions
