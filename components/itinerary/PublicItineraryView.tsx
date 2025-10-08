@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ItineraryData } from '@/types/itinerary';
 import { ItineraryHeader } from './ItineraryHeader';
 import { ItinerarySummary } from './ItinerarySummary';
@@ -17,6 +17,14 @@ interface PublicItineraryViewProps {
  */
 export default function PublicItineraryView({ slug, itinerary }: PublicItineraryViewProps) {
   const [copied, setCopied] = useState(false);
+  const [publishedDate, setPublishedDate] = useState<string>('');
+
+  // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
+  useEffect(() => {
+    if (itinerary.publishedAt) {
+      setPublishedDate(new Date(itinerary.publishedAt).toLocaleDateString('ja-JP'));
+    }
+  }, [itinerary.publishedAt]);
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -158,9 +166,9 @@ export default function PublicItineraryView({ slug, itinerary }: PublicItinerary
               閲覧数: {itinerary.viewCount.toLocaleString()}
             </p>
           )}
-          {itinerary.publishedAt && (
+          {publishedDate && (
             <p className="mt-1 text-xs text-gray-400">
-              公開日: {new Date(itinerary.publishedAt).toLocaleDateString('ja-JP')}
+              公開日: {publishedDate}
             </p>
           )}
         </div>

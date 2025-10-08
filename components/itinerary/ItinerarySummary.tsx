@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useEffect } from 'react';
 import { Wallet, Calendar, TrendingUp } from 'lucide-react';
 import { ItineraryData } from '@/types/itinerary';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -10,6 +10,19 @@ interface ItinerarySummaryProps {
 }
 
 export const ItinerarySummary: React.FC<ItinerarySummaryProps> = memo(({ itinerary }) => {
+  const [createdDate, setCreatedDate] = useState<string>('');
+  const [updatedDate, setUpdatedDate] = useState<string>('');
+
+  // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
+  useEffect(() => {
+    if (itinerary.createdAt) {
+      setCreatedDate(new Date(itinerary.createdAt).toLocaleDateString('ja-JP'));
+    }
+    if (itinerary.updatedAt) {
+      setUpdatedDate(new Date(itinerary.updatedAt).toLocaleDateString('ja-JP'));
+    }
+  }, [itinerary.createdAt, itinerary.updatedAt]);
+
   // 総移動距離を計算
   const totalDistance = useMemo(
     () => itinerary.schedule.reduce((sum, day) => sum + (day.totalDistance || 0), 0),
@@ -91,12 +104,16 @@ export const ItinerarySummary: React.FC<ItinerarySummaryProps> = memo(({ itinera
       {/* ステータス情報 */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
-          <div>
-            作成日: {new Date(itinerary.createdAt).toLocaleDateString('ja-JP')}
-          </div>
-          <div>
-            最終更新: {new Date(itinerary.updatedAt).toLocaleDateString('ja-JP')}
-          </div>
+          {createdDate && (
+            <div>
+              作成日: {createdDate}
+            </div>
+          )}
+          {updatedDate && (
+            <div>
+              最終更新: {updatedDate}
+            </div>
+          )}
         </div>
       </div>
     </div>

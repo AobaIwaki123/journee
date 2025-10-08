@@ -190,7 +190,7 @@ export class ItineraryRepository {
   ): Promise<ItineraryData> {
     // RLSをバイパスするためAdmin権限を使用
     const client = supabaseAdmin || supabase;
-    
+
     // 1. しおり本体を作成
     // 注: idは指定せず、Supabaseに自動生成させる（UUID）
     const { data: dbItinerary, error: itineraryError } = await client
@@ -404,7 +404,7 @@ export class ItineraryRepository {
   ): Promise<ItineraryData> {
     // RLSをバイパスするためAdmin権限を使用
     const client = supabaseAdmin || supabase;
-    
+
     // 1. しおり本体を更新
     const { data: dbItinerary, error: itineraryError } = await client
       .from("itineraries")
@@ -502,7 +502,7 @@ export class ItineraryRepository {
   async deleteItinerary(itineraryId: string, userId: string): Promise<boolean> {
     // RLSをバイパスするためAdmin権限を使用
     const client = supabaseAdmin || supabase;
-    
+
     const { error } = await client
       .from("itineraries")
       .delete()
@@ -522,7 +522,7 @@ export class ItineraryRepository {
   async incrementViewCount(slug: string): Promise<void> {
     // RLSをバイパスするためAdmin権限を使用
     const client = supabaseAdmin || supabase;
-    
+
     const { error } = await client.rpc("increment_view_count", { slug });
 
     if (error) {
