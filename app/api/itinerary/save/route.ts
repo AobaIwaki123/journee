@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
 import type { ItineraryData } from '@/types/itinerary';
-import {
-  loadItinerariesFromStorage,
-  saveItinerariesToStorage,
-  updateItinerary,
-  addItinerary,
-} from '@/lib/mock-data/itineraries';
+import { itineraryRepository } from '@/lib/db/itinerary-repository';
 
 /**
- * Phase 5.2: しおり保存API（モック版）
+ * Phase 8.3: しおり保存API（Database版）
  * 
  * POST /api/itinerary/save
  * 
- * LocalStorageを使用したモック実装。
+ * Supabaseデータベースを使用した実装。
  * 既存のしおりは更新、新規のしおりは追加する。
  */
 export async function POST(request: NextRequest) {
@@ -45,22 +40,27 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    // しおり一覧を取得
-    const itineraries = loadItinerariesFromStorage();
-    const existingIndex = itineraries.findIndex((item) => item.id === itinerary.id);
+    // 既存のしおりかチェック
+    const existing = await itineraryRepository.getItinerary(itinerary.id, user.id);
 
-    if (existingIndex !== -1) {
+    let savedItinerary: ItineraryData;
+
+    if (existing) {
       // 既存のしおりを更新
-      updateItinerary(itinerary.id, itineraryWithUser);
+      savedItinerary = await itineraryRepository.updateItinerary(
+        itinerary.id,
+        user.id,
+        itineraryWithUser
+      );
     } else {
       // 新規しおりを追加
-      addItinerary(itineraryWithUser);
+      savedItinerary = await itineraryRepository.createItinerary(user.id, itineraryWithUser);
     }
 
     return NextResponse.json({
       success: true,
-      itinerary: itineraryWithUser,
-      message: existingIndex !== -1 ? 'しおりを更新しました' : 'しおりを保存しました',
+      itinerary: savedItinerary,
+      message: existing ? 'しおりを更新しました' : 'しおりを保存しました',
     });
   } catch (error) {
     console.error('Failed to save itinerary:', error);

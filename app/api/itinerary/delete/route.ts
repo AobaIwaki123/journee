@@ -3,14 +3,14 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { itineraryRepository } from '@/lib/db/itinerary-repository';
 
 /**
- * Phase 8.3: しおり読込API（Database版）
+ * Phase 8.3: しおり削除API（Database版）
  * 
- * GET /api/itinerary/load?id={itineraryId}
+ * DELETE /api/itinerary/delete?id={itineraryId}
  * 
  * Supabaseデータベースを使用した実装。
- * 指定されたIDのしおりを取得する。
+ * 指定されたIDのしおりを削除する（カスケード削除で関連データも削除）。
  */
-export async function GET(request: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
     // 認証チェック
     const user = await getCurrentUser();
@@ -32,24 +32,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // しおりを取得（RLSで自動的に権限チェックされる）
-    const itinerary = await itineraryRepository.getItinerary(itineraryId, user.id);
+    // しおりを削除（RLSで自動的に権限チェックされる）
+    const success = await itineraryRepository.deleteItinerary(itineraryId, user.id);
 
-    if (!itinerary) {
+    if (!success) {
       return NextResponse.json(
-        { error: 'Itinerary not found' },
-        { status: 404 }
+        { error: 'Failed to delete itinerary' },
+        { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      itinerary,
+      message: 'しおりを削除しました',
     });
   } catch (error) {
-    console.error('Failed to load itinerary:', error);
+    console.error('Failed to delete itinerary:', error);
     return NextResponse.json(
-      { error: 'Failed to load itinerary' },
+      { error: 'Failed to delete itinerary' },
       { status: 500 }
     );
   }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
+import { itineraryRepository } from '@/lib/db/itinerary-repository';
 
 /**
- * Phase 5.5: しおりを非公開にする
+ * Phase 8.3: しおりを非公開にする（Database版）
  * POST /api/itinerary/unpublish
  */
 export async function POST(req: NextRequest) {
@@ -27,25 +28,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // しおりの所有権チェック（Phase 8以降でデータベースから取得）
-    // const itinerary = await db.getItinerary(itineraryId, user.id);
-    // if (!itinerary) {
-    //   return NextResponse.json(
-    //     { error: 'しおりが見つかりません' },
-    //     { status: 404 }
-    //   );
-    // }
+    // しおりの所有権チェック
+    const itinerary = await itineraryRepository.getItinerary(itineraryId, user.id);
+    if (!itinerary) {
+      return NextResponse.json(
+        { error: 'しおりが見つかりません' },
+        { status: 404 }
+      );
+    }
 
-    // Phase 8以降: データベースで非公開に更新
-    // await db.updateItinerary(itineraryId, {
-    //   isPublic: false,
-    //   publicSlug: null,
-    //   publishedAt: null,
-    //   updatedAt: new Date(),
-    // });
-
-    // Phase 5-7: LocalStorageでの管理（クライアント側で処理）
-    // ここではサクセスレスポンスを返すのみ
+    // データベースで非公開に更新
+    await itineraryRepository.updateItinerary(itineraryId, user.id, {
+      isPublic: false,
+      publicSlug: undefined,
+      publishedAt: undefined,
+    });
 
     return NextResponse.json({
       success: true,

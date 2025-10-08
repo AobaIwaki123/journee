@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import { getCurrentUser } from '@/lib/auth/session';
 import { PublicItinerarySettings } from '@/types/itinerary';
+import { itineraryRepository } from '@/lib/db/itinerary-repository';
 
 /**
- * Phase 5.5: しおりを公開してURLを発行
+ * Phase 8.3: しおりを公開してURLを発行（Database版）
  * POST /api/itinerary/publish
  */
 export async function POST(req: NextRequest) {
@@ -39,33 +40,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // しおりの所有権チェック（Phase 8以降でデータベースから取得）
-    // const itinerary = await db.getItinerary(itineraryId, user.id);
-    // if (!itinerary) {
-    //   return NextResponse.json(
-    //     { error: 'しおりが見つかりません' },
-    //     { status: 404 }
-    //   );
-    // }
+    // しおりの所有権チェック
+    const itinerary = await itineraryRepository.getItinerary(itineraryId, user.id);
+    if (!itinerary) {
+      return NextResponse.json(
+        { error: 'しおりが見つかりません' },
+        { status: 404 }
+      );
+    }
 
     // ユニークなスラッグ生成（10文字、URL-safe）
-    const slug = nanoid(10);
+    const slug = itinerary.publicSlug || nanoid(10);
+    const publishedAt = new Date();
 
-    // Phase 8以降: データベースに保存
-    // await db.updateItinerary(itineraryId, {
-    //   isPublic: settings.isPublic,
-    //   publicSlug: slug,
-    //   publishedAt: new Date(),
-    //   allowPdfDownload: settings.allowPdfDownload ?? true,
-    //   customMessage: settings.customMessage,
-    //   updatedAt: new Date(),
-    // });
-
-    // Phase 5-7: LocalStorageでの管理（クライアント側で処理）
-    // ここではスラッグを生成して返すのみ
+    // データベースに保存
+    await itineraryRepository.updateItinerary(itineraryId, user.id, {
+      isPublic: settings.isPublic,
+      publicSlug: slug,
+      publishedAt,
+      allowPdfDownload: settings.allowPdfDownload ?? true,
+      customMessage: settings.customMessage,
+    });
 
     const publicUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/share/${slug}`;
-    const publishedAt = new Date();
 
     return NextResponse.json({
       success: true,

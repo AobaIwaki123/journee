@@ -855,37 +855,55 @@ journee/
 - ✅ あらゆるデバイスで最適なUX
 - ✅ PWA対応でネイティブアプリのような体験
 
-### Phase 8: データベース統合（Week 15-16）
+### Phase 8: データベース統合（Week 15-16） ✅ **完了** (2025-10-08)
 **目的**: LocalStorageからデータベースへ移行し、永続的なデータ保存を実現
 
-#### 8.1 データベースセットアップ
-- [ ] データベーススキーマ設計
-- [ ] Vercel Postgresのセットアップ
-- [ ] マイグレーションスクリプトの作成
+#### 8.1 データベースセットアップ ✅
+- [x] Supabaseプロジェクト確認
+- [x] パッケージインストール (`@supabase/supabase-js`)
+- [x] 環境変数設定
+- [x] Supabaseクライアント作成 (`lib/db/supabase.ts`)
+- [x] データベーススキーマ作成 (`lib/db/schema.sql`)
+  - users, itineraries, day_schedules, tourist_spots, chat_messages, user_settings
+- [x] Row Level Security (RLS) 設定
+- [x] Supabase RPC関数作成 (`lib/db/functions.sql`)
+  - increment_view_count, search_itineraries, get_user_stats, clone_itinerary
+- [x] 型定義拡張 (`types/database.ts`)
 
-```js
+#### 8.2 データベースストレージの実装 ✅
+- [x] ItineraryRepository実装 (`lib/db/itinerary-repository.ts`)
+  - CRUD操作完全実装
+  - フィルター・ソート・ページネーション対応
+  - トランザクション処理
+  - データ変換（DB ↔ アプリケーション）
 
-import { createClient } from '@supabase/supabase-js'
+#### 8.3 モックストレージからの移行 ✅
+- [x] APIルートの更新（LocalStorage → Database）
+  - `/api/itinerary/save` - Database版
+  - `/api/itinerary/load` - Database版
+  - `/api/itinerary/list` - フィルター・ソート・ページネーション対応
+  - `/api/itinerary/delete` - 新規作成
+  - `/api/itinerary/publish` - Database版
+  - `/api/itinerary/unpublish` - Database版
+- [x] データマイグレーション機能 (`lib/db/migration.ts`)
+- [x] マイグレーションAPI (`/api/migration/start`)
+- [x] マイグレーションUI (`components/db/MigrationPrompt.tsx`)
 
-const supabaseUrl = 'https://wbyjomvjpsuqlbhyxomy.supabase.co'
-const supabaseKey = process.env.SUPABASE_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
-```
+#### 8.4 しおり管理機能 ✅
+- [x] 高度な検索・フィルター（ステータス、目的地、日付範囲、フルテキスト）
+- [x] ソート機能（作成日、更新日、タイトル、旅行開始日）
+- [x] ページネーション（ページベース、可変ページサイズ）
+- [x] しおり削除機能（カスケード削除）
 
-#### 8.2 データベースストレージの実装
-- [ ] データベースクライアントの実装
-- [ ] CRUD操作の実装（作成、読込、更新、削除）
-- [ ] トランザクション処理
+**実装結果**:
+- ✅ Supabase (PostgreSQL) 完全統合
+- ✅ RLSによるセキュリティ確保
+- ✅ 型安全なデータベースアクセス
+- ✅ LocalStorageからの自動マイグレーション
+- ✅ フィルター・ソート・ページネーション完備
+- ✅ 6テーブル、19インデックス、4 RPC関数実装
 
-#### 8.3 モックストレージからの移行
-- [ ] APIルートの更新（LocalStorage → DB）
-- [ ] データマイグレーション機能
-- [ ] 後方互換性の確保
-
-#### 8.4 しおり管理機能
-- [ ] しおり一覧・履歴機能
-- [ ] しおり削除機能
-- [ ] しおり検索・フィルター機能
+**詳細**: [docs/PHASE8_IMPLEMENTATION_COMPLETE.md](./docs/PHASE8_IMPLEMENTATION_COMPLETE.md)
 
 ### Phase 9: 最適化・テスト（Week 17）
 **目的**: アプリケーション全体の品質向上とテストカバレッジの確保
@@ -1294,7 +1312,7 @@ MIT
 
 ---
 
-**開発状況**: ✅ Phase 1, 2, 3, 3.5.1, 5.1, 5.4, 6, 7.1, BUG-001, BUG-002, BUG-003 完了・統合済み → 次は Phase 3.5.2, 3.6, 4, 7.2
+**開発状況**: ✅ Phase 1-8 完了・統合済み → 次は Phase 9（最適化・テスト）
 
 **実装済み機能**:
 - ✅ **Phase 1**: Next.js + TypeScript + Tailwind CSS セットアップ
@@ -1336,16 +1354,22 @@ MIT
 - ✅ **BUG-002**: Phase 5.1.3 時刻と順番の整合性バグ修正（イミュータブル更新、即座レンダリング）
 - ✅ **BUG-003**: 予算自動更新バグ修正（スポット編集時の予算再計算、データ整合性保証）
 - 🔄 **BUG-004**: 地図機能のモックデータ対応（location情報の追加が必要）
+- ✅ **Phase 8**: データベース統合（Supabase完全統合、マイグレーション機能）
+  - ✅ Phase 8.1: Supabaseセットアップ（スキーマ、RLS、型定義）
+  - ✅ Phase 8.2: ItineraryRepository実装（CRUD、フィルター、ページネーション）
+  - ✅ Phase 8.3: API移行（LocalStorage → Database）
+  - ✅ Phase 8.3: データマイグレーション機能実装
+  - ✅ Phase 8.4: 高度な検索・フィルター・ページネーション
 
 **次の実装**: 
-- **Phase 3.5.2** - UI/UX改善（AIモデル選択トグル、テキストハイライト）
-- **Phase 3.6** - 効果音システム（AI返信音、音量設定、UX向上）
-- **Phase 4** - 段階的旅程構築システム（骨組み作成 → 日程詳細化）
-- **Phase 8** - データベース統合（LocalStorage → DB移行）
+- **Phase 9** - 最適化・テスト（パフォーマンス、E2E、品質向上）
+- **Phase 10** - デプロイ・運用（Vercel本番環境、モニタリング）
 
-**最終更新**: 2025-10-08 (Phase 7.1, 7.2完了)
+**最終更新**: 2025-10-08 (Phase 8完了)
 
 **詳細ドキュメント**:
+- [Phase 8 実装完了レポート](./docs/PHASE8_IMPLEMENTATION_COMPLETE.md)
+- [Phase 8 データベース統合計画](./docs/PHASE8_DATABASE_INTEGRATION.md)
 - [Phase 3 統合完了レポート](./docs/PHASE3_INTEGRATION_COMPLETE.md)
 - [Phase 3.5.1 マークダウンレンダリング](./docs/PHASE3.5.1_MARKDOWN_RENDERING.md)
 - [Phase 5.1.1 実装完了レポート](./docs/PHASE5.1.1_ITINERARY_COMPONENTS.md)
