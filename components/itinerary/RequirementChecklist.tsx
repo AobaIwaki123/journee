@@ -5,7 +5,7 @@
  * ユーザーが旅のしおり作成に必要な情報を一目で把握できるコンポーネント
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -28,8 +28,9 @@ interface RequirementChecklistProps {
 
 /**
  * 必要情報チェックリストコンポーネント
+ * @memo React.memoで最適化
  */
-export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
+const RequirementChecklistComponent: React.FC<RequirementChecklistProps> = ({
   visible = true,
   className = '',
   defaultOpen = true,
@@ -57,6 +58,112 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
       setIsOpen(false);
     }
   }, [toggleAccordion]);
+
+  // チェックリスト項目のレンダリング（メモ化）
+  const renderedItems = useMemo(() => {
+    if (requirementsChecklist.length === 0) {
+      return (
+        <p 
+          className="text-gray-500 text-sm text-center py-4"
+          role="status"
+        >
+          チェックリスト項目がありません
+        </p>
+      );
+    }
+
+    return (
+      <ul 
+        className="space-y-3"
+        role="list"
+        aria-label="必要情報の一覧"
+      >
+        {requirementsChecklist.map((item) => {
+          const isFilled = item.status === 'filled';
+          const isPartial = item.status === 'partial';
+          
+          return (
+            <li
+              key={item.id}
+              className={`
+                flex items-start gap-3 p-3 rounded-lg
+                transition-all duration-200
+                hover:bg-gray-50
+                ${isFilled ? 'bg-green-50/50' : ''}
+                ${!isFilled && !isPartial ? 'bg-gray-50/30' : ''}
+              `}
+              role="listitem"
+              aria-label={`
+                ${item.label}。
+                ${item.required ? '必須項目' : 'オプション項目'}。
+                ${isFilled ? '入力済み' : '未入力'}。
+              `}
+            >
+              {/* ステータスアイコン */}
+              <div 
+                className="flex-shrink-0 mt-0.5"
+                aria-hidden="true"
+              >
+                {isFilled ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                ) : (
+                  <Circle className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+              
+              {/* 項目内容 */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className={`
+                      font-medium text-sm
+                      ${isFilled ? 'text-green-700' : 'text-gray-700'}
+                    `}
+                  >
+                    {item.label}
+                  </span>
+                  
+                  {/* 必須/推奨/オプションバッジ */}
+                  {item.required ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">
+                      <AlertCircle className="w-3 h-3" />
+                      必須
+                    </span>
+                  ) : item.description?.includes('推奨') ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+                      <Info className="w-3 h-3" />
+                      推奨
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                      <Sparkles className="w-3 h-3" />
+                      オプション
+                    </span>
+                  )}
+                </div>
+                
+                {/* 説明文 */}
+                {item.description && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {item.description}
+                  </p>
+                )}
+                
+                {/* 抽出された値 */}
+                {item.value && (
+                  <p className="text-sm text-gray-700 mt-1 font-medium">
+                    {typeof item.value === 'object'
+                      ? JSON.stringify(item.value)
+                      : String(item.value)}
+                  </p>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }, [requirementsChecklist]);
 
   // 非表示の場合は何も表示しない
   if (!visible) {
@@ -138,104 +245,8 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
             各項目の充足状態を確認できます。
           </p>
           
-          {requirementsChecklist.length === 0 ? (
-            <p 
-              className="text-gray-500 text-sm text-center py-4"
-              role="status"
-            >
-              チェックリスト項目がありません
-            </p>
-          ) : (
-            <ul 
-              className="space-y-3"
-              role="list"
-              aria-label="必要情報の一覧"
-            >
-              {requirementsChecklist.map((item) => {
-                const isFilled = item.status === 'filled';
-                const isPartial = item.status === 'partial';
-                
-                return (
-                  <li
-                    key={item.id}
-                    className={`
-                      flex items-start gap-3 p-3 rounded-lg
-                      transition-all duration-200
-                      hover:bg-gray-50
-                      ${isFilled ? 'bg-green-50/50' : ''}
-                      ${!isFilled && !isPartial ? 'bg-gray-50/30' : ''}
-                    `}
-                    role="listitem"
-                    aria-label={`
-                      ${item.label}。
-                      ${item.required ? '必須項目' : 'オプション項目'}。
-                      ${isFilled ? '入力済み' : '未入力'}。
-                    `}
-                  >
-                    {/* ステータスアイコン */}
-                    <div 
-                      className="flex-shrink-0 mt-0.5"
-                      aria-hidden="true"
-                    >
-                      {isFilled ? (
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-                    
-                    {/* 項目内容 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className={`
-                            font-medium text-sm
-                            ${isFilled ? 'text-green-700' : 'text-gray-700'}
-                          `}
-                        >
-                          {item.label}
-                        </span>
-                        
-                        {/* 必須/推奨/オプションバッジ */}
-                        {item.required ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">
-                            <AlertCircle className="w-3 h-3" />
-                            必須
-                          </span>
-                        ) : item.description?.includes('推奨') ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
-                            <Info className="w-3 h-3" />
-                            推奨
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
-                            <Sparkles className="w-3 h-3" />
-                            オプション
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* 説明文 */}
-                      {item.description && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {item.description}
-                        </p>
-                      )}
-                      
-                      {/* 抽出された値 */}
-                      {item.value && (
-                        <p className="text-sm text-gray-700 mt-1 font-medium">
-                          {typeof item.value === 'object'
-                            ? JSON.stringify(item.value)
-                            : String(item.value)}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {/* メモ化されたチェックリスト項目 */}
+          {renderedItems}
           
           {/* プログレスバー */}
           {checklistStatus && (
@@ -283,5 +294,8 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
     </div>
   );
 };
+
+// React.memoでコンポーネントをメモ化（パフォーマンス最適化）
+export const RequirementChecklist = React.memo(RequirementChecklistComponent);
 
 RequirementChecklist.displayName = 'RequirementChecklist';
