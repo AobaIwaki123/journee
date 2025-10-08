@@ -1,23 +1,19 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PublicItineraryView from '@/components/itinerary/PublicItineraryView';
-import { ItineraryData } from '@/types/itinerary';
+import { itineraryRepository } from '@/lib/db/itinerary-repository';
 
 interface PageProps {
   params: { slug: string };
 }
 
 /**
- * Phase 5.5: OGPメタデータ生成
+ * Phase 8: OGPメタデータ生成（Database版）
  * SNS共有時のリッチプレビュー表示
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  // Phase 8以降: データベースから取得
-  // const itinerary = await db.getPublicItinerary(params.slug);
-  
-  // Phase 5-7: LocalStorageから取得（クライアント側でのみ動作）
-  // サーバーサイドではモックデータまたはnull
-  const itinerary = null as ItineraryData | null; // TODO: Phase 8でDB統合
+  // データベースから公開しおりを取得
+  const itinerary = await itineraryRepository.getPublicItinerary(params.slug);
 
   if (!itinerary) {
     return {
@@ -60,17 +56,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /**
- * Phase 5.5: 公開しおり閲覧ページ
+ * Phase 8: 公開しおり閲覧ページ（Database版）
  */
 export default async function PublicItineraryPage({ params }: PageProps) {
-  // Phase 8以降: データベースから取得 + 閲覧数カウント
-  // const itinerary = await db.getPublicItinerary(params.slug);
-  // if (itinerary) {
-  //   await db.incrementViewCount(params.slug);
-  // }
+  // データベースから公開しおりを取得
+  const itinerary = await itineraryRepository.getPublicItinerary(params.slug);
 
-  // Phase 5-7: LocalStorageベース（クライアント側で処理）
-  // サーバーサイドではスラッグのみを渡す
+  // 閲覧数をインクリメント（非同期で実行、エラーは無視）
+  if (itinerary) {
+    itineraryRepository.incrementViewCount(params.slug).catch(err => {
+      console.error('Failed to increment view count:', err);
+    });
+  }
+
+  if (!itinerary) {
+    notFound();
+  }
   
-  return <PublicItineraryView slug={params.slug} />;
+  return <PublicItineraryView slug={params.slug} itinerary={itinerary} />;
 }
