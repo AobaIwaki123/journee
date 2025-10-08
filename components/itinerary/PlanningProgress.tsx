@@ -15,14 +15,15 @@ export const PlanningProgress: React.FC = () => {
   // フェーズの表示ラベル
   const phaseLabels: Record<ItineraryPhase, string> = {
     initial: '準備中',
-    collecting: '基本情報の収集',
+    collecting_basic: '基本情報の収集',
+    collecting_detailed: '詳細情報の収集',
     skeleton: '骨組みの作成',
     detailing: '日程の詳細化',
     completed: '完成',
   };
 
   // フェーズの順序
-  const phases: ItineraryPhase[] = ['collecting', 'skeleton', 'detailing', 'completed'];
+  const phases: ItineraryPhase[] = ['collecting_basic', 'collecting_detailed', 'skeleton', 'detailing', 'completed'];
 
   // 現在のフェーズのインデックス
   const currentPhaseIndex = phases.indexOf(planningPhase);
@@ -32,8 +33,10 @@ export const PlanningProgress: React.FC = () => {
     switch (planningPhase) {
       case 'initial':
         return 0;
-      case 'collecting':
-        return 15;
+      case 'collecting_basic':
+        return 10;
+      case 'collecting_detailed':
+        return 20;
       case 'skeleton':
         return 35;
       case 'detailing':

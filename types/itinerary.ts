@@ -11,11 +11,12 @@ export type DayStatus = "draft" | "skeleton" | "detailed" | "completed";
  * しおり全体の作成フェーズ（Phase 4用）
  */
 export type ItineraryPhase =
-  | "initial"      // 初期状態（まだ何も決まっていない）
-  | "collecting"   // 基本情報収集中（行き先、期間、興味など）
-  | "skeleton"     // 骨組み作成中（各日のテーマ・エリアを決定）
-  | "detailing"    // 日程詳細化中（具体的なスポット・時間を追加）
-  | "completed";   // 完成
+  | "initial"              // 初期状態（まだ何も決まっていない）
+  | "collecting_basic"     // 基本情報収集中（行き先、日数）【必須】
+  | "collecting_detailed"  // 詳細情報収集中（興味、予算、同行者など）【LLM主導】
+  | "skeleton"             // 骨組み作成中（各日のテーマ・エリアを決定）
+  | "detailing"            // 日程詳細化中（具体的なスポット・時間を追加）
+  | "completed";           // 完成
 
 /**
  * 座標情報

@@ -309,12 +309,17 @@ export const useStore = create<AppState>()((set, get) => ({
 
       switch (planningPhase) {
         case 'initial':
-          // 初期状態 → 情報収集フェーズへ
-          newPhase = 'collecting';
+          // 初期状態 → 基本情報収集フェーズへ
+          newPhase = 'collecting_basic';
           break;
 
-        case 'collecting':
-          // 情報収集完了 → 骨組み作成フェーズへ
+        case 'collecting_basic':
+          // 基本情報収集完了 → 詳細情報収集フェーズへ
+          newPhase = 'collecting_detailed';
+          break;
+
+        case 'collecting_detailed':
+          // 詳細情報収集完了 → 骨組み作成フェーズへ
           newPhase = 'skeleton';
           break;
 

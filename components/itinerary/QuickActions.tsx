@@ -50,7 +50,9 @@ export const QuickActions: React.FC = () => {
     switch (planningPhase) {
       case 'initial':
         return '情報収集を開始';
-      case 'collecting':
+      case 'collecting_basic':
+        return '詳細情報を収集';
+      case 'collecting_detailed':
         return '骨組みを作成';
       case 'skeleton':
         return '日程の詳細化';
@@ -69,8 +71,10 @@ export const QuickActions: React.FC = () => {
   // ツールチップテキスト
   const getTooltip = (): string => {
     switch (planningPhase) {
-      case 'collecting':
-        return '基本情報が揃ったら、骨組み作成フェーズへ進みます';
+      case 'collecting_basic':
+        return '行き先と日数が揃ったら、詳細情報収集へ進みます';
+      case 'collecting_detailed':
+        return '詳細情報が揃ったら、骨組み作成フェーズへ進みます';
       case 'skeleton':
         return '各日のテーマが決まったら、詳細化フェーズへ進みます';
       case 'detailing':
@@ -83,8 +87,10 @@ export const QuickActions: React.FC = () => {
   // ヘルプテキスト
   const getHelpText = (): string | null => {
     switch (planningPhase) {
-      case 'collecting':
-        return 'AIに行き先、期間、興味を伝えてください';
+      case 'collecting_basic':
+        return 'AIに行き先と日数を伝えてください';
+      case 'collecting_detailed':
+        return 'AIに興味、予算、同行者などを伝えてください';
       case 'skeleton':
         return '各日の大まかなテーマが決まったら次へ進みましょう';
       case 'detailing':

@@ -29,8 +29,32 @@ export const PHASE_REQUIREMENTS: Record<ItineraryPhase, PhaseRequirements> = {
     items: [],
   },
   
-  collecting: {
-    phase: 'collecting',
+  collecting_basic: {
+    phase: 'collecting_basic',
+    requiredItems: ['destination', 'duration'],
+    optionalItems: [],
+    items: [
+      {
+        id: 'destination',
+        label: '行き先',
+        description: '旅行先の都市や地域',
+        required: true,
+        status: 'empty',
+        extractor: extractDestination,
+      },
+      {
+        id: 'duration',
+        label: '日程',
+        description: '旅行の日数または期間',
+        required: true,
+        status: 'empty',
+        extractor: extractDuration,
+      },
+    ],
+  },
+  
+  collecting_detailed: {
+    phase: 'collecting_detailed',
     requiredItems: ['destination', 'duration'],
     optionalItems: ['budget', 'travelers', 'interests'],
     items: [
