@@ -17,10 +17,6 @@ spec:
       containers:
       - name: journee
         image: gcr.io/my-docker-471807/journee:v3.2.6
-        volumeMounts:
-        - name: gcp-sa-volume
-          mountPath: /app/secret
-          readOnly: true
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /app/secret/key.json
@@ -54,7 +50,3 @@ spec:
               key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
         ports:
         - containerPort: 3000
-      volumes:
-      - name: gcp-sa-volume
-        secret:
-          secretName: gcp-sa-key
