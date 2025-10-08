@@ -65,28 +65,43 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
 
   return (
     <div
-      className={`requirement-checklist ${className}`}
+      className={`flex flex-col ${className}`}
       role="region"
       aria-label="必要情報チェックリスト"
     >
       {/* アコーディオンヘッダー */}
       <button
         type="button"
-        className="checklist-header"
+        className="
+          flex items-center justify-between
+          w-full px-4 py-3
+          bg-gradient-to-r from-blue-500 to-purple-600
+          text-white
+          border-b border-white/20
+          hover:from-blue-600 hover:to-purple-700
+          transition-all duration-200
+          cursor-pointer
+        "
         onClick={toggleAccordion}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
         aria-controls="checklist-content"
       >
-        <div className="header-content">
-          <h3>必要情報チェックリスト</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-sm font-semibold">必要情報チェックリスト</h3>
           {checklistStatus && (
-            <span className="completion-badge">
+            <span className="
+              inline-flex items-center justify-center
+              min-w-[3rem] px-2 py-0.5
+              bg-white/20 backdrop-blur-sm
+              rounded-full
+              text-xs font-bold
+            ">
               {checklistStatus.completionRate}%
             </span>
           )}
         </div>
-        <div className="header-icon">
+        <div className="flex-shrink-0">
           {isOpen ? (
             <ChevronUp className="w-5 h-5" />
           ) : (
@@ -99,7 +114,7 @@ export const RequirementChecklist: React.FC<RequirementChecklistProps> = ({
       {isOpen && (
         <div
           id="checklist-content"
-          className="checklist-body"
+          className="flex-1 overflow-y-auto p-4"
         >
           {requirementsChecklist.length === 0 ? (
             <p className="text-gray-500 text-sm text-center py-4">

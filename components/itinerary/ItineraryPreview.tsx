@@ -15,6 +15,7 @@ import { SaveButton } from './SaveButton';
 import { ResetButton } from './ResetButton';
 import { ToastContainer } from '@/components/ui/Toast';
 import { PDFExportButton } from './PDFExportButton';
+import { RequirementChecklist } from './RequirementChecklist';
 import { Calendar, MapPin } from 'lucide-react';
 
 export const ItineraryPreview: React.FC = () => {
@@ -22,7 +23,8 @@ export const ItineraryPreview: React.FC = () => {
     currentItinerary, 
     planningPhase, 
     isAutoProgressing, 
-    autoProgressState
+    autoProgressState,
+    requirementChecklistVisible
   } = useStore();
 
   // 空状態: しおりがない場合
@@ -56,7 +58,7 @@ export const ItineraryPreview: React.FC = () => {
         {!isAutoProgressing && <PlanningProgress />}
         
         {/* メインコンテンツ（スクロール可能） */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="flex-1 overflow-y-auto bg-gray-50 relative">
           {/* Header */}
           <ItineraryHeader itinerary={currentItinerary} editable={true} />
 
@@ -109,6 +111,33 @@ export const ItineraryPreview: React.FC = () => {
               </div>
             )}
           </div>
+          
+          {/* Phase 4.8: 必要情報チェックリスト（オーバーレイ） */}
+          {requirementChecklistVisible && planningPhase === 'collecting' && (
+            <div 
+              className="
+                absolute top-0 right-0
+                w-1/2 h-1/2
+                p-4
+                animate-fadeIn
+              "
+              style={{ 
+                maxWidth: '50%',
+                maxHeight: '50%',
+              }}
+            >
+              <RequirementChecklist 
+                className="
+                  h-full
+                  bg-white/90 backdrop-blur-md
+                  border border-gray-200/50
+                  rounded-lg shadow-xl
+                  overflow-hidden
+                  flex flex-col
+                "
+              />
+            </div>
+          )}
         </div>
 
         {/* Phase 4: クイックアクション（自動進行中でない場合のみ表示） */}
