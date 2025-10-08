@@ -16,14 +16,31 @@ import { ResetButton } from './ResetButton';
 import { ToastContainer } from '@/components/ui/Toast';
 import { PDFExportButton } from './PDFExportButton';
 import { Calendar, MapPin } from 'lucide-react';
+import SkeletonItinerary from './SkeletonItinerary';
 
 export const ItineraryPreview: React.FC = () => {
   const { 
     currentItinerary, 
     planningPhase, 
     isAutoProgressing, 
-    autoProgressState
+    autoProgressState,
+    isLoading,
+    isStreaming,
+    loadingState
   } = useStore();
+
+  // Phase 3.5.3: しおり生成中の場合はスケルトンUIを表示
+  if ((isLoading || isStreaming) && !currentItinerary && loadingState.stage !== 'idle') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50">
+        {/* Phase 4: プランニング進捗 */}
+        {planningPhase !== 'initial' && <PlanningProgress />}
+
+        {/* スケルトンUI */}
+        <SkeletonItinerary dayCount={3} spotsPerDay={4} />
+      </div>
+    );
+  }
 
   // 空状態: しおりがない場合
   if (!currentItinerary) {
