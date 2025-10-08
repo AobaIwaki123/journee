@@ -202,6 +202,61 @@ export function clearAllAppData(): boolean {
 }
 
 /**
+ * Phase 7.1: パネル幅管理
+ */
+
+const DEFAULT_CHAT_PANEL_WIDTH = 40; // デフォルト40%
+const MIN_PANEL_WIDTH = 30; // 最小30%
+const MAX_PANEL_WIDTH = 70; // 最大70%
+
+/**
+ * チャットパネルの幅を保存（パーセンテージ）
+ */
+export function saveChatPanelWidth(width: number): boolean {
+  if (!isLocalStorageAvailable()) {
+    return false;
+  }
+  
+  // 範囲チェック
+  const clampedWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, width));
+  
+  try {
+    window.localStorage.setItem(STORAGE_KEYS.PANEL_WIDTH, clampedWidth.toString());
+    return true;
+  } catch (error) {
+    console.error('Failed to save panel width:', error);
+    return false;
+  }
+}
+
+/**
+ * チャットパネルの幅を取得（パーセンテージ）
+ */
+export function loadChatPanelWidth(): number {
+  if (!isLocalStorageAvailable()) {
+    return DEFAULT_CHAT_PANEL_WIDTH;
+  }
+  
+  try {
+    const width = window.localStorage.getItem(STORAGE_KEYS.PANEL_WIDTH);
+    if (!width) {
+      return DEFAULT_CHAT_PANEL_WIDTH;
+    }
+    
+    const parsedWidth = parseFloat(width);
+    if (isNaN(parsedWidth)) {
+      return DEFAULT_CHAT_PANEL_WIDTH;
+    }
+    
+    // 範囲チェック
+    return Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, parsedWidth));
+  } catch (error) {
+    console.error('Failed to load panel width:', error);
+    return DEFAULT_CHAT_PANEL_WIDTH;
+  }
+}
+
+/**
  * Phase 4.10: 自動進行モードの設定
  */
 

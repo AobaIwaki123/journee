@@ -29,6 +29,8 @@ import {
   loadAppSettings,
   savePublicItinerary,
   removePublicItinerary,
+  saveChatPanelWidth,
+  loadChatPanelWidth,
 } from '@/lib/utils/storage';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 import { createHistoryUpdate } from './useStore-helper';
@@ -190,6 +192,10 @@ interface AppState {
   publishItinerary: (settings: PublicItinerarySettings) => Promise<{ success: boolean; publicUrl?: string; slug?: string; error?: string }>;
   unpublishItinerary: () => Promise<{ success: boolean; error?: string }>;
   updatePublicSettings: (settings: Partial<PublicItinerarySettings>) => void;
+
+  // Phase 7.1: Panel resizer state
+  chatPanelWidth: number; // チャットパネルの幅（パーセンテージ: 30-70）
+  setChatPanelWidth: (width: number) => void;
 }
 
 export const useStore = create<AppState>()((set, get) => ({
@@ -648,12 +654,14 @@ export const useStore = create<AppState>()((set, get) => ({
     const autoProgressMode = loadAutoProgressMode();
     const autoProgressSettings = loadAutoProgressSettings();
     const savedSettings = loadAppSettings();
+    const savedPanelWidth = loadChatPanelWidth();
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
       autoProgressMode,
       autoProgressSettings,
       settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
+      chatPanelWidth: savedPanelWidth,
     });
   },
 
@@ -902,4 +910,14 @@ export const useStore = create<AppState>()((set, get) => ({
         },
       };
     }),
+
+  // Phase 7.1: Panel resizer
+  chatPanelWidth: loadChatPanelWidth(),
+  setChatPanelWidth: (width) => {
+    // 範囲チェック（30-70%）
+    const clampedWidth = Math.max(30, Math.min(70, width));
+    set({ chatPanelWidth: clampedWidth });
+    // LocalStorageに保存
+    saveChatPanelWidth(clampedWidth);
+  },
 }));
