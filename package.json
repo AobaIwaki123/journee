@@ -26,6 +26,7 @@
     "@anthropic-ai/sdk": "^0.65.0",
     "@google/generative-ai": "^0.21.0",
     "@hello-pangea/dnd": "^16.6.0",
+    "@supabase/supabase-js": "^2.74.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.344.0",

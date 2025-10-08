@@ -1,19 +1,26 @@
-import { create } from 'zustand';
-import { Message } from '@/types/chat';
-import { ItineraryData, TouristSpot, DaySchedule, ItineraryPhase, DayStatus, PublicItinerarySettings } from '@/types/itinerary';
-import type { AIModelId } from '@/types/ai';
-import type { AppSettings } from '@/types/settings';
-import { DEFAULT_SETTINGS } from '@/types/settings';
+import { create } from "zustand";
+import { Message } from "@/types/chat";
+import {
+  ItineraryData,
+  TouristSpot,
+  DaySchedule,
+  ItineraryPhase,
+  DayStatus,
+  PublicItinerarySettings,
+} from "@/types/itinerary";
+import type { AIModelId } from "@/types/ai";
+import type { AppSettings } from "@/types/settings";
+import { DEFAULT_SETTINGS } from "@/types/settings";
 import type {
   RequirementChecklistItem,
   ChecklistStatus,
   ButtonReadiness,
-} from '@/types/requirements';
-import { getRequirementsForPhase } from '@/lib/requirements/checklist-config';
+} from "@/types/requirements";
+import { getRequirementsForPhase } from "@/lib/requirements/checklist-config";
 import {
   calculateChecklistStatus,
   determineButtonReadiness,
-} from '@/lib/requirements/checklist-utils';
+} from "@/lib/requirements/checklist-utils";
 import {
   saveClaudeApiKey,
   loadClaudeApiKey,
@@ -31,16 +38,22 @@ import {
   removePublicItinerary,
   saveChatPanelWidth,
   loadChatPanelWidth,
-} from '@/lib/utils/storage';
-import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
-import { createHistoryUpdate } from './useStore-helper';
-import { sortSpotsByTime, adjustTimeAfterReorder } from '@/lib/utils/time-utils';
-import { updateDayBudget, updateItineraryBudget } from '@/lib/utils/budget-utils';
+} from "@/lib/utils/storage";
+import { DEFAULT_AI_MODEL } from "@/lib/ai/models";
+import { createHistoryUpdate } from "./useStore-helper";
+import {
+  sortSpotsByTime,
+  adjustTimeAfterReorder,
+} from "@/lib/utils/time-utils";
+import {
+  updateDayBudget,
+  updateItineraryBudget,
+} from "@/lib/utils/budget-utils";
 
 interface ToastMessage {
   id: string;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: "success" | "error" | "info";
 }
 
 interface HistoryState {
@@ -53,7 +66,7 @@ interface HistoryState {
  * しおりフィルター条件
  */
 export interface ItineraryFilter {
-  status?: 'draft' | 'completed' | 'archived' | 'all';
+  status?: "draft" | "completed" | "archived" | "all";
   destination?: string;
   startDate?: string;
   endDate?: string;
@@ -62,8 +75,12 @@ export interface ItineraryFilter {
 /**
  * しおりソート条件
  */
-export type ItinerarySortField = 'updatedAt' | 'createdAt' | 'title' | 'startDate';
-export type ItinerarySortOrder = 'asc' | 'desc';
+export type ItinerarySortField =
+  | "updatedAt"
+  | "createdAt"
+  | "title"
+  | "startDate";
+export type ItinerarySortOrder = "asc" | "desc";
 
 export interface ItinerarySort {
   field: ItinerarySortField;
@@ -95,7 +112,7 @@ interface AppState {
   setCurrentDetailingDay: (day: number | null) => void;
   proceedToNextStep: () => void;
   resetPlanning: () => void;
-  
+
   // Phase 4.8: Requirements checklist state
   requirementsChecklist: RequirementChecklistItem[];
   checklistStatus: ChecklistStatus | null;
@@ -108,7 +125,7 @@ interface AppState {
   autoProgressSettings: AutoProgressSettings;
   isAutoProgressing: boolean;
   autoProgressState: {
-    phase: 'idle' | 'skeleton' | 'detailing' | 'completed' | 'error';
+    phase: "idle" | "skeleton" | "detailing" | "completed" | "error";
     currentStep: string;
     currentDay?: number;
     totalDays?: number;
@@ -153,16 +170,16 @@ interface AppState {
   setClaudeApiKey: (key: string) => void;
   removeClaudeApiKey: () => void;
   initializeFromStorage: () => void;
-  
+
   // Mobile UI state (Phase 7.2)
-  mobileActiveTab: 'chat' | 'itinerary';
-  setMobileActiveTab: (tab: 'chat' | 'itinerary') => void;
+  mobileActiveTab: "chat" | "itinerary";
+  setMobileActiveTab: (tab: "chat" | "itinerary") => void;
 
   // Settings state (Phase 5.4.3)
   settings: AppSettings;
   updateSettings: (updates: Partial<AppSettings>) => void;
-  updateGeneralSettings: (updates: Partial<AppSettings['general']>) => void;
-  updateSoundSettings: (updates: Partial<AppSettings['sound']>) => void;
+  updateGeneralSettings: (updates: Partial<AppSettings["general"]>) => void;
+  updateSoundSettings: (updates: Partial<AppSettings["sound"]>) => void;
 
   // Error state
   error: string | null;
@@ -170,17 +187,17 @@ interface AppState {
 
   // Toast notifications (Phase 5.1.2)
   toasts: ToastMessage[];
-  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  addToast: (message: string, type: "success" | "error" | "info") => void;
   removeToast: (id: string) => void;
 
   // Editing state (Phase 5.1.2)
   isSaving: boolean;
   setSaving: (saving: boolean) => void;
-  
+
   // Auto-save state (Phase 5.2)
   lastSaveTime: Date | null;
   setLastSaveTime: (time: Date | null) => void;
-  
+
   // Storage initialization state (Phase 5.2.10)
   isStorageInitialized: boolean;
   setStorageInitialized: (initialized: boolean) => void;
@@ -193,7 +210,12 @@ interface AppState {
   canRedo: () => boolean;
 
   // Phase 5.5: Itinerary sharing/publishing actions
-  publishItinerary: (settings: PublicItinerarySettings) => Promise<{ success: boolean; publicUrl?: string; slug?: string; error?: string }>;
+  publishItinerary: (settings: PublicItinerarySettings) => Promise<{
+    success: boolean;
+    publicUrl?: string;
+    slug?: string;
+    error?: string;
+  }>;
   unpublishItinerary: () => Promise<{ success: boolean; error?: string }>;
   updatePublicSettings: (settings: Partial<PublicItinerarySettings>) => void;
 
@@ -207,7 +229,7 @@ export const useStore = create<AppState>()((set, get) => ({
   messages: [],
   isLoading: false,
   isStreaming: false,
-  streamingMessage: '',
+  streamingMessage: "",
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -215,15 +237,15 @@ export const useStore = create<AppState>()((set, get) => ({
   setStreamingMessage: (message) => set({ streamingMessage: message }),
   appendStreamingMessage: (chunk) =>
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
-  clearMessages: () => set({ messages: [], streamingMessage: '' }),
+  clearMessages: () => set({ messages: [], streamingMessage: "" }),
 
   // Itinerary state
   currentItinerary: null,
   setItinerary: (itinerary) => {
     // LocalStorageに保存
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const currentStorage = localStorage.getItem('journee-storage');
+        const currentStorage = localStorage.getItem("journee-storage");
         const parsed = currentStorage ? JSON.parse(currentStorage) : {};
         const newStorage = {
           ...parsed,
@@ -233,12 +255,12 @@ export const useStore = create<AppState>()((set, get) => ({
           },
           version: 0,
         };
-        localStorage.setItem('journee-storage', JSON.stringify(newStorage));
+        localStorage.setItem("journee-storage", JSON.stringify(newStorage));
       } catch (e) {
-        console.error('Failed to save itinerary to localStorage:', e);
+        console.error("Failed to save itinerary to localStorage:", e);
       }
     }
-    
+
     set((state) => ({
       currentItinerary: itinerary,
       history: {
@@ -263,9 +285,9 @@ export const useStore = create<AppState>()((set, get) => ({
         : null;
 
       // LocalStorageに保存
-      if (typeof window !== 'undefined' && newItinerary) {
+      if (typeof window !== "undefined" && newItinerary) {
         try {
-          const currentStorage = localStorage.getItem('journee-storage');
+          const currentStorage = localStorage.getItem("journee-storage");
           const parsed = currentStorage ? JSON.parse(currentStorage) : {};
           const newStorage = {
             ...parsed,
@@ -275,9 +297,9 @@ export const useStore = create<AppState>()((set, get) => ({
             },
             version: 0,
           };
-          localStorage.setItem('journee-storage', JSON.stringify(newStorage));
+          localStorage.setItem("journee-storage", JSON.stringify(newStorage));
         } catch (e) {
-          console.error('Failed to save itinerary to localStorage:', e);
+          console.error("Failed to save itinerary to localStorage:", e);
         }
       }
 
@@ -294,7 +316,7 @@ export const useStore = create<AppState>()((set, get) => ({
     }),
 
   // Phase 4: Planning phase state
-  planningPhase: 'initial',
+  planningPhase: "initial",
   currentDetailingDay: null,
   setPlanningPhase: (phase) => set({ planningPhase: phase }),
   setCurrentDetailingDay: (day) => set({ currentDetailingDay: day }),
@@ -308,44 +330,45 @@ export const useStore = create<AppState>()((set, get) => ({
       let updates: Partial<ItineraryData> = {};
 
       switch (planningPhase) {
-        case 'initial':
+        case "initial":
           // 初期状態 → 情報収集フェーズへ
-          newPhase = 'collecting';
+          newPhase = "collecting";
           break;
 
-        case 'collecting':
+        case "collecting":
           // 情報収集完了 → 骨組み作成フェーズへ
-          newPhase = 'skeleton';
+          newPhase = "skeleton";
           break;
 
-        case 'skeleton':
+        case "skeleton":
           // 骨組み完了 → 詳細化フェーズへ（1日目から開始）
-          newPhase = 'detailing';
+          newPhase = "detailing";
           newDetailingDay = 1;
-          updates.phase = 'detailing';
+          updates.phase = "detailing";
           updates.currentDay = 1;
           break;
 
-        case 'detailing':
+        case "detailing":
           // 詳細化中 → 次の日へ、または完成へ
           if (currentItinerary && currentDetailingDay !== null) {
-            const totalDays = currentItinerary.duration || currentItinerary.schedule.length;
+            const totalDays =
+              currentItinerary.duration || currentItinerary.schedule.length;
             if (currentDetailingDay < totalDays) {
               // 次の日へ
               newDetailingDay = currentDetailingDay + 1;
               updates.currentDay = newDetailingDay;
             } else {
               // 全ての日が完了 → 完成フェーズへ
-              newPhase = 'completed';
+              newPhase = "completed";
               newDetailingDay = null;
-              updates.phase = 'completed';
+              updates.phase = "completed";
               updates.currentDay = undefined;
-              updates.status = 'completed';
+              updates.status = "completed";
             }
           }
           break;
 
-        case 'completed':
+        case "completed":
           // 完成済み → 何もしない
           break;
       }
@@ -362,18 +385,18 @@ export const useStore = create<AppState>()((set, get) => ({
   // プランニング状態をリセット
   resetPlanning: () =>
     set({
-      planningPhase: 'initial',
+      planningPhase: "initial",
       currentDetailingDay: null,
       requirementsChecklist: [],
       checklistStatus: null,
       buttonReadiness: null,
     }),
-  
+
   // Phase 4.8: Requirements checklist state
   requirementsChecklist: [],
   checklistStatus: null,
   buttonReadiness: null,
-  
+
   // Phase 4.10: Auto progress state
   autoProgressMode: true,
   autoProgressSettings: {
@@ -383,19 +406,19 @@ export const useStore = create<AppState>()((set, get) => ({
   },
   isAutoProgressing: false,
   autoProgressState: null,
-  
+
   // Phase 4.8: Update requirements checklist
   updateChecklist: () => {
     const { messages, currentItinerary, planningPhase } = get();
-    
+
     // 現在のフェーズの要件を取得
     const requirements = getRequirementsForPhase(planningPhase);
-    
+
     // 各項目を評価
-    const updatedItems = requirements.items.map(item => {
+    const updatedItems = requirements.items.map((item) => {
       if (item.extractor) {
         const value = item.extractor(messages, currentItinerary || undefined);
-        const status = value ? 'filled' : 'empty';
+        const status = value ? "filled" : "empty";
         return {
           ...item,
           value,
@@ -404,26 +427,26 @@ export const useStore = create<AppState>()((set, get) => ({
       }
       return item;
     });
-    
+
     // 充足率を計算
     const status = calculateChecklistStatus(updatedItems, requirements);
-    
+
     // ボタンの準備度を決定
     const readiness = determineButtonReadiness(status, planningPhase);
-    
+
     set({
       requirementsChecklist: updatedItems,
       checklistStatus: status,
       buttonReadiness: readiness,
     });
   },
-  
+
   // Get checklist for specific phase
   getChecklistForPhase: (phase: ItineraryPhase) => {
     const requirements = getRequirementsForPhase(phase);
     return requirements.items;
   },
-  
+
   // Phase 4.10: Auto progress actions
   enableAutoProgress: () => {
     saveAutoProgressMode(true);
@@ -439,33 +462,33 @@ export const useStore = create<AppState>()((set, get) => ({
   },
   setIsAutoProgressing: (value) => set({ isAutoProgressing: value }),
   setAutoProgressState: (state) => set({ autoProgressState: state }),
-  
+
   /**
    * Phase 4.10.1: 自動進行をトリガーすべきか判定
    */
   shouldTriggerAutoProgress: () => {
     const state = get();
-    
+
     // 自動進行モードがOFFなら false
     if (!state.autoProgressMode || !state.autoProgressSettings.enabled) {
       return false;
     }
-    
+
     // すでに自動進行中なら false
     if (state.isAutoProgressing) {
       return false;
     }
-    
+
     // collecting フェーズでのみトリガー
-    if (state.planningPhase !== 'collecting') {
+    if (state.planningPhase !== "collecting") {
       return false;
     }
-    
+
     // 必須情報が揃っているかチェック
     if (!state.checklistStatus?.allRequiredFilled) {
       return false;
     }
-    
+
     return true;
   },
 
@@ -475,7 +498,11 @@ export const useStore = create<AppState>()((set, get) => ({
       const newItinerary = state.currentItinerary
         ? { ...state.currentItinerary, title, updatedAt: new Date() }
         : null;
-      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+      return createHistoryUpdate(
+        state.currentItinerary,
+        newItinerary,
+        state.history
+      );
     }),
 
   updateItineraryDestination: (destination) =>
@@ -483,7 +510,11 @@ export const useStore = create<AppState>()((set, get) => ({
       const newItinerary = state.currentItinerary
         ? { ...state.currentItinerary, destination, updatedAt: new Date() }
         : null;
-      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+      return createHistoryUpdate(
+        state.currentItinerary,
+        newItinerary,
+        state.history
+      );
     }),
 
   updateSpot: (dayIndex, spotId, updates) =>
@@ -500,7 +531,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
       // 新しいspots配列を作成（イミュータブル）
       const newSpots = [...oldDaySchedule.spots];
-      
+
       // スポット情報を更新
       newSpots[spotIndex] = {
         ...newSpots[spotIndex],
@@ -508,9 +539,10 @@ export const useStore = create<AppState>()((set, get) => ({
       };
 
       // 時刻が変更された場合、時刻順にソート
-      const sortedSpots = updates.scheduledTime !== undefined 
-        ? sortSpotsByTime(newSpots)
-        : newSpots;
+      const sortedSpots =
+        updates.scheduledTime !== undefined
+          ? sortSpotsByTime(newSpots)
+          : newSpots;
 
       // 新しいdayScheduleオブジェクトを作成（イミュータブル）
       newSchedule[dayIndex] = updateDayBudget({
@@ -524,7 +556,11 @@ export const useStore = create<AppState>()((set, get) => ({
         updatedAt: new Date(),
       });
 
-      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+      return createHistoryUpdate(
+        state.currentItinerary,
+        newItinerary,
+        state.history
+      );
     }),
 
   deleteSpot: (dayIndex, spotId) =>
@@ -551,7 +587,11 @@ export const useStore = create<AppState>()((set, get) => ({
         updatedAt: new Date(),
       });
 
-      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+      return createHistoryUpdate(
+        state.currentItinerary,
+        newItinerary,
+        state.history
+      );
     }),
 
   addSpot: (dayIndex, spot) =>
@@ -581,7 +621,11 @@ export const useStore = create<AppState>()((set, get) => ({
         updatedAt: new Date(),
       });
 
-      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+      return createHistoryUpdate(
+        state.currentItinerary,
+        newItinerary,
+        state.history
+      );
     }),
 
   reorderSpots: (dayIndex, startIndex, endIndex) =>
@@ -613,7 +657,11 @@ export const useStore = create<AppState>()((set, get) => ({
         updatedAt: new Date(),
       });
 
-      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+      return createHistoryUpdate(
+        state.currentItinerary,
+        newItinerary,
+        state.history
+      );
     }),
 
   moveSpot: (fromDayIndex, toDayIndex, spotId) =>
@@ -655,28 +703,32 @@ export const useStore = create<AppState>()((set, get) => ({
         updatedAt: new Date(),
       });
 
-      return createHistoryUpdate(state.currentItinerary, newItinerary, state.history);
+      return createHistoryUpdate(
+        state.currentItinerary,
+        newItinerary,
+        state.history
+      );
     }),
 
   // Phase 5.4: Itinerary list state
   itineraryFilter: {
-    status: 'all',
+    status: "all",
   },
   itinerarySort: {
-    field: 'updatedAt',
-    order: 'desc',
+    field: "updatedAt",
+    order: "desc",
   },
   setItineraryFilter: (filter) => set({ itineraryFilter: filter }),
   setItinerarySort: (sort) => set({ itinerarySort: sort }),
   resetItineraryFilters: () =>
     set({
-      itineraryFilter: { status: 'all' },
-      itinerarySort: { field: 'updatedAt', order: 'desc' },
+      itineraryFilter: { status: "all" },
+      itinerarySort: { field: "updatedAt", order: "desc" },
     }),
 
   // UI state
   selectedAI: DEFAULT_AI_MODEL,
-  claudeApiKey: '',
+  claudeApiKey: "",
   setSelectedAI: (ai) => {
     saveSelectedAI(ai);
     set({ selectedAI: ai });
@@ -689,7 +741,7 @@ export const useStore = create<AppState>()((set, get) => ({
   },
   removeClaudeApiKey: () => {
     removeClaudeApiKey();
-    set({ claudeApiKey: '', selectedAI: DEFAULT_AI_MODEL });
+    set({ claudeApiKey: "", selectedAI: DEFAULT_AI_MODEL });
   },
   initializeFromStorage: () => {
     const savedApiKey = loadClaudeApiKey();
@@ -698,34 +750,36 @@ export const useStore = create<AppState>()((set, get) => ({
     const autoProgressSettings = loadAutoProgressSettings();
     const savedSettings = loadAppSettings();
     const savedPanelWidth = loadChatPanelWidth();
-    
+
     // currentItineraryも復元する
     let savedItinerary = null;
-    if (typeof window !== 'undefined') {
-      const journeeStorage = localStorage.getItem('journee-storage');
+    if (typeof window !== "undefined") {
+      const journeeStorage = localStorage.getItem("journee-storage");
       if (journeeStorage) {
         try {
           const parsed = JSON.parse(journeeStorage);
           savedItinerary = parsed?.state?.currentItinerary || null;
         } catch (e) {
-          console.error('Failed to parse journee-storage:', e);
+          console.error("Failed to parse journee-storage:", e);
         }
       }
     }
-    
+
     set({
       claudeApiKey: savedApiKey,
       selectedAI: savedAI,
       autoProgressMode,
       autoProgressSettings,
-      settings: savedSettings ? { ...DEFAULT_SETTINGS, ...savedSettings } : DEFAULT_SETTINGS,
+      settings: savedSettings
+        ? { ...DEFAULT_SETTINGS, ...savedSettings }
+        : DEFAULT_SETTINGS,
       chatPanelWidth: savedPanelWidth,
       currentItinerary: savedItinerary,
     });
   },
-  
+
   // Mobile UI state (Phase 7.2)
-  mobileActiveTab: 'itinerary',
+  mobileActiveTab: "itinerary",
   setMobileActiveTab: (tab) => set({ mobileActiveTab: tab }),
 
   // Settings state (Phase 5.4.3)
@@ -776,14 +830,15 @@ export const useStore = create<AppState>()((set, get) => ({
   // Editing state (Phase 5.1.2)
   isSaving: false,
   setSaving: (saving) => set({ isSaving: saving }),
-  
+
   // Auto-save state (Phase 5.2)
   lastSaveTime: null,
   setLastSaveTime: (time) => set({ lastSaveTime: time }),
-  
+
   // Storage initialization state (Phase 5.2.10)
   isStorageInitialized: false,
-  setStorageInitialized: (initialized) => set({ isStorageInitialized: initialized }),
+  setStorageInitialized: (initialized) =>
+    set({ isStorageInitialized: initialized }),
 
   // Undo/Redo state (Phase 5.1.3)
   history: {
@@ -846,28 +901,30 @@ export const useStore = create<AppState>()((set, get) => ({
     const { currentItinerary } = state;
 
     if (!currentItinerary) {
-      return { success: false, error: 'しおりが存在しません' };
+      return { success: false, error: "しおりが存在しません" };
     }
 
     try {
-      const response = await fetch('/api/itinerary/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/itinerary/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itineraryId: currentItinerary.id,
           settings,
+          itinerary: currentItinerary, // しおりデータ全体を送信（DB未保存の場合に備えて）
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        return { success: false, error: data.error || '公開に失敗しました' };
+        return { success: false, error: data.error || "公開に失敗しました" };
       }
 
       // しおりの公開情報を更新
       const updatedItinerary: ItineraryData = {
         ...currentItinerary,
+        id: data.itineraryId, // 新規作成された場合は新しいIDに更新
         isPublic: settings.isPublic,
         publicSlug: data.slug,
         publishedAt: new Date(data.publishedAt),
@@ -894,8 +951,8 @@ export const useStore = create<AppState>()((set, get) => ({
         slug: data.slug,
       };
     } catch (error) {
-      console.error('Error publishing itinerary:', error);
-      return { success: false, error: '公開に失敗しました' };
+      console.error("Error publishing itinerary:", error);
+      return { success: false, error: "公開に失敗しました" };
     }
   },
 
@@ -904,13 +961,13 @@ export const useStore = create<AppState>()((set, get) => ({
     const { currentItinerary } = state;
 
     if (!currentItinerary) {
-      return { success: false, error: 'しおりが存在しません' };
+      return { success: false, error: "しおりが存在しません" };
     }
 
     try {
-      const response = await fetch('/api/itinerary/unpublish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/itinerary/unpublish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itineraryId: currentItinerary.id,
         }),
@@ -919,7 +976,10 @@ export const useStore = create<AppState>()((set, get) => ({
       const data = await response.json();
 
       if (!response.ok) {
-        return { success: false, error: data.error || '非公開化に失敗しました' };
+        return {
+          success: false,
+          error: data.error || "非公開化に失敗しました",
+        };
       }
 
       // しおりの公開情報をクリア
@@ -949,8 +1009,8 @@ export const useStore = create<AppState>()((set, get) => ({
 
       return { success: true };
     } catch (error) {
-      console.error('Error unpublishing itinerary:', error);
-      return { success: false, error: '非公開化に失敗しました' };
+      console.error("Error unpublishing itinerary:", error);
+      return { success: false, error: "非公開化に失敗しました" };
     }
   },
 
@@ -960,8 +1020,10 @@ export const useStore = create<AppState>()((set, get) => ({
 
       const updatedItinerary: ItineraryData = {
         ...state.currentItinerary,
-        allowPdfDownload: settings.allowPdfDownload ?? state.currentItinerary.allowPdfDownload,
-        customMessage: settings.customMessage ?? state.currentItinerary.customMessage,
+        allowPdfDownload:
+          settings.allowPdfDownload ?? state.currentItinerary.allowPdfDownload,
+        customMessage:
+          settings.customMessage ?? state.currentItinerary.customMessage,
         updatedAt: new Date(),
       };
 
