@@ -1,10 +1,11 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
+import { supabase } from '@/lib/db/supabase'
 
 /**
  * NextAuth設定オプション
  * 
- * Phase 2では認証のみを実装し、Phase 9以降でデータベース統合を行う
+ * Phase 8: Supabaseデータベースと統合
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -43,19 +44,40 @@ export const authOptions: NextAuthOptions = {
     /**
      * JWTコールバック
      * トークンにユーザー情報を追加
+     * Phase 8: SupabaseのUUIDをトークンに保存
      */
     async jwt({ token, user, account }) {
       // 初回サインイン時
       if (account && user) {
-        token.id = user.id
-        token.email = user.email
-        token.name = user.name
-        token.picture = user.image
-
         // Google IDを保存
         if (account.provider === 'google') {
           token.googleId = account.providerAccountId
+          
+          // SupabaseからユーザーのUUIDを取得
+          try {
+            const { data: supabaseUser } = await supabase
+              .from('users')
+              .select('id')
+              .eq('google_id', account.providerAccountId)
+              .single()
+
+            if (supabaseUser) {
+              token.id = supabaseUser.id // SupabaseのUUID
+            } else {
+              console.error('Supabase user not found for googleId:', account.providerAccountId)
+              token.id = user.id // フォールバック
+            }
+          } catch (error) {
+            console.error('Error fetching Supabase user ID:', error)
+            token.id = user.id // フォールバック
+          }
+        } else {
+          token.id = user.id
         }
+
+        token.email = user.email
+        token.name = user.name
+        token.picture = user.image
       }
 
       return token
@@ -80,14 +102,17 @@ export const authOptions: NextAuthOptions = {
     /**
      * サインインコールバック
      * サインインを許可するかどうかを決定
+     * Phase 8: Supabaseにユーザーを作成/取得
      */
-    async signIn({ account, profile }) {
+    async signIn({ account, profile, user }) {
       // Googleプロバイダーのみを許可
       if (account?.provider === 'google') {
         // メールアドレスが確認済みかチェック
         const googleProfile = profile as {
           email_verified?: boolean
           email?: string
+          name?: string
+          picture?: string
         }
 
         if (!googleProfile.email_verified) {
@@ -95,7 +120,57 @@ export const authOptions: NextAuthOptions = {
           return false
         }
 
-        return true
+        try {
+          // Supabaseでユーザーを取得または作成
+          const googleId = account.providerAccountId
+          const email = googleProfile.email || user.email
+
+          if (!email || !googleId) {
+            console.error('Missing email or googleId')
+            return false
+          }
+
+          // google_idでユーザーを検索
+          const { data: existingUser, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('google_id', googleId)
+            .single()
+
+          if (fetchError && fetchError.code !== 'PGRST116') {
+            // PGRST116 = "Row not found" (許容されるエラー)
+            console.error('Error fetching user:', fetchError)
+            return false
+          }
+
+          if (!existingUser) {
+            // ユーザーが存在しない場合は新規作成
+            const { data: newUser, error: insertError } = await supabase
+              .from('users')
+              .insert({
+                email,
+                name: googleProfile.name || user.name,
+                image: googleProfile.picture || user.image,
+                google_id: googleId,
+              })
+              .select()
+              .single()
+
+            if (insertError) {
+              console.error('Error creating user:', insertError)
+              return false
+            }
+
+            console.log('New user created in Supabase:', newUser.id)
+          } else {
+            console.log('Existing user found in Supabase:', existingUser.id)
+          }
+
+          return true
+        } catch (error) {
+          console.error('Error in signIn callback:', error)
+          return false
+        }
       }
 
       return false

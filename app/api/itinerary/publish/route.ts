@@ -95,18 +95,25 @@ export async function POST(req: NextRequest) {
         user.id,
         itineraryWithUser
       );
-      console.log("[DEBUG] Itinerary created successfully with new ID:", itinerary.id);
+      console.log(
+        "[DEBUG] Itinerary created successfully with new ID:",
+        itinerary.id
+      );
       // 新規作成の場合、公開情報は既にcreateItineraryで設定済みなので更新不要
     } else {
       // 既存のしおりを更新
       console.log("[DEBUG] Updating existing itinerary");
-      itinerary = await itineraryRepository.updateItinerary(itineraryId, user.id, {
-        isPublic: settings.isPublic,
-        publicSlug: slug,
-        publishedAt,
-        allowPdfDownload: settings.allowPdfDownload ?? true,
-        customMessage: settings.customMessage,
-      });
+      itinerary = await itineraryRepository.updateItinerary(
+        itineraryId,
+        user.id,
+        {
+          isPublic: settings.isPublic,
+          publicSlug: slug,
+          publishedAt,
+          allowPdfDownload: settings.allowPdfDownload ?? true,
+          customMessage: settings.customMessage,
+        }
+      );
     }
 
     const publicUrl = `${
