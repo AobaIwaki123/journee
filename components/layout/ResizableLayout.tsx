@@ -24,7 +24,7 @@ export const ResizableLayout: React.FC = () => {
   const itineraryPanelWidth = 100 - chatPanelWidth;
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="h-full flex overflow-hidden">
       {/* Chat Box - Left Side (動的幅) */}
       <div
         style={{ width: `${chatPanelWidth}%` }}
