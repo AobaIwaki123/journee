@@ -88,30 +88,30 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
       {/* Header - クリックで展開/折りたたみ */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors text-left"
+        className="w-full flex items-center justify-between p-4 md:p-6 hover:bg-gray-50 transition-colors text-left"
       >
         <div className="flex items-center flex-1">
           {/* Day Badge */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center font-bold text-lg mr-4 shadow-md flex-shrink-0">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full w-10 h-10 md:w-14 md:h-14 flex items-center justify-center font-bold text-sm md:text-lg mr-3 md:mr-4 shadow-md flex-shrink-0">
             Day{day.day}
           </div>
 
           {/* Day Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-base md:text-xl font-bold text-gray-800">
                 {day.title || `${day.day}日目`}
               </h3>
               {getStatusBadge()}
             </div>
             {day.date && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-xs md:text-sm text-gray-500 mt-1">
                 {day.date} {dayOfWeek}
               </p>
             )}
             {/* Phase 4: テーマ表示 */}
             {day.theme && (
-              <p className="text-sm text-blue-600 mt-1 flex items-center">
+              <p className="text-xs md:text-sm text-blue-600 mt-1 flex items-center">
                 <Sparkles className="w-3 h-3 mr-1" />
                 {day.theme}
               </p>
@@ -120,24 +120,24 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
         </div>
 
         {/* Day Summary */}
-        <div className="flex items-center gap-4 mr-4">
+        <div className="hidden sm:flex items-center gap-2 md:gap-4 mr-2 md:mr-4">
           {day.totalCost !== undefined && day.totalCost > 0 && (
-            <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
-              <Wallet className="w-4 h-4 text-blue-600" />
+            <div className="flex items-center gap-1 md:gap-2 bg-blue-50 rounded-lg px-2 md:px-3 py-1.5 md:py-2">
+              <Wallet className="w-3 h-3 md:w-4 md:h-4 text-blue-600" />
               <div className="text-right">
-                <p className="text-xs text-gray-500">予算</p>
-                <p className="font-semibold text-blue-600 text-sm">
+                <p className="text-xs text-gray-500 hidden md:block">予算</p>
+                <p className="font-semibold text-blue-600 text-xs md:text-sm">
                   {formatCurrency(day.totalCost, currency)}
                 </p>
               </div>
             </div>
           )}
           {day.totalDistance !== undefined && day.totalDistance > 0 && (
-            <div className="flex items-center gap-2 bg-green-50 rounded-lg px-3 py-2">
-              <MapPin className="w-4 h-4 text-green-600" />
+            <div className="flex items-center gap-1 md:gap-2 bg-green-50 rounded-lg px-2 md:px-3 py-1.5 md:py-2">
+              <MapPin className="w-3 h-3 md:w-4 md:h-4 text-green-600" />
               <div className="text-right">
-                <p className="text-xs text-gray-500">移動</p>
-                <p className="font-semibold text-green-600 text-sm">
+                <p className="text-xs text-gray-500 hidden md:block">移動</p>
+                <p className="font-semibold text-green-600 text-xs md:text-sm">
                   {day.totalDistance}km
                 </p>
               </div>
@@ -148,9 +148,9 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
         {/* Expand/Collapse Icon */}
         <div className="flex-shrink-0">
           {isExpanded ? (
-            <ChevronUp className="w-6 h-6 text-gray-400" />
+            <ChevronUp className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
           ) : (
-            <ChevronDown className="w-6 h-6 text-gray-400" />
+            <ChevronDown className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
           )}
         </div>
       </button>

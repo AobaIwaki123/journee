@@ -106,6 +106,20 @@ body {
   animation: fade-in 0.2s ease-out;
 }
 
+/* モバイルメニュー用スライドインアニメーション (Phase 7.2.3) */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slideIn {
+  animation: slide-in-right 0.3s ease-out;
+}
+
 /* PDF印刷用スタイル (Phase 5.3) */
 .pdf-layout {
   box-sizing: border-box;

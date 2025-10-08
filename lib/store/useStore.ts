@@ -153,6 +153,10 @@ interface AppState {
   setClaudeApiKey: (key: string) => void;
   removeClaudeApiKey: () => void;
   initializeFromStorage: () => void;
+  
+  // Mobile UI state (Phase 7.2)
+  mobileActiveTab: 'chat' | 'itinerary';
+  setMobileActiveTab: (tab: 'chat' | 'itinerary') => void;
 
   // Settings state (Phase 5.4.3)
   settings: AppSettings;
@@ -719,6 +723,10 @@ export const useStore = create<AppState>()((set, get) => ({
       currentItinerary: savedItinerary,
     });
   },
+  
+  // Mobile UI state (Phase 7.2)
+  mobileActiveTab: 'itinerary',
+  setMobileActiveTab: (tab) => set({ mobileActiveTab: tab }),
 
   // Settings state (Phase 5.4.3)
   settings: DEFAULT_SETTINGS,
