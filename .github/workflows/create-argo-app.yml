@@ -281,25 +281,52 @@ jobs:
 
           echo "🔧 Creating PR for branch '$BRANCH'"
 
-          # Create PR with title and body
-          PR_URL=$(gh pr create \
+          # Create PR with title and body (handle "already exists" error)
+          set +e  # Temporarily disable exit on error
+          PR_OUTPUT=$(gh pr create \
             --title "🚀 Deploy: $BRANCH" \
             --body "## Auto-generated PR for branch deployment
-          
+
           **Branch:** \`$BRANCH\`
           **Hash:** \`$BRANCH_HASH\`
-          
+
           This PR was automatically created for preview deployment.
-          
+
           Preview URL will be posted as a comment once the deployment is complete." \
             --base main \
-            --head "$BRANCH")
+            --head "$BRANCH" 2>&1)
+          CREATE_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
 
-          # Extract PR number from URL
-          PR_NUMBER=$(echo "$PR_URL" | sed 's|.*/pull/||')
-
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "✅ Created PR #$PR_NUMBER for branch '$BRANCH'"
+          if [ $CREATE_EXIT_CODE -eq 0 ]; then
+            # PR created successfully
+            PR_NUMBER=$(echo "$PR_OUTPUT" | sed 's|.*/pull/||')
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "✅ Created PR #$PR_NUMBER for branch '$BRANCH'"
+          elif echo "$PR_OUTPUT" | grep -q "already exists"; then
+            # PR already exists (race condition with Cursor Agent)
+            echo "⚠️  PR already exists (likely created by Cursor Agent)"
+            
+            # Find the existing PR
+            EXISTING_PR=$(gh pr list \
+              --base main \
+              --head "$BRANCH" \
+              --state open \
+              --json number \
+              --jq '.[0].number')
+            
+            if [ -n "$EXISTING_PR" ]; then
+              echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+              echo "✅ Using existing PR #$EXISTING_PR for branch '$BRANCH'"
+            else
+              echo "❌ Failed to find existing PR"
+              exit 1
+            fi
+          else
+            # Other error occurred
+            echo "❌ Failed to create PR: $PR_OUTPUT"
+            exit 1
+          fi
 
       - name: Comment deployment URL on PR
         if: steps.check_app.outputs.exists == 'false' && (steps.find_pr.outputs.pr_number != '' || steps.create_pr.outputs.pr_number != '')
