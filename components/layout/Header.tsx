@@ -2,17 +2,19 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Plane, Settings, BookOpen } from 'lucide-react';
+import { Plane, Settings, BookOpen, MessageSquare } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { LoginButton } from '@/components/auth/LoginButton';
 import { SaveStatus } from '@/components/ui/SaveStatus';
 import { MobileMenu } from './MobileMenu';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 export const Header: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -48,6 +50,16 @@ export const Header: React.FC = () => {
               <span>しおり一覧</span>
             </Link>
           )}
+
+          {/* フィードバックボタン */}
+          <button
+            onClick={() => setIsFeedbackModalOpen(true)}
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="フィードバック"
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span>フィードバック</span>
+          </button>
 
           {/* 設定ボタン */}
           {session && (
@@ -88,12 +100,19 @@ export const Header: React.FC = () => {
               userName={session.user?.name}
               userEmail={session.user?.email}
               userImage={session.user?.image}
+              onFeedbackClick={() => setIsFeedbackModalOpen(true)}
             />
           ) : (
             <LoginButton />
           )}
         </div>
       </div>
+
+      {/* フィードバックモーダル */}
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </header>
   );
 };
