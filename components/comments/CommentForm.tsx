@@ -24,7 +24,6 @@ export default function CommentForm({
   onSubmit,
 }: CommentFormProps) {
   const [content, setContent] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(!isAuthenticated);
   const [authorName, setAuthorName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +46,7 @@ export default function CommentForm({
       return;
     }
 
-    if (isAnonymous && authorName.trim().length === 0) {
+    if (authorName.trim().length === 0) {
       setError("名前を入力してください");
       return;
     }
@@ -57,8 +56,8 @@ export default function CommentForm({
     try {
       await onSubmit({
         content: content.trim(),
-        isAnonymous,
-        authorName: isAnonymous ? authorName.trim() : undefined,
+        isAnonymous: true, // 常に匿名扱い
+        authorName: authorName.trim(),
       });
 
       // フォームをリセット
@@ -76,27 +75,26 @@ export default function CommentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {/* 匿名投稿の場合の名前入力 */}
-      {isAnonymous && (
-        <div>
-          <label
-            htmlFor="authorName"
-            className="block text-sm font-medium text-gray-700"
-          >
-            名前
-          </label>
-          <input
-            type="text"
-            id="authorName"
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
-            placeholder="匿名ユーザー"
-            maxLength={100}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            disabled={isSubmitting}
-          />
-        </div>
-      )}
+      {/* 名前入力 */}
+      <div>
+        <label
+          htmlFor="authorName"
+          className="block text-sm font-medium text-gray-700"
+        >
+          名前 <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="authorName"
+          value={authorName}
+          onChange={(e) => setAuthorName(e.target.value)}
+          placeholder="名前を入力してください"
+          maxLength={100}
+          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          disabled={isSubmitting}
+          required
+        />
+      </div>
 
       {/* コメント入力 */}
       <div>
@@ -104,7 +102,7 @@ export default function CommentForm({
           htmlFor="content"
           className="block text-sm font-medium text-gray-700"
         >
-          コメント
+          コメント <span className="text-red-500">*</span>
         </label>
         <textarea
           id="content"
@@ -115,6 +113,7 @@ export default function CommentForm({
           maxLength={maxLength}
           className="mt-1 w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           disabled={isSubmitting}
+          required
         />
         <div className="mt-1 flex items-center justify-between">
           <p
@@ -127,24 +126,8 @@ export default function CommentForm({
         </div>
       </div>
 
-      {/* 匿名投稿チェックボックス */}
-      {isAuthenticated && (
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={isAnonymous}
-            onChange={(e) => setIsAnonymous(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            disabled={isSubmitting}
-          />
-          <span className="text-sm text-gray-700">匿名で投稿</span>
-        </label>
-      )}
-
       {/* エラーメッセージ */}
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {/* 投稿ボタン */}
       <div className="flex justify-end">

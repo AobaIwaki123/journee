@@ -20,7 +20,7 @@ export async function GET(
 ) {
   try {
     console.log("[Comments API] GET request for itinerary ID:", params.id);
-    
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
@@ -44,14 +44,22 @@ export async function GET(
     }
 
     // しおりが公開されているか確認（IDベース）
-    const itinerary = await itineraryRepository.getPublicItineraryById(params.id);
-    
+    const itinerary = await itineraryRepository.getPublicItineraryById(
+      params.id
+    );
+
     console.log("[Comments API] Itinerary found:", itinerary ? "Yes" : "No");
-    
+
     if (!itinerary) {
-      console.error("[Comments API] Public itinerary not found for ID:", params.id);
+      console.error(
+        "[Comments API] Public itinerary not found for ID:",
+        params.id
+      );
       return NextResponse.json(
-        { error: "公開しおりが見つかりません。しおりが存在しないか、非公開に設定されている可能性があります。" },
+        {
+          error:
+            "公開しおりが見つかりません。しおりが存在しないか、非公開に設定されている可能性があります。",
+        },
         { status: 404 }
       );
     }
@@ -89,7 +97,7 @@ export async function POST(
 ) {
   try {
     console.log("[Comments API] POST request for itinerary ID:", params.id);
-    
+
     const session = await getServerSession(authOptions);
     const body = await request.json();
 
@@ -110,22 +118,31 @@ export async function POST(
       );
     }
 
-    if (isAnonymous && (!authorName || authorName.trim().length === 0)) {
+    // 名前は必須
+    if (!authorName || authorName.trim().length === 0) {
       return NextResponse.json(
-        { error: "匿名投稿の場合は名前を入力してください" },
+        { error: "名前を入力してください" },
         { status: 400 }
       );
     }
 
     // しおりが公開されているか確認（IDベース）
-    const itinerary = await itineraryRepository.getPublicItineraryById(params.id);
-    
+    const itinerary = await itineraryRepository.getPublicItineraryById(
+      params.id
+    );
+
     console.log("[Comments API] Itinerary found:", itinerary ? "Yes" : "No");
-    
+
     if (!itinerary) {
-      console.error("[Comments API] Public itinerary not found for ID:", params.id);
+      console.error(
+        "[Comments API] Public itinerary not found for ID:",
+        params.id
+      );
       return NextResponse.json(
-        { error: "公開しおりが見つかりません。しおりが存在しないか、非公開に設定されている可能性があります。" },
+        {
+          error:
+            "公開しおりが見つかりません。しおりが存在しないか、非公開に設定されている可能性があります。",
+        },
         { status: 404 }
       );
     }
@@ -139,8 +156,8 @@ export async function POST(
       {
         itineraryId: itinerary.id!,
         content: content.trim(),
-        isAnonymous: isAnonymous || false,
-        authorName: isAnonymous ? authorName : session?.user?.name || undefined,
+        isAnonymous: true, // 常に匿名扱い（ユーザー入力の名前を使用）
+        authorName: authorName.trim(),
       },
       session?.user?.id
     );
