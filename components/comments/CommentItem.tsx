@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { Trash2, Flag, User } from "lucide-react";
 import type { Comment } from "@/types/comment";
+import { getRelativeTime } from "@/lib/utils/date-utils";
 
 interface CommentItemProps {
   comment: Comment;
@@ -50,28 +51,8 @@ export default function CommentItem({
     }
   };
 
-  // 相対時間の計算
-  const getRelativeTime = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMinutes < 1) return "たった今";
-    if (diffMinutes < 60) return `${diffMinutes}分前`;
-    if (diffHours < 24) return `${diffHours}時間前`;
-    if (diffDays < 7) return `${diffDays}日前`;
-
-    return date.toLocaleDateString("ja-JP", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   return (
-    <div className="border-b border-gray-200 py-4 last:border-b-0">
+    <div className="border-b border-gray-200 py-4 last:border-b-0" data-testid="comment-item">
       <div className="flex items-start justify-between">
         {/* ユーザー情報 */}
         <div className="flex items-center space-x-2">

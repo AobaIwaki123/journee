@@ -7,6 +7,7 @@ import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { DaySchedule } from "./DaySchedule";
 import CommentList from "@/components/comments/CommentList";
+import { formatDate } from "@/lib/utils/date-utils";
 import { Download, Share2, Copy, Check } from "lucide-react";
 
 interface PublicItineraryViewProps {
@@ -33,9 +34,7 @@ export default function PublicItineraryView({
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
     if (itinerary.publishedAt) {
-      setPublishedDate(
-        new Date(itinerary.publishedAt).toLocaleDateString("ja-JP")
-      );
+      setPublishedDate(formatDate(itinerary.publishedAt, "short"));
     }
   }, [itinerary.publishedAt]);
 

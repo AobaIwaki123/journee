@@ -4,6 +4,7 @@ import React, { memo, useMemo, useState, useEffect } from "react";
 import { Wallet, Calendar, TrendingUp } from "lucide-react";
 import { ItineraryData } from "@/types/itinerary";
 import { formatCurrency } from "@/lib/utils/currency";
+import { formatDate } from "@/lib/utils/date-utils";
 
 interface ItinerarySummaryProps {
   itinerary: ItineraryData;
@@ -17,14 +18,10 @@ export const ItinerarySummary: React.FC<ItinerarySummaryProps> = memo(
     // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
     useEffect(() => {
       if (itinerary.createdAt) {
-        setCreatedDate(
-          new Date(itinerary.createdAt).toLocaleDateString("ja-JP")
-        );
+        setCreatedDate(formatDate(itinerary.createdAt, "short"));
       }
       if (itinerary.updatedAt) {
-        setUpdatedDate(
-          new Date(itinerary.updatedAt).toLocaleDateString("ja-JP")
-        );
+        setUpdatedDate(formatDate(itinerary.updatedAt, "short"));
       }
     }, [itinerary.createdAt, itinerary.updatedAt]);
 

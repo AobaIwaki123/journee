@@ -20,7 +20,7 @@ export const UserStats: React.FC<UserStatsProps> = ({ stats }) => {
   // 月別データの整形（月名を表示用に変換）
   const monthlyData = stats.monthlyStats.map(item => ({
     ...item,
-    monthLabel: new Date(item.month + '-01').toLocaleDateString('ja-JP', { month: 'short' }),
+    monthLabel: toSafeDate(item.month + '-01')?.toLocaleDateString('ja-JP', { month: 'short' }) || item.month,
   }));
 
   return (
