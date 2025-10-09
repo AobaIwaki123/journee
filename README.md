@@ -51,47 +51,9 @@ journee/
 └── types/                # TypeScript型定義
 ```
 
-## 🚀 実装ステータス
+## 🚀 開発状況
 
-### ✅ 完了済み (Phase 1-8)
-- **Phase 1-2**: 基礎構築、認証（NextAuth.js + Google OAuth）
-- **Phase 3**: AI統合（Gemini/Claude API、ストリーミング対応）
-- **Phase 4**: 段階的旅程構築システム
-- **Phase 5**: しおり機能統合
-  - 5.1: コンポーネント実装（表示、編集、Undo/Redo、D&D）
-  - 5.2: 一時保存（LocalStorage、自動保存）
-  - 5.3: PDF出力（日本語対応、A4最適化）
-  - 5.4: マイページ、しおり一覧、設定ページ
-  - 5.5: 公開・共有機能（URL発行、Read-only閲覧）
-- **Phase 6**: Claude API統合、AIモデル切り替え
-- **Phase 7**: UI最適化（リサイザー、モバイル対応、PWA）
-- **Phase 8**: データベース統合（Supabase、マイグレーション）
-
-### 🔄 進行中 (Phase 9)
-- パフォーマンス最適化
-- テストカバレッジ向上
-- アクセシビリティ対応
-
-### 📋 予定 (Phase 10)
-- 本番環境デプロイ
-- モニタリング・ログ設定
-- ドキュメント整備
-
-## 💡 主要機能
-
-### セキュリティ
-- NextAuth.js認証、APIキー暗号化保存
-- RLS（Row Level Security）、入力値バリデーション
-
-### データ保存
-- Supabase (PostgreSQL) でデータ永続化
-- 自動保存（5分ごと + 変更時デバウンス）
-- LocalStorageからのマイグレーション機能
-
-### パフォーマンス
-- AIストリーミングレスポンス
-- React.memo/useMemo最適化
-- コード分割、画像遅延読み込み
+**詳細**: [実装計画（PLAN.md）](./docs/PLAN.md) | [リリース履歴（RELEASE.md）](./docs/RELEASE.md)
 
 ## 🔧 開発環境セットアップ
 
@@ -127,10 +89,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 
 ## 📚 ドキュメント
 
-- [API仕様](./docs/API.md)
-- [Phase 8 実装完了レポート](./docs/PHASE8_IMPLEMENTATION_COMPLETE.md)
-- [クイックスタートガイド](./docs/QUICK_START.md)
-- [Docker環境構築](./DOCKER.md)
+### 開発ドキュメント
+- [実装計画（PLAN.md）](./docs/PLAN.md) - フェーズ別実装計画と技術仕様
+- [リリース履歴（RELEASE.md）](./docs/RELEASE.md) - バージョン別の機能一覧
+- [バグ・改善点（BUG.md）](./docs/BUG.md) - 既知のバグと今後の改善計画
+
+### セットアップ
+- [クイックスタート（QUICK_START.md）](./docs/QUICK_START.md) - 初回セットアップガイド
+- [Docker環境構築（DOCKER.md）](./docs/DOCKER.md) - Docker環境での開発方法
+- [GCRデプロイ（GCR_DEPLOYMENT.md）](./docs/GCR_DEPLOYMENT.md) - Google Cloud Runへのデプロイ
+
+### API・技術仕様
+- [API仕様（API.md）](./docs/API.md) - REST API詳細仕様
 
 ## 📄 ライセンス
 
