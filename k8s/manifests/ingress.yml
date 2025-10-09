@@ -9,6 +9,18 @@ metadata:
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
+  # Dev環境 (新URL: preview.aooba.net)
+  - host: dev.preview.aooba.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: journee-dev
+            port:
+              number: 80
+  # 旧Dev環境 (互換性のため残す)
   - host: journee-dev.aooba.net
     http:
       paths:

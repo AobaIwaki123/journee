@@ -1,31 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: journee-dev
+  name: journee-auth
   namespace: journee
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: journee-dev
+      app: journee-auth
   template:
     metadata:
       labels:
-        app: journee-dev
+        app: journee-auth
     spec:
       imagePullSecrets:
         - name: gcr-pull-secret
       containers:
-        - name: journee-dev
+        - name: journee-auth
           image: gcr.io/my-docker-471807/journee:v2.6.5
           env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /app/secret/key.json
             - name: NEXTAUTH_URL
-              value: https://dev.preview.aooba.net
-            # 認証プロキシモード設定
+              value: https://auth.preview.aooba.net
+            # 認証プロキシモード: 認証サービスなのでfalse
             - name: AUTH_PROXY_MODE
-              value: "true"
+              value: "false"
             - name: AUTH_SERVICE_URL
               value: https://auth.preview.aooba.net
             # Cookie共有ドメイン
@@ -73,7 +73,7 @@ spec:
                   name: journee-env
                   key: SUPABASE_SERVICE_ROLE_KEY
             - name: NEXT_PUBLIC_BASE_URL
-              value: https://dev.preview.aooba.net
+              value: https://auth.preview.aooba.net
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -85,3 +85,45 @@ spec:
               value: journee
           ports:
             - containerPort: 3000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: journee-auth
+  namespace: journee
+spec:
+  selector:
+    app: journee-auth
+  ports:
+  - port: 80
+    targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: journee-auth-ingress
+  namespace: journee
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+spec:
+  ingressClassName: "cloudflare-tunnel"
+  rules:
+  - host: auth.preview.aooba.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: journee-auth
+            port:
+              number: 80
+

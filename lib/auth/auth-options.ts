@@ -7,6 +7,7 @@ import type { Database } from "@/types/database";
  * NextAuth設定オプション
  *
  * Phase 8: Supabaseデータベースと統合
+ * Multi-Branch: 認証プロキシパターン対応
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -32,6 +33,21 @@ export const authOptions: NextAuthOptions = {
   // JWT設定
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30日間
+  },
+
+  // Cookie設定（ドメイン共有対応）
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        // ブランチ環境間でセッション共有
+        domain: process.env.COOKIE_DOMAIN || undefined,
+      },
+    },
   },
 
   // カスタムページ
@@ -210,16 +226,37 @@ export const authOptions: NextAuthOptions = {
     /**
      * リダイレクトコールバック
      * 認証後のリダイレクト先を制御
+     * Multi-Branch: 認証プロキシからの戻り先を処理
      */
     async redirect({ url, baseUrl }) {
+      // 認証プロキシモードの場合
+      const authProxyMode = process.env.AUTH_PROXY_MODE === 'true';
+      const cookieDomain = process.env.COOKIE_DOMAIN;
+      
       // 相対URLの場合はそのまま使用
       if (url.startsWith("/")) {
         return `${baseUrl}${url}`;
       }
+      
       // 同じオリジンの場合は許可
-      else if (new URL(url).origin === baseUrl) {
+      const urlOrigin = new URL(url).origin;
+      if (urlOrigin === baseUrl) {
         return url;
       }
+      
+      // 認証プロキシモード：同じドメイン配下なら許可
+      if (authProxyMode && cookieDomain) {
+        try {
+          const urlHost = new URL(url).hostname;
+          // .preview.aooba.net ドメイン配下の場合は許可
+          if (urlHost.endsWith(cookieDomain.replace(/^\./, ''))) {
+            return url;
+          }
+        } catch (error) {
+          console.error("Invalid URL in redirect:", error);
+        }
+      }
+      
       // それ以外はホームページにリダイレクト
       return baseUrl;
     },
@@ -243,3 +280,4 @@ export const authOptions: NextAuthOptions = {
   // デバッグモード（開発環境のみ）
   debug: process.env.NODE_ENV === "development",
 };
+
