@@ -5,6 +5,20 @@ on:
   push:
     branches-ignore:
       - main
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "types/**"
+      - "public/**"
+      - "middleware.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.js"
+      - "tailwind.config.ts"
+      - "tsconfig.json"
+      - "postcss.config.js"
+      - "Dockerfile.prod"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,6 +53,13 @@ jobs:
       - name: Set short SHA
         run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-6)" >> $GITHUB_ENV
 
+      - name: Generate branch hash
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "BRANCH_HASH=$BRANCH_HASH" >> $GITHUB_ENV
+          echo "✅ Generated hash for branch '$BRANCH': $BRANCH_HASH"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to GCR
@@ -54,7 +75,7 @@ jobs:
           context: .
           file: ./Dockerfile.prod
           push: true
-          tags: ${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ env.SHORT_SHA }}
+          tags: ${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH_HASH }}-${{ env.SHORT_SHA }}
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
@@ -73,9 +94,16 @@ jobs:
       - name: Set short SHA
         run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-6)" >> $GITHUB_ENV
 
+      - name: Generate branch hash
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "BRANCH_HASH=$BRANCH_HASH" >> $GITHUB_ENV
+          echo "✅ Generated hash for branch '$BRANCH': $BRANCH_HASH"
+
       - name: Set manifest path
         run: |
-          echo "MANIFEST_PATH=k8s/manifests-${{ github.ref_name }}/deployment.yml" >> $GITHUB_ENV
+          echo "MANIFEST_PATH=k8s/manifests-${{ env.BRANCH_HASH }}/deployment.yml" >> $GITHUB_ENV
 
       - name: Install yq
         run: |
@@ -84,7 +112,7 @@ jobs:
 
       - name: Update deployment manifest
         run: |
-          yq -i '.spec.template.spec.containers[0].image = "${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ env.SHORT_SHA }}"' ${{ env.MANIFEST_PATH }}
+          yq -i '.spec.template.spec.containers[0].image = "${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH_HASH }}-${{ env.SHORT_SHA }}"' ${{ env.MANIFEST_PATH }}
 
       - name: Commit and push deployment manifest
         run: |
@@ -99,10 +127,17 @@ jobs:
     needs:
       - update-deployment-manifest
     steps:
+      - name: Generate branch hash
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "BRANCH_HASH=$BRANCH_HASH" >> $GITHUB_ENV
+          echo "✅ Generated hash for branch '$BRANCH': $BRANCH_HASH"
+
       - name: Trigger ArgoCD sync via API
         env:
           ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         run: |
-          curl -X POST https://argocd.aooba.net/api/v1/applications/${{ env.IMAGE_NAME }}-${{ github.ref_name }}/sync \
+          curl -X POST https://argocd.aooba.net/api/v1/applications/${{ env.IMAGE_NAME }}-${{ env.BRANCH_HASH }}/sync \
             -H "Authorization: Bearer $ARGOCD_TOKEN" \
             -H "Content-Type: application/json"
