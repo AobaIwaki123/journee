@@ -244,6 +244,58 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error('Failed to generate OG image:', error);
-    return new Response('Failed to generate image', { status: 500 });
+    
+    // エラー時はデフォルトのOGP画像を返す
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <span style={{ fontSize: '80px', marginBottom: '20px' }}>✈️</span>
+            <span
+              style={{
+                fontSize: '60px',
+                fontWeight: 'bold',
+                color: 'white',
+                letterSpacing: '2px',
+                textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+              }}
+            >
+              Journee
+            </span>
+            <p
+              style={{
+                fontSize: '28px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                marginTop: '20px',
+              }}
+            >
+              AI旅のしおり作成アプリ
+            </p>
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
   }
 }
