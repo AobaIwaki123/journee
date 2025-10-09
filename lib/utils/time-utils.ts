@@ -2,14 +2,14 @@
  * 時刻ユーティリティ関数
  */
 
-import { TouristSpot } from '@/types/itinerary';
+import { TouristSpot } from "@/types/itinerary";
 
 /**
  * HH:mm形式の時刻を分に変換
  */
 export const timeToMinutes = (time: string): number => {
   if (!time) return 0;
-  const [hours, minutes] = time.split(':').map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
 };
 
@@ -19,7 +19,9 @@ export const timeToMinutes = (time: string): number => {
 export const minutesToTime = (minutes: number): string => {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, "0")}:${mins
+    .toString()
+    .padStart(2, "0")}`;
 };
 
 /**
@@ -53,7 +55,8 @@ export const adjustTimeAfterReorder = (
   if (!movedSpot) return newSpots;
 
   const prevSpot = movedIndex > 0 ? newSpots[movedIndex - 1] : null;
-  const nextSpot = movedIndex < newSpots.length - 1 ? newSpots[movedIndex + 1] : null;
+  const nextSpot =
+    movedIndex < newSpots.length - 1 ? newSpots[movedIndex + 1] : null;
 
   let newScheduledTime: string | undefined = movedSpot.scheduledTime;
 
@@ -93,7 +96,7 @@ export const shouldReorderByTime = (
   spots: TouristSpot[],
   changedSpotId: string
 ): { shouldReorder: boolean; newIndex?: number } => {
-  const changedSpotIndex = spots.findIndex(s => s.id === changedSpotId);
+  const changedSpotIndex = spots.findIndex((s) => s.id === changedSpotId);
   if (changedSpotIndex === -1) return { shouldReorder: false };
 
   const changedSpot = spots[changedSpotIndex];
@@ -116,14 +119,18 @@ export const shouldReorderByTime = (
   }
 
   // 次のスポットより遅い時刻になった場合
-  const nextSpot = changedSpotIndex < spots.length - 1 ? spots[changedSpotIndex + 1] : null;
+  const nextSpot =
+    changedSpotIndex < spots.length - 1 ? spots[changedSpotIndex + 1] : null;
   if (nextSpot?.scheduledTime) {
     const nextTime = timeToMinutes(nextSpot.scheduledTime);
     if (changedTime > nextTime) {
       // 適切な位置を探す
       for (let i = changedSpotIndex + 1; i < spots.length; i++) {
         const spot = spots[i];
-        if (!spot.scheduledTime || timeToMinutes(spot.scheduledTime) > changedTime) {
+        if (
+          !spot.scheduledTime ||
+          timeToMinutes(spot.scheduledTime) > changedTime
+        ) {
           return { shouldReorder: true, newIndex: i };
         }
       }
