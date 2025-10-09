@@ -17,6 +17,26 @@ type DbDaySchedule = Database["public"]["Tables"]["day_schedules"]["Row"];
 type DbTouristSpot = Database["public"]["Tables"]["tourist_spots"]["Row"];
 
 /**
+ * UUID形式の文字列かどうかをチェック
+ */
+function isValidUUID(str: string | undefined | null): boolean {
+  if (!str) return false;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
+/**
+ * 有効なUUIDを確保（無効な場合は新規生成）
+ */
+function ensureValidUUID(id: string | undefined | null): string {
+  if (isValidUUID(id)) {
+    return id!;
+  }
+  return crypto.randomUUID();
+}
+
+/**
  * フィルター条件
  */
 export interface ItineraryFilters {
@@ -63,13 +83,14 @@ export class ItineraryRepository {
    */
   private async dbToItinerary(
     dbItinerary: DbItinerary,
-    includeDays: boolean = true
+    includeDays: boolean = true,
+    client: typeof supabase = supabase
   ): Promise<ItineraryData> {
     let schedule: DaySchedule[] = [];
 
     if (includeDays) {
-      // 日程詳細を取得
-      const { data: dbDays, error: daysError } = await supabase
+      // 日程詳細を取得（指定されたクライアントを使用）
+      const { data: dbDays, error: daysError } = await client
         .from("day_schedules")
         .select("*")
         .eq("itinerary_id", dbItinerary.id)
@@ -78,10 +99,10 @@ export class ItineraryRepository {
       if (daysError) {
         console.error("Failed to fetch day schedules:", daysError);
       } else if (dbDays) {
-        // 各日のスポットを取得
+        // 各日のスポットを取得（指定されたクライアントを使用）
         schedule = await Promise.all(
           dbDays.map(async (dbDay: DbDaySchedule) => {
-            const { data: dbSpots, error: spotsError } = await supabase
+            const { data: dbSpots, error: spotsError } = await client
               .from("tourist_spots")
               .select("*")
               .eq("day_schedule_id", dbDay.id)
@@ -229,10 +250,13 @@ export class ItineraryRepository {
     // 2. 日程詳細を作成
     if (itinerary.schedule && itinerary.schedule.length > 0) {
       for (const day of itinerary.schedule) {
+        // 有効なUUIDを確保
+        const dayId = ensureValidUUID(day.id);
+
         const { data: dbDay, error: dayError } = await client
           .from("day_schedules")
           .insert({
-            id: day.id, // クライアント側のIDを保持
+            id: dayId, // 確実にUUID形式のIDを設定
             itinerary_id: typedItinerary.id,
             day: day.day,
             date: day.date,
@@ -258,7 +282,7 @@ export class ItineraryRepository {
         // 3. 観光スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
-            id: spot.id, // クライアント側のIDを保持
+            id: ensureValidUUID(spot.id), // 確実にUUID形式のIDを設定
             day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,
@@ -286,7 +310,8 @@ export class ItineraryRepository {
       }
     }
 
-    return this.dbToItinerary(typedItinerary);
+    // Admin権限を使ってデータを取得
+    return this.dbToItinerary(typedItinerary, true, client);
   }
 
   /**
@@ -296,25 +321,32 @@ export class ItineraryRepository {
     itineraryId: string,
     userId: string
   ): Promise<ItineraryData | null> {
-    const { data, error } = await supabase
+    // RLSをバイパスするためAdmin権限を使用
+    const client = (supabaseAdmin || supabase) as typeof supabase;
+
+    const { data, error } = await client
       .from("itineraries")
       .select("*")
       .eq("id", itineraryId)
-      .or(`user_id.eq.${userId},is_public.eq.true`)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) {
       return null;
     }
 
-    return this.dbToItinerary(data);
+    // Admin権限を使ってデータを取得
+    return this.dbToItinerary(data, true, client);
   }
 
   /**
    * 公開しおりの取得（スラッグベース）
    */
   async getPublicItinerary(slug: string): Promise<ItineraryData | null> {
-    const { data, error } = await supabase
+    // RLSをバイパスするためAdmin権限を使用
+    const client = (supabaseAdmin || supabase) as typeof supabase;
+
+    const { data, error } = await client
       .from("itineraries")
       .select("*")
       .eq("public_slug", slug)
@@ -325,14 +357,18 @@ export class ItineraryRepository {
       return null;
     }
 
-    return this.dbToItinerary(data);
+    // Admin権限を使ってデータを取得
+    return this.dbToItinerary(data, true, client);
   }
 
   /**
    * 公開しおりの取得（IDベース）
    */
   async getPublicItineraryById(id: string): Promise<ItineraryData | null> {
-    const { data, error } = await supabase
+    // RLSをバイパスするためAdmin権限を使用
+    const client = (supabaseAdmin || supabase) as typeof supabase;
+
+    const { data, error } = await client
       .from("itineraries")
       .select("*")
       .eq("id", id)
@@ -343,7 +379,8 @@ export class ItineraryRepository {
       return null;
     }
 
-    return this.dbToItinerary(data);
+    // Admin権限を使ってデータを取得
+    return this.dbToItinerary(data, true, client);
   }
 
   /**
@@ -356,7 +393,10 @@ export class ItineraryRepository {
     sortOrder: SortOrder = "desc",
     pagination?: PaginationOptions
   ): Promise<PaginatedResponse<ItineraryData>> {
-    let query = supabase
+    // RLSをバイパスするためAdmin権限を使用
+    const client = (supabaseAdmin || supabase) as typeof supabase;
+
+    let query = client
       .from("itineraries")
       .select("*", { count: "exact" })
       .eq("user_id", userId);
@@ -472,10 +512,13 @@ export class ItineraryRepository {
 
       // 新しい日程を作成
       for (const day of updates.schedule) {
+        // 有効なUUIDを確保
+        const dayId = ensureValidUUID(day.id);
+
         const { data: dbDay, error: dayError } = await client
           .from("day_schedules")
           .insert({
-            id: day.id, // クライアント側のIDを保持
+            id: dayId, // 確実にUUID形式のIDを設定
             itinerary_id: itineraryId,
             day: day.day,
             date: day.date,
@@ -501,7 +544,7 @@ export class ItineraryRepository {
         // スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
-            id: spot.id, // クライアント側のIDを保持
+            id: ensureValidUUID(spot.id), // 確実にUUID形式のIDを設定
             day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,
@@ -523,7 +566,8 @@ export class ItineraryRepository {
       }
     }
 
-    return this.dbToItinerary(dbItinerary);
+    // Admin権限を使ってデータを取得
+    return this.dbToItinerary(dbItinerary, true, client);
   }
 
   /**
