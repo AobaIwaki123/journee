@@ -118,29 +118,6 @@ export default function CommentList({
     setTotal((prev) => prev - 1);
   };
 
-  // コメント報告
-  const handleReport = async (commentId: string) => {
-    const response = await fetch(
-      `/api/itinerary/${itineraryId}/comments/${commentId}/report`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "コメントの報告に失敗しました");
-    }
-
-    // コメントをリストから削除（報告されたコメントは非表示）
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
-    setTotal((prev) => prev - 1);
-  };
-
   return (
     <div className="space-y-6">
       {/* ヘッダー */}
@@ -170,7 +147,6 @@ export default function CommentList({
                 comment={comment}
                 currentUserId={currentUserId}
                 onDelete={handleDelete}
-                onReport={handleReport}
               />
             ))}
           </div>

@@ -74,7 +74,6 @@ describe('CommentRepository', () => {
         author_name: 'テストユーザー',
         content: 'テストコメント',
         is_anonymous: false,
-        is_reported: false,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
       };
@@ -104,7 +103,6 @@ describe('CommentRepository', () => {
         author_name: '匿名さん',
         content: '匿名コメント',
         is_anonymous: true,
-        is_reported: false,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
       };

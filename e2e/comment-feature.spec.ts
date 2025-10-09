@@ -56,29 +56,6 @@ test.describe('コメント機能', () => {
     await expect(page.getByText(/残り496文字/)).toBeVisible();
   });
 
-  test('コメントを報告できる', async ({ page }) => {
-    // 既存のコメントがあると仮定
-    // 報告ボタンをクリック
-    const reportButton = page.locator('button[title="報告"]').first();
-    
-    // ボタンが存在する場合のみテスト
-    if (await reportButton.count() > 0) {
-      await reportButton.click();
-
-      // 確認ダイアログをハンドル
-      page.on('dialog', async (dialog) => {
-        expect(dialog.message()).toContain('報告');
-        await dialog.accept();
-      });
-
-      // 報告完了のアラートを確認
-      page.on('dialog', async (dialog) => {
-        expect(dialog.message()).toContain('報告しました');
-        await dialog.accept();
-      });
-    }
-  });
-
   test('コメント一覧のページネーションが機能する', async ({ page }) => {
     // 「さらに読み込む」ボタンが存在するか確認
     const loadMoreButton = page.locator('button:has-text("さらに読み込む")');

@@ -12,7 +12,6 @@ export interface Comment {
   authorName: string; // 認証ユーザーはユーザー名、匿名は入力された名前
   content: string;
   isAnonymous: boolean;
-  isReported: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,13 +31,6 @@ export interface CreateCommentRequest {
  */
 export interface UpdateCommentRequest {
   content?: string;
-}
-
-/**
- * コメント報告リクエスト
- */
-export interface ReportCommentRequest {
-  reason?: string; // 報告理由（オプション）
 }
 
 /**
