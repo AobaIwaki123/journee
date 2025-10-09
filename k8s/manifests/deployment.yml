@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: journee
+  namespace: journee
 spec:
   replicas: 1
   selector:
@@ -17,7 +18,6 @@ spec:
       containers:
       - name: journee
         image: gcr.io/my-docker-471807/journee:v2.6.2
-        imagePullPolicy: Always
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /app/secret/key.json
