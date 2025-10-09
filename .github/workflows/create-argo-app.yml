@@ -40,7 +40,8 @@ jobs:
         env:
           ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         run: |
-          APP_NAME="${{ env.IMAGE_NAME }}-${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $ARGOCD_TOKEN" \
             https://${{ env.ARGOCD_SERVER }}/api/v1/applications/$APP_NAME)
@@ -65,66 +66,67 @@ jobs:
         if: steps.check_app.outputs.exists == 'false'
         run: |
           BRANCH="${{ inputs.branch }}"
-          echo "📁 Creating manifests directory for branch: $BRANCH"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          echo "📁 Creating manifests directory for branch: $BRANCH (hash: $BRANCH_HASH)"
 
           # Create manifests directory if it doesn't exist
-          if [ ! -d "k8s/manifests-$BRANCH" ]; then
-            cp -r k8s/manifests k8s/manifests-$BRANCH
-            echo "✅ Created k8s/manifests-$BRANCH"
+          if [ ! -d "k8s/manifests-$BRANCH_HASH" ]; then
+            cp -r k8s/manifests k8s/manifests-$BRANCH_HASH
+            echo "✅ Created k8s/manifests-$BRANCH_HASH"
           else
-            echo "ℹ️  Directory k8s/manifests-$BRANCH already exists"
+            echo "ℹ️  Directory k8s/manifests-$BRANCH_HASH already exists"
           fi
 
           # Create argocd directory if it doesn't exist
-          if [ ! -d "k8s/argocd-$BRANCH" ]; then
-            mkdir -p k8s/argocd-$BRANCH
-            echo "✅ Created k8s/argocd-$BRANCH"
+          if [ ! -d "k8s/argocd-$BRANCH_HASH" ]; then
+            mkdir -p k8s/argocd-$BRANCH_HASH
+            echo "✅ Created k8s/argocd-$BRANCH_HASH"
           else
-            echo "ℹ️  Directory k8s/argocd-$BRANCH already exists"
+            echo "ℹ️  Directory k8s/argocd-$BRANCH_HASH already exists"
           fi
 
       - name: Update resource names in manifests
         if: steps.check_app.outputs.exists == 'false'
         run: |
           BRANCH="${{ inputs.branch }}"
-          MANIFEST_DIR="k8s/manifests-$BRANCH"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          MANIFEST_DIR="k8s/manifests-$BRANCH_HASH"
 
-          echo "🔧 Updating resource names in manifests to include branch suffix"
+          echo "🔧 Updating resource names in manifests to include branch hash suffix"
 
           # Update Deployment name
           if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
-            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
             echo "✅ Updated Deployment name in deployment.yml"
           fi
 
           # Update Service name and selector
           if [ -f "$MANIFEST_DIR/service.yml" ]; then
-            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/service.yml"
-            yq -i '.spec.selector.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/service.yml"
+            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
+            yq -i '.spec.selector.app = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
             echo "✅ Updated Service name in service.yml"
           fi
 
           # Update Ingress name and backend service name
           if [ -f "$MANIFEST_DIR/ingress.yml" ]; then
-            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/ingress.yml"
-            yq -i '.spec.rules[0].http.paths[0].backend.service.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/ingress.yml"
+            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
+            yq -i '.spec.rules[0].http.paths[0].backend.service.name = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
             # Update host to use 6-character hash
-            BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
             yq -i '.spec.rules[0].host = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'.aooba.net"' "$MANIFEST_DIR/ingress.yml"
             echo "✅ Updated Ingress name and host in ingress.yml (using hash: $BRANCH_HASH)"
           fi
 
           # Update Deployment labels and selectors
           if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
-            yq -i '.metadata.labels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
-            yq -i '.spec.selector.matchLabels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
-            yq -i '.spec.template.metadata.labels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '.metadata.labels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '.spec.selector.matchLabels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '.spec.template.metadata.labels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
             echo "✅ Updated Deployment labels and selectors"
           fi
 
           # Update container name
           if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
-            yq -i '.spec.template.spec.containers[0].name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '.spec.template.spec.containers[0].name = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
             echo "✅ Updated container name in deployment.yml"
           fi
 
@@ -157,9 +159,10 @@ jobs:
         if: steps.check_app.outputs.exists == 'false'
         run: |
           BRANCH="${{ inputs.branch }}"
-          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
 
-          cat > k8s/argocd-$BRANCH/app.yml << EOF
+          cat > k8s/argocd-$BRANCH_HASH/app.yml << EOF
           apiVersion: argoproj.io/v1alpha1
           kind: Application
           metadata:
@@ -169,7 +172,7 @@ jobs:
             source:
               repoURL: 'https://github.com/${{ github.repository }}'
               targetRevision: $BRANCH
-              path: k8s/manifests-$BRANCH
+              path: k8s/manifests-$BRANCH_HASH
             destination:
               server: 'https://kubernetes.default.svc'
               namespace: journee
@@ -179,21 +182,22 @@ jobs:
                 prune: true
           EOF
 
-          echo "✅ Generated ArgoCD Application manifest for $APP_NAME"
-          cat k8s/argocd-$BRANCH/app.yml
+          echo "✅ Generated ArgoCD Application manifest for $APP_NAME (branch: $BRANCH)"
+          cat k8s/argocd-$BRANCH_HASH/app.yml
 
       - name: Commit and push manifests
         if: steps.check_app.outputs.exists == 'false'
         run: |
           BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add k8s/manifests-$BRANCH k8s/argocd-$BRANCH
+          git add k8s/manifests-$BRANCH_HASH k8s/argocd-$BRANCH_HASH
 
           if git diff --staged --quiet; then
             echo "ℹ️  No changes to commit"
           else
-            git commit -m "🚀 Create ArgoCD manifests for branch: $BRANCH"
+            git commit -m "🚀 Create ArgoCD manifests for branch: $BRANCH (hash: $BRANCH_HASH)"
             git push
             echo "✅ Committed and pushed manifests"
           fi
@@ -203,10 +207,11 @@ jobs:
         env:
           ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         run: |
-          APP_NAME="${{ env.IMAGE_NAME }}-${{ inputs.branch }}"
           BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
 
-          echo "🚀 Creating ArgoCD Application: $APP_NAME"
+          echo "🚀 Creating ArgoCD Application: $APP_NAME (branch: $BRANCH)"
 
           curl -X POST https://${{ env.ARGOCD_SERVER }}/api/v1/applications \
             -H "Authorization: Bearer $ARGOCD_TOKEN" \
@@ -221,7 +226,7 @@ jobs:
               "source": {
                 "repoURL": "https://github.com/${{ github.repository }}",
                 "targetRevision": "$BRANCH",
-                "path": "k8s/manifests-$BRANCH"
+                "path": "k8s/manifests-$BRANCH_HASH"
               },
               "destination": {
                 "server": "https://kubernetes.default.svc",
@@ -243,8 +248,10 @@ jobs:
       - name: Skip creation
         if: steps.check_app.outputs.exists == 'true'
         run: |
-          APP_NAME="${{ env.IMAGE_NAME }}-${{ inputs.branch }}"
-          echo "ℹ️  ArgoCD Application '$APP_NAME' already exists. Skipping creation."
+          BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+          echo "ℹ️  ArgoCD Application '$APP_NAME' (branch: $BRANCH) already exists. Skipping creation."
 
       - name: Find associated PR
         id: find_pr
@@ -254,7 +261,7 @@ jobs:
         run: |
           BRANCH="${{ inputs.branch }}"
           PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
-          
+
           if [ -n "$PR_NUMBER" ]; then
             echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
             echo "✅ Found PR #$PR_NUMBER for branch '$BRANCH'"
@@ -263,16 +270,46 @@ jobs:
             echo "ℹ️  No PR found for branch '$BRANCH'"
           fi
 
-      - name: Comment deployment URL on PR
-        if: steps.check_app.outputs.exists == 'false' && steps.find_pr.outputs.pr_number != ''
+      - name: Create PR if not exists
+        id: create_pr
+        if: steps.check_app.outputs.exists == 'false' && steps.find_pr.outputs.pr_number == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           BRANCH="${{ inputs.branch }}"
           BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
-          PR_NUMBER="${{ steps.find_pr.outputs.pr_number }}"
-          DEPLOYMENT_URL="https://$BRANCH_HASH.${{ env.IMAGE_NAME }}.aooba.net"
-          
+
+          echo "🔧 Creating PR for branch '$BRANCH'"
+
+          # Create PR with title and body
+          PR_NUMBER=$(gh pr create \
+            --title "🚀 Deploy: $BRANCH" \
+            --body "## Auto-generated PR for branch deployment
+
+          **Branch:** \`$BRANCH\`
+          **Hash:** \`$BRANCH_HASH\`
+
+          This PR was automatically created for preview deployment.
+
+          Preview URL will be posted as a comment once the deployment is complete." \
+            --base main \
+            --head "$BRANCH" \
+            --json number --jq '.number')
+
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "✅ Created PR #$PR_NUMBER for branch '$BRANCH'"
+
+      - name: Comment deployment URL on PR
+        if: steps.check_app.outputs.exists == 'false' && (steps.find_pr.outputs.pr_number != '' || steps.create_pr.outputs.pr_number != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          # Use PR number from either find_pr or create_pr step
+          PR_NUMBER="${{ steps.find_pr.outputs.pr_number || steps.create_pr.outputs.pr_number }}"
+          DEPLOYMENT_URL="https://${{ env.IMAGE_NAME }}-$BRANCH_HASH.aooba.net"
+
           gh pr comment "$PR_NUMBER" --body "🚀 **Preview Deployment Created**
 
           **Branch:** \`$BRANCH\`
