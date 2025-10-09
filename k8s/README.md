@@ -23,3 +23,19 @@ $ kubectl apply -f k8s/manifests/secret.yml
 ```sh
 $ kubectl apply -f k8s/manifests/
 ```
+
+## ArgoCDでデプロイ
+
+```sh
+$ argocd app create -f k8s/argocd/app.yml --upsert
+$ argocd app get journee-dev
+$ argocd app sync journee-dev   # 手動で今すぐ同期したい時
+```
+
+## ブランチごとの環境作成
+
+```sh
+$ ./scripts/create-branch-infra.sh <branch>
+```
+
+同一namespace内でユニークでなければならない値に`-${branch}`を追加してください。
