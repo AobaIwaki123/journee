@@ -618,6 +618,36 @@ argocd app sync test-app
 # 状態確認
 argocd app get test-app
 ```
+#### リソースのクリーンアップ
+
+動作確認が完了したら、作成したリソースをクリーンアップしましょう。
+
+**ArgoCD Applicationの削除：**
+
+```bash
+# ArgoCD Applicationを削除（管理しているリソースも一緒に削除）
+argocd app delete test-app --cascade
+```
+
+**オプション：Namespaceごと削除**
+
+```bash
+# Namespaceを削除（中のすべてのリソースも削除される）
+kubectl delete namespace test-app
+```
+
+**確認：**
+
+```bash
+# ArgoCD Applicationが削除されたことを確認
+argocd app list | grep test-app
+
+# Namespaceが削除されたことを確認
+kubectl get namespace test-app
+# Error from server (NotFound): namespaces "test-app" not found
+```
+
+> **Note**: `--cascade` オプションを使うと、ArgoCD Applicationが管理しているKubernetesリソース（Deployment、Service、Ingressなど）も自動的に削除されます。これにより、クリーンアップが簡単になります。
 
 ---
 
