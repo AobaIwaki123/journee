@@ -9,13 +9,13 @@ metadata:
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: journee.aooba.net
+  - host: journee-dev.aooba.net
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: journee
+            name: journee-dev
             port:
               number: 80
