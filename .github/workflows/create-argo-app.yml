@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 env:
   ARGOCD_SERVER: argocd.aooba.net
@@ -24,6 +25,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
+
+      - name: Generate branch hash
+        id: branch_hash
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          # Generate 6-character hash from branch name
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "hash=$BRANCH_HASH" >> $GITHUB_OUTPUT
+          echo "✅ Generated hash for branch '$BRANCH': $BRANCH_HASH"
 
       - name: Check if ArgoCD Application exists
         id: check_app
@@ -98,9 +108,10 @@ jobs:
           if [ -f "$MANIFEST_DIR/ingress.yml" ]; then
             yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/ingress.yml"
             yq -i '.spec.rules[0].http.paths[0].backend.service.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/ingress.yml"
-            # Update host to include branch name
-            yq -i '.spec.rules[0].host = "'"$BRANCH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/ingress.yml"
-            echo "✅ Updated Ingress name and host in ingress.yml"
+            # Update host to use 6-character hash
+            BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+            yq -i '.spec.rules[0].host = "'"$BRANCH_HASH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/ingress.yml"
+            echo "✅ Updated Ingress name and host in ingress.yml (using hash: $BRANCH_HASH)"
           fi
 
           # Update Deployment labels and selectors
@@ -132,11 +143,12 @@ jobs:
             fi
           fi
 
-          # Update NEXT_PUBLIC_BASE_URL to branch-specific URL
+          # Update NEXT_PUBLIC_BASE_URL to branch-specific URL with hash
           if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
-            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXT_PUBLIC_BASE_URL") | .value) = "https://${{ env.IMAGE_NAME }}-'"$BRANCH"'.aooba.net"' "$MANIFEST_DIR/deployment.yml"
-            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXTAUTH_URL") | .value) = "https://${{ env.IMAGE_NAME }}-'"$BRANCH"'.aooba.net"' "$MANIFEST_DIR/deployment.yml"
-            echo "✅ Updated NEXT_PUBLIC_BASE_URL and NEXTAUTH_URL to branch-specific URL"
+            BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXT_PUBLIC_BASE_URL") | .value) = "https://'"$BRANCH_HASH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXTAUTH_URL") | .value) = "https://'"$BRANCH_HASH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/deployment.yml"
+            echo "✅ Updated NEXT_PUBLIC_BASE_URL and NEXTAUTH_URL to branch-specific URL (using hash: $BRANCH_HASH)"
           fi
 
           echo "✅ All resource names and configurations updated successfully"
@@ -233,3 +245,40 @@ jobs:
         run: |
           APP_NAME="${{ env.IMAGE_NAME }}-${{ inputs.branch }}"
           echo "ℹ️  ArgoCD Application '$APP_NAME' already exists. Skipping creation."
+
+      - name: Find associated PR
+        id: find_pr
+        if: steps.check_app.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
+          
+          if [ -n "$PR_NUMBER" ]; then
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "✅ Found PR #$PR_NUMBER for branch '$BRANCH'"
+          else
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "ℹ️  No PR found for branch '$BRANCH'"
+          fi
+
+      - name: Comment deployment URL on PR
+        if: steps.check_app.outputs.exists == 'false' && steps.find_pr.outputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          PR_NUMBER="${{ steps.find_pr.outputs.pr_number }}"
+          DEPLOYMENT_URL="https://$BRANCH_HASH.${{ env.IMAGE_NAME }}.aooba.net"
+          
+          gh pr comment "$PR_NUMBER" --body "🚀 **Preview Deployment Created**
+
+          **Branch:** \`$BRANCH\`
+          **Hash:** \`$BRANCH_HASH\`
+          **URL:** $DEPLOYMENT_URL
+
+          The preview environment will be available shortly after the deployment completes."
+                    
+                    echo "✅ Posted deployment URL to PR #$PR_NUMBER"
