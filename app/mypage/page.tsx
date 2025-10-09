@@ -10,7 +10,7 @@ import { ItineraryCard } from "@/components/mypage/ItineraryCard";
 import { getMockUserStats } from "@/lib/mock-data/user-stats";
 import { getMockRecentItineraries } from "@/lib/mock-data/recent-itineraries";
 import { itineraryRepository } from "@/lib/db/itinerary-repository";
-import type { ItineraryData } from "@/types/itinerary";
+import type { ItineraryListItem } from "@/types/itinerary";
 
 /**
  * Phase 10.4: マイページ（DB統合版）
@@ -32,18 +32,18 @@ export default async function MyPage() {
   };
 
   // データベースから最近のしおりを取得
-  let recentItineraries: ItineraryData[] = [];
+  let recentItineraries: ItineraryListItem[] = [];
   try {
     const result = await itineraryRepository.listItineraries(
       user.id,
       {},
-      'updated_at',
-      'desc',
+      "updated_at",
+      "desc",
       { page: 1, pageSize: 6 } // 最新6件を取得
     );
     recentItineraries = result.data;
   } catch (error) {
-    console.error('Failed to load recent itineraries:', error);
+    console.error("Failed to load recent itineraries:", error);
     // エラー時はモックデータにフォールバック
     recentItineraries = getMockRecentItineraries();
   }
