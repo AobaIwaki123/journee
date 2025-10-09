@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: journee-967efc
+  namespace: journee
+spec:
+  selector:
+    app: journee-967efc
+  ports:
+    - port: 80
+      targetPort: 3000
