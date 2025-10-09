@@ -9,7 +9,7 @@ import { CheckCircle2, Circle, Clock } from 'lucide-react';
  * Phase 4.4: 段階的旅程構築の進捗インジケーター
  * 現在のフェーズと進捗状況を視覚的に表示
  */
-export const PlanningProgress: React.FC = () => {
+export const PlanningProgress: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { planningPhase, currentItinerary, currentDetailingDay } = useStore();
 
   // フェーズの表示ラベル
@@ -74,7 +74,7 @@ export const PlanningProgress: React.FC = () => {
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 p-4">
+    <div className={`bg-white border-b border-gray-200 p-4 ${className}`}>
       {/* 現在のフェーズ表示 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">

@@ -11,6 +11,7 @@ import type { AutoProgressState } from '@/lib/execution/sequential-itinerary-bui
 
 interface PhaseStatusBarProps {
   state: AutoProgressState;
+  className?: string;
 }
 
 const phases = [
@@ -19,11 +20,11 @@ const phases = [
   { id: 'completed', label: '完成', order: 3 },
 ] as const;
 
-export const PhaseStatusBar: React.FC<PhaseStatusBarProps> = ({ state }) => {
+export const PhaseStatusBar: React.FC<PhaseStatusBarProps> = ({ state, className = '' }) => {
   const currentPhaseOrder = phases.find(p => p.id === state.phase)?.order || 0;
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div className={`bg-white rounded-lg shadow-md p-6 mb-6 ${className}`}>
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold text-gray-900">

@@ -13,7 +13,7 @@ import { generateId } from "@/lib/utils/id-generator";
  * 「次へ」ボタンやリセットボタンなどを提供
  * Phase 4.8: 動的スタイリングと情報充足度判定を追加
  */
-export const QuickActions: React.FC = () => {
+export const QuickActions: React.FC<{ className?: string }> = ({ className = '' }) => {
   const {
     planningPhase,
     currentItinerary,
@@ -299,7 +299,7 @@ export const QuickActions: React.FC = () => {
   };
 
   return (
-    <div className="border-t bg-white p-4">
+    <div className={`border-t bg-white p-4 ${className}`}>
       {/* Phase 4.8: 警告ダイアログ */}
       {showWarning && checklistStatus && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">

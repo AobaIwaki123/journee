@@ -8,7 +8,45 @@
 
 ## 🐛 現在の既知のバグ
 
-現時点で重大なバグは報告されていません。
+### バグ#1: モバイルUI改善後に背景がスクロールできない ✅ 解決済み
+
+**発見日**: 2025-10-09  
+**解決日**: 2025-10-09  
+**ステータス**: 🟢 解決済み  
+**優先度**: 高  
+**影響範囲**: モバイル版（<768px）のしおりプレビュー
+
+#### バグの概要
+モバイルUI改善実装（PlanningProgress、PhaseStatusBar、QuickActionsを`hidden md:block`で非表示化）後、背景がスクロールできなくなった。
+
+#### 再現手順
+1. モバイルサイズ（375px）でアプリを起動
+2. しおりタブを表示
+3. スクロールしようとする
+
+#### 期待される動作
+しおりコンテンツが通常通りスクロールできる
+
+#### 実際の動作
+背景がスクロールできない
+
+#### 原因
+- `hidden md:block`のwrapper `div`要素がflexレイアウトに影響していた
+- wrapper divがflex子要素として追加されたことで、高さ計算が狂った
+
+#### 解決方法
+1. PlanningProgress、PhaseStatusBar、QuickActionsに`className` propを追加
+2. wrapper divを削除し、`className="hidden md:block"`を直接コンポーネントに適用
+3. これにより、flexレイアウトを壊さずにレスポンシブ表示を実現
+
+#### 変更ファイル
+- components/itinerary/PlanningProgress.tsx
+- components/itinerary/PhaseStatusBar.tsx
+- components/itinerary/QuickActions.tsx
+- components/itinerary/ItineraryPreview.tsx
+
+#### 環境
+- ブランチ: cursor/implement-mobile-ui-improvement-plan-20d1
 
 ---
 

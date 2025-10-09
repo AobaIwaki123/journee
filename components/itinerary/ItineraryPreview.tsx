@@ -41,21 +41,13 @@ export const ItineraryPreview: React.FC = () => {
     return (
       <div className="h-full flex flex-col bg-gray-50">
         {/* Phase 4: プランニング進捗（初期状態でも表示、デスクトップのみ） */}
-        {planningPhase !== 'initial' && (
-          <div className="hidden md:block">
-            <PlanningProgress />
-          </div>
-        )}
+        {planningPhase !== 'initial' && <PlanningProgress className="hidden md:block" />}
 
         {/* 空状態 */}
         <EmptyItinerary />
 
         {/* Phase 4: クイックアクション（デスクトップのみ） */}
-        {planningPhase !== 'initial' && (
-          <div className="hidden md:block">
-            <QuickActions />
-          </div>
-        )}
+        {planningPhase !== 'initial' && <QuickActions className="hidden md:block" />}
       </div>
     );
   }
@@ -68,17 +60,11 @@ export const ItineraryPreview: React.FC = () => {
       <div className="h-full flex flex-col bg-gray-50 relative">
         {/* Phase 4.10.3: 自動進行中の進捗表示（デスクトップのみ） */}
         {isAutoProgressing && autoProgressState && (
-          <div className="hidden md:block">
-            <PhaseStatusBar state={autoProgressState} />
-          </div>
+          <PhaseStatusBar state={autoProgressState} className="hidden md:block" />
         )}
         
         {/* Phase 4: プランニング進捗（自動進行中でない場合のみ表示、デスクトップのみ） */}
-        {!isAutoProgressing && (
-          <div className="hidden md:block">
-            <PlanningProgress />
-          </div>
-        )}
+        {!isAutoProgressing && <PlanningProgress className="hidden md:block" />}
         
         {/* メインコンテンツ（スクロール可能） */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -188,11 +174,7 @@ export const ItineraryPreview: React.FC = () => {
         </div>
 
         {/* Phase 4: クイックアクション（自動進行中でない場合のみ表示、デスクトップのみ） */}
-        {!isAutoProgressing && (
-          <div className="hidden md:block">
-            <QuickActions />
-          </div>
-        )}
+        {!isAutoProgressing && <QuickActions className="hidden md:block" />}
       </div>
     </>
   );
