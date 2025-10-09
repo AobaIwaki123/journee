@@ -23,3 +23,11 @@ $ kubectl apply -f k8s/manifests/secret.yml
 ```sh
 $ kubectl apply -f k8s/manifests/
 ```
+
+## ArgoCDでデプロイ
+
+```sh
+$ argocd app create -f k8s/argocd/app.yml --upsert
+$ argocd app get journee-dev
+$ argocd app sync journee-dev   # 手動で今すぐ同期したい時
+```
