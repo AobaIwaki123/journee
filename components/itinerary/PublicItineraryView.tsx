@@ -2,26 +2,38 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { ItineraryData } from "@/types/itinerary";
+import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { DaySchedule } from "./DaySchedule";
+import CommentList from "@/components/comments/CommentList";
+import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
 import { PDFPreviewModal } from "./PDFPreviewModal";
 import { Download, Share2, Copy, Check, Loader2, Eye } from "lucide-react";
-import { generateItineraryPDF, generateFilename } from "@/lib/utils/pdf-generator";
+import {
+  generateItineraryPDF,
+  generateFilename,
+} from "@/lib/utils/pdf-generator";
 import { showToast } from "@/components/ui/Toast";
 
 interface PublicItineraryViewProps {
   slug: string;
   itinerary: ItineraryData;
+  currentUserId?: string | null;
+  initialComments?: Comment[];
+  initialCommentCount?: number;
 }
 
 /**
- * Phase 8: 公開しおり閲覧用コンポーネント（Read-only、Database版）
+ * Phase 8 + Phase 11: 公開しおり閲覧用コンポーネント（Read-only、Database版 + コメント機能）
  */
 export default function PublicItineraryView({
   slug,
   itinerary,
+  currentUserId = null,
+  initialComments = [],
+  initialCommentCount = 0,
 }: PublicItineraryViewProps) {
   const [copied, setCopied] = useState(false);
   const [publishedDate, setPublishedDate] = useState<string>("");
@@ -34,9 +46,7 @@ export default function PublicItineraryView({
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
     if (itinerary.publishedAt) {
-      setPublishedDate(
-        new Date(itinerary.publishedAt).toLocaleDateString("ja-JP")
-      );
+      setPublishedDate(formatDate(itinerary.publishedAt, "short"));
     }
   }, [itinerary.publishedAt]);
 
@@ -82,11 +92,11 @@ export default function PublicItineraryView({
       setShowPreview(true);
 
       // PDF専用レイアウトを一時的にDOMに追加
-      await new Promise(resolve => setTimeout(resolve, 100)); // DOMレンダリング待機
+      await new Promise((resolve) => setTimeout(resolve, 100)); // DOMレンダリング待機
 
       const filename = generateFilename(itinerary);
-      
-      const result = await generateItineraryPDF('pdf-export-container-public', {
+
+      const result = await generateItineraryPDF("pdf-export-container-public", {
         filename,
         quality: 0.95,
         margin: 10,
@@ -95,18 +105,18 @@ export default function PublicItineraryView({
 
       if (result.success) {
         showToast({
-          type: 'success',
+          type: "success",
           message: `PDFを保存しました: ${result.filename}`,
           duration: 4000,
         });
       } else {
-        throw new Error(result.error || '不明なエラー');
+        throw new Error(result.error || "不明なエラー");
       }
     } catch (error) {
-      console.error('PDF生成エラー:', error);
+      console.error("PDF生成エラー:", error);
       showToast({
-        type: 'error',
-        message: 'PDF生成に失敗しました。もう一度お試しください。',
+        type: "error",
+        message: "PDF生成に失敗しました。もう一度お試しください。",
         duration: 4000,
       });
     } finally {
@@ -228,6 +238,24 @@ export default function PublicItineraryView({
           ))}
         </div>
 
+        {/* コメントセクション（Phase 11） */}
+        {itinerary.id ? (
+          <div className="mt-12">
+            <CommentList
+              itineraryId={itinerary.id}
+              initialComments={initialComments}
+              initialTotal={initialCommentCount}
+              currentUserId={currentUserId}
+            />
+          </div>
+        ) : (
+          <div className="mt-12 rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-gray-500">
+              コメント機能は現在利用できません
+            </p>
+          </div>
+        )}
+
         {/* フッター */}
         <div className="mt-12 pt-6 border-t text-center">
           <p className="text-sm text-gray-500">
@@ -262,7 +290,7 @@ export default function PublicItineraryView({
 
         {/* PDF専用レイアウト（非表示） */}
         {showPreview && (
-          <div 
+          <div
             ref={pdfContainerRef}
             className="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none"
             aria-hidden="true"

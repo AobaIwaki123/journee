@@ -5,6 +5,7 @@ import { User, Mail, Calendar, LogOut, Trash2, AlertCircle } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { clearAllAppData } from '@/lib/utils/storage';
+import { formatDate as formatDateUtil } from '@/lib/utils/date-utils';
 
 /**
  * アカウント設定コンポーネント
@@ -34,11 +35,7 @@ export const AccountSettings: React.FC = () => {
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return '不明';
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return formatDateUtil(dateString, 'full');
   };
 
   return (

@@ -276,6 +276,41 @@ export interface Database {
           updated_at?: string;
         };
       };
+      comments: {
+        Row: {
+          id: string;
+          itinerary_id: string;
+          user_id: string | null;
+          author_name: string | null;
+          content: string;
+          is_anonymous: boolean | null;
+          is_reported: boolean | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          itinerary_id: string;
+          user_id?: string | null;
+          author_name?: string | null;
+          content: string;
+          is_anonymous?: boolean | null;
+          is_reported?: boolean | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          itinerary_id?: string;
+          user_id?: string | null;
+          author_name?: string | null;
+          content?: string;
+          is_anonymous?: boolean | null;
+          is_reported?: boolean | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

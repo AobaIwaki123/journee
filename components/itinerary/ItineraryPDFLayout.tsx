@@ -173,7 +173,7 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
       {/* フッター */}
       <footer className="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-500">
         <p>Journee - AIとともに旅のしおりを作成</p>
-        <p className="mt-1">作成日: {new Date(itinerary.createdAt).toLocaleDateString('ja-JP')}</p>
+        <p className="mt-1">作成日: {formatDate(itinerary.createdAt, 'short')}</p>
       </footer>
     </div>
   );

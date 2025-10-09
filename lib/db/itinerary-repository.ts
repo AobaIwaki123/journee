@@ -325,6 +325,24 @@ export class ItineraryRepository {
   }
 
   /**
+   * 公開しおりの取得（IDベース）
+   */
+  async getPublicItineraryById(id: string): Promise<ItineraryData | null> {
+    const { data, error } = await supabase
+      .from("itineraries")
+      .select("*")
+      .eq("id", id)
+      .eq("is_public", true)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return this.dbToItinerary(data);
+  }
+
+  /**
    * しおり一覧の取得
    */
   async listItineraries(

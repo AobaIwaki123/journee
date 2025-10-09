@@ -207,10 +207,11 @@ export const MessageList: React.FC = () => {
                         : "text-gray-500"
                     }`}
                   >
-                    {new Date(message.timestamp).toLocaleTimeString("ja-JP", {
+                    {toSafeDate(message.timestamp)?.toLocaleTimeString("ja-JP", {
                       hour: "2-digit",
                       minute: "2-digit",
-                    })}
+                    }) || ""}
+                    
                   </p>
                 </div>
               </div>
