@@ -219,7 +219,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
                   placeholder="例: ログインボタンが動作しない"
                   maxLength={100}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {title.length}/100文字
@@ -242,7 +242,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
                   rows={6}
                   maxLength={2000}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 resize-none transition-all"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {description.length}/2000文字

@@ -90,7 +90,7 @@ export default function CommentForm({
           onChange={(e) => setAuthorName(e.target.value)}
           placeholder="名前を入力してください"
           maxLength={100}
-          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
           disabled={isSubmitting}
           required
         />
@@ -111,7 +111,7 @@ export default function CommentForm({
           placeholder="コメントを入力..."
           rows={3}
           maxLength={maxLength}
-          className="mt-1 w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
           disabled={isSubmitting}
           required
         />
