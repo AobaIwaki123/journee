@@ -2,7 +2,10 @@
  * モックユーザーをSupabaseに一括登録するスクリプト
  *
  * 使用方法：
- * npx ts-node scripts/seed-mock-users.ts
+ * npm run seed:mock-users
+ *
+ * または直接実行：
+ * npx tsx scripts/seed-mock-users.ts
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -36,6 +39,9 @@ async function seedMockUsers() {
   let skipCount = 0;
   let errorCount = 0;
 
+  type UserRow = Database["public"]["Tables"]["users"]["Row"];
+  type UserInsert = Database["public"]["Tables"]["users"]["Insert"];
+
   for (const [key, mockUser] of Object.entries(MOCK_USERS)) {
     console.log(`Processing: ${mockUser.name} (${mockUser.email})`);
 
@@ -54,20 +60,24 @@ async function seedMockUsers() {
       }
 
       if (existingUser) {
-        console.log(`  ⏭️  Already exists (ID: ${existingUser.id})`);
+        console.log(
+          `  ⏭️  Already exists (ID: ${(existingUser as UserRow).id})`
+        );
         skipCount++;
         continue;
       }
 
       // ユーザーの作成
+      const insertData: UserInsert = {
+        email: mockUser.email,
+        name: mockUser.name,
+        image: mockUser.image,
+        google_id: mockUser.googleId,
+      };
+
       const { data: newUser, error: insertError } = await supabase
         .from("users")
-        .insert({
-          email: mockUser.email,
-          name: mockUser.name,
-          image: mockUser.image,
-          google_id: mockUser.googleId,
-        })
+        .insert(insertData as any)
         .select()
         .single();
 
@@ -77,7 +87,7 @@ async function seedMockUsers() {
         continue;
       }
 
-      console.log(`  ✅ Created (ID: ${newUser.id})`);
+      console.log(`  ✅ Created (ID: ${(newUser as UserRow).id})`);
       successCount++;
     } catch (error) {
       console.error(`  ❌ Unexpected error:`, error);

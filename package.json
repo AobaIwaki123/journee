@@ -26,7 +26,7 @@
     "docker:status": "bash scripts/docker-dev.sh status",
     "deploy:gcr": "bash scripts/deploy-gcr.sh",
     "release": "bash scripts/tag-version.sh",
-    "seed:mock-users": "npx ts-node scripts/seed-mock-users.ts"
+    "seed:mock-users": "npx tsx scripts/seed-mock-users.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
