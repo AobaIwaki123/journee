@@ -162,14 +162,22 @@ export default function PublicItineraryView({
         </div>
 
         {/* コメントセクション（Phase 11） */}
-        <div className="mt-12">
-          <CommentList
-            itineraryId={itinerary.id!}
-            initialComments={initialComments}
-            initialTotal={initialCommentCount}
-            currentUserId={currentUserId}
-          />
-        </div>
+        {itinerary.id ? (
+          <div className="mt-12">
+            <CommentList
+              itineraryId={itinerary.id}
+              initialComments={initialComments}
+              initialTotal={initialCommentCount}
+              currentUserId={currentUserId}
+            />
+          </div>
+        ) : (
+          <div className="mt-12 rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-gray-500">
+              コメント機能は現在利用できません
+            </p>
+          </div>
+        )}
 
         {/* フッター */}
         <div className="mt-12 pt-6 border-t text-center">

@@ -45,7 +45,9 @@ export default function CommentList({
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch comments");
+          const errorData = await response.json();
+          console.error("Failed to fetch comments:", errorData);
+          throw new Error(errorData.error || "Failed to fetch comments");
         }
 
         const data: PaginatedCommentsResponse = await response.json();
@@ -75,6 +77,7 @@ export default function CommentList({
     isAnonymous: boolean;
     authorName?: string;
   }) => {
+    console.log("Submitting comment for itinerary:", itineraryId);
     const response = await fetch(`/api/itinerary/${itineraryId}/comments`, {
       method: "POST",
       headers: {
@@ -85,6 +88,7 @@ export default function CommentList({
 
     if (!response.ok) {
       const error = await response.json();
+      console.error("Failed to submit comment:", error);
       throw new Error(error.error || "コメントの投稿に失敗しました");
     }
 
