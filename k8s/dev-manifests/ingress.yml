@@ -17,17 +17,17 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: journee
+            name: journee-dev
             port:
               number: 80
   # 旧Dev環境 (互換性のため残す)
-  - host: journee.aooba.net
+  - host: journee-dev.aooba.net
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: journee
+            name: journee-dev
             port:
               number: 80

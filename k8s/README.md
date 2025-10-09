@@ -42,7 +42,7 @@ $ argocd app sync journee-dev   # 手動で今すぐ同期したい時
 
 ```sh
 # 認証サービス専用のPodをデプロイ
-$ kubectl apply -f k8s/manifests/auth-service.yml
+$ kubectl apply -f k8s/auth-service.yml
 
 # Ingressの確認
 $ kubectl get ingress -n journee
