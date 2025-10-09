@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: multi-deploy.journee.aooba.net
+  - host: journee-multi-deploy.aooba.net
     http:
       paths:
       - path: /

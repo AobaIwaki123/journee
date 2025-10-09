@@ -22,7 +22,7 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /app/secret/key.json
             - name: NEXTAUTH_URL
-              value: https://multi-deploy.journee.aooba.net
+              value: https://journee-multi-deploy.aooba.net
             # ブランチモード設定（モック認証を有効化）
             - name: ENABLE_MOCK_AUTH
               value: "true"
@@ -68,7 +68,7 @@ spec:
                   name: journee-env
                   key: SUPABASE_SERVICE_ROLE_KEY
             - name: NEXT_PUBLIC_BASE_URL
-              value: https://multi-deploy.journee.aooba.net
+              value: https://journee-multi-deploy.aooba.net
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:

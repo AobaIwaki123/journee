@@ -110,7 +110,7 @@ jobs:
             yq -i '.spec.rules[0].http.paths[0].backend.service.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/ingress.yml"
             # Update host to use 6-character hash
             BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
-            yq -i '.spec.rules[0].host = "'"$BRANCH_HASH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/ingress.yml"
+            yq -i '.spec.rules[0].host = "${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'.aooba.net"' "$MANIFEST_DIR/ingress.yml"
             echo "✅ Updated Ingress name and host in ingress.yml (using hash: $BRANCH_HASH)"
           fi
 
@@ -146,8 +146,8 @@ jobs:
           # Update NEXT_PUBLIC_BASE_URL to branch-specific URL with hash
           if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
             BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
-            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXT_PUBLIC_BASE_URL") | .value) = "https://'"$BRANCH_HASH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/deployment.yml"
-            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXTAUTH_URL") | .value) = "https://'"$BRANCH_HASH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXT_PUBLIC_BASE_URL") | .value) = "https://${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'.aooba.net"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXTAUTH_URL") | .value) = "https://${{ env.IMAGE_NAME }}-'"$BRANCH_HASH"'.aooba.net"' "$MANIFEST_DIR/deployment.yml"
             echo "✅ Updated NEXT_PUBLIC_BASE_URL and NEXTAUTH_URL to branch-specific URL (using hash: $BRANCH_HASH)"
           fi
 
