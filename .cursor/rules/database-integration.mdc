@@ -1,0 +1,571 @@
+---
+globs: "lib/db/**/*,app/api/itinerary/**/*,app/api/migration/**/*"
+description: Supabaseデータベース統合とデータ永続化のパターン
+---
+
+# データベース統合 - Supabase
+
+## 概要
+Supabase (PostgreSQL) を使用したしおりデータの永続化。LocalStorageからの段階的マイグレーションをサポート。
+
+## アーキテクチャ
+
+### データフロー
+```
+┌────────────────────────────────────────┐
+│ クライアント                            │
+│ ┌────────────────────────────────────┐ │
+│ │ コンポーネント                      │ │
+│ │ - ItineraryPreview.tsx             │ │
+│ │ - SaveButton.tsx                   │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │ fetch('/api/itinerary/save')
+┌──────────────▼─────────────────────────┐
+│ APIルート                               │
+│ ┌────────────────────────────────────┐ │
+│ │ app/api/itinerary/save/route.ts   │ │
+│ │ - リクエスト処理                    │ │
+│ │ - 認証チェック                      │ │
+│ │ - リポジトリ呼び出し                │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │
+┌──────────────▼─────────────────────────┐
+│ リポジトリ層                            │
+│ ┌────────────────────────────────────┐ │
+│ │ lib/db/itinerary-repository.ts     │ │
+│ │ - CRUD操作                         │ │
+│ │ - トランザクション管理              │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │
+┌──────────────▼─────────────────────────┐
+│ Supabaseクライアント                    │
+│ ┌────────────────────────────────────┐ │
+│ │ lib/db/supabase.ts                 │ │
+│ │ - クライアント初期化                │ │
+│ │ - 接続管理                          │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │
+┌──────────────▼─────────────────────────┐
+│ Supabase (PostgreSQL)                  │
+│ - itineraries テーブル                 │
+│ - Row Level Security (RLS)             │
+│ - インデックス最適化                    │
+└────────────────────────────────────────┘
+```
+
+## ファイル構成
+
+### データベース層 (`lib/db/`)
+- [supabase.ts](mdc:lib/db/supabase.ts) - Supabaseクライアント初期化
+- [itinerary-repository.ts](mdc:lib/db/itinerary-repository.ts) - しおりデータリポジトリ
+- [migration.ts](mdc:lib/db/migration.ts) - LocalStorageからSupabaseへのマイグレーション
+- [schema.sql](mdc:lib/db/schema.sql) - データベーススキーマ定義
+- [functions.sql](mdc:lib/db/functions.sql) - データベース関数（検索、統計など）
+- [README.md](mdc:lib/db/README.md) - データベース機能ドキュメント
+
+### APIルート (`app/api/`)
+- `itinerary/save/route.ts` - しおり保存
+- `itinerary/load/route.ts` - しおり読み込み
+- `itinerary/list/route.ts` - しおり一覧取得
+- `itinerary/delete/route.ts` - しおり削除
+- `itinerary/publish/route.ts` - しおり公開
+- `itinerary/unpublish/route.ts` - しおり非公開化
+- `migration/route.ts` - マイグレーション実行
+
+## Supabaseクライアント (`lib/db/supabase.ts`)
+
+### クライアント初期化
+```typescript
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '@/types/database';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export const supabase = createClient<Database>(
+  supabaseUrl,
+  supabaseAnonKey
+);
+```
+
+### 使用例
+```typescript
+import { supabase } from '@/lib/db/supabase';
+
+// データ取得
+const { data, error } = await supabase
+  .from('itineraries')
+  .select('*')
+  .eq('user_id', userId);
+
+// データ挿入
+const { data, error } = await supabase
+  .from('itineraries')
+  .insert({ ... })
+  .select()
+  .single();
+```
+
+## リポジトリパターン (`lib/db/itinerary-repository.ts`)
+
+### ItineraryRepository クラス
+```typescript
+import { ItineraryRepository } from '@/lib/db/itinerary-repository';
+
+const repository = new ItineraryRepository();
+
+// しおり保存
+const savedItinerary = await repository.save(userId, itineraryData);
+
+// しおり取得
+const itinerary = await repository.findById(itineraryId);
+
+// しおり一覧取得
+const itineraries = await repository.findByUserId(userId, {
+  sortBy: 'updated_at',
+  sortOrder: 'desc',
+  limit: 10,
+  offset: 0,
+});
+
+// しおり削除
+await repository.delete(itineraryId, userId);
+
+// しおり公開
+await repository.publish(itineraryId, userId);
+
+// しおり非公開化
+await repository.unpublish(itineraryId, userId);
+
+// 公開しおり取得
+const publicItinerary = await repository.findPublicBySlug(slug);
+```
+
+### CRUD操作の型安全性
+```typescript
+// 保存操作
+async save(
+  userId: string,
+  itinerary: ItineraryData
+): Promise<ItineraryData> {
+  // バリデーション
+  if (!itinerary.title || !itinerary.destination) {
+    throw new Error('Title and destination are required');
+  }
+
+  // 既存チェック
+  const existing = itinerary.id 
+    ? await this.findById(itinerary.id) 
+    : null;
+
+  if (existing && existing.user_id !== userId) {
+    throw new Error('Permission denied');
+  }
+
+  // 保存処理
+  const { data, error } = await supabase
+    .from('itineraries')
+    .upsert({
+      id: itinerary.id,
+      user_id: userId,
+      title: itinerary.title,
+      destination: itinerary.destination,
+      data: itinerary, // JSONB型
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data.data as ItineraryData;
+}
+```
+
+## データベーススキーマ (`lib/db/schema.sql`)
+
+### itineraries テーブル
+```sql
+CREATE TABLE itineraries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  destination TEXT NOT NULL,
+  data JSONB NOT NULL,
+  is_public BOOLEAN DEFAULT FALSE,
+  slug TEXT UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- インデックス
+CREATE INDEX idx_itineraries_user_id ON itineraries(user_id);
+CREATE INDEX idx_itineraries_slug ON itineraries(slug) WHERE is_public = TRUE;
+CREATE INDEX idx_itineraries_updated_at ON itineraries(updated_at DESC);
+
+-- Row Level Security (RLS)
+ALTER TABLE itineraries ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: ユーザーは自分のしおりのみ表示可能
+CREATE POLICY "Users can view own itineraries"
+  ON itineraries FOR SELECT
+  USING (user_id = current_user);
+
+-- ポリシー: ユーザーは自分のしおりのみ挿入可能
+CREATE POLICY "Users can insert own itineraries"
+  ON itineraries FOR INSERT
+  WITH CHECK (user_id = current_user);
+
+-- ポリシー: ユーザーは自分のしおりのみ更新可能
+CREATE POLICY "Users can update own itineraries"
+  ON itineraries FOR UPDATE
+  USING (user_id = current_user);
+
+-- ポリシー: ユーザーは自分のしおりのみ削除可能
+CREATE POLICY "Users can delete own itineraries"
+  ON itineraries FOR DELETE
+  USING (user_id = current_user);
+
+-- ポリシー: 公開しおりは全員が閲覧可能
+CREATE POLICY "Anyone can view public itineraries"
+  ON itineraries FOR SELECT
+  USING (is_public = TRUE);
+```
+
+## APIルート実装パターン
+
+### 保存エンドポイント (`app/api/itinerary/save/route.ts`)
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth/session';
+import { ItineraryRepository } from '@/lib/db/itinerary-repository';
+
+export async function POST(req: NextRequest) {
+  try {
+    // 認証チェック
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // リクエストボディ取得
+    const itinerary: ItineraryData = await req.json();
+
+    // バリデーション
+    if (!itinerary.title || !itinerary.destination) {
+      return NextResponse.json(
+        { error: 'ValidationError', message: 'タイトルと行き先は必須です' },
+        { status: 400 }
+      );
+    }
+
+    // 保存処理
+    const repository = new ItineraryRepository();
+    const savedItinerary = await repository.save(user.id, itinerary);
+
+    return NextResponse.json(savedItinerary);
+  } catch (error) {
+    console.error('Save itinerary error:', error);
+    return NextResponse.json(
+      { 
+        error: 'InternalServerError',
+        message: 'しおりの保存に失敗しました'
+      },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 一覧取得エンドポイント (`app/api/itinerary/list/route.ts`)
+```typescript
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // クエリパラメータ取得
+    const searchParams = req.nextUrl.searchParams;
+    const sortBy = searchParams.get('sortBy') || 'updated_at';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const offset = parseInt(searchParams.get('offset') || '0');
+
+    // 取得処理
+    const repository = new ItineraryRepository();
+    const itineraries = await repository.findByUserId(user.id, {
+      sortBy,
+      sortOrder,
+      limit,
+      offset,
+    });
+
+    return NextResponse.json(itineraries);
+  } catch (error) {
+    console.error('List itineraries error:', error);
+    return NextResponse.json(
+      { error: 'InternalServerError' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## マイグレーション (`lib/db/migration.ts`)
+
+### LocalStorageからSupabaseへのマイグレーション
+```typescript
+import { migrateFromLocalStorage } from '@/lib/db/migration';
+
+// マイグレーション実行
+const result = await migrateFromLocalStorage(userId);
+
+console.log(`Migrated ${result.migratedCount} itineraries`);
+console.log(`Skipped ${result.skippedCount} itineraries`);
+console.log(`Failed ${result.failedCount} itineraries`);
+```
+
+### マイグレーション処理
+```typescript
+export async function migrateFromLocalStorage(
+  userId: string
+): Promise<MigrationResult> {
+  const repository = new ItineraryRepository();
+  const result: MigrationResult = {
+    migratedCount: 0,
+    skippedCount: 0,
+    failedCount: 0,
+    errors: [],
+  };
+
+  try {
+    // LocalStorageから全しおりを取得
+    const localItineraries = getAllItinerariesFromLocalStorage();
+
+    for (const itinerary of localItineraries) {
+      try {
+        // Supabaseに既に存在するか確認
+        const existing = await repository.findById(itinerary.id);
+        
+        if (existing) {
+          result.skippedCount++;
+          continue;
+        }
+
+        // Supabaseに保存
+        await repository.save(userId, itinerary);
+        result.migratedCount++;
+      } catch (error) {
+        result.failedCount++;
+        result.errors.push({
+          itineraryId: itinerary.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // LocalStorageをクリア
+    if (result.migratedCount > 0) {
+      clearLocalStorageItineraries();
+    }
+  } catch (error) {
+    throw new Error('Migration failed: ' + (error as Error).message);
+  }
+
+  return result;
+}
+```
+
+## 型定義 (`types/database.ts`)
+
+### Database型
+```typescript
+export interface Database {
+  public: {
+    Tables: {
+      itineraries: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          destination: string;
+          data: ItineraryData;
+          is_public: boolean;
+          slug: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          destination: string;
+          data: ItineraryData;
+          is_public?: boolean;
+          slug?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          destination?: string;
+          data?: ItineraryData;
+          is_public?: boolean;
+          slug?: string | null;
+          updated_at?: string;
+        };
+      };
+    };
+  };
+}
+```
+
+## 環境変数
+
+### 必須設定
+```env
+# .env.local
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 取得方法
+1. [Supabase](https://supabase.com/) にアクセス
+2. プロジェクト作成
+3. Settings → API → Project URL と anon public キーを取得
+4. `.env.local`に設定
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ Row Level Security (RLS) を必ず有効化
+- ✅ リポジトリパターンでビジネスロジックを分離
+- ✅ JSONB型でしおりデータ全体を保存
+- ✅ インデックスで検索パフォーマンスを最適化
+- ✅ トランザクション内で複数操作を実行
+- ✅ エラーハンドリングを適切に実装
+- ✅ 型定義でデータ構造を明確化
+
+### DON'T（非推奨）
+- ❌ RLSなしでテーブルを公開
+- ❌ SQLを直接APIルートに記述
+- ❌ 正規化しすぎてJOINが多発
+- ❌ インデックスなしで検索
+- ❌ エラーを無視する
+- ❌ any型を使用する
+- ❌ 公開しおりに個人情報を含める
+
+## パフォーマンス最適化
+
+### インデックス戦略
+```sql
+-- ユーザーIDで検索（よく使用）
+CREATE INDEX idx_itineraries_user_id ON itineraries(user_id);
+
+-- 公開しおりのスラグで検索
+CREATE INDEX idx_itineraries_slug ON itineraries(slug) WHERE is_public = TRUE;
+
+-- 更新日時でソート
+CREATE INDEX idx_itineraries_updated_at ON itineraries(updated_at DESC);
+```
+
+### クエリ最適化
+```typescript
+// 必要なカラムのみ選択
+const { data } = await supabase
+  .from('itineraries')
+  .select('id, title, destination, updated_at')
+  .eq('user_id', userId);
+
+// ページネーション
+const { data } = await supabase
+  .from('itineraries')
+  .select('*')
+  .eq('user_id', userId)
+  .order('updated_at', { ascending: false })
+  .range(0, 19); // 0-19件目
+```
+
+### JSONB検索
+```sql
+-- JSONB内のフィールドで検索
+SELECT * FROM itineraries
+WHERE data->>'destination' = '東京';
+
+-- JSONB内の配列要素で検索
+SELECT * FROM itineraries
+WHERE data->'schedule' @> '[{"dayNumber": 1}]'::jsonb;
+```
+
+## セキュリティ
+
+### Row Level Security (RLS)
+- ユーザーは自分のしおりのみアクセス可能
+- 公開しおりは全員が閲覧可能
+- 挿入・更新・削除は所有者のみ
+
+### データバリデーション
+```typescript
+// サーバーサイドでバリデーション
+function validateItinerary(itinerary: ItineraryData): boolean {
+  if (!itinerary.title || itinerary.title.trim() === '') {
+    throw new Error('Title is required');
+  }
+  
+  if (!itinerary.destination || itinerary.destination.trim() === '') {
+    throw new Error('Destination is required');
+  }
+  
+  if (itinerary.schedule && !Array.isArray(itinerary.schedule)) {
+    throw new Error('Schedule must be an array');
+  }
+  
+  return true;
+}
+```
+
+### SQLインジェクション対策
+- Supabase SDKを使用（パラメータ化クエリ）
+- 生SQLは使用しない
+- ユーザー入力を直接クエリに埋め込まない
+
+## トラブルシューティング
+
+### "relation does not exist"
+- スキーマが適切に作成されているか確認
+- Supabase SQL Editorで [schema.sql](mdc:lib/db/schema.sql) を実行
+
+### "permission denied"
+- RLSポリシーが正しく設定されているか確認
+- ユーザー認証が正常に動作しているか確認
+
+### "JSONB parse error"
+- しおりデータがJSON形式として有効か確認
+- 循環参照がないか確認
+
+### 接続エラー
+- 環境変数が正しく設定されているか確認
+- Supabaseプロジェクトが有効か確認
+- ネットワーク接続を確認
+
+## 参考リンク
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [PostgreSQL JSONB](https://www.postgresql.org/docs/current/datatype-json.html)
+- [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
+- [lib/db/README.md](mdc:lib/db/README.md) - 詳細な実装ガイド
+- [lib/db/schema.sql](mdc:lib/db/schema.sql) - スキーマ定義
+- [lib/db/itinerary-repository.ts](mdc:lib/db/itinerary-repository.ts) - リポジトリ実装

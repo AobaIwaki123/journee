@@ -13,92 +13,255 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - **言語**: TypeScript
 - **スタイリング**: Tailwind CSS
 - **状態管理**: Zustand
+- **データベース**: Supabase (PostgreSQL)
 - **認証**: NextAuth.js (Google OAuth)
+- **AI統合**: Google Gemini API, Anthropic Claude API
+- **PDF生成**: jsPDF
 - **UI**: lucide-react (アイコン)
 - **開発環境**: Docker
+- **テスト**: Playwright (E2E)
+- **デプロイ**: Google Cloud Run, Kubernetes
 
 ## ディレクトリ構造
 
 ### `/app` - Next.js App Router
-- [app/page.tsx](mdc:app/page.tsx) - メインページ（認証保護、チャット40% / しおり60%）
-- [app/layout.tsx](mdc:app/layout.tsx) - ルートレイアウト（AuthProvider統合済み）
-- [app/globals.css](mdc:app/globals.css) - グローバルスタイル
+
+#### ページ
+- [app/page.tsx](mdc:app/page.tsx) - メインページ（チャット+しおりプレビュー、リサイズ可能レイアウト）
+- [app/layout.tsx](mdc:app/layout.tsx) - ルートレイアウト（AuthProvider、グローバルスタイル統合）
+- [app/globals.css](mdc:app/globals.css) - グローバルスタイル（Tailwind設定含む）
+
+#### 認証・ユーザーページ
 - `/app/login` - ログインページ
   - [page.tsx](mdc:app/login/page.tsx) - Googleログイン画面
-- `/app/privacy` - プライバシーポリシー（Phase 2実装済み）
-- `/app/terms` - 利用規約（Phase 2実装済み）
-- `/app/api` - APIルート
-  - `/auth/[...nextauth]` - NextAuth.js認証エンドポイント
-    - [route.ts](mdc:app/api/auth/[...nextauth]/route.ts) - 認証API
-  - `/chat` - チャットAPI（Phase 3実装済み）
-    - [route.ts](mdc:app/api/chat/route.ts) - AIチャットエンドポイント（ストリーミング対応）
-  - `/health` - ヘルスチェック
-    - [route.ts](mdc:app/api/health/route.ts) - サービス稼働状況確認
-  - `/user/me` - ユーザー情報
-    - [route.ts](mdc:app/api/user/me/route.ts) - 現在のユーザー取得（認証必須）
+- `/app/mypage` - マイページ
+  - [page.tsx](mdc:app/mypage/page.tsx) - ユーザーのしおり一覧、統計情報
+- `/app/settings` - 設定ページ
+  - [page.tsx](mdc:app/settings/page.tsx) - アカウント、AI、一般設定
+
+#### しおり関連ページ
+- `/app/itineraries` - しおり一覧ページ
+  - [page.tsx](mdc:app/itineraries/page.tsx) - 全しおりの閲覧、フィルタリング、ソート
+- `/app/share/[slug]` - 公開しおり共有ページ
+  - [page.tsx](mdc:app/share/[slug]/page.tsx) - 公開しおりの閲覧
+  - [layout.tsx](mdc:app/share/[slug]/layout.tsx) - 共有ページレイアウト
+
+#### 静的ページ
+- `/app/privacy` - プライバシーポリシー
+  - [page.tsx](mdc:app/privacy/page.tsx)
+- `/app/terms` - 利用規約
+  - [page.tsx](mdc:app/terms/page.tsx)
+
+#### APIルート
+- `/app/api/auth/[...nextauth]` - NextAuth.js認証
+  - [route.ts](mdc:app/api/auth/[...nextauth]/route.ts) - Google OAuth認証エンドポイント
+- `/app/api/chat` - AIチャット
+  - [route.ts](mdc:app/api/chat/route.ts) - AIチャットエンドポイント（ストリーミング対応）
+- `/app/api/itinerary` - しおり管理API
+  - [save/route.ts](mdc:app/api/itinerary/save/route.ts) - しおり保存
+  - [load/route.ts](mdc:app/api/itinerary/load/route.ts) - しおり読み込み
+  - [list/route.ts](mdc:app/api/itinerary/list/route.ts) - しおり一覧取得
+  - [delete/route.ts](mdc:app/api/itinerary/delete/route.ts) - しおり削除
+  - [publish/route.ts](mdc:app/api/itinerary/publish/route.ts) - しおり公開
+  - [unpublish/route.ts](mdc:app/api/itinerary/unpublish/route.ts) - しおり非公開化
+- `/app/api/migration` - データベースマイグレーション
+  - [route.ts](mdc:app/api/migration/route.ts) - LocalStorageからSupabaseへのマイグレーション
+- `/app/api/health` - ヘルスチェック
+  - [route.ts](mdc:app/api/health/route.ts) - サービス稼働状況確認
+- `/app/api/user/me` - ユーザー情報
+  - [route.ts](mdc:app/api/user/me/route.ts) - 現在のユーザー取得（認証必須）
 
 ### `/components` - Reactコンポーネント
-- `/auth` - 認証コンポーネント（Phase 2実装済み）
+
+#### 認証コンポーネント
+- `/auth`
   - [AuthProvider.tsx](mdc:components/auth/AuthProvider.tsx) - NextAuthセッションプロバイダー
   - [LoginButton.tsx](mdc:components/auth/LoginButton.tsx) - Googleログインボタン
   - [UserMenu.tsx](mdc:components/auth/UserMenu.tsx) - ユーザーメニュー（ドロップダウン）
-- `/chat` - チャット機能
+
+#### チャット機能
+- `/chat`
   - [ChatBox.tsx](mdc:components/chat/ChatBox.tsx) - チャットコンテナ
-  - [MessageList.tsx](mdc:components/chat/MessageList.tsx) - メッセージ一覧
-  - [MessageInput.tsx](mdc:components/chat/MessageInput.tsx) - メッセージ入力
-  - [AISelector.tsx](mdc:components/chat/AISelector.tsx) - AIモデル選択
-- `/itinerary` - しおり機能
-  - [ItineraryPreview.tsx](mdc:components/itinerary/ItineraryPreview.tsx) - しおりプレビュー
-  - [DaySchedule.tsx](mdc:components/itinerary/DaySchedule.tsx) - 日程表示
-  - [SpotCard.tsx](mdc:components/itinerary/SpotCard.tsx) - 観光スポットカード
-- `/layout` - レイアウト
-  - [Header.tsx](mdc:components/layout/Header.tsx) - ヘッダーナビゲーション（認証機能統合済み）
-- `/settings` - 設定コンポーネント（Phase 3.6予定）
-  - SoundSettings.tsx - 効果音設定UI（音量調整、ON/OFF）
-- `/sound` - サウンドコンポーネント（Phase 3.6予定）
-  - SoundProvider.tsx - グローバル音声管理プロバイダー
-- `/ui` - 共通UIコンポーネント
+  - [MessageList.tsx](mdc:components/chat/MessageList.tsx) - メッセージ一覧表示
+  - [MessageInput.tsx](mdc:components/chat/MessageInput.tsx) - メッセージ入力フォーム
+  - [AISelector.tsx](mdc:components/chat/AISelector.tsx) - AIモデル選択UI
+
+#### しおり機能（拡張版）
+- `/itinerary`
+  - [ItineraryPreview.tsx](mdc:components/itinerary/ItineraryPreview.tsx) - しおりプレビュー表示
+  - [ItineraryHeader.tsx](mdc:components/itinerary/ItineraryHeader.tsx) - しおりヘッダー
+  - [ItinerarySummary.tsx](mdc:components/itinerary/ItinerarySummary.tsx) - しおり概要表示
+  - [DaySchedule.tsx](mdc:components/itinerary/DaySchedule.tsx) - 日程スケジュール表示
+  - [SpotCard.tsx](mdc:components/itinerary/SpotCard.tsx) - 観光スポットカード（読み取り専用）
+  - [EditableSpotCard.tsx](mdc:components/itinerary/EditableSpotCard.tsx) - 編集可能スポットカード
+  - [EditableTitle.tsx](mdc:components/itinerary/EditableTitle.tsx) - インライン編集可能タイトル
+  - [AddSpotForm.tsx](mdc:components/itinerary/AddSpotForm.tsx) - スポット追加フォーム
+  - [PhaseStatusBar.tsx](mdc:components/itinerary/PhaseStatusBar.tsx) - 計画フェーズ状態表示
+  - [PlanningProgress.tsx](mdc:components/itinerary/PlanningProgress.tsx) - 計画進捗表示
+  - [EmptyItinerary.tsx](mdc:components/itinerary/EmptyItinerary.tsx) - 空のしおり表示
+  - [MapView.tsx](mdc:components/itinerary/MapView.tsx) - Google Maps統合表示
+  - [SaveButton.tsx](mdc:components/itinerary/SaveButton.tsx) - しおり保存ボタン
+  - [ResetButton.tsx](mdc:components/itinerary/ResetButton.tsx) - しおりリセットボタン
+  - [ShareButton.tsx](mdc:components/itinerary/ShareButton.tsx) - しおり共有ボタン
+  - [UndoRedoButtons.tsx](mdc:components/itinerary/UndoRedoButtons.tsx) - 元に戻す/やり直しボタン
+  - [QuickActions.tsx](mdc:components/itinerary/QuickActions.tsx) - クイックアクションメニュー
+  - [PDFExportButton.tsx](mdc:components/itinerary/PDFExportButton.tsx) - PDF出力ボタン
+  - [PDFPreviewModal.tsx](mdc:components/itinerary/PDFPreviewModal.tsx) - PDF出力プレビューモーダル
+  - [ItineraryPDFLayout.tsx](mdc:components/itinerary/ItineraryPDFLayout.tsx) - PDF用レイアウト
+  - [PublicItineraryView.tsx](mdc:components/itinerary/PublicItineraryView.tsx) - 公開しおり表示
+  - [ItineraryList.tsx](mdc:components/itinerary/ItineraryList.tsx) - しおりリスト表示
+  - [ItineraryCard.tsx](mdc:components/itinerary/ItineraryCard.tsx) - しおりカード
+  - [ItineraryFilters.tsx](mdc:components/itinerary/ItineraryFilters.tsx) - しおりフィルタUI
+  - [ItinerarySortMenu.tsx](mdc:components/itinerary/ItinerarySortMenu.tsx) - しおりソートメニュー
+
+#### レイアウトコンポーネント
+- `/layout`
+  - [Header.tsx](mdc:components/layout/Header.tsx) - ヘッダーナビゲーション（認証機能統合）
+  - [ResizableLayout.tsx](mdc:components/layout/ResizableLayout.tsx) - リサイズ可能なレイアウトコンテナ
+  - [ResizablePanel.tsx](mdc:components/layout/ResizablePanel.tsx) - リサイズ可能パネル
+  - [DesktopLayout.tsx](mdc:components/layout/DesktopLayout.tsx) - デスクトップレイアウト
+  - [MobileLayout.tsx](mdc:components/layout/MobileLayout.tsx) - モバイルレイアウト
+  - [MobileTabSwitcher.tsx](mdc:components/layout/MobileTabSwitcher.tsx) - モバイルタブ切り替え
+  - [MobileMenu.tsx](mdc:components/layout/MobileMenu.tsx) - モバイルメニュー
+  - [AutoSave.tsx](mdc:components/layout/AutoSave.tsx) - 自動保存機能
+  - [StorageInitializer.tsx](mdc:components/layout/StorageInitializer.tsx) - ストレージ初期化
+
+#### マイページコンポーネント
+- `/mypage`
+  - [UserProfile.tsx](mdc:components/mypage/UserProfile.tsx) - ユーザープロフィール表示
+  - [UserStats.tsx](mdc:components/mypage/UserStats.tsx) - ユーザー統計情報
+  - [ItineraryCard.tsx](mdc:components/mypage/ItineraryCard.tsx) - マイページ用しおりカード
+  - [QuickActions.tsx](mdc:components/mypage/QuickActions.tsx) - クイックアクション
+
+#### 設定コンポーネント
+- `/settings`
+  - [GeneralSettings.tsx](mdc:components/settings/GeneralSettings.tsx) - 一般設定UI
+  - [AccountSettings.tsx](mdc:components/settings/AccountSettings.tsx) - アカウント設定UI
+  - [AISettings.tsx](mdc:components/settings/AISettings.tsx) - AI設定UI
+  - [SoundSettings.tsx](mdc:components/settings/SoundSettings.tsx) - 効果音設定UI
+  - [APIKeyModal.tsx](mdc:components/settings/APIKeyModal.tsx) - APIキー設定モーダル
+  - [index.ts](mdc:components/settings/index.ts) - 設定コンポーネントのエクスポート
+
+#### データベース関連
+- `/db`
+  - [MigrationPrompt.tsx](mdc:components/db/MigrationPrompt.tsx) - マイグレーションプロンプトUI
+
+#### 共通UIコンポーネント
+- `/ui`
   - [LoadingSpinner.tsx](mdc:components/ui/LoadingSpinner.tsx) - ローディングスピナー
-  - [ErrorNotification.tsx](mdc:components/ui/ErrorNotification.tsx) - エラー通知（Phase 3実装済み）
+  - [ErrorNotification.tsx](mdc:components/ui/ErrorNotification.tsx) - エラー通知
+  - [Toast.tsx](mdc:components/ui/Toast.tsx) - トースト通知
+  - [SaveStatus.tsx](mdc:components/ui/SaveStatus.tsx) - 保存状態表示
 
 ### `/lib` - ユーティリティ・ロジック
-- `/auth` - 認証ロジック（Phase 2実装済み）
+
+#### 認証ロジック
+- `/auth`
   - [auth-options.ts](mdc:lib/auth/auth-options.ts) - NextAuth設定（Google OAuth, JWT戦略）
-  - [session.ts](mdc:lib/auth/session.ts) - セッション管理ヘルパー（getSession, getCurrentUser）
+  - [session.ts](mdc:lib/auth/session.ts) - セッション管理ヘルパー
   - [README.md](mdc:lib/auth/README.md) - 認証機能ドキュメント
-- `/store` - Zustand状態管理
-  - [useStore.ts](mdc:lib/store/useStore.ts) - グローバルストア
-- `/ai` - AI統合（Phase 3実装済み）
-  - [gemini.ts](mdc:lib/ai/gemini.ts) - Google Gemini API統合（gemini-2.5-pro使用）
-  - [prompts.ts](mdc:lib/ai/prompts.ts) - プロンプト管理とレスポンスパース処理
-  - [test-client.ts](mdc:lib/ai/test-client.ts) - APIテスト用クライアント
-- `/sound` - サウンド管理（Phase 3.6予定）
-  - SoundManager.ts - 効果音再生・音量制御ユーティリティ
-- `/utils` - ユーティリティ関数
+
+#### 状態管理（Zustand）
+- `/store`
+  - [useStore.ts](mdc:lib/store/useStore.ts) - グローバルストア定義
+  - [useStore-helper.ts](mdc:lib/store/useStore-helper.ts) - ストアヘルパー関数
+  - `__tests__/` - ストアのユニットテスト
+
+#### AI統合
+- `/ai`
+  - [gemini.ts](mdc:lib/ai/gemini.ts) - Google Gemini API統合
+  - [claude.ts](mdc:lib/ai/claude.ts) - Anthropic Claude API統合
+  - [prompts.ts](mdc:lib/ai/prompts.ts) - プロンプト管理とレスポンスパース
+  - [models.ts](mdc:lib/ai/models.ts) - AIモデル定義と設定
+  - `__tests__/` - AIロジックのテスト
+
+#### データベース
+- `/db`
+  - [supabase.ts](mdc:lib/db/supabase.ts) - Supabaseクライアント初期化
+  - [itinerary-repository.ts](mdc:lib/db/itinerary-repository.ts) - しおりデータリポジトリ
+  - [migration.ts](mdc:lib/db/migration.ts) - データマイグレーションロジック
+  - [schema.sql](mdc:lib/db/schema.sql) - データベーススキーマ定義
+  - [functions.sql](mdc:lib/db/functions.sql) - データベース関数
+  - [README.md](mdc:lib/db/README.md) - データベース機能ドキュメント
+
+#### 実行ロジック
+- `/execution`
+  - [sequential-itinerary-builder.ts](mdc:lib/execution/sequential-itinerary-builder.ts) - しおり作成フロー実行
+
+#### 要件管理
+- `/requirements`
+  - [checklist-config.ts](mdc:lib/requirements/checklist-config.ts) - チェックリスト設定
+  - [checklist-utils.ts](mdc:lib/requirements/checklist-utils.ts) - チェックリストユーティリティ
+  - [extractors.ts](mdc:lib/requirements/extractors.ts) - 情報抽出ロジック
+
+#### モックデータ
+- `/mock-data`
+  - [itineraries.ts](mdc:lib/mock-data/itineraries.ts) - しおりモックデータ
+  - [recent-itineraries.ts](mdc:lib/mock-data/recent-itineraries.ts) - 最近のしおりモック
+  - [user-stats.ts](mdc:lib/mock-data/user-stats.ts) - ユーザー統計モック
+
+#### ユーティリティ関数
+- `/utils`
   - [api-client.ts](mdc:lib/utils/api-client.ts) - APIクライアントヘルパー
+  - [storage.ts](mdc:lib/utils/storage.ts) - LocalStorage管理
+  - [pdf-generator.ts](mdc:lib/utils/pdf-generator.ts) - PDF生成ユーティリティ
+  - [encryption.ts](mdc:lib/utils/encryption.ts) - 暗号化ユーティリティ
+  - [time-utils.ts](mdc:lib/utils/time-utils.ts) - 時間関連ユーティリティ
+  - [currency.ts](mdc:lib/utils/currency.ts) - 通貨フォーマット
+  - [budget-utils.ts](mdc:lib/utils/budget-utils.ts) - 予算計算ユーティリティ
+  - `__tests__/` - ユーティリティのテスト
 
 ### `/types` - TypeScript型定義
 - [chat.ts](mdc:types/chat.ts) - チャット関連の型
 - [itinerary.ts](mdc:types/itinerary.ts) - しおり関連の型
-- [auth.ts](mdc:types/auth.ts) - 認証関連の型（NextAuth拡張型定義）
-- [api.ts](mdc:types/api.ts) - API共通型定義（レスポンス、エラー）
-
-### `/public` - 静的ファイル
-- `/images` - 画像・アイコン
-- `/sounds` - 効果音ファイル（Phase 3.6予定）
-  - notification.mp3 - AI返信通知音
-  - send.mp3 - メッセージ送信音
-  - update.mp3 - しおり更新音
-  - error.mp3 - エラー通知音
-  - success.mp3 - 成功通知音
+- [auth.ts](mdc:types/auth.ts) - 認証関連の型（NextAuth拡張）
+- [api.ts](mdc:types/api.ts) - API共通型定義
+- [ai.ts](mdc:types/ai.ts) - AI関連の型
+- [database.ts](mdc:types/database.ts) - データベース型定義
+- [requirements.ts](mdc:types/requirements.ts) - 要件チェックリスト型
+- [settings.ts](mdc:types/settings.ts) - 設定関連の型
 
 ### `/docs` - ドキュメント
 - [API.md](mdc:docs/API.md) - API仕様書
-- [PHASE2_IMPLEMENTATION.md](mdc:docs/PHASE2_IMPLEMENTATION.md) - Phase 2実装レポート
-- [PHASE2_TESTING_GUIDE.md](mdc:docs/PHASE2_TESTING_GUIDE.md) - Phase 2テストガイド
-- [PHASE3_INTEGRATION_COMPLETE.md](mdc:docs/PHASE3_INTEGRATION_COMPLETE.md) - Phase 3統合レポート
-- [PHASE3_TESTING_GUIDE.md](mdc:docs/PHASE3_TESTING_GUIDE.md) - Phase 3テストガイド
-- [INTEGRATION_COMPLETE.md](mdc:docs/INTEGRATION_COMPLETE.md) - Phase 1 & 2統合レポート
+- [README.md](mdc:docs/README.md) - プロジェクトドキュメント
+- [PLAN.md](mdc:docs/PLAN.md) - 開発計画
+- [QUICK_START.md](mdc:docs/QUICK_START.md) - クイックスタートガイド
+- [DOCKER.md](mdc:docs/DOCKER.md) - Docker使用方法
+- [GCR_DEPLOYMENT.md](mdc:docs/GCR_DEPLOYMENT.md) - Google Cloud Run デプロイ手順
+- [BUG.md](mdc:docs/BUG.md) - バグトラッキング
+- [RELEASE.md](mdc:docs/RELEASE.md) - リリースノート
 
-### その他
+### `/e2e` - E2Eテスト
+- [map-toggle.spec.ts](mdc:e2e/map-toggle.spec.ts) - 地図表示トグルテスト
+- [test-command.spec.ts](mdc:e2e/test-command.spec.ts) - コマンドテスト
+- [playwright.config.ts](mdc:playwright.config.ts) - Playwright設定
+
+### `/k8s` - Kubernetes設定
+- `/manifests` - Kubernetesマニフェスト
+  - [deployment.yml](mdc:k8s/manifests/deployment.yml)
+  - [service.yml](mdc:k8s/manifests/service.yml)
+  - [ingress.yml](mdc:k8s/manifests/ingress.yml)
+  - [kustomization.yml](mdc:k8s/manifests/kustomization.yml)
+- `/argocd` - ArgoCD設定
+  - [app.yml](mdc:k8s/argocd/app.yml)
+- [secret.template.yml](mdc:k8s/secret.template.yml) - シークレットテンプレート
+- [README.md](mdc:k8s/README.md) - Kubernetes設定ドキュメント
+
+### `/scripts` - スクリプト
+- [deploy-gcr.sh](mdc:scripts/deploy-gcr.sh) - Google Cloud Runデプロイスクリプト
+- [docker-dev.sh](mdc:scripts/docker-dev.sh) - Docker開発環境起動
+
+### `/public` - 静的ファイル
+- `/images` - 画像・アイコン
+  - [README.md](mdc:public/images/README.md)
+- [manifest.json](mdc:public/manifest.json) - PWAマニフェスト
+
+### その他の重要ファイル
 - [middleware.ts](mdc:middleware.ts) - 認証ミドルウェア（保護されたルート自動チェック）
+- [next.config.js](mdc:next.config.js) - Next.js設定
+- [tailwind.config.ts](mdc:tailwind.config.ts) - Tailwind CSS設定
+- [tsconfig.json](mdc:tsconfig.json) - TypeScript設定
+- [docker-compose.yml](mdc:docker-compose.yml) - Docker Compose設定
+- [Dockerfile](mdc:Dockerfile) - 開発用Dockerfile
+- [Dockerfile.prod](mdc:Dockerfile.prod) - 本番用Dockerfile
+- [package.json](mdc:package.json) - NPM依存関係

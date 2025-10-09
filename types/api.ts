@@ -2,7 +2,8 @@
  * API関連の型定義
  */
 
-import type { ChatMessage, AIModel } from "./chat";
+import type { ChatMessage } from "./chat";
+import type { AIModelId } from "./ai";
 import type { ItineraryData, ItineraryPhase } from "./itinerary";
 
 /**
@@ -16,7 +17,7 @@ export interface ChatAPIRequest {
   /** 現在のしおりデータ */
   currentItinerary?: ItineraryData;
   /** 使用するAIモデル */
-  model?: AIModel;
+  model?: AIModelId;
   /** Claude APIキー（モデルがclaudeの場合） */
   claudeApiKey?: string;
   /** ストリーミングレスポンスを使用するか */
@@ -38,7 +39,7 @@ export interface ChatAPIResponse {
   /** 更新されたしおりデータ */
   itinerary?: ItineraryData;
   /** 使用したモデル */
-  model: AIModel;
+  model: AIModelId;
   /** トークン使用量 */
   usage?: {
     promptTokens: number;

@@ -46,12 +46,6 @@ export interface ChatSession {
 }
 
 /**
- * AI モデルの種類
- * @deprecated Use AIModelId from './ai' instead
- */
-export type AIModel = AIModelId;
-
-/**
  * AI設定
  */
 export interface AISettings {

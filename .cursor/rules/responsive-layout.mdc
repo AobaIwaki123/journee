@@ -1,0 +1,657 @@
+---
+globs: "components/layout/**/*"
+description: レスポンシブレイアウトとリサイズパネルの実装パターン
+---
+
+# レスポンシブレイアウト設計
+
+## 概要
+デスクトップとモバイルで最適化されたレイアウト。リサイズ可能なパネルによる柔軟なUI。
+
+## アーキテクチャ
+
+### レイアウト戦略
+```
+┌────────────────────────────────────────┐
+│ ブレークポイント判定                    │
+│ (useMediaQuery)                        │
+└────────────┬───────────────────────────┘
+             │
+      ┌──────┴──────┐
+      │             │
+┌─────▼─────┐ ┌────▼──────┐
+│ デスクトップ│ │ モバイル   │
+│ レイアウト  │ │ レイアウト │
+└───────────┘ └───────────┘
+      │             │
+      │             │
+┌─────▼─────┐ ┌────▼──────┐
+│ リサイズ可能│ │ タブ切り替え│
+│ パネル      │ │ UI        │
+│ 40% / 60%  │ │ チャット⇄  │
+│ チャット/   │ │ しおり     │
+│ しおり      │ │           │
+└───────────┘ └───────────┘
+```
+
+## ファイル構成
+
+### レイアウトコンポーネント (`components/layout/`)
+- [ResizableLayout.tsx](mdc:components/layout/ResizableLayout.tsx) - リサイズ可能レイアウトコンテナ
+- [ResizablePanel.tsx](mdc:components/layout/ResizablePanel.tsx) - リサイズ可能パネル
+- [DesktopLayout.tsx](mdc:components/layout/DesktopLayout.tsx) - デスクトップレイアウト
+- [MobileLayout.tsx](mdc:components/layout/MobileLayout.tsx) - モバイルレイアウト
+- [MobileTabSwitcher.tsx](mdc:components/layout/MobileTabSwitcher.tsx) - モバイルタブ切り替え
+- [MobileMenu.tsx](mdc:components/layout/MobileMenu.tsx) - モバイルメニュー
+- [Header.tsx](mdc:components/layout/Header.tsx) - ヘッダーナビゲーション
+- [AutoSave.tsx](mdc:components/layout/AutoSave.tsx) - 自動保存機能
+- [StorageInitializer.tsx](mdc:components/layout/StorageInitializer.tsx) - ストレージ初期化
+
+## ブレークポイント
+
+### 定義
+```typescript
+// Tailwindデフォルトブレークポイント
+const breakpoints = {
+  sm: '640px',   // スマートフォン（大）
+  md: '768px',   // タブレット
+  lg: '1024px',  // デスクトップ
+  xl: '1280px',  // デスクトップ（大）
+  '2xl': '1536px', // 超大画面
+};
+
+// プロジェクトで使用
+const isMobile = useMediaQuery('(max-width: 768px)');
+const isDesktop = useMediaQuery('(min-width: 769px)');
+```
+
+### 適用パターン
+```typescript
+// app/page.tsx
+'use client';
+
+import { useMediaQuery } from '@/lib/utils/use-media-query';
+import { DesktopLayout } from '@/components/layout/DesktopLayout';
+import { MobileLayout } from '@/components/layout/MobileLayout';
+
+export default function Home() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  return (
+    <>
+      {isMobile ? (
+        <MobileLayout />
+      ) : (
+        <DesktopLayout />
+      )}
+    </>
+  );
+}
+```
+
+## リサイズ可能レイアウト
+
+### ResizableLayout コンポーネント
+```typescript
+import { ResizableLayout } from '@/components/layout/ResizableLayout';
+
+<ResizableLayout
+  leftPanel={<ChatBox />}
+  rightPanel={<ItineraryPreview />}
+  defaultLeftWidth={40} // デフォルト40%
+  minLeftWidth={20}     // 最小20%
+  maxLeftWidth={80}     // 最大80%
+/>
+```
+
+### 実装パターン
+```typescript
+'use client';
+
+import { useState, useCallback } from 'react';
+import { ResizablePanel } from './ResizablePanel';
+
+interface ResizableLayoutProps {
+  leftPanel: React.ReactNode;
+  rightPanel: React.ReactNode;
+  defaultLeftWidth?: number;
+  minLeftWidth?: number;
+  maxLeftWidth?: number;
+}
+
+export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
+  leftPanel,
+  rightPanel,
+  defaultLeftWidth = 40,
+  minLeftWidth = 20,
+  maxLeftWidth = 80,
+}) => {
+  const [leftWidth, setLeftWidth] = useState(defaultLeftWidth);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleMouseDown = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const containerWidth = window.innerWidth;
+      const newLeftWidth = (e.clientX / containerWidth) * 100;
+
+      if (newLeftWidth >= minLeftWidth && newLeftWidth <= maxLeftWidth) {
+        setLeftWidth(newLeftWidth);
+      }
+    },
+    [isDragging, minLeftWidth, maxLeftWidth]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  return (
+    <div className="flex h-screen">
+      <ResizablePanel width={leftWidth}>
+        {leftPanel}
+      </ResizablePanel>
+
+      {/* リサイズハンドル */}
+      <div
+        className={`
+          w-1 cursor-col-resize bg-gray-300 hover:bg-blue-500
+          ${isDragging ? 'bg-blue-500' : ''}
+        `}
+        onMouseDown={handleMouseDown}
+      />
+
+      <ResizablePanel width={100 - leftWidth}>
+        {rightPanel}
+      </ResizablePanel>
+    </div>
+  );
+};
+```
+
+## デスクトップレイアウト
+
+### DesktopLayout コンポーネント
+```typescript
+import { DesktopLayout } from '@/components/layout/DesktopLayout';
+
+export default function Page() {
+  return <DesktopLayout />;
+}
+```
+
+### 特徴
+- リサイズ可能な2カラムレイアウト
+- チャット（左40%）/ しおり（右60%）
+- ドラッグでパネル幅を調整可能
+- 最小幅・最大幅の制限
+- スムーズなリサイズ
+
+### 実装
+```typescript
+'use client';
+
+import { ChatBox } from '@/components/chat/ChatBox';
+import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
+import { ResizableLayout } from './ResizableLayout';
+
+export const DesktopLayout: React.FC = () => {
+  return (
+    <div className="h-screen flex flex-col">
+      <Header />
+      <ResizableLayout
+        leftPanel={<ChatBox />}
+        rightPanel={<ItineraryPreview />}
+        defaultLeftWidth={40}
+        minLeftWidth={20}
+        maxLeftWidth={80}
+      />
+    </div>
+  );
+};
+```
+
+## モバイルレイアウト
+
+### MobileLayout コンポーネント
+```typescript
+import { MobileLayout } from '@/components/layout/MobileLayout';
+
+export default function Page() {
+  return <MobileLayout />;
+}
+```
+
+### 特徴
+- タブ切り替えUI（チャット ⇄ しおり）
+- フルスクリーン表示
+- スワイプジェスチャー対応（予定）
+- モバイルメニュー
+- 最適化されたタッチ操作
+
+### 実装
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { ChatBox } from '@/components/chat/ChatBox';
+import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
+import { MobileTabSwitcher } from './MobileTabSwitcher';
+import { MobileMenu } from './MobileMenu';
+
+type MobileTab = 'chat' | 'itinerary';
+
+export const MobileLayout: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<MobileTab>('chat');
+
+  return (
+    <div className="h-screen flex flex-col">
+      {/* ヘッダー + メニュー */}
+      <div className="flex items-center justify-between p-4 border-b">
+        <h1 className="text-xl font-bold">Journee</h1>
+        <MobileMenu />
+      </div>
+
+      {/* タブ切り替え */}
+      <MobileTabSwitcher
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+
+      {/* コンテンツ */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'chat' ? (
+          <ChatBox />
+        ) : (
+          <ItineraryPreview />
+        )}
+      </div>
+    </div>
+  );
+};
+```
+
+## モバイルタブ切り替え
+
+### MobileTabSwitcher コンポーネント
+```typescript
+import { MobileTabSwitcher } from '@/components/layout/MobileTabSwitcher';
+
+<MobileTabSwitcher
+  activeTab={activeTab}
+  onTabChange={setActiveTab}
+/>
+```
+
+### 実装
+```typescript
+'use client';
+
+import { MessageSquare, FileText } from 'lucide-react';
+
+interface MobileTabSwitcherProps {
+  activeTab: 'chat' | 'itinerary';
+  onTabChange: (tab: 'chat' | 'itinerary') => void;
+}
+
+export const MobileTabSwitcher: React.FC<MobileTabSwitcherProps> = ({
+  activeTab,
+  onTabChange,
+}) => {
+  return (
+    <div className="flex border-b">
+      <button
+        className={`
+          flex-1 py-3 flex items-center justify-center gap-2
+          ${activeTab === 'chat' 
+            ? 'border-b-2 border-blue-500 text-blue-500' 
+            : 'text-gray-500'}
+        `}
+        onClick={() => onTabChange('chat')}
+      >
+        <MessageSquare size={20} />
+        <span>チャット</span>
+      </button>
+
+      <button
+        className={`
+          flex-1 py-3 flex items-center justify-center gap-2
+          ${activeTab === 'itinerary' 
+            ? 'border-b-2 border-blue-500 text-blue-500' 
+            : 'text-gray-500'}
+        `}
+        onClick={() => onTabChange('itinerary')}
+      >
+        <FileText size={20} />
+        <span>しおり</span>
+      </button>
+    </div>
+  );
+};
+```
+
+## ヘッダーナビゲーション
+
+### Header コンポーネント
+```typescript
+import { Header } from '@/components/layout/Header';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <Header />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### 特徴
+- ロゴ表示
+- ナビゲーションリンク
+- ユーザーメニュー / ログインボタン
+- レスポンシブ対応
+- モバイルメニュー統合
+
+### 実装
+```typescript
+'use client';
+
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { UserMenu } from '@/components/auth/UserMenu';
+import { LoginButton } from '@/components/auth/LoginButton';
+
+export const Header: React.FC = () => {
+  const { data: session, status } = useSession();
+
+  return (
+    <header className="border-b bg-white">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        {/* ロゴ */}
+        <Link href="/" className="text-xl font-bold text-blue-600">
+          Journee
+        </Link>
+
+        {/* ナビゲーション（デスクトップ） */}
+        <nav className="hidden md:flex items-center gap-6">
+          <Link href="/itineraries" className="hover:text-blue-600">
+            しおり一覧
+          </Link>
+          <Link href="/mypage" className="hover:text-blue-600">
+            マイページ
+          </Link>
+          <Link href="/settings" className="hover:text-blue-600">
+            設定
+          </Link>
+        </nav>
+
+        {/* 認証UI */}
+        <div>
+          {status === 'loading' ? (
+            <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full" />
+          ) : session ? (
+            <UserMenu />
+          ) : (
+            <LoginButton />
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+```
+
+## 自動保存機能
+
+### AutoSave コンポーネント
+```typescript
+import { AutoSave } from '@/components/layout/AutoSave';
+
+export default function Page() {
+  return (
+    <>
+      <AutoSave interval={30000} /> {/* 30秒ごと */}
+      {/* メインコンテンツ */}
+    </>
+  );
+}
+```
+
+### 実装
+```typescript
+'use client';
+
+import { useEffect } from 'react';
+import { useStore } from '@/lib/store/useStore';
+import { saveItinerary } from '@/lib/utils/api-client';
+
+interface AutoSaveProps {
+  interval?: number; // ミリ秒
+}
+
+export const AutoSave: React.FC<AutoSaveProps> = ({ 
+  interval = 30000 // デフォルト30秒
+}) => {
+  const { currentItinerary, setSaveStatus } = useStore();
+
+  useEffect(() => {
+    if (!currentItinerary) return;
+
+    const timer = setInterval(async () => {
+      try {
+        setSaveStatus('saving');
+        await saveItinerary(currentItinerary);
+        setSaveStatus('saved');
+      } catch (error) {
+        console.error('Auto-save error:', error);
+        setSaveStatus('error');
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [currentItinerary, interval, setSaveStatus]);
+
+  return null; // UIなし
+};
+```
+
+## カスタムフック
+
+### useMediaQuery
+```typescript
+// lib/utils/use-media-query.ts
+import { useState, useEffect } from 'react';
+
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+
+    const listener = () => setMatches(media.matches);
+    media.addEventListener('change', listener);
+
+    return () => media.removeEventListener('change', listener);
+  }, [matches, query]);
+
+  return matches;
+}
+```
+
+### useWindowSize
+```typescript
+// lib/utils/use-window-size.ts
+import { useState, useEffect } from 'react';
+
+interface WindowSize {
+  width: number;
+  height: number;
+}
+
+export function useWindowSize(): WindowSize {
+  const [windowSize, setWindowSize] = useState<WindowSize>({
+    width: 0,
+    height: 0,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowSize;
+}
+```
+
+## Tailwind CSS活用
+
+### レスポンシブクラス
+```tsx
+<div className="
+  flex flex-col          /* モバイル: 縦並び */
+  md:flex-row            /* タブレット以上: 横並び */
+  lg:gap-6               /* デスクトップ: 間隔6 */
+">
+  <div className="
+    w-full                /* モバイル: 幅100% */
+    md:w-1/2              /* タブレット以上: 幅50% */
+    lg:w-2/5              /* デスクトップ: 幅40% */
+  ">
+    {/* コンテンツ */}
+  </div>
+</div>
+```
+
+### 条件付きスタイル
+```tsx
+<button className={`
+  px-4 py-2 rounded
+  ${isActive 
+    ? 'bg-blue-500 text-white' 
+    : 'bg-gray-200 text-gray-700'
+  }
+  hover:opacity-80
+  transition-opacity
+`}>
+  クリック
+</button>
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ モバイルファーストでデザイン
+- ✅ Tailwindのブレークポイントを使用
+- ✅ useMediaQueryでレイアウト切り替え
+- ✅ タッチ操作に十分な大きさのボタン（最低44x44px）
+- ✅ スワイプジェスチャーをサポート
+- ✅ 自動保存で離脱を防ぐ
+- ✅ ローディング状態を明確に表示
+
+### DON'T（非推奨）
+- ❌ デスクトップのみ考慮したレイアウト
+- ❌ JavaScriptでブレークポイントをハードコード
+- ❌ window.innerWidthを直接使用（SSR非対応）
+- ❌ 小さすぎるタッチターゲット
+- ❌ 横スクロールの発生
+- ❌ 保存なしでページ離脱
+- ❌ レスポンシブでのテスト不足
+
+## パフォーマンス最適化
+
+### レイアウトシフト防止
+```tsx
+// 高さを予約して CLS を防ぐ
+<div className="min-h-screen">
+  {content}
+</div>
+
+// Skeletonローダー使用
+{isLoading ? (
+  <SkeletonLoader />
+) : (
+  <Content />
+)}
+```
+
+### 動的インポート
+```typescript
+import dynamic from 'next/dynamic';
+
+// 重いコンポーネントは動的インポート
+const ItineraryPreview = dynamic(
+  () => import('@/components/itinerary/ItineraryPreview'),
+  { loading: () => <LoadingSpinner /> }
+);
+```
+
+## アクセシビリティ
+
+### キーボードナビゲーション
+```tsx
+<button
+  onClick={handleClick}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      handleClick();
+    }
+  }}
+  aria-label="しおりを保存"
+>
+  保存
+</button>
+```
+
+### ARIA属性
+```tsx
+<nav aria-label="メインナビゲーション">
+  <Link href="/itineraries">しおり一覧</Link>
+  <Link href="/mypage">マイページ</Link>
+</nav>
+
+<div role="tablist">
+  <button role="tab" aria-selected={activeTab === 'chat'}>
+    チャット
+  </button>
+</div>
+```
+
+## 参考リンク
+
+- [Tailwind CSS - Responsive Design](https://tailwindcss.com/docs/responsive-design)
+- [Next.js - Layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts)
+- [MDN - Media Queries](https://developer.mozilla.org/en-US/docs/Web/CSS/Media_Queries)
+- [components/layout/](mdc:components/layout/) - レイアウトコンポーネント

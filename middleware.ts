@@ -9,8 +9,6 @@ import { NextResponse } from "next/server";
  */
 export default withAuth(
   function middleware(req) {
-    // 認証済みユーザーのみアクセス可能
-    // 追加のロジックが必要な場合はここに記述
     return NextResponse.next();
   },
   {
@@ -21,7 +19,6 @@ export default withAuth(
        * @returns 認証済みの場合はtrue
        */
       authorized: ({ token }) => {
-        // トークンが存在する場合は認証済みとみなす
         return !!token;
       },
     },
@@ -33,36 +30,12 @@ export default withAuth(
 
 /**
  * ミドルウェアを適用するパスの設定
- *
- * Phase 2では基本的な認証保護のみを実装
- * 以下のパスは認証が必要：
- * - /api/* (公開APIとNextAuth APIを除く)
- * - /itineraries (しおり一覧ページ)
- * - /mypage (マイページ)
- * - /settings (設定ページ)
- *
- * 以下のパスは認証不要：
- * - /login
- * - /api/auth/*
- * - /privacy
- * - /terms
- * - 静的ファイル
+ * 認証が必要なパス：
+ * - /api/chat, /api/itinerary, /api/generate-pdf, /api/settings
+ * - /itineraries, /mypage, /settings
  */
 export const config = {
   matcher: [
-    /*
-     * マッチするパス:
-     * - /api/以下のすべて (ただし /api/auth/* と /api/health は除く)
-     * - /itineraries (しおり一覧ページ)
-     * - /mypage (マイページ)
-     * - /settings (設定ページ)
-     *
-     * マッチしないパス:
-     * - /api/auth/* (NextAuth.js)
-     * - /api/health (ヘルスチェック)
-     * - /_next/* (Next.jsの内部ファイル)
-     * - /favicon.ico, /robots.txt などの静的ファイル
-     */
     "/api/chat/:path*",
     "/api/itinerary/:path*",
     "/api/generate-pdf/:path*",
