@@ -6,7 +6,7 @@
 
 - Node.js 18.0以降
 - npm または yarn
-- Googleアカウント（OAuth設定用）
+- Googleアカウント（OAuth設定用、またはモック認証でスキップ可能）
 
 ---
 
@@ -36,6 +36,15 @@ NEXTAUTH_SECRET=<ランダムな文字列>
 # Google OAuth
 GOOGLE_CLIENT_ID=<Google CloudのクライアントID>
 GOOGLE_CLIENT_SECRET=<Google Cloudのクライアントシークレット>
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=<Supabase URL>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<Supabase Anon Key>
+SUPABASE_SERVICE_ROLE_KEY=<Supabase Service Role Key>
+
+# Google APIs
+GEMINI_API_KEY=<Gemini APIキー>
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<Google Maps APIキー>
 ```
 
 #### NEXTAUTH_SECRETの生成方法
@@ -44,58 +53,33 @@ GOOGLE_CLIENT_SECRET=<Google Cloudのクライアントシークレット>
 openssl rand -base64 32
 ```
 
-出力された文字列をコピーして `NEXTAUTH_SECRET` に設定してください。
-
 ---
 
 ## 🔑 Google OAuth設定
 
-> **💡 開発時のヒント**: Google OAuth設定が面倒な場合は、[モック認証機能](#-モック認証ブランチモード)を使用することで、この手順をスキップできます。
+> **💡 ヒント**: Google OAuth設定が面倒な場合は、[モック認証機能](#-モック認証ブランチモード)を使用してこの手順をスキップできます。
 
-### 1. Google Cloud Consoleにアクセス
+### 1. Google Cloud Console
 
-[Google Cloud Console](https://console.cloud.google.com/) にアクセスしてログインします。
+[Google Cloud Console](https://console.cloud.google.com/)にアクセスして新しいプロジェクトを作成。
 
-### 2. プロジェクトの作成
+### 2. OAuth同意画面の設定
 
-1. 上部のプロジェクト選択ドロップダウンをクリック
-2. 「新しいプロジェクト」を選択
-3. プロジェクト名を入力（例: journee-dev）
-4. 「作成」をクリック
+1. 「APIとサービス」→「OAuth同意画面」
+2. 「外部」を選択
+3. アプリ名、サポートメール、デベロッパー連絡先を入力
+4. テストユーザーを追加（自分のGoogleアカウント）
 
-### 3. OAuth同意画面の設定
+### 3. OAuth 2.0クライアントID作成
 
-1. 左側メニューから「APIとサービス」→「OAuth同意画面」を選択
-2. 「外部」を選択して「作成」をクリック
-3. 以下の項目を入力：
-   - **アプリ名**: Journee
-   - **ユーザーサポートメール**: あなたのメールアドレス
-   - **デベロッパーの連絡先情報**: あなたのメールアドレス
-4. 「保存して次へ」をクリック
-5. スコープは設定不要なので「保存して次へ」
-6. テストユーザーを追加（あなたのGoogleアカウント）
-7. 「保存して次へ」→「ダッシュボードに戻る」
-
-### 4. OAuth 2.0クライアントIDの作成
-
-1. 左側メニューから「APIとサービス」→「認証情報」を選択
-2. 上部の「+認証情報を作成」→「OAuth クライアントID」を選択
+1. 「APIとサービス」→「認証情報」
+2. 「+認証情報を作成」→「OAuth クライアントID」
 3. アプリケーションの種類：「ウェブアプリケーション」
-4. 名前：「Journee Web Client」
-5. **承認済みのリダイレクトURI**に以下を追加：
+4. **承認済みのリダイレクトURI**に以下を追加：
    ```
    http://localhost:3000/api/auth/callback/google
    ```
-6. 「作成」をクリック
-
-### 5. 認証情報をコピー
-
-1. クライアントIDとクライアントシークレットが表示されます
-2. これらをコピーして `.env.local` に貼り付けます：
-   ```env
-   GOOGLE_CLIENT_ID=<ここにクライアントID>
-   GOOGLE_CLIENT_SECRET=<ここにクライアントシークレット>
-   ```
+5. クライアントIDとシークレットを`.env.local`に貼り付け
 
 ---
 
@@ -119,86 +103,59 @@ http://localhost:3000
 
 ### 1. ログイン
 
-1. ブラウザで `http://localhost:3000` にアクセス
-2. 自動的にログインページにリダイレクトされます
-3. 「Googleでログイン」ボタンをクリック
-4. Googleアカウントを選択して認証
-5. メインページにリダイレクトされます
+1. `http://localhost:3000` にアクセス
+2. 「Googleでログイン」ボタンをクリック
+3. Googleアカウントを選択して認証
 
 ### 2. ユーザーメニュー
 
 1. 右上のアバター画像をクリック
-2. ドロップダウンメニューが表示されます
-3. ユーザー名とメールアドレスが表示されていることを確認
+2. ユーザー名とメールアドレスが表示されることを確認
 
 ### 3. ログアウト
 
-1. ユーザーメニューから「ログアウト」をクリック
-2. ログインページにリダイレクトされます
+ユーザーメニューから「ログアウト」をクリック
 
 ---
 
 ## 🎯 現在利用可能な機能
 
-### ✅ Phase 1 & 2 実装済み
+### ✅ Phase 1-10 実装済み
 
-- **認証システム**
-  - Googleアカウントでログイン
-  - セッション管理
-  - 自動ログインチェック
-
-- **基本レイアウト**
-  - ヘッダーナビゲーション
-  - ユーザーメニュー
-  - 左右分割レイアウト（チャット/プレビュー）
-
-### 🚧 次フェーズで実装予定
-
-- **Phase 3**: AIチャット機能
-- **Phase 4**: しおり保存機能
-- **Phase 5**: しおり詳細表示
+- **認証システム**: Googleアカウントログイン、セッション管理
+- **基本レイアウト**: ヘッダーナビゲーション、左右分割レイアウト
+- **AIチャット機能**: Gemini/Claude対応、リアルタイム応答
+- **しおり機能**: 作成・編集・保存・共有・PDF出力
+- **データベース統合**: Supabase (PostgreSQL)、データマイグレーション
+- **公開・共有**: 公開URL発行、OGP画像動的生成
 
 ---
 
 ## 🐛 トラブルシューティング
 
-### 問題: ログインできない
-
-**原因**: Google OAuthの設定が正しくない
+### ログインできない
 
 **解決方法**:
-1. `.env.local` のクライアントIDとシークレットを確認
-2. Google Cloud Consoleでリダイレクトが正しく設定されているか確認
-3. ブラウザのCookieをクリア
+1. `.env.local`のクライアントIDとシークレットを確認
+2. Google Cloud Consoleでリダイレクト設定確認
+3. ブラウザCookieをクリア
 
-### 問題: "Invalid redirect URI"エラー
-
-**原因**: リダイレクトURIが正しく設定されていない
+### "Invalid redirect URI"エラー
 
 **解決方法**:
-1. Google Cloud Consoleの認証情報を確認
-2. リダイレクトURIに以下が含まれているか確認：
-   ```
-   http://localhost:3000/api/auth/callback/google
-   ```
-3. 末尾のスラッシュがないことを確認
+リダイレクトURIが`http://localhost:3000/api/auth/callback/google`であることを確認（末尾スラッシュなし）
 
-### 問題: セッションが保存されない
-
-**原因**: `NEXTAUTH_SECRET` が設定されていない
+### セッションが保存されない
 
 **解決方法**:
-1. `.env.local` に `NEXTAUTH_SECRET` が設定されているか確認
+1. `.env.local`に`NEXTAUTH_SECRET`が設定されているか確認
 2. 開発サーバーを再起動
 
-### 問題: ページが真っ白
-
-**原因**: ビルドエラーまたはJavaScriptエラー
+### ページが真っ白
 
 **解決方法**:
 1. ブラウザの開発者ツールでコンソールエラーを確認
-2. ターミナルのエラーメッセージを確認
-3. 依存関係を再インストール：
+2. 依存関係を再インストール：
    ```bash
    rm -rf node_modules package-lock.json
    npm install
@@ -209,58 +166,37 @@ http://localhost:3000
 ## 📚 詳細ドキュメント
 
 - [API仕様書](./API.md)
-- [Phase 1 & 2 統合レポート](./PHASE1_PHASE2_INTEGRATION.md)
-- [Phase 2 実装レポート](./PHASE2_IMPLEMENTATION.md)
+- [実装計画](./PLAN.md)
+- [コーディングガイドライン](./GUIDELINE.md)
+- [データベーススキーマ](./SCHEMA.md)
 
 ---
 
 ## 💡 開発のヒント
 
-### ホットリロード
-
-ファイルを編集すると自動的にブラウザが更新されます。
-
-### TypeScriptエラーチェック
+### コマンド一覧
 
 ```bash
-npm run build
-```
-
-### Lintチェック
-
-```bash
-npm run lint
+npm run dev          # 開発サーバー起動
+npm run build        # TypeScriptエラーチェック
+npm run lint         # Lintチェック
+npm test             # テスト実行
 ```
 
 ### 開発者ツール
 
-- **React Developer Tools**: コンポーネント構造の確認
-- **Redux DevTools**: 状態管理の確認（Phase 3以降）
-
----
-
-## 🎉 次のステップ
-
-Phase 1 & 2の実装が完了しました！
-
-次は **Phase 3: AI統合** で以下を実装します：
-
-- Gemini API統合
-- チャット機能
-- リアルタイムAI応答
-- しおりデータの構造化
-
-開発に参加したい方は、issueまたはPull Requestをお待ちしています！
+- **React Developer Tools**: コンポーネント構造確認
+- **Redux DevTools**: 状態管理確認（Zustand）
 
 ---
 
 ## 🧪 モック認証（ブランチモード）
 
-開発・テスト環境でGoogle OAuth設定をスキップしたい場合は、モック認証機能を使用できます。
+開発・テスト環境でGoogle OAuth設定をスキップ。
 
 ### 有効化方法
 
-`.env.local` に以下を追加：
+`.env.local`に追加：
 
 ```env
 ENABLE_MOCK_AUTH=true
@@ -274,11 +210,9 @@ NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
 3. 「テストユーザーでログイン」ボタンをクリック
 4. 即座にログイン完了！
 
-**全機能が利用可能**：モックユーザーは初回ログイン時にSupabaseに自動登録されるため、しおりの保存・公開・削除などすべての機能が正常に動作します。
+**全機能利用可能**: モックユーザーは初回ログイン時にSupabaseに自動登録されるため、しおりの保存・公開・削除などすべての機能が動作します。
 
 ### オプション：事前登録
-
-モックユーザーを事前に一括登録する場合：
 
 ```bash
 npm run seed:mock-users
@@ -287,8 +221,14 @@ npm run seed:mock-users
 ### 注意事項
 
 - **本番環境では絶対に有効化しないでください**
-- モック認証が有効な場合、Google OAuthは無効化されます
+- モック認証有効時、Google OAuthは無効化されます
 - 詳細: [MOCK_AUTH.md](./MOCK_AUTH.md)
+
+---
+
+## 🎉 次のステップ
+
+開発に参加したい方は、issueまたはPull Requestをお待ちしています！
 
 ---
 
