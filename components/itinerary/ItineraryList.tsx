@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { ItineraryData } from "@/types/itinerary";
 import { ItineraryCard } from "./ItineraryCard";
 import { useStore } from "@/lib/store/useStore";
@@ -8,28 +9,70 @@ import {
   loadItinerariesFromStorage,
   initializeMockData,
 } from "@/lib/mock-data/itineraries";
-import { FileText } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 
 /**
- * しおり一覧コンポーネント
- * - グリッドレイアウト（レスポンシブ）
- * - フィルター・ソート適用
- * - 空状態の表示
+ * Phase 10.4: しおり一覧コンポーネント（DB統合版）
+ * 
+ * ログイン時: データベースから取得
+ * 未ログイン時: LocalStorageから取得（従来通り）
  */
 export const ItineraryList: React.FC = () => {
+  const { data: session, status: sessionStatus } = useSession();
   const [itineraries, setItineraries] = useState<ItineraryData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { itineraryFilter, itinerarySort } = useStore();
+
+  // しおり一覧を読み込む
+  const loadItineraries = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (session?.user) {
+        // ログイン時: データベースから取得
+        const response = await fetch('/api/itinerary/list');
+        if (!response.ok) {
+          throw new Error('Failed to load itineraries from database');
+        }
+
+        const data = await response.json();
+        
+        // Date型に変換
+        const itinerariesWithDates = (data.itineraries || []).map((item: any) => ({
+          ...item,
+          createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+          updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
+          publishedAt: item.publishedAt ? new Date(item.publishedAt) : undefined,
+        }));
+        
+        setItineraries(itinerariesWithDates);
+      } else {
+        // 未ログイン時: LocalStorageから取得
+        initializeMockData();
+        const data = loadItinerariesFromStorage();
+        setItineraries(data);
+      }
+    } catch (err) {
+      console.error('Failed to load itineraries:', err);
+      setError('しおりの読み込みに失敗しました');
+      
+      // エラー時はLocalStorageにフォールバック
+      initializeMockData();
+      const data = loadItinerariesFromStorage();
+      setItineraries(data);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 初回読み込み
   useEffect(() => {
-    initializeMockData();
-    loadItineraries();
-  }, []);
-
-  const loadItineraries = () => {
-    const data = loadItinerariesFromStorage();
-    setItineraries(data);
-  };
+    if (sessionStatus !== 'loading') {
+      loadItineraries();
+    }
+  }, [session, sessionStatus]);
 
   const handleDelete = () => {
     loadItineraries();
@@ -106,6 +149,35 @@ export const ItineraryList: React.FC = () => {
 
     return result;
   }, [filteredItineraries, itinerarySort]);
+
+  // ローディング状態
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+        <p className="text-gray-600">しおりを読み込み中...</p>
+      </div>
+    );
+  }
+
+  // エラー状態
+  if (error && itineraries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4">
+        <FileText className="w-16 h-16 text-red-300 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          エラーが発生しました
+        </h3>
+        <p className="text-sm text-gray-500 text-center mb-6">{error}</p>
+        <button
+          onClick={() => loadItineraries()}
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          再読み込み
+        </button>
+      </div>
+    );
+  }
 
   // 空状態
   if (sortedItineraries.length === 0) {

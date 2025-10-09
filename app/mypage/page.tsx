@@ -9,9 +9,11 @@ import { QuickActions } from "@/components/mypage/QuickActions";
 import { ItineraryCard } from "@/components/mypage/ItineraryCard";
 import { getMockUserStats } from "@/lib/mock-data/user-stats";
 import { getMockRecentItineraries } from "@/lib/mock-data/recent-itineraries";
+import { itineraryRepository } from "@/lib/db/itinerary-repository";
+import type { ItineraryData } from "@/types/itinerary";
 
 /**
- * マイページ
+ * Phase 10.4: マイページ（DB統合版）
  * ユーザープロフィール、統計、クイックアクション、最近のしおりを表示
  */
 export default async function MyPage() {
@@ -29,9 +31,26 @@ export default async function MyPage() {
     expires: "", // 必要に応じて実際の有効期限を設定
   };
 
-  // モックデータの取得
+  // データベースから最近のしおりを取得
+  let recentItineraries: ItineraryData[] = [];
+  try {
+    const result = await itineraryRepository.listItineraries(
+      user.id,
+      {},
+      'updated_at',
+      'desc',
+      { page: 1, pageSize: 6 } // 最新6件を取得
+    );
+    recentItineraries = result.data;
+  } catch (error) {
+    console.error('Failed to load recent itineraries:', error);
+    // エラー時はモックデータにフォールバック
+    recentItineraries = getMockRecentItineraries();
+  }
+
+  // TODO: 将来的にDBから統計情報を計算する
+  // 現時点ではモックデータを使用
   const userStats = getMockUserStats();
-  const recentItineraries = getMockRecentItineraries();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
