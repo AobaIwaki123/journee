@@ -202,14 +202,11 @@ jobs:
             echo "✅ Committed and pushed manifests"
           fi
 
-      - name: Install ArgoCD CLI
-        if: steps.check_app.outputs.exists == 'false'
+      - name: install argocd
+        shell: bash
         run: |
-          curl -sSL -o argocd https://github.com/argoproj/argocd/releases/latest/download/argocd-linux-amd64
-          sudo install -m 555 argocd /usr/local/bin/argocd
-          rm argocd
-          argocd version --client
-          echo "✅ ArgoCD CLI installed successfully"
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
 
       - name: Create ArgoCD Application
         if: steps.check_app.outputs.exists == 'false'
