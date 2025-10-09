@@ -9,6 +9,7 @@
 - ブランチごとのプレビュー環境でGoogle OAuthの設定なしでログイン可能
 - 複数のテストユーザーでの動作確認
 - 認証フローをバイパスした迅速な開発・テスト
+- **全機能の利用**：モックユーザーもSupabaseに登録されるため、しおり保存・公開などすべての機能が利用可能
 
 ## 有効化方法
 
@@ -89,6 +90,14 @@ build-args: |
 ### 2. テストユーザーでログイン
 
 ボタンをクリックするだけで、自動的にテストユーザーとしてログインされます。
+
+**初回ログイン時の処理**：
+1. モックユーザーデータの取得
+2. Supabaseにユーザーが存在するか確認
+3. 存在しない場合は自動的に作成
+4. UUIDを取得してセッションに保存
+
+これにより、しおりの保存・公開・削除などデータベース依存のすべての機能が利用可能です。
 
 ### 3. 複数ユーザーの切り替え（高度な使用）
 
@@ -364,6 +373,25 @@ kubectl rollout restart deployment/journee-multi-deploy -n journee
 
 ## カスタマイズ
 
+### モックユーザーの事前登録（オプション）
+
+通常、モックユーザーは初回ログイン時に自動的にSupabaseに作成されますが、事前に一括登録したい場合は以下のスクリプトを使用できます：
+
+```bash
+npm run seed:mock-users
+```
+
+このスクリプトは：
+- すべてのモックユーザー（default, user1, user2, admin）をSupabaseに登録
+- 既存ユーザーはスキップ
+- エラーハンドリング付き
+
+**必要な環境変数**：
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
 ### 新しいテストユーザーの追加
 
 `lib/mock-data/mock-users.ts`を編集：
@@ -413,7 +441,7 @@ A: いいえ。`ENABLE_MOCK_AUTH=true`の場合、Google OAuth認証は無効化
 
 ### Q: データベースへの影響は？
 
-A: モック認証ではSupabaseへのユーザー作成は行われません。既存のデータには影響しません。
+A: モック認証でもSupabaseにユーザーが作成されます。ただし、テストユーザー専用のユニークなgoogle_id（`mock-google-id-xxxxx`形式）を持つため、本番ユーザーと競合することはありません。既存のデータには影響しません。
 
 ### Q: セッションの有効期限は？
 
@@ -431,7 +459,25 @@ A: はい。各ブラウザで独立してログインできます。
 - [components/auth/LoginButton.tsx](../components/auth/LoginButton.tsx) - UIコンポーネント
 - [docs/API.md](./API.md) - API仕様書
 
+## データベーススキーマ
+
+モックユーザーは通常のユーザーと同じ`users`テーブルに保存されます：
+
+```sql
+-- モックユーザーの例
+SELECT id, email, name, google_id, created_at
+FROM users
+WHERE google_id LIKE 'mock-google-id-%';
+```
+
+**識別方法**：
+- `google_id`が`mock-google-id-`で始まる
+- 通常のGoogle IDとは形式が異なる
+- 本番ユーザーと完全に分離可能
+
 ## 更新履歴
 
-- **2025-10-09**: 初版作成 - モック認証機能の実装
+- **2025-10-09**: 
+  - 初版作成 - モック認証機能の実装
+  - Supabase統合 - モックユーザーのデータベース登録対応
 

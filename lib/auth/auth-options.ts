@@ -90,14 +90,51 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       // 初回サインイン時
       if (account && user) {
-        // モック認証の場合
+        // モック認証の場合もSupabaseからUUIDを取得
         if (account.provider === "mock") {
-          token.id = user.id;
-          token.googleId = (user as any).googleId || "mock-google-id";
+          const mockGoogleId = (user as any).googleId || "mock-google-id";
+          token.googleId = mockGoogleId;
           token.email = user.email;
           token.name = user.name;
           token.picture = user.image;
-          console.log("🧪 Mock JWT token created:", token.email);
+
+          // SupabaseからユーザーのUUIDを取得
+          try {
+            if (!supabaseAdmin) {
+              console.error("🧪 Supabase Admin client is not configured");
+              token.id = user.id; // フォールバック
+              return token;
+            }
+
+            type UserRow = Database["public"]["Tables"]["users"]["Row"];
+            const { data: supabaseUser, error: fetchError } =
+              await supabaseAdmin!
+                .from("users")
+                .select("*")
+                .eq("google_id", mockGoogleId)
+                .single();
+
+            if (fetchError && fetchError.code !== "PGRST116") {
+              console.error(
+                "🧪 Error fetching mock user from Supabase:",
+                fetchError
+              );
+              token.id = user.id; // フォールバック
+            } else if (supabaseUser) {
+              token.id = (supabaseUser as UserRow).id; // SupabaseのUUID
+              console.log("🧪 Mock user found in Supabase:", token.id);
+            } else {
+              console.error(
+                "🧪 Mock user not found in Supabase for googleId:",
+                mockGoogleId
+              );
+              token.id = user.id; // フォールバック
+            }
+          } catch (error) {
+            console.error("🧪 Error fetching mock user ID:", error);
+            token.id = user.id; // フォールバック
+          }
+
           return token;
         }
 
@@ -173,10 +210,75 @@ export const authOptions: NextAuthOptions = {
      * ブランチモード: モック認証を許可
      */
     async signIn({ account, profile, user }) {
-      // モック認証の場合は常に許可
+      // モック認証の場合もSupabaseにユーザーを作成/取得
       if (account?.provider === "mock") {
-        console.log("🧪 Mock authentication allowed:", user.email);
-        return true;
+        console.log("🧪 Mock authentication:", user.email);
+
+        try {
+          const mockGoogleId = (user as any).googleId || "mock-google-id";
+          const email = user.email;
+
+          if (!email) {
+            console.error("🧪 Missing email for mock user");
+            return false;
+          }
+
+          // Service Role Keyが必要
+          if (!supabaseAdmin) {
+            console.error("🧪 Supabase Admin client is not configured");
+            // Supabaseが利用できない場合でも認証は許可（開発環境向け）
+            return true;
+          }
+
+          // google_idでユーザーを検索
+          type UserRow = Database["public"]["Tables"]["users"]["Row"];
+
+          const { data: existingUser, error: fetchError } = await supabaseAdmin!
+            .from("users")
+            .select("*")
+            .eq("google_id", mockGoogleId)
+            .single();
+
+          if (fetchError && fetchError.code !== "PGRST116") {
+            // PGRST116 = "Row not found" (許容されるエラー)
+            console.error("🧪 Error fetching mock user:", fetchError);
+            return true; // エラーでも認証は許可
+          }
+
+          if (!existingUser) {
+            // モックユーザーが存在しない場合は新規作成
+            const { data: newUser, error: insertError } = await supabaseAdmin!
+              .from("users")
+              .insert({
+                email,
+                name: user.name || null,
+                image: user.image || null,
+                google_id: mockGoogleId,
+              } as any)
+              .select()
+              .single();
+
+            if (insertError) {
+              console.error("🧪 Error creating mock user:", insertError);
+              return true; // エラーでも認証は許可
+            }
+
+            console.log(
+              "🧪 New mock user created in Supabase:",
+              (newUser as UserRow).id
+            );
+          } else {
+            console.log(
+              "🧪 Existing mock user found in Supabase:",
+              (existingUser as UserRow).id
+            );
+          }
+
+          return true;
+        } catch (error) {
+          console.error("🧪 Error in mock signIn callback:", error);
+          return true; // エラーでも認証は許可（開発環境向け）
+        }
       }
 
       // Googleプロバイダーのみを許可
