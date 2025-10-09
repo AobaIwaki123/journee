@@ -332,6 +332,32 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```
 
 #### APIトークンの作成
+
+トークンを発行するには、事前にArgoCDの設定を変更する必要があります。
+
+**1. ConfigMapを適用してAPIキーを有効化**
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  accounts.admin: login,apiKey
+```
+
+このConfigMapを適用します：
+
+```bash
+kubectl apply -f argocd-configmap.yaml
+
+# ArgoCDサーバーを再起動して設定を反映
+kubectl rollout restart deployment argocd-server -n argocd
+```
+
+**2. トークンの生成**
+
 ```bash
 # CLIでログイン
 argocd login localhost:8080
@@ -340,7 +366,48 @@ argocd login localhost:8080
 argocd account generate-token --account admin
 ```
 
-このトークンをGitHubシークレット`ARGOCD_TOKEN`に設定する。
+このトークンをGitHubシークレット`ARGOCD_TOKEN`に設定します。
+
+### Cloudflare Ingress Controllerのセットアップ後
+
+Cloudflare経由でargocdを公開します。
+こうすることで、GitHub Actionなど外部サービスからk8sクラスタ上のargocdにアクセスすることが可能となります。
+
+```sh
+kubectl apply -f manifests/ingress.yml
+```
+
+```yaml
+# ArgoCD Server を外部に公開するための Ingress 設定
+# Cloudflare Tunnel Ingress Controller を使用して外部からアクセス可能にする
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-ingress
+  namespace: argocd
+  annotations:
+    # SSL リダイレクトを無効化 - ArgoCD Server が insecure モードで動作するため
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # バックエンドプロトコルを HTTP に指定
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  # Cloudflare Tunnel Ingress Controller を使用
+  ingressClassName: "cloudflare-tunnel"
+  
+  rules:
+  # 公開ホスト名の設定
+  - host: argocd.aooba.net
+    http:
+      paths:
+      # ルートパス以下のすべてのリクエストを ArgoCD Server に転送
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              number: 80  # ArgoCD Server の HTTP ポート
+```
 
 ---
 
@@ -362,13 +429,66 @@ argocd account generate-token --account admin
 
 #### インストール手順
 
-詳細は[k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster)の手順`1'`まで実施してください。
-
-**概要：**
+**前提条件：**
 1. Cloudflareアカウントの作成・ドメインの追加
-2. Cloudflare API Tokenの作成
-3. Cloudflare Tunnel Controllerのインストール
-4. Ingressリソースの作成
+2. Cloudflare Tunnelの作成（Cloudflareダッシュボードで）
+3. Cloudflare API Tokenの作成（Zone:Zone:Read, Zone:DNS:Edit, Account:Cloudflare Tunnel:Edit 権限）
+
+**ArgoCD Applicationでのデプロイ：**
+
+```yaml
+# cloudflare-tunnel-controller.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudflare-tunnel-ingress-controller
+  namespace: argocd
+spec:
+  project: default
+  
+  # Helm チャートのソース設定
+  source:
+    repoURL: https://helm.strrl.dev
+    chart: cloudflare-tunnel-ingress-controller
+    targetRevision: 0.0.12
+    
+    helm:
+      valuesObject:
+        cloudflare:
+          # Cloudflare API トークン
+          apiToken: YOUR_CLOUDFLARE_API_TOKEN
+          # Cloudflare アカウント ID
+          accountId: YOUR_CLOUDFLARE_ACCOUNT_ID
+          # Cloudflare Tunnel 名（事前作成が必要）
+          tunnelName: cf-tunnel-ingress-controller
+
+  # デプロイ先の設定
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudflare-tunnel-ingress-controller
+  
+  # 自動同期の設定
+  syncPolicy:
+    automated:
+      prune: true     # 不要なリソースを自動削除
+      selfHeal: true  # ドリフトを自動修正
+    syncOptions:
+      - CreateNamespace=true    # Namespace自動作成
+      - ServerSideApply=true   # Server-side applyを使用
+```
+
+**適用方法：**
+
+```bash
+# ArgoCD Applicationを作成
+argocd app create --file ./argocd/cloudflare-tunnel-ingress-controller.yml
+
+# デプロイ状況を確認
+argocd app get cloudflare-tunnel-ingress-controller
+
+# または kubectl で確認
+kubectl get pods -n cloudflare-tunnel-ingress-controller
+```
 
 > **Note**: このセットアップは初回のみ必要です。一度設定すれば、以降はIngressリソースを作成するだけで自動的にドメインが発行されます。
 
@@ -378,26 +498,27 @@ argocd account generate-token --account admin
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: journee-a1b2c3
+  name: journee-ingress
   namespace: journee
   annotations:
-    # Cloudflare Tunnelを使用する場合の設定
-    external-dns.alpha.kubernetes.io/target: <tunnel-id>.cfargotunnel.com
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
 spec:
+  ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: journee-a1b2c3.aooba.net
+  - host: journee.aooba.net
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: journee-a1b2c3
+            name: journee
             port:
               number: 80
 ```
 
-このIngressを`kubectl apply`するだけで、数分以内に`https://journee-a1b2c3.aooba.net`でアクセス可能になります！
+実際に公開するにはServiceやDeploymentなどが必要となりますが、Cloudflare Ingress Controllerのセットアップは以上となります。
 
 ---
 
