@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: journee-3df777
+  namespace: journee
+spec:
+  selector:
+    app: journee-3df777
+  ports:
+    - port: 80
+      targetPort: 3000
