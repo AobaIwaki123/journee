@@ -105,12 +105,16 @@
   - 背景色: `bg-white`（明示的に白背景を指定）
   - フォーカス時: `focus:border-blue-500 focus:ring-2 focus:ring-blue-200`
   - MessageInput.tsxと完全に統一されたスタイル
+- `/components/comments/CommentForm.tsx`: 同じスタイルを適用
+  - 名前入力欄とコメント入力欄の両方を更新
+  - フィードバックフォームと完全に統一
   - より濃い色にすることで視認性が大幅に向上
   - アクセシビリティ基準を満たすコントラスト比を確保
 
 ##### 関連ファイル
 ```
 - components/feedback/FeedbackModal.tsx（更新）✅
+- components/comments/CommentForm.tsx（更新）✅
 ```
 
 ---
