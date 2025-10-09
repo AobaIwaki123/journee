@@ -16,7 +16,7 @@ spec:
         - name: gcr-pull-secret
       containers:
         - name: journee
-          image: gcr.io/my-docker-471807/journee:v2.4.0
+          image: gcr.io/my-docker-471807/journee:v2.5.0
           imagePullPolicy: Always
           env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
