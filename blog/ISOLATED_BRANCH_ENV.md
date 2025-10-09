@@ -1,5 +1,7 @@
 # 🚀⚡ 【AI駆動開発】まだレビューする時にブランチ移動してるの？ブランチごとに独立環境を立てて爆速開発する方法
 
+- 下書き中は、`aooba.net`などを使用してサクサク作成するが最終的に`example.com`などを使用する。
+
 ## 目次
 1. [はじめに](#はじめに)
 2. [なぜブランチごとに独立環境が必要なのか](#なぜブランチごとに独立環境が必要なのか)
@@ -579,7 +581,7 @@ metadata:
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: test-app.aooba.net
+  - host: test-app.aooba.net 
     http:
       paths:
       - path: /
@@ -651,6 +653,8 @@ BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
 ```
 
 これにより、どんなブランチ名でも短くユニークなIDに変換できます。
+- スラッシュなどが削除されるため安全
+- 同じ長さに統一されるため、理解しやすい
 
 **実際のワークフローコード：**
 
