@@ -34,17 +34,21 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nginx
+  name: nginx-ingress
   namespace: test-app
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
 spec:
+  ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: test.yourdomain.com
+  - host: test-app.aooba.net
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: nginx
+            name: journee
             port:
               number: 80
