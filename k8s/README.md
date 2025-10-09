@@ -23,3 +23,33 @@ $ kubectl apply -f k8s/manifests/secret.yml
 ```sh
 $ kubectl apply -f k8s/manifests/
 ```
+
+## ArgoCDでデプロイ
+
+```sh
+$ argocd app create -f ./k8s/argocd/app.yml --upsert
+$ argocd app get journee-dev
+$ argocd app sync journee-dev   # 手動で今すぐ同期したい時
+```
+
+## マルチブランチ認証について
+
+ブランチごとに動的環境を作成する際、Google OAuthのリダイレクトURI制限を回避するため、**認証プロキシパターン**を実装しています。
+
+詳細は [../docs/MULTI_BRANCH_AUTH.md](../docs/MULTI_BRANCH_AUTH.md) を参照してください。
+
+### 認証サービスのデプロイ
+
+```sh
+# 認証サービス専用のPodをデプロイ
+$ kubectl apply -f k8s/auth-service.yml
+
+# Ingressの確認
+$ kubectl get ingress -n journee
+```
+
+### URL構造
+
+- 認証サービス: `auth.preview.aooba.net`
+- Dev環境: `dev.preview.aooba.net`
+- Feature環境: `feature-*.preview.aooba.net`

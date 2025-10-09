@@ -8,6 +8,10 @@ import { useState } from 'react'
  * 
  * Googleアカウントでログインするためのボタン。
  * クリックするとGoogle OAuth認証フローを開始します。
+ * 
+ * 認証プロキシモード対応：
+ * - AUTH_PROXY_MODE=true の場合、認証サービス経由で認証
+ * - それ以外は通常のNextAuth認証フロー
  */
 export function LoginButton() {
   const [isLoading, setIsLoading] = useState(false)
@@ -15,7 +19,11 @@ export function LoginButton() {
   const handleLogin = async () => {
     setIsLoading(true)
     try {
-      await signIn('google', { callbackUrl: '/' })
+      // 認証プロキシモードを環境変数で判定
+      // クライアント側では環境変数が取得できないため、
+      // 常に /api/auth-proxy 経由でリダイレクトする
+      // （サーバー側で認証プロキシモードでない場合は通常のフローに戻す）
+      window.location.href = '/api/auth-proxy?action=signin&callbackUrl=/';
     } catch (error) {
       console.error('Login error:', error)
       setIsLoading(false)
