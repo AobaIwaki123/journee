@@ -6,7 +6,7 @@ spec:
   project: default
   source:
     repoURL: 'https://github.com/AobaIwaki123/journee'
-    targetRevision: manifests-multi-deploy
+    targetRevision: multi-deploy
     path: k8s/manifests-multi-deploy
   destination:
     server: 'https://kubernetes.default.svc'
