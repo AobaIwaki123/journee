@@ -656,6 +656,154 @@ kubectl get namespace test-app
 2. **`.github/workflows/create-argo-app.yml`**: ArgoCD Applicationの作成・同期
 3. **`.github/workflows/deploy.yml`**: mainブランチのデプロイ
 
+#### ディレクトリ構成
+
+実装の全体像を理解するため、まずディレクトリ構成を見ていきましょう。
+
+```
+k8s/
+├── manifests/                    # メインブランチ用のマニフェスト
+│   ├── deployment.yml           # アプリケーションのDeployment
+│   ├── service.yml              # Service定義
+│   ├── ingress.yml              # Ingress定義（ドメイン設定）
+│   └── kustomization.yml        # Kustomize設定
+├── manifests-<hash>/            # ブランチ固有のマニフェスト（動的生成）
+│   ├── deployment.yml           # リソース名が`<app>-<hash>`に変更される
+│   ├── service.yml
+│   ├── ingress.yml
+│   └── kustomization.yml
+├── argocd/                      # メインブランチ用のArgoCD Application
+│   └── app.yml                  # ArgoCD Application定義
+└── argocd-<hash>/               # ブランチ固有のArgoCD Application（動的生成）
+    └── app.yml
+```
+
+**キーポイント：**
+- メインブランチ（main）は`manifests/`と`argocd/`を使用
+- 各ブランチは`manifests-<hash>/`と`argocd-<hash>/`を動的に作成
+- `<hash>`はブランチ名から生成されるMD5ハッシュの最初の6文字
+
+#### サンプルコード
+
+実際のマニフェストファイルの例を見ていきましょう。
+
+**deployment.yml（メインブランチ用）**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: journee
+  namespace: journee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: journee
+  template:
+    metadata:
+      labels:
+        app: journee
+    spec:
+      imagePullSecrets:
+        - name: gcr-pull-secret
+      containers:
+        - name: journee
+          image: gcr.io/my-project/journee:v5.0.0
+          env:
+            - name: NEXTAUTH_URL
+              value: https://journee.example.com
+            # Secretから環境変数を注入
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: GOOGLE_CLIENT_ID
+          ports:
+            - containerPort: 3000
+```
+
+**service.yml**
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: journee
+  namespace: journee
+spec:
+  selector:
+    app: journee
+  ports:
+  - port: 80
+    targetPort: 3000
+```
+
+**ingress.yml**
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: journee-ingress
+  namespace: journee
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+spec:
+  ingressClassName: "cloudflare-tunnel"
+  rules:
+  - host: journee.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: journee
+            port:
+              number: 80
+```
+
+**kustomization.yml**
+
+```yaml
+resources:
+- deployment.yml
+- service.yml
+- ingress.yml
+```
+
+**argocd/app.yml**
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: journee
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/your-username/journee'
+    targetRevision: HEAD
+    path: k8s/manifests
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: journee
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+```
+
+これらのファイルが、GitHub Actionsによってブランチ固有のリソース名に変換されます。例えば：
+
+- `journee` → `journee-a1b2c3`
+- `journee.example.com` → `journee-a1b2c3.example.com`
+
+次のセクションで、この変換を自動化する方法を見ていきましょう。
+
 ### 7.2 ブランチ固有のマニフェスト管理
 
 #### `.github/workflows/push.yml`の詳細
