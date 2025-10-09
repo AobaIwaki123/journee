@@ -10,6 +10,9 @@ import type { Database } from "@/types/database";
  * Multi-Branch: 認証プロキシパターン対応
  */
 export const authOptions: NextAuthOptions = {
+  // プロキシ・トンネル環境での動作を許可
+  trustHost: true,
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
@@ -45,9 +48,30 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // HTTPSでは常にsecure
         // ブランチ環境間でセッション共有
         domain: process.env.COOKIE_DOMAIN || undefined,
+      },
+    },
+    callbackUrl: {
+      name: `${
+        process.env.NODE_ENV === "production" ? "__Secure-" : ""
+      }next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+        domain: process.env.COOKIE_DOMAIN || undefined,
+      },
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
       },
     },
   },
