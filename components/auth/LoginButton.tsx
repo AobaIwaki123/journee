@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { isMockAuthEnabled } from "@/lib/utils/env";
 
 /**
  * ログインボタンコンポーネント
@@ -13,8 +14,8 @@ export function LoginButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMockLoading, setIsMockLoading] = useState(false);
 
-  // モック認証が有効かどうかをチェック（環境変数をクライアントで読めないため、サーバーコンポーネントから渡す必要がある）
-  const isMockAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === "true";
+  // モック認証が有効かどうかをチェック
+  const mockAuthEnabled = isMockAuthEnabled();
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -42,7 +43,7 @@ export function LoginButton() {
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Google認証ボタン */}
-      {!isMockAuthEnabled && (
+      {!mockAuthEnabled && (
         <button
           onClick={handleGoogleLogin}
           disabled={isLoading}
@@ -82,7 +83,7 @@ export function LoginButton() {
       )}
 
       {/* モック認証ボタン（開発環境のみ） */}
-      {isMockAuthEnabled && (
+      {mockAuthEnabled && (
         <>
           <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
             <span className="text-2xl">🧪</span>
