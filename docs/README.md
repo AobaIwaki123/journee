@@ -4,12 +4,9 @@
 
 ## 📚 ドキュメント一覧
 
-### ユーザー追加ドキュメント
-
-適宜整理してください
-
-- `SCHEMA.md`: データベーススキーマ
-- `GUIDELINE.md`: コーディングガイドライン
+### 技術仕様
+- [`SCHEMA.md`](./SCHEMA.md): データベーススキーマ（Supabase PostgreSQL）
+- [`GUIDELINE.md`](./GUIDELINE.md): コーディングガイドライン（TypeScript, React, Tailwind CSS）
 
 ### 開発ドキュメント
 - [`PLAN.md`](./PLAN.md): 実装計画（フェーズ別の詳細な実装内容と技術仕様）
@@ -32,8 +29,10 @@
 3. [`RELEASE.md`](./RELEASE.md) で実装済み機能を確認
 
 ### 開発者向け
+- コーディング規約は [`GUIDELINE.md`](./GUIDELINE.md) を参照
 - 実装を進める際は [`PLAN.md`](./PLAN.md) で各フェーズの詳細を確認
 - APIを使う際は [`API.md`](./API.md) で仕様を確認
+- データベースは [`SCHEMA.md`](./SCHEMA.md) でスキーマを確認
 - バグや改善点は [`BUG.md`](./BUG.md) に記録
 
 ### デプロイ担当者向け
