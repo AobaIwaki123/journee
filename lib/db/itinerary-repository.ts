@@ -137,6 +137,7 @@ export class ItineraryRepository {
     spots: TouristSpot[]
   ): DaySchedule {
     return {
+      id: dbDay.id,
       day: dbDay.day,
       date: dbDay.date || undefined,
       title: dbDay.title || undefined,
@@ -192,10 +193,11 @@ export class ItineraryRepository {
     const client = (supabaseAdmin || supabase) as typeof supabase;
 
     // 1. しおり本体を作成
-    // 注: idは指定せず、Supabaseに自動生成させる（UUID）
+    // クライアント側で生成したUUIDをそのまま使用
     const { data: dbItinerary, error: itineraryError } = await client
       .from("itineraries")
       .insert({
+        id: itinerary.id, // クライアントのIDを保持
         user_id: userId,
         title: itinerary.title,
         destination: itinerary.destination,
@@ -230,6 +232,7 @@ export class ItineraryRepository {
         const { data: dbDay, error: dayError } = await client
           .from("day_schedules")
           .insert({
+            id: day.id, // クライアント側のIDを保持
             itinerary_id: typedItinerary.id,
             day: day.day,
             date: day.date,
@@ -255,6 +258,7 @@ export class ItineraryRepository {
         // 3. 観光スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
+            id: spot.id, // クライアント側のIDを保持
             day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,
@@ -471,6 +475,7 @@ export class ItineraryRepository {
         const { data: dbDay, error: dayError } = await client
           .from("day_schedules")
           .insert({
+            id: day.id, // クライアント側のIDを保持
             itinerary_id: itineraryId,
             day: day.day,
             date: day.date,
@@ -496,6 +501,7 @@ export class ItineraryRepository {
         // スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
+            id: spot.id, // クライアント側のIDを保持
             day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,

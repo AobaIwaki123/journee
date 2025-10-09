@@ -315,6 +315,7 @@ export function mergeItineraryData(
       return {
         ...existingDay,
         ...newDay,
+        id: newDay.id || existingDay?.id || generateId(), // DayScheduleにもIDを付与
         spots,
       };
     });

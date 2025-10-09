@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { Save, CheckCircle } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
-import { saveCurrentItinerary } from '@/lib/utils/storage';
-import { updateItinerary, addItinerary } from '@/lib/mock-data/itineraries';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Save, CheckCircle } from "lucide-react";
+import { useStore } from "@/lib/store/useStore";
+import { saveCurrentItinerary } from "@/lib/utils/storage";
+import { updateItinerary, addItinerary } from "@/lib/mock-data/itineraries";
 
 /**
  * Phase 10.4: しおり保存ボタン（DB統合版）
- * 
+ *
  * ログイン時: データベースに保存
  * 未ログイン時: LocalStorageに保存（従来通り）
  */
@@ -29,48 +29,54 @@ export const SaveButton: React.FC = () => {
     try {
       if (session?.user) {
         // ログイン時: データベースに保存
-        const response = await fetch('/api/itinerary/save', {
-          method: 'POST',
+        // Phase 10.4: クライアント側のUUIDをそのまま使用するため、ID更新処理は不要
+        const response = await fetch("/api/itinerary/save", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ itinerary: currentItinerary }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to save itinerary to database');
+          throw new Error("Failed to save itinerary to database");
         }
 
         const data = await response.json();
-        addToast(data.message || 'しおりを保存しました', 'success');
+        addToast(data.message || "しおりを保存しました", "success");
+        // currentItinerary.id はそのまま有効（DB側でも同じIDが使用される）
       } else {
         // 未ログイン時: LocalStorageに保存（従来通り）
         const success = saveCurrentItinerary(currentItinerary);
 
         if (success) {
           // しおり一覧に追加/更新
-          const itineraries = JSON.parse(localStorage.getItem('journee_itineraries') || '[]');
-          const existingIndex = itineraries.findIndex((item: any) => item.id === currentItinerary.id);
+          const itineraries = JSON.parse(
+            localStorage.getItem("journee_itineraries") || "[]"
+          );
+          const existingIndex = itineraries.findIndex(
+            (item: any) => item.id === currentItinerary.id
+          );
 
           if (existingIndex !== -1) {
             updateItinerary(currentItinerary.id, currentItinerary);
-            addToast('しおりを更新しました', 'success');
+            addToast("しおりを更新しました", "success");
           } else {
             addItinerary(currentItinerary);
-            addToast('しおりを保存しました', 'success');
+            addToast("しおりを保存しました", "success");
           }
         } else {
-          throw new Error('Failed to save to LocalStorage');
+          throw new Error("Failed to save to LocalStorage");
         }
       }
 
       // しおり一覧ページへ遷移
       setTimeout(() => {
-        router.push('/itineraries');
+        router.push("/itineraries");
       }, 500);
     } catch (error) {
-      console.error('Failed to save itinerary:', error);
-      addToast('保存に失敗しました', 'error');
+      console.error("Failed to save itinerary:", error);
+      addToast("保存に失敗しました", "error");
     } finally {
       setIsSaving(false);
     }
