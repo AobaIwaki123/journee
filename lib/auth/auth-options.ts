@@ -235,23 +235,40 @@ export const authOptions: NextAuthOptions = {
       const authProxyMode = process.env.AUTH_PROXY_MODE === "true";
       const cookieDomain = process.env.COOKIE_DOMAIN;
 
+      // NEXTAUTH_URLを明示的に使用（baseUrlが内部ホストの場合に対処）
+      const trustedBaseUrl = process.env.NEXTAUTH_URL || baseUrl;
+
+      console.log("[Auth Redirect]", {
+        url,
+        baseUrl,
+        trustedBaseUrl,
+        authProxyMode,
+      });
+
       // 相対URLの場合はそのまま使用
       if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
+        return `${trustedBaseUrl}${url}`;
       }
 
       // 同じオリジンの場合は許可
-      const urlOrigin = new URL(url).origin;
-      if (urlOrigin === baseUrl) {
-        return url;
+      try {
+        const urlOrigin = new URL(url).origin;
+        const trustedOrigin = new URL(trustedBaseUrl).origin;
+
+        if (urlOrigin === trustedOrigin) {
+          return url;
+        }
+      } catch (error) {
+        console.error("Invalid URL in redirect:", error);
       }
 
       // 認証プロキシモード：同じドメイン配下なら許可
       if (authProxyMode && cookieDomain) {
         try {
           const urlHost = new URL(url).hostname;
-          // .preview.aooba.net ドメイン配下の場合は許可
+          // .aooba.net ドメイン配下の場合は許可
           if (urlHost.endsWith(cookieDomain.replace(/^\./, ""))) {
+            console.log("[Auth Redirect] Allowing cross-domain redirect:", url);
             return url;
           }
         } catch (error) {
@@ -260,7 +277,8 @@ export const authOptions: NextAuthOptions = {
       }
 
       // それ以外はホームページにリダイレクト
-      return baseUrl;
+      console.log("[Auth Redirect] Fallback to base URL:", trustedBaseUrl);
+      return trustedBaseUrl;
     },
   },
 
