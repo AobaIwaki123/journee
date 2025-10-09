@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: journee-ingress-dev
+  name: journee-ingress
   namespace: journee
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
@@ -9,18 +9,6 @@ metadata:
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
-  # Dev環境 (新URL: preview.aooba.net)
-  - host: dev.preview.aooba.net
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: journee
-            port:
-              number: 80
-  # 旧Dev環境 (互換性のため残す)
   - host: journee.aooba.net
     http:
       paths:
