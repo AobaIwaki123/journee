@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Calendar, MapPin, Clock, Trash2, FileText } from "lucide-react";
 import { ItineraryData } from "@/types/itinerary";
-import { deleteItinerary } from "@/lib/mock-data/itineraries";
 
 interface ItineraryCardProps {
   itinerary: ItineraryData;
@@ -20,13 +20,35 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
   itinerary,
   onDelete,
 }) => {
-  const handleDelete = (e: React.MouseEvent) => {
+  const { data: session } = useSession();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (confirm(`「${itinerary.title}」を削除しますか？`)) {
-      deleteItinerary(itinerary.id);
+    if (!confirm(`「${itinerary.title}」を削除しますか？`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/itinerary/delete?id=${itinerary.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete itinerary");
+      }
+
       onDelete?.(itinerary.id);
+    } catch (error) {
+      console.error("Failed to delete itinerary:", error);
+      alert(error instanceof Error ? error.message : "削除に失敗しました");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -146,14 +168,17 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
                 PDF
               </button>
             </div>
-            <button
-              onClick={handleDelete}
-              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
-              title="削除"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1" />
-              削除
-            </button>
+            {session?.user && (
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="削除"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                {isDeleting ? "削除中..." : "削除"}
+              </button>
+            )}
           </div>
         </div>
 

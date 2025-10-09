@@ -18,7 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
 
 -- 2. しおりテーブル
 CREATE TABLE IF NOT EXISTS itineraries (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY, -- クライアント側で生成されたUUIDを使用
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   destination VARCHAR(255),
@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_itineraries_search ON itineraries
 
 -- 3. 日程詳細テーブル
 CREATE TABLE IF NOT EXISTS day_schedules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY, -- クライアント側で生成されたUUIDを使用
   itinerary_id UUID NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
   day INT NOT NULL,
   date DATE,
@@ -85,7 +85,7 @@ CREATE INDEX IF NOT EXISTS idx_day_schedules_day ON day_schedules(itinerary_id, 
 
 -- 4. 観光スポットテーブル
 CREATE TABLE IF NOT EXISTS tourist_spots (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY, -- クライアント側で生成されたUUIDを使用
   day_schedule_id UUID NOT NULL REFERENCES day_schedules(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   description TEXT,

@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useStore } from '@/lib/store/useStore';
-import { TouristSpot } from '@/types/itinerary';
-import { Plus, X } from 'lucide-react';
+import React, { useState } from "react";
+import { useStore } from "@/lib/store/useStore";
+import { TouristSpot } from "@/types/itinerary";
+import { Plus, X } from "lucide-react";
+import { generateId } from "@/lib/utils/id-generator";
 
 interface AddSpotFormProps {
   dayIndex: number;
@@ -12,13 +13,13 @@ interface AddSpotFormProps {
 export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState({
-    name: '',
-    description: '',
-    category: 'sightseeing' as TouristSpot['category'],
-    scheduledTime: '',
-    duration: '',
-    estimatedCost: '',
-    notes: '',
+    name: "",
+    description: "",
+    category: "sightseeing" as TouristSpot["category"],
+    scheduledTime: "",
+    duration: "",
+    estimatedCost: "",
+    notes: "",
   });
 
   const addSpot = useStore((state: any) => state.addSpot);
@@ -28,46 +29,48 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
     e.preventDefault();
 
     if (!formValues.name.trim()) {
-      addToast('スポット名を入力してください', 'error');
+      addToast("スポット名を入力してください", "error");
       return;
     }
 
     const newSpot: TouristSpot = {
-      id: `spot-${Date.now()}`,
+      id: generateId(),
       name: formValues.name.trim(),
       description: formValues.description.trim(),
       category: formValues.category,
       scheduledTime: formValues.scheduledTime.trim() || undefined,
       duration: formValues.duration ? parseInt(formValues.duration) : undefined,
-      estimatedCost: formValues.estimatedCost ? parseInt(formValues.estimatedCost) : undefined,
+      estimatedCost: formValues.estimatedCost
+        ? parseInt(formValues.estimatedCost)
+        : undefined,
       notes: formValues.notes.trim() || undefined,
     };
 
     addSpot(dayIndex, newSpot);
-    addToast('スポットを追加しました', 'success');
+    addToast("スポットを追加しました", "success");
 
     // Reset form
     setFormValues({
-      name: '',
-      description: '',
-      category: 'sightseeing',
-      scheduledTime: '',
-      duration: '',
-      estimatedCost: '',
-      notes: '',
+      name: "",
+      description: "",
+      category: "sightseeing",
+      scheduledTime: "",
+      duration: "",
+      estimatedCost: "",
+      notes: "",
     });
     setIsOpen(false);
   };
 
   const handleCancel = () => {
     setFormValues({
-      name: '',
-      description: '',
-      category: 'sightseeing',
-      scheduledTime: '',
-      duration: '',
-      estimatedCost: '',
-      notes: '',
+      name: "",
+      description: "",
+      category: "sightseeing",
+      scheduledTime: "",
+      duration: "",
+      estimatedCost: "",
+      notes: "",
     });
     setIsOpen(false);
   };
@@ -85,7 +88,10 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-4"
+    >
       <div className="flex items-center justify-between">
         <h4 className="font-bold text-gray-900">新しいスポットを追加</h4>
         <button
@@ -105,7 +111,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
           <input
             type="text"
             value={formValues.name}
-            onChange={(e) => setFormValues({ ...formValues, name: e.target.value })}
+            onChange={(e) =>
+              setFormValues({ ...formValues, name: e.target.value })
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             placeholder="例: 清水寺"
             required
@@ -118,7 +126,12 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
           </label>
           <select
             value={formValues.category}
-            onChange={(e) => setFormValues({ ...formValues, category: e.target.value as TouristSpot['category'] })}
+            onChange={(e) =>
+              setFormValues({
+                ...formValues,
+                category: e.target.value as TouristSpot["category"],
+              })
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="sightseeing">観光</option>
@@ -135,7 +148,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
           </label>
           <textarea
             value={formValues.description}
-            onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+            onChange={(e) =>
+              setFormValues({ ...formValues, description: e.target.value })
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
             rows={2}
             placeholder="スポットの説明を入力"
@@ -150,7 +165,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
             <input
               type="time"
               value={formValues.scheduledTime}
-              onChange={(e) => setFormValues({ ...formValues, scheduledTime: e.target.value })}
+              onChange={(e) =>
+                setFormValues({ ...formValues, scheduledTime: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             />
           </div>
@@ -162,7 +179,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
             <input
               type="number"
               value={formValues.duration}
-              onChange={(e) => setFormValues({ ...formValues, duration: e.target.value })}
+              onChange={(e) =>
+                setFormValues({ ...formValues, duration: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               placeholder="60"
               min="0"
@@ -177,7 +196,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
           <input
             type="number"
             value={formValues.estimatedCost}
-            onChange={(e) => setFormValues({ ...formValues, estimatedCost: e.target.value })}
+            onChange={(e) =>
+              setFormValues({ ...formValues, estimatedCost: e.target.value })
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             placeholder="1000"
             min="0"
@@ -190,7 +211,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
           </label>
           <textarea
             value={formValues.notes}
-            onChange={(e) => setFormValues({ ...formValues, notes: e.target.value })}
+            onChange={(e) =>
+              setFormValues({ ...formValues, notes: e.target.value })
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
             rows={2}
             placeholder="注意事項やメモを入力"
