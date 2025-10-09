@@ -270,14 +270,44 @@ jobs:
             echo "ℹ️  No PR found for branch '$BRANCH'"
           fi
 
-      - name: Comment deployment URL on PR
-        if: steps.check_app.outputs.exists == 'false' && steps.find_pr.outputs.pr_number != ''
+      - name: Create PR if not exists
+        id: create_pr
+        if: steps.check_app.outputs.exists == 'false' && steps.find_pr.outputs.pr_number == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           BRANCH="${{ inputs.branch }}"
           BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
-          PR_NUMBER="${{ steps.find_pr.outputs.pr_number }}"
+
+          echo "🔧 Creating PR for branch '$BRANCH'"
+
+          # Create PR with title and body
+          PR_NUMBER=$(gh pr create \
+            --title "🚀 Deploy: $BRANCH" \
+            --body "## Auto-generated PR for branch deployment
+
+          **Branch:** \`$BRANCH\`
+          **Hash:** \`$BRANCH_HASH\`
+
+          This PR was automatically created for preview deployment.
+
+          Preview URL will be posted as a comment once the deployment is complete." \
+            --base main \
+            --head "$BRANCH" \
+            --json number --jq '.number')
+
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "✅ Created PR #$PR_NUMBER for branch '$BRANCH'"
+
+      - name: Comment deployment URL on PR
+        if: steps.check_app.outputs.exists == 'false' && (steps.find_pr.outputs.pr_number != '' || steps.create_pr.outputs.pr_number != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          # Use PR number from either find_pr or create_pr step
+          PR_NUMBER="${{ steps.find_pr.outputs.pr_number || steps.create_pr.outputs.pr_number }}"
           DEPLOYMENT_URL="https://${{ env.IMAGE_NAME }}-$BRANCH_HASH.aooba.net"
 
           gh pr comment "$PR_NUMBER" --body "🚀 **Preview Deployment Created**
