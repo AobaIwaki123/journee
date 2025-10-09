@@ -3,3 +3,5 @@
 - `PLAM.md`: 実装計画
 - `QUICK_START.md`: クイックスタートガイド
 - `GCR_DEPLOYMENT.md`: GCRへのデプロイ方法
+- `RELEASE.md`: これまでに実装された機能
+- `BUG.md`: バグ・改善点
