@@ -7,6 +7,7 @@ const nextConfig = {
   // 環境変数の検証
   env: {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    NEXT_PUBLIC_GIT_BRANCH: process.env.NEXT_PUBLIC_GIT_BRANCH || process.env.GIT_BRANCH || 'main',
   },
 
   // NEXT_PUBLIC_ で始まる環境変数は自動的にクライアントサイドで利用可能

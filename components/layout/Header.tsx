@@ -10,6 +10,7 @@ import { LoginButton } from '@/components/auth/LoginButton';
 import { SaveStatus } from '@/components/ui/SaveStatus';
 import { MobileMenu } from './MobileMenu';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { BranchModeIndicator } from '@/components/ui/BranchModeIndicator';
 
 export const Header: React.FC = () => {
   const { data: session, status } = useSession();
@@ -17,7 +18,9 @@ export const Header: React.FC = () => {
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   return (
-    <header className="bg-white border-b border-gray-200">
+    <>
+      <BranchModeIndicator />
+      <header className="bg-white border-b border-gray-200">
       <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
         {/* ロゴ */}
         <div className="flex items-center space-x-2 md:space-x-3">
@@ -113,6 +116,7 @@ export const Header: React.FC = () => {
         isOpen={isFeedbackModalOpen}
         onClose={() => setIsFeedbackModalOpen(false)}
       />
-    </header>
+      </header>
+    </>
   );
 };
