@@ -1,25 +1,9 @@
-# 🚀⚡ 【AI駆動開発】まだレビューする時にブランチ移動してるの？ブランチごとに独立環境を立てて爆速開発する方法
-
-- 下書き中は、`aooba.net`などを使用してサクサク作成するが最終的に`example.com`などを使用する。
-
-## 目次
-1. [はじめに](#はじめに)
-2. [なぜブランチごとに独立環境が必要なのか](#なぜブランチごとに独立環境が必要なのか)
-3. [想定読者](#想定読者)
-4. [システム概要](#システム概要)
-5. [前提条件](#前提条件)
-6. [環境構築](#環境構築)
-   - [6.1 Kubernetes環境のセットアップ](#61-kubernetes環境のセットアップ)
-   - [6.2 ArgoCD環境のセットアップ](#62-argocd環境のセットアップ)
-   - [6.3 Cloudflare Ingress Controllerのセットアップ](#63-cloudflare-ingress-controllerのセットアップ)
-   - [6.4 動作確認](#64-動作確認)
-7. [実装編](#実装編)
-   - [7.1 GitHub Actionsワークフローの作成](#71-github-actionsワークフローの作成)
-   - [7.2 ブランチ固有のマニフェスト管理](#72-ブランチ固有のマニフェスト管理)
-   - [7.3 ArgoCD Applicationの自動作成](#73-argocd-applicationの自動作成)
-8. [運用編](#運用編)
-9. [まとめ](#まとめ)
-
+---
+title : "【AI駆動開発】まだレビューする時にブランチ移動してるの？ブランチごとに独立環境を立てて爆速開発する方法"
+emoji : "⚡"
+type : "tech" # tech : 技術記事 / idea : アイデア
+topics : ["kubernetes","argocd","githubaction","cloudflare"]
+published : false
 ---
 
 ## 😱 ブランチを切り替えるたびに「儀式」をしていませんか？
@@ -41,14 +25,12 @@ PRのレビュー依頼が来た → `git checkout feature/xxx` → 依存関係
 
 本記事では、KubernetesとArgoCDを活用し、GitHub Actionsで完全自動化する方法を、実際のコードとともに詳しく解説していきます
 
-**この記事を読むことで得られるメリット：**
+**この記事を読むことで得られるメリット :**
 - ✅ ブランチ移動なしで複数PRを同時レビュー
-- ✅ 各ブランチの動作を独立したURLで確認（例：`feature-123.example.com`）
+- ✅ 各ブランチの動作を独立したURLで確認（例 :`feature-123.example.com`）
 - ✅ CI/CDパイプラインの高速化と自動化
 - ✅ AI駆動開発での並列タスク処理が劇的に効率化
 - ✅ ステークホルダーへのプレビュー共有が簡単に
-
----
 
 ## なぜブランチごとに独立環境が必要なのか
 
@@ -56,11 +38,11 @@ PRのレビュー依頼が来た → `git checkout feature/xxx` → 依存関係
 
 想像してみてください。あなたは今、Cursor AIに5つの機能を同時に作らせています。
 
-- ブランチA：ユーザー認証機能
-- ブランチB：コメント機能
-- ブランチC：PDF出力機能
-- ブランチD：検索機能
-- ブランチE：通知機能
+- ブランチA :ユーザー認証機能
+- ブランチB :コメント機能
+- ブランチC :PDF出力機能
+- ブランチD :検索機能
+- ブランチE :通知機能
 
 それぞれのブランチでコードは順調に進んでいます。でも、レビューしようとした瞬間に地獄が始まります。
 
@@ -84,7 +66,7 @@ git checkout feature/auth
 
 ### 独立環境があると何が変わるのか
 
-ブランチごとに独立した環境とURLがあれば、こうなります：
+ブランチごとに独立した環境とURLがあれば、こうなります :
 
 - `feature-auth.example.com` ← ブランチAの環境（常時稼働）
 - `feature-comments.example.com` ← ブランチBの環境（常時稼働）
@@ -92,18 +74,18 @@ git checkout feature/auth
 
 ブランチを切り替える必要なし。URLにアクセスするだけで各ブランチの動作が確認できます。
 
-**さらに言えば、**複数のブラウザタブで同時に開いて、機能を比較することだってできるんです。「こっちのデザインの方が良かったかも」って思ったら、即座に見比べられる。これ、めちゃくちゃ便利です。
+**さらに言えば、** 複数のブラウザタブで同時に開いて、機能を比較することだってできるんです。「こっちのデザインの方が良かったかも」って思ったら、即座に見比べられる。これ、めちゃくちゃ便利です。
 
 ### ステークホルダーへの共有も爆速に
 
 「この機能、どんな感じか見てもらえますか？」ってときに、URLをSlackに投げるだけでOKです。
 
-従来なら：
+従来なら :
 1. スクリーンショット撮る
 2. または動画録画する
 3. またはzoomで画面共有する
 
-独立環境があれば：
+独立環境があれば :
 1. URLを共有するだけ（終わり）
 
 相手は自分のペースで確認できるし、フィードバックももらいやすい。特にデザイナーやPMとの協働がスムーズになります。
@@ -114,13 +96,11 @@ git checkout feature/auth
 
 AI駆動開発では、**開発速度が圧倒的に上がります**。Cursor AIが1日で5機能を同時に進めてくれるなんてのは、もう普通です。
 
-でも、レビューと確認のフローが旧態依然のままだったら？せっかくの高速開発が台無しになります。
+しかし、レビューと確認のフローが旧態依然のままだったら？せっかくの高速開発が台無しになります。
 
 AIが高速化してくれた分、**確認作業もスケールさせないと意味がない**んです。
 
 個人開発だからこそ、1人で10ブランチ、20ブランチを同時に管理する。そんな時代に、ブランチごとの独立環境はもはや必須のインフラだと思っています。
-
----
 
 ## 想定読者
 
@@ -135,7 +115,7 @@ AIが高速化してくれた分、**確認作業もスケールさせないと�
 - ❌ Docker/Kubernetesを全く触ったことがない方
   - （ただし、興味があれば環境構築の参考にはなります）
 
----
+
 
 ## システム概要
 
@@ -175,7 +155,7 @@ AIが高速化してくれた分、**確認作業もスケールさせないと�
 7. Cloudflare Tunnel Controllerが`<app-name>-<hash>.example.com`を自動発行
 8. PRに自動的にデプロイURLをコメント
 
----
+
 
 ## 前提条件
 
@@ -202,7 +182,7 @@ AIが高速化してくれた分、**確認作業もスケールさせないと�
 | `GCP_SA_KEY` | GCPサービスアカウントキー | GCP IAMから作成・ダウンロード |
 | `KUBECONFIG_CONTENT` | Kubernetesクラスタの接続情報 | `~/.kube/config`の内容 |
 
----
+
 
 ## 環境構築
 
@@ -271,7 +251,7 @@ aws eks update-kubeconfig --name my-cluster --region us-west-2
 - コストがかかる
 - AWSアカウント必須
 
----
+
 
 #### k8sクラスタのセットアップ
 
@@ -300,7 +280,7 @@ kubectl get nodes
 kubectl get namespaces
 ```
 
----
+
 
 ### 6.2 ArgoCD環境のセットアップ
 
@@ -414,7 +394,7 @@ ArgoCD Serverを外部に公開するためのIngress設定を適用します。
 kubectl apply -f manifests/ingress.yml
 ```
 
----
+
 
 ### 6.3 Cloudflare Tunnel Controllerのセットアップ
 
@@ -525,7 +505,7 @@ spec:
 
 実際に公開するにはServiceやDeploymentなどが必要となりますが、Cloudflare Ingress Controllerのセットアップは以上となります。
 
----
+
 
 ### 6.4 動作確認
 
@@ -649,8 +629,6 @@ kubectl get namespace test-app
 
 > **Note**: `--cascade` オプションを使うと、ArgoCD Applicationが管理しているKubernetesリソース（Deployment、Service、Ingressなど）も自動的に削除されます。これにより、クリーンアップが簡単になります。
 
----
-
 ## 実装編
 
 ### 7.1 GitHub Actionsワークフローの作成
@@ -659,8 +637,6 @@ kubectl get namespace test-app
 1. **`.github/workflows/push.yml`**: ブランチプッシュ時にイメージビルド・マニフェスト生成
 2. **`.github/workflows/create-argo-app.yml`**: ArgoCD Applicationの作成・同期
 3. **`.github/workflows/deploy.yml`**: mainブランチのデプロイ
-
----
 
 ### 7.2 ブランチ固有のマニフェスト管理
 
@@ -683,6 +659,7 @@ BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
 ```
 
 これにより、どんなブランチ名でも短くユニークなIDに変換できます。
+
 - スラッシュなどが削除されるため安全
 - 同じ長さに統一されるため、理解しやすい
 
@@ -796,14 +773,10 @@ jobs:
             -H "Content-Type: application/json"
 ```
 
-**重要なポイント：**
+**ポイント：**
 
 1. **paths指定**: 不要なファイルの変更では実行されない
 2. **concurrency**: 同じブランチへの複数プッシュは最新のみ実行
-3. **ジョブの依存関係**: `needs`で順序を制御
-4. **yqの使用**: `sed`よりも安全にYAMLを変更
-
----
 
 ### 7.3 ArgoCD Applicationの自動作成
 
@@ -962,15 +935,11 @@ jobs:
           fi
 ```
 
-**重要な技術ポイント：**
+**ポイント：**
 
-1. **yqでのYAML操作**: `sed`と違い構造を理解して変更するため安全
 2. **ArgoCD API**: CLI不要でApplicationを作成
 3. **workflow_call**: 他のワークフローから呼び出し可能
-4. **冪等性**: 既存のApplicationはスキップ
 5. **PRへの自動コメント**: GitHub CLIでURLを通知
-
----
 
 ## 運用編
 
@@ -982,39 +951,15 @@ jobs:
 3. `<branch-name>.yourdomain.com`でアクセス可能に
 
 #### レビュー時
-1. PRにブランチのURLが自動的にコメントされる（オプション）
+
+1. PRにブランチのURLが自動的にコメントされる
 2. レビュアーはURLにアクセスして動作確認
 3. ブランチを切り替える必要なし
 
 #### マージ時
+
 1. PRをマージ
 2. ブランチを削除
-3. 対応するArgoCD Applicationとリソースも自動削除（オプション）
-
-### リソースのクリーンアップ
-
-#### 削除用のワークフロー
-```yaml
-name: Cleanup Branch Resources
-
-on:
-  delete:
-    branches:
-      - '*'
-
-jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Extract branch name
-        id: branch
-        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-
-      - name: Delete ArgoCD Application
-        run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
-          argocd app delete journee-${BRANCH_NAME} --cascade
-```
 
 ### コスト管理
 
@@ -1028,14 +973,7 @@ jobs:
 - ArgoCD Application削除: `argocd app delete journee-<hash> --cascade`
 - マニフェストディレクトリ削除: `git rm -r k8s/manifests-<hash>`
 
-**今後の改善予定：**
-- 未使用ブランチの自動検出・削除スクリプト
-- 一定期間（例：7日間）更新がないブランチの自動クリーンアップ
-- リソース使用量の監視とアラート
-
 > **Note**: 自動削除スクリプトはまだ実装していません。現在は手動での管理となっていますが、今後の展望として追加予定です。
-
----
 
 ## まとめ
 
@@ -1046,32 +984,6 @@ jobs:
 - ✅ GitOpsによる宣言的で信頼性の高いデプロイ
 - ✅ AI駆動開発との高い親和性
 
-### 今後の発展
-
-この仕組みを導入したことで、さらなる改善のアイデアが見えてきました：
-
-1. **Ephemeral環境（一定期間後自動削除）**
-   - GitHub Actionsのcronで定期的にチェック
-   - 最終更新から7日以上経過したブランチを自動削除
-   - Slack通知で削除前に確認
-
-2. **プレビュー環境へのBasic認証追加**
-   - 公開環境に認証を追加してセキュリティ向上
-   - Kubernetes Secretで認証情報を管理
-
-3. **コメントでのデプロイ制御（ChatOps）**
-   - PRコメントで `/deploy` → 手動デプロイ
-   - `/destroy` → 環境削除
-   - `/restart` → Pod再起動
-
-4. **自動パフォーマンステスト**
-   - Lighthouse CIを各プレビュー環境で実行
-   - パフォーマンススコアをPRにコメント
-
-5. **E2Eテストの自動実行**
-   - Playwright/Cypressで自動テスト
-   - プレビュー環境で実行し結果をPRに通知
-
 ### 参考リンク
 
 **プロジェクト関連：**
@@ -1080,15 +992,8 @@ jobs:
 
 **公式ドキュメント：**
 - [ArgoCD公式ドキュメント](https://argo-cd.readthedocs.io/)
-- [Kubernetes公式ドキュメント](https://kubernetes.io/docs/)
-- [GitHub Actions公式ドキュメント](https://docs.github.com/actions)
-- [yq - YAMLプロセッサ](https://github.com/mikefarah/yq)
-
-**Cloudflare関連：**
 - [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
 - [Cloudflare Tunnel Controller（非公式）](https://github.com/cloudflare/cloudflare-ingress-controller)
-
----
 
 この記事が役に立ったら、[k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster)にスターをいただけると嬉しいです ⭐
 
