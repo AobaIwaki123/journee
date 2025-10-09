@@ -1,0 +1,519 @@
+---
+globs: "components/feedback/**/*,app/api/feedback/**/*,types/feedback.ts"
+description: フィードバック機能の実装パターンとAPI設計
+---
+
+# フィードバック機能 - Phase 10.2実装
+
+## 概要
+ユーザーからのフィードバック収集機能。バグレポート、機能リクエスト、一般的なフィードバックを送信できる。
+
+## アーキテクチャ
+
+### データフロー
+```
+┌────────────────────────────────────────┐
+│ クライアント                            │
+│ ┌────────────────────────────────────┐ │
+│ │ FeedbackModal.tsx                  │ │
+│ │ - フィードバックフォーム             │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │ POST /api/feedback
+┌──────────────▼─────────────────────────┐
+│ APIルート                               │
+│ ┌────────────────────────────────────┐ │
+│ │ app/api/feedback/route.ts          │ │
+│ │ - バリデーション                    │ │
+│ │ - Supabase挿入                     │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │
+┌──────────────▼─────────────────────────┐
+│ Supabase (PostgreSQL)                  │
+│ - feedback テーブル                    │
+└────────────────────────────────────────┘
+```
+
+## ファイル構成
+
+### コンポーネント (`components/feedback/`)
+- [FeedbackModal.tsx](mdc:components/feedback/FeedbackModal.tsx) - フィードバックモーダル
+- [index.ts](mdc:components/feedback/index.ts) - エクスポート
+
+### APIルート (`app/api/`)
+- `feedback/route.ts` - フィードバック送信API
+
+### 型定義 (`types/`)
+- [feedback.ts](mdc:types/feedback.ts) - フィードバック関連型定義
+
+## データベーススキーマ
+
+### feedback テーブル
+```sql
+CREATE TABLE feedback (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id TEXT,
+  user_email TEXT,
+  type TEXT NOT NULL CHECK (type IN ('bug', 'feature', 'other')),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'in_progress', 'resolved', 'closed')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- インデックス
+CREATE INDEX idx_feedback_user_id ON feedback(user_id);
+CREATE INDEX idx_feedback_type ON feedback(type);
+CREATE INDEX idx_feedback_status ON feedback(status);
+CREATE INDEX idx_feedback_created_at ON feedback(created_at DESC);
+```
+
+## 型定義
+
+### Feedback型
+```typescript
+// types/feedback.ts
+export type FeedbackType = 'bug' | 'feature' | 'other';
+export type FeedbackStatus = 'new' | 'in_progress' | 'resolved' | 'closed';
+
+export interface Feedback {
+  id: string;
+  user_id: string | null;
+  user_email: string | null;
+  type: FeedbackType;
+  title: string;
+  description: string;
+  status: FeedbackStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateFeedbackRequest {
+  type: FeedbackType;
+  title: string;
+  description: string;
+}
+
+export interface CreateFeedbackResponse {
+  success: boolean;
+  feedback?: Feedback;
+  error?: string;
+}
+```
+
+## API実装
+
+### フィードバック送信
+```typescript
+// app/api/feedback/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth/session';
+import { supabase } from '@/lib/db/supabase';
+
+export async function POST(req: NextRequest) {
+  try {
+    // ユーザー情報取得（オプショナル）
+    const user = await getCurrentUser();
+
+    // リクエストボディ取得
+    const { type, title, description } = await req.json();
+
+    // バリデーション
+    if (!type || !title || !description) {
+      return NextResponse.json(
+        { error: 'ValidationError', message: '必須項目が不足しています' },
+        { status: 400 }
+      );
+    }
+
+    if (!['bug', 'feature', 'other'].includes(type)) {
+      return NextResponse.json(
+        { error: 'ValidationError', message: '無効なフィードバックタイプです' },
+        { status: 400 }
+      );
+    }
+
+    if (title.length > 200) {
+      return NextResponse.json(
+        { error: 'ValidationError', message: 'タイトルは200文字以内にしてください' },
+        { status: 400 }
+      );
+    }
+
+    if (description.length > 2000) {
+      return NextResponse.json(
+        { error: 'ValidationError', message: '説明は2000文字以内にしてください' },
+        { status: 400 }
+      );
+    }
+
+    // フィードバック挿入
+    const { data: feedback, error: insertError } = await supabase
+      .from('feedback')
+      .insert({
+        user_id: user?.id || null,
+        user_email: user?.email || null,
+        type,
+        title: title.trim(),
+        description: description.trim(),
+        status: 'new',
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    return NextResponse.json({
+      success: true,
+      feedback,
+    });
+  } catch (error) {
+    console.error('Create feedback error:', error);
+    return NextResponse.json(
+      { 
+        error: 'InternalServerError',
+        message: 'フィードバックの送信に失敗しました'
+      },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### フィードバック取得（管理者用）
+```typescript
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    
+    // 管理者チェック（実装は環境に応じて調整）
+    if (!user || !isAdmin(user)) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
+    const searchParams = req.nextUrl.searchParams;
+    const status = searchParams.get('status');
+    const type = searchParams.get('type');
+
+    let query = supabase
+      .from('feedback')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (type) {
+      query = query.eq('type', type);
+    }
+
+    const { data: feedbacks, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({
+      success: true,
+      feedbacks: feedbacks || [],
+    });
+  } catch (error) {
+    console.error('Get feedbacks error:', error);
+    return NextResponse.json(
+      { 
+        error: 'InternalServerError',
+        message: 'フィードバックの取得に失敗しました'
+      },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## コンポーネント実装
+
+### FeedbackModal
+```typescript
+'use client';
+
+import React, { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { X } from 'lucide-react';
+import { FeedbackType } from '@/types/feedback';
+
+interface FeedbackModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const FeedbackModal: React.FC<FeedbackModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const { data: session } = useSession();
+  const [type, setType] = useState<FeedbackType>('other');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!title.trim() || !description.trim()) {
+      setError('タイトルと説明を入力してください');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          title: title.trim(),
+          description: description.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'フィードバックの送信に失敗しました');
+      }
+
+      // 成功
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+        // リセット
+        setType('other');
+        setTitle('');
+        setDescription('');
+        setSuccess(false);
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '不明なエラー');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            フィードバックを送信
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* 成功メッセージ */}
+        {success && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+            フィードバックを送信しました。ありがとうございます！
+          </div>
+        )}
+
+        {/* フォーム */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* フィードバックタイプ */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              カテゴリ
+            </label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as FeedbackType)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              disabled={isSubmitting}
+            >
+              <option value="bug">バグレポート</option>
+              <option value="feature">機能リクエスト</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+
+          {/* タイトル */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              タイトル
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="タイトルを入力..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              maxLength={200}
+              disabled={isSubmitting}
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              {title.length} / 200
+            </div>
+          </div>
+
+          {/* 説明 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              説明
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="詳細を入力..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              rows={5}
+              maxLength={2000}
+              disabled={isSubmitting}
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              {description.length} / 2000
+            </div>
+          </div>
+
+          {/* エラー表示 */}
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
+
+          {/* ボタン */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              disabled={isSubmitting}
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting || !title.trim() || !description.trim()}
+            >
+              {isSubmitting ? '送信中...' : '送信'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+```
+
+### フィードバックボタンの配置
+```typescript
+// components/layout/Header.tsx に追加
+'use client';
+
+import { useState } from 'react';
+import { MessageSquare } from 'lucide-react';
+import { FeedbackModal } from '@/components/feedback';
+
+export const Header: React.FC = () => {
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  return (
+    <header>
+      {/* ... 他のヘッダーコンテンツ */}
+      
+      <button
+        onClick={() => setIsFeedbackOpen(true)}
+        className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+      >
+        <MessageSquare size={20} />
+        <span>フィードバック</span>
+      </button>
+
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+      />
+    </header>
+  );
+};
+```
+
+## バリデーション
+
+### クライアントサイド
+- タイトル: 1-200文字
+- 説明: 1-2000文字
+- 必須項目チェック
+
+### サーバーサイド
+- タイトル: 最大200文字
+- 説明: 最大2000文字
+- フィードバックタイプ: 'bug' | 'feature' | 'other'
+- XSS対策のサニタイズ
+
+## セキュリティ
+
+### 認証
+- フィードバック送信に認証は不要（匿名フィードバック可能）
+- ユーザー情報があれば自動的に記録
+
+### レート制限
+- IPベースのレート制限（推奨: 5件/10分）
+- スパム対策
+
+### データ保護
+- ユーザー情報の適切な管理
+- 個人情報の含まれるフィードバックの処理
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ ユーザーフレンドリーなUI
+- ✅ 適切なバリデーション
+- ✅ 成功メッセージの表示
+- ✅ エラーハンドリング
+- ✅ ローディング状態の表示
+- ✅ 送信後の自動クローズ
+
+### DON'T（非推奨）
+- ❌ 無制限の文字数
+- ❌ レート制限なし
+- ❌ エラーメッセージの非表示
+- ❌ 送信状態の不明確な表示
+
+## 管理画面（Phase 11予定）
+
+### フィードバック一覧
+- ステータスフィルタ（new, in_progress, resolved, closed）
+- タイプフィルタ（bug, feature, other）
+- 日付順ソート
+
+### フィードバック詳細
+- ユーザー情報表示
+- ステータス更新
+- コメント追加
+
+## 参考リンク
+
+- [docs/FEEDBACK.md](mdc:docs/FEEDBACK.md) - フィードバック機能ドキュメント
+- [components/feedback/FeedbackModal.tsx](mdc:components/feedback/FeedbackModal.tsx) - フィードバックモーダル
+- [types/feedback.ts](mdc:types/feedback.ts) - フィードバック型定義
+- [app/api/feedback/route.ts](mdc:app/api/feedback/route.ts) - フィードバックAPI

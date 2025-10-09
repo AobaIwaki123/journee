@@ -1,0 +1,474 @@
+---
+globs: "e2e/**/*,**/*.test.ts,**/*.test.tsx,**/*.spec.ts,playwright.config.ts,jest.config.js"
+description: テスト戦略とE2Eテストの実装パターン
+---
+
+# テスト戦略 - Playwright E2E Testing
+
+## 概要
+Playwrightを使用したE2Eテスト戦略。主要な機能とユーザーフローをテストし、品質を保証。
+
+## テスト構成
+
+### E2Eテストファイル (`e2e/`)
+- [map-toggle.spec.ts](mdc:e2e/map-toggle.spec.ts) - 地図表示トグル機能
+- [test-command.spec.ts](mdc:e2e/test-command.spec.ts) - コマンドテスト
+- [comment-feature.spec.ts](mdc:e2e/comment-feature.spec.ts) - コメント機能
+- [itinerary-db-integration.spec.ts](mdc:e2e/itinerary-db-integration.spec.ts) - しおりDB統合
+- [public-pdf-export.spec.ts](mdc:e2e/public-pdf-export.spec.ts) - 公開しおりPDF出力
+
+### 設定ファイル
+- [playwright.config.ts](mdc:playwright.config.ts) - Playwright設定
+- [jest.config.js](mdc:jest.config.js) - Jest設定（ユニットテスト用）
+- [jest.setup.js](mdc:jest.setup.js) - Jestセットアップ
+
+### ドキュメント
+- [docs/TESTING.md](mdc:docs/TESTING.md) - テスト戦略・実行手順
+
+## Playwright設定
+
+### playwright.config.ts
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  
+  // タイムアウト設定
+  timeout: 30 * 1000,
+  expect: {
+    timeout: 5000,
+  },
+
+  // 並列実行
+  fullyParallel: true,
+  
+  // 失敗時の再試行
+  retries: process.env.CI ? 2 : 0,
+  
+  // 並列ワーカー数
+  workers: process.env.CI ? 1 : undefined,
+
+  // レポート設定
+  reporter: [
+    ['html'],
+    ['list'],
+  ],
+
+  // 共通設定
+  use: {
+    // ベースURL
+    baseURL: 'http://localhost:3000',
+    
+    // スクリーンショット
+    screenshot: 'only-on-failure',
+    
+    // ビデオ
+    video: 'retain-on-failure',
+    
+    // トレース
+    trace: 'on-first-retry',
+  },
+
+  // プロジェクト（ブラウザ）
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    // モバイル
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
+  ],
+
+  // 開発サーバー
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+## テストパターン
+
+### 基本テスト構造
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('機能名', () => {
+  test.beforeEach(async ({ page }) => {
+    // 各テストの前に実行
+    await page.goto('/');
+  });
+
+  test('テストケース名', async ({ page }) => {
+    // テスト実装
+    await page.click('button');
+    await expect(page.locator('text=Success')).toBeVisible();
+  });
+});
+```
+
+### 認証テスト
+```typescript
+test.describe('認証機能', () => {
+  test('ログイン成功', async ({ page }) => {
+    await page.goto('/login');
+    
+    // Googleログインボタンをクリック
+    await page.click('button:has-text("Googleでログイン")');
+    
+    // リダイレクト待機
+    await page.waitForURL('/');
+    
+    // ログイン確認
+    await expect(page.locator('text=ログアウト')).toBeVisible();
+  });
+
+  test('未認証でのアクセス制限', async ({ page }) => {
+    await page.goto('/mypage');
+    
+    // ログインページにリダイレクト
+    await page.waitForURL('/login');
+  });
+});
+```
+
+### チャット機能テスト
+```typescript
+test.describe('AIチャット', () => {
+  test('メッセージ送信と応答', async ({ page }) => {
+    await page.goto('/');
+    
+    // メッセージ入力
+    const input = page.locator('textarea[placeholder*="メッセージ"]');
+    await input.fill('東京で3日間の旅行計画を立てたいです');
+    
+    // 送信
+    await page.click('button:has-text("送信")');
+    
+    // ローディング確認
+    await expect(page.locator('.loading')).toBeVisible();
+    
+    // AI応答待機（最大30秒）
+    await expect(page.locator('.message-assistant').first()).toBeVisible({
+      timeout: 30000,
+    });
+  });
+});
+```
+
+### しおり機能テスト
+```typescript
+test.describe('しおり管理', () => {
+  test('しおり保存', async ({ page }) => {
+    await page.goto('/');
+    
+    // ログイン（省略）
+    
+    // しおりが生成されるまで待機
+    await page.waitForSelector('.itinerary-preview');
+    
+    // 保存ボタンクリック
+    await page.click('button:has-text("保存")');
+    
+    // 成功通知確認
+    await expect(page.locator('text=保存しました')).toBeVisible();
+  });
+
+  test('しおり公開', async ({ page }) => {
+    await page.goto('/mypage');
+    
+    // しおりを選択
+    await page.click('.itinerary-card').first();
+    
+    // 公開ボタンクリック
+    await page.click('button:has-text("公開")');
+    
+    // 公開URL取得
+    const shareUrl = await page.locator('input[readonly]').inputValue();
+    expect(shareUrl).toContain('/share/');
+    
+    // 公開ページに移動
+    await page.goto(shareUrl);
+    
+    // しおり表示確認
+    await expect(page.locator('.itinerary-preview')).toBeVisible();
+  });
+});
+```
+
+### コメント機能テスト
+```typescript
+test.describe('コメント機能', () => {
+  test('コメント投稿と表示', async ({ page }) => {
+    // 公開しおりページに移動
+    await page.goto('/share/test-slug');
+    
+    // ログイン（省略）
+    
+    // コメント入力
+    await page.fill('textarea[placeholder*="コメント"]', 'テストコメント');
+    
+    // 投稿
+    await page.click('button:has-text("コメントを投稿")');
+    
+    // コメント表示確認
+    await expect(page.locator('text=テストコメント')).toBeVisible();
+  });
+
+  test('未認証でのコメント投稿制限', async ({ page }) => {
+    await page.goto('/share/test-slug');
+    
+    // ログイン必要メッセージ確認
+    await expect(
+      page.locator('text=ログインが必要です')
+    ).toBeVisible();
+  });
+});
+```
+
+### PDF出力テスト
+```typescript
+test.describe('PDF出力', () => {
+  test('PDF生成とダウンロード', async ({ page }) => {
+    await page.goto('/share/test-slug');
+    
+    // PDF出力ボタンクリック
+    const downloadPromise = page.waitForEvent('download');
+    await page.click('button:has-text("PDFをダウンロード")');
+    
+    // ダウンロード確認
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+  });
+});
+```
+
+### レスポンシブテスト
+```typescript
+test.describe('レスポンシブデザイン', () => {
+  test('モバイル表示', async ({ page }) => {
+    // モバイルビューポート設定
+    await page.setViewportSize({ width: 375, height: 667 });
+    
+    await page.goto('/');
+    
+    // モバイルメニュー確認
+    await expect(page.locator('.mobile-menu')).toBeVisible();
+    
+    // タブ切り替え確認
+    await page.click('button:has-text("しおり")');
+    await expect(page.locator('.itinerary-preview')).toBeVisible();
+  });
+
+  test('デスクトップ表示', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    
+    await page.goto('/');
+    
+    // リサイズ可能レイアウト確認
+    await expect(page.locator('.resizable-layout')).toBeVisible();
+  });
+});
+```
+
+## テスト実行
+
+### ローカル実行
+```bash
+# 全テスト実行
+npm run test:e2e
+
+# 特定のテスト実行
+npm run test:e2e -- comment-feature.spec.ts
+
+# UIモードで実行
+npm run test:e2e:ui
+
+# デバッグモード
+npm run test:e2e -- --debug
+```
+
+### CI/CD実行
+```bash
+# CI環境での実行
+CI=true npm run test:e2e
+```
+
+## テストヘルパー
+
+### カスタムフィクスチャ
+```typescript
+// e2e/fixtures/auth.ts
+import { test as base } from '@playwright/test';
+
+export const test = base.extend({
+  authenticatedPage: async ({ page }, use) => {
+    // ログイン処理
+    await page.goto('/login');
+    await page.click('button:has-text("Googleでログイン")');
+    await page.waitForURL('/');
+    
+    await use(page);
+  },
+});
+```
+
+### ページオブジェクトモデル
+```typescript
+// e2e/pages/ItineraryPage.ts
+export class ItineraryPage {
+  constructor(private page: Page) {}
+
+  async goto() {
+    await this.page.goto('/');
+  }
+
+  async sendMessage(message: string) {
+    await this.page.fill('textarea[placeholder*="メッセージ"]', message);
+    await this.page.click('button:has-text("送信")');
+  }
+
+  async waitForAIResponse() {
+    await this.page.waitForSelector('.message-assistant', {
+      timeout: 30000,
+    });
+  }
+
+  async saveItinerary() {
+    await this.page.click('button:has-text("保存")');
+    await this.page.waitForSelector('text=保存しました');
+  }
+}
+
+// 使用例
+test('しおり作成フロー', async ({ page }) => {
+  const itineraryPage = new ItineraryPage(page);
+  await itineraryPage.goto();
+  await itineraryPage.sendMessage('東京旅行');
+  await itineraryPage.waitForAIResponse();
+  await itineraryPage.saveItinerary();
+});
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ テストを独立させる（他のテストに依存しない）
+- ✅ 明確なテスト名を使用
+- ✅ 適切な待機処理（waitForSelector等）
+- ✅ スクリーンショット・ビデオ録画を活用
+- ✅ CI/CDでの自動実行
+- ✅ ページオブジェクトモデルを使用
+- ✅ カスタムフィクスチャで共通処理を抽象化
+
+### DON'T（非推奨）
+- ❌ sleep()での固定待機
+- ❌ 不安定なセレクタ（位置ベース等）
+- ❌ テスト間の依存関係
+- ❌ 過度に長いテスト
+- ❌ エラーハンドリング不足
+- ❌ テストデータのハードコード
+
+## デバッグ
+
+### Playwright Inspector
+```bash
+npm run test:e2e -- --debug
+```
+
+### スクリーンショット撮影
+```typescript
+await page.screenshot({ path: 'screenshot.png' });
+```
+
+### コンソールログ確認
+```typescript
+page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
+```
+
+### ネットワークリクエスト確認
+```typescript
+page.on('request', (request) =>
+  console.log('>>', request.method(), request.url())
+);
+page.on('response', (response) =>
+  console.log('<<', response.status(), response.url())
+);
+```
+
+## CI/CD統合
+
+### GitHub Actions例
+```yaml
+name: E2E Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+      
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+```
+
+## テストカバレッジ
+
+### 現在のカバレッジ（Phase 10.4時点）
+- ✅ 地図表示トグル
+- ✅ コメント機能
+- ✅ しおりDB統合
+- ✅ 公開しおりPDF出力
+- ✅ 基本的なコマンド
+
+### 今後追加予定
+- 📋 認証フロー
+- 📋 しおり編集機能
+- 📋 フィードバック送信
+- 📋 設定変更
+- 📋 エラーケース
+
+## 参考リンク
+
+- [Playwright Documentation](https://playwright.dev/)
+- [Best Practices](https://playwright.dev/docs/best-practices)
+- [docs/TESTING.md](mdc:docs/TESTING.md) - テスト戦略詳細
+- [playwright.config.ts](mdc:playwright.config.ts) - Playwright設定
+- [e2e/](mdc:e2e/) - E2Eテストディレクトリ

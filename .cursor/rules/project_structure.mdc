@@ -64,8 +64,14 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
   - [delete/route.ts](mdc:app/api/itinerary/delete/route.ts) - しおり削除
   - [publish/route.ts](mdc:app/api/itinerary/publish/route.ts) - しおり公開
   - [unpublish/route.ts](mdc:app/api/itinerary/unpublish/route.ts) - しおり非公開化
+  - [comments/route.ts](mdc:app/api/itinerary/comments/route.ts) - しおりコメント管理
+  - [[id]/comments/route.ts](mdc:app/api/itinerary/[id]/comments/route.ts) - 特定しおりのコメント操作
+- `/app/api/feedback` - フィードバック
+  - [route.ts](mdc:app/api/feedback/route.ts) - ユーザーフィードバック送信
 - `/app/api/migration` - データベースマイグレーション
   - [route.ts](mdc:app/api/migration/route.ts) - LocalStorageからSupabaseへのマイグレーション
+- `/app/api/og` - OGP画像生成
+  - [route.tsx](mdc:app/api/og/route.tsx) - 動的OGP画像生成（ImageResponse使用）
 - `/app/api/health` - ヘルスチェック
   - [route.ts](mdc:app/api/health/route.ts) - サービス稼働状況確認
 - `/app/api/user/me` - ユーザー情報
@@ -141,6 +147,18 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
   - [SoundSettings.tsx](mdc:components/settings/SoundSettings.tsx) - 効果音設定UI
   - [APIKeyModal.tsx](mdc:components/settings/APIKeyModal.tsx) - APIキー設定モーダル
   - [index.ts](mdc:components/settings/index.ts) - 設定コンポーネントのエクスポート
+
+#### コメント機能
+- `/comments`
+  - [CommentList.tsx](mdc:components/comments/CommentList.tsx) - コメント一覧表示
+  - [CommentItem.tsx](mdc:components/comments/CommentItem.tsx) - 個別コメント表示
+  - [CommentForm.tsx](mdc:components/comments/CommentForm.tsx) - コメント投稿フォーム
+  - `__tests__/` - コメント機能のテスト
+
+#### フィードバック機能
+- `/feedback`
+  - [FeedbackModal.tsx](mdc:components/feedback/FeedbackModal.tsx) - フィードバックモーダル
+  - [index.ts](mdc:components/feedback/index.ts) - エクスポート
 
 #### データベース関連
 - `/db`
@@ -220,6 +238,8 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - [database.ts](mdc:types/database.ts) - データベース型定義
 - [requirements.ts](mdc:types/requirements.ts) - 要件チェックリスト型
 - [settings.ts](mdc:types/settings.ts) - 設定関連の型
+- [comment.ts](mdc:types/comment.ts) - コメント関連の型
+- [feedback.ts](mdc:types/feedback.ts) - フィードバック関連の型
 
 ### `/docs` - ドキュメント
 - [API.md](mdc:docs/API.md) - API仕様書
@@ -230,10 +250,21 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - [GCR_DEPLOYMENT.md](mdc:docs/GCR_DEPLOYMENT.md) - Google Cloud Run デプロイ手順
 - [BUG.md](mdc:docs/BUG.md) - バグトラッキング
 - [RELEASE.md](mdc:docs/RELEASE.md) - リリースノート
+- [FEEDBACK.md](mdc:docs/FEEDBACK.md) - フィードバック機能ドキュメント
+- [OGP_TESTING.md](mdc:docs/OGP_TESTING.md) - OGP画像テスト手順
+- [TESTING.md](mdc:docs/TESTING.md) - テスト戦略・実行手順
+- [SCHEMA.md](mdc:docs/SCHEMA.md) - データベーススキーマ詳細
+- [GUIDELINE.md](mdc:docs/GUIDELINE.md) - 開発ガイドライン
+- [MOCK_AUTH.md](mdc:docs/MOCK_AUTH.md) - モック認証ドキュメント
+- [PHASE_10.4_SUMMARY.md](mdc:docs/PHASE_10.4_SUMMARY.md) - Phase 10.4サマリー
+- [PHASE_10.4.1_CLIENT_UUID.md](mdc:docs/PHASE_10.4.1_CLIENT_UUID.md) - クライアントUUID実装
 
 ### `/e2e` - E2Eテスト
 - [map-toggle.spec.ts](mdc:e2e/map-toggle.spec.ts) - 地図表示トグルテスト
 - [test-command.spec.ts](mdc:e2e/test-command.spec.ts) - コマンドテスト
+- [comment-feature.spec.ts](mdc:e2e/comment-feature.spec.ts) - コメント機能テスト
+- [itinerary-db-integration.spec.ts](mdc:e2e/itinerary-db-integration.spec.ts) - しおりDB統合テスト
+- [public-pdf-export.spec.ts](mdc:e2e/public-pdf-export.spec.ts) - 公開しおりPDF出力テスト
 - [playwright.config.ts](mdc:playwright.config.ts) - Playwright設定
 
 ### `/k8s` - Kubernetes設定
@@ -250,11 +281,18 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 ### `/scripts` - スクリプト
 - [deploy-gcr.sh](mdc:scripts/deploy-gcr.sh) - Google Cloud Runデプロイスクリプト
 - [docker-dev.sh](mdc:scripts/docker-dev.sh) - Docker開発環境起動
+- [seed-mock-users.ts](mdc:scripts/seed-mock-users.ts) - モックユーザーデータシード
+- [create-branch-infra.sh](mdc:scripts/create-branch-infra.sh) - ブランチインフラ作成
+- [clean-manifests.sh](mdc:scripts/clean-manifests.sh) - マニフェストクリーンアップ
+- [tag-version.sh](mdc:scripts/tag-version.sh) - バージョンタグ付け
 
 ### `/public` - 静的ファイル
 - `/images` - 画像・アイコン
   - [README.md](mdc:public/images/README.md)
 - [manifest.json](mdc:public/manifest.json) - PWAマニフェスト
+
+### `/blog` - ブログ・技術記事
+- [README.md](mdc:blog/README.md) - ブログ下書きとアイデア（ブランチ環境分離など）
 
 ### その他の重要ファイル
 - [middleware.ts](mdc:middleware.ts) - 認証ミドルウェア（保護されたルート自動チェック）
