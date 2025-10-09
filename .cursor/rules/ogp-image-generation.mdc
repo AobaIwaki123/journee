@@ -1,0 +1,489 @@
+---
+globs: "app/api/og/**/*,app/share/[slug]/layout.tsx"
+description: OGP画像動的生成の実装パターン
+---
+
+# OGP画像動的生成 - Phase 10.1実装
+
+## 概要
+公開しおりのメタデータとOGP画像を動的に生成。Next.js 14のImageResponseを使用して、サーバーサイドで画像を生成。
+
+## アーキテクチャ
+
+### OGP画像生成フロー
+```
+┌────────────────────────────────────────┐
+│ SNS / ブラウザ                          │
+│ - TwitterカードプレビューAPI            │
+│ - Facebook OGPクローラー                │
+└────────────┬───────────────────────────┘
+             │ GET /api/og?title=...&destination=...
+┌────────────▼─────────────────────────────┐
+│ OGP画像生成API                           │
+│ ┌────────────────────────────────────┐   │
+│ │ app/api/og/route.tsx               │   │
+│ │ - クエリパラメータ取得              │   │
+│ │ - ImageResponse生成                │   │
+│ └────────────┬───────────────────────┘   │
+└──────────────┼───────────────────────────┘
+               │
+┌──────────────▼─────────────────────────────┐
+│ PNG画像生成（@vercel/og）                   │
+│ - HTML/CSSからPNG生成                      │
+│ - 1200x630px（Twitter/Facebook推奨サイズ） │
+└────────────────────────────────────────────┘
+```
+
+## ファイル構成
+
+### APIルート
+- [app/api/og/route.tsx](mdc:app/api/og/route.tsx) - OGP画像生成API
+
+### レイアウト
+- [app/share/[slug]/layout.tsx](mdc:app/share/[slug]/layout.tsx) - メタデータ生成
+
+### ドキュメント
+- [docs/OGP_TESTING.md](mdc:docs/OGP_TESTING.md) - OGPテスト手順
+
+## OGP画像生成API実装
+
+### app/api/og/route.tsx
+```typescript
+import { NextRequest } from 'next/server';
+import { ImageResponse } from 'next/og';
+
+export const runtime = 'edge';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    
+    // クエリパラメータ取得
+    const title = searchParams.get('title') || 'Journee';
+    const destination = searchParams.get('destination') || '旅のしおり';
+    const days = searchParams.get('days') || '';
+
+    // ImageResponse生成
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            fontFamily: 'sans-serif',
+          }}
+        >
+          {/* ロゴ */}
+          <div
+            style={{
+              fontSize: 48,
+              fontWeight: 'bold',
+              color: 'white',
+              marginBottom: 20,
+            }}
+          >
+            Journee
+          </div>
+
+          {/* タイトル */}
+          <div
+            style={{
+              fontSize: 60,
+              fontWeight: 'bold',
+              color: 'white',
+              textAlign: 'center',
+              maxWidth: '80%',
+              marginBottom: 20,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {title}
+          </div>
+
+          {/* 行き先 */}
+          <div
+            style={{
+              fontSize: 36,
+              color: 'rgba(255, 255, 255, 0.9)',
+              textAlign: 'center',
+            }}
+          >
+            {destination}
+            {days && ` • ${days}日間`}
+          </div>
+
+          {/* フッター */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 40,
+              fontSize: 24,
+              color: 'rgba(255, 255, 255, 0.7)',
+            }}
+          >
+            AIとともに旅のしおりを作成
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
+  } catch (error) {
+    console.error('OG Image generation error:', error);
+    
+    // エラー時はフォールバック画像を返す
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            fontSize: 60,
+            fontWeight: 'bold',
+          }}
+        >
+          Journee
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
+  }
+}
+```
+
+## メタデータ生成
+
+### app/share/[slug]/layout.tsx
+```typescript
+import { Metadata } from 'next';
+import { supabase } from '@/lib/db/supabase';
+
+interface Props {
+  params: { slug: string };
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = params;
+
+  try {
+    // 公開しおりを取得
+    const { data: itinerary, error } = await supabase
+      .from('itineraries')
+      .select('*')
+      .eq('slug', slug)
+      .eq('is_public', true)
+      .single();
+
+    if (error || !itinerary) {
+      return {
+        title: 'Journee - 旅のしおり',
+      };
+    }
+
+    const itineraryData = itinerary.data;
+    const title = itineraryData.title || 'Journee';
+    const destination = itineraryData.destination || '旅のしおり';
+    const days = itineraryData.schedule?.length || 0;
+
+    // OGP画像URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const ogImageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(
+      title
+    )}&destination=${encodeURIComponent(destination)}&days=${days}`;
+
+    // メタデータ生成
+    return {
+      title: `${title} | Journee`,
+      description: `${destination}の旅のしおり - ${days}日間の旅行計画`,
+      openGraph: {
+        title: title,
+        description: `${destination}の旅のしおり`,
+        url: `${baseUrl}/share/${slug}`,
+        siteName: 'Journee',
+        images: [
+          {
+            url: ogImageUrl,
+            width: 1200,
+            height: 630,
+            alt: title,
+          },
+        ],
+        locale: 'ja_JP',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: title,
+        description: `${destination}の旅のしおり`,
+        images: [ogImageUrl],
+      },
+    };
+  } catch (error) {
+    console.error('Metadata generation error:', error);
+    return {
+      title: 'Journee - 旅のしおり',
+    };
+  }
+}
+
+export default function ShareLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
+}
+```
+
+## OGPタグの種類
+
+### Open Graph（Facebook, LinkedIn等）
+```html
+<meta property="og:title" content="東京3日間の旅" />
+<meta property="og:description" content="東京の旅のしおり" />
+<meta property="og:image" content="https://example.com/api/og?title=..." />
+<meta property="og:url" content="https://example.com/share/abc123" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Journee" />
+<meta property="og:locale" content="ja_JP" />
+```
+
+### Twitter Card
+```html
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="東京3日間の旅" />
+<meta name="twitter:description" content="東京の旅のしおり" />
+<meta name="twitter:image" content="https://example.com/api/og?title=..." />
+```
+
+### 基本メタタグ
+```html
+<title>東京3日間の旅 | Journee</title>
+<meta name="description" content="東京の旅のしおり - 3日間の旅行計画" />
+```
+
+## 画像サイズとフォーマット
+
+### 推奨サイズ
+- **Twitter**: 1200x630px（最小: 300x157px）
+- **Facebook**: 1200x630px（推奨: 1.91:1比率）
+- **LinkedIn**: 1200x627px
+
+### フォーマット
+- PNG（推奨）
+- JPEG
+- WebP（ブラウザ対応による）
+
+### ファイルサイズ
+- 最大: 5MB（Twitter）
+- 推奨: 1MB以下
+
+## テスト方法
+
+### 1. ローカルテスト
+```bash
+# 開発サーバー起動
+npm run dev
+
+# ブラウザで画像確認
+http://localhost:3000/api/og?title=東京3日間の旅&destination=東京&days=3
+```
+
+### 2. Twitter Card Validator
+https://cards-dev.twitter.com/validator
+
+### 3. Facebook Sharing Debugger
+https://developers.facebook.com/tools/debug/
+
+### 4. LinkedIn Post Inspector
+https://www.linkedin.com/post-inspector/
+
+### 5. Meta Tags チェッカー
+https://metatags.io/
+
+## デバッグツール
+
+### og:imageのURL確認
+```typescript
+// デバッグ用にconsole.logでURL確認
+console.log('OG Image URL:', ogImageUrl);
+```
+
+### ローカルでのプレビュー
+```bash
+# ngrokでローカルを公開してテスト
+ngrok http 3000
+```
+
+### レスポンスヘッダー確認
+```bash
+curl -I "http://localhost:3000/api/og?title=Test"
+```
+
+## パフォーマンス
+
+### キャッシュ戦略
+```typescript
+// app/api/og/route.tsx
+export async function GET(req: NextRequest) {
+  const response = new ImageResponse(/* ... */);
+  
+  // キャッシュヘッダー追加
+  response.headers.set(
+    'Cache-Control',
+    'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800'
+  );
+  
+  return response;
+}
+```
+
+### Edge Runtime使用
+```typescript
+export const runtime = 'edge';
+```
+- より高速なレスポンス
+- グローバルに分散
+- コールドスタート削減
+
+## セキュリティ
+
+### XSS対策
+```typescript
+// パラメータのサニタイズ
+const title = searchParams.get('title')?.slice(0, 100) || 'Journee';
+```
+
+### 文字列長制限
+- タイトル: 最大100文字
+- 行き先: 最大50文字
+- 日数: 数値のみ
+
+### レート制限
+- Vercel Edge Functionsの制限に準拠
+- 必要に応じてCloudflareなどでレート制限
+
+## エラーハンドリング
+
+### フォールバック画像
+```typescript
+try {
+  // OGP画像生成
+} catch (error) {
+  // エラー時は最小限の画像を返す
+  return new ImageResponse(
+    <div>Journee</div>,
+    { width: 1200, height: 630 }
+  );
+}
+```
+
+### メタデータのフォールバック
+```typescript
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  try {
+    // メタデータ生成
+  } catch (error) {
+    // エラー時はデフォルトメタデータ
+    return {
+      title: 'Journee - 旅のしおり',
+    };
+  }
+}
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ 1200x630pxのサイズを使用
+- ✅ 適切なキャッシュヘッダー設定
+- ✅ Edge Runtimeを使用
+- ✅ エラーハンドリングを実装
+- ✅ 文字列長を制限
+- ✅ フォールバック画像を用意
+- ✅ 本番環境でテスト
+
+### DON'T（非推奨）
+- ❌ 巨大な画像サイズ
+- ❌ キャッシュなし
+- ❌ エラーハンドリング不足
+- ❌ 無制限の文字列長
+- ❌ テスト不足
+
+## トラブルシューティング
+
+### 画像が表示されない
+1. OGP画像URLが正しいか確認
+2. 画像が実際に生成されているか確認（ブラウザでURL直接アクセス）
+3. キャッシュをクリア（SNS側）
+4. HTTPSで公開されているか確認
+
+### 古い画像がキャッシュされる
+- Facebook: Sharing Debuggerで「Scrape Again」
+- Twitter: Card Validatorで再検証
+- キャッシュヘッダーの調整
+
+### 文字化けする
+- フォント指定を確認
+- 日本語フォントの読み込み
+- `fontFamily: 'sans-serif'` を指定
+
+## 日本語フォント対応（将来の拡張）
+
+### カスタムフォントの使用
+```typescript
+// app/api/og/route.tsx
+import { ImageResponse } from 'next/og';
+
+export async function GET(req: NextRequest) {
+  // フォントファイル読み込み（例: Noto Sans JP）
+  const fontData = await fetch(
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700'
+  ).then((res) => res.arrayBuffer());
+
+  return new ImageResponse(
+    (
+      <div style={{ fontFamily: 'Noto Sans JP' }}>
+        {/* コンテンツ */}
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+      fonts: [
+        {
+          name: 'Noto Sans JP',
+          data: fontData,
+          style: 'normal',
+        },
+      ],
+    }
+  );
+}
+```
+
+## 参考リンク
+
+- [Next.js ImageResponse](https://nextjs.org/docs/app/api-reference/functions/image-response)
+- [Open Graph Protocol](https://ogp.me/)
+- [Twitter Cards](https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/abouts-cards)
+- [docs/OGP_TESTING.md](mdc:docs/OGP_TESTING.md) - OGPテスト手順
+- [app/api/og/route.tsx](mdc:app/api/og/route.tsx) - OGP画像生成実装
+- [app/share/[slug]/layout.tsx](mdc:app/share/[slug]/layout.tsx) - メタデータ生成

@@ -1,0 +1,308 @@
+---
+globs: ".cursor/commands/**/*"
+description: Cursorカスタムコマンドの作成パターンとベストプラクティス
+---
+
+# Cursorカスタムコマンド - Custom Commands
+
+## 概要
+Cursor IDEのカスタムコマンド機能を使用して、頻繁に行うドキュメント更新タスクを自動化。AI Agentに明確な指示を与えることで、一貫性のあるドキュメント管理を実現。
+
+## カスタムコマンドの配置
+```
+.cursor/
+└── commands/
+    ├── update-readme.md       # README.md更新
+    ├── compress-docs.md       # ドキュメント圧縮
+    ├── generate-schema.md     # スキーマドキュメント生成
+    ├── generate-api.md        # API仕様書生成
+    └── generate-plan.md       # 開発計画詳細化
+```
+
+## 既存のカスタムコマンド
+
+### 1. [update-readme.md](mdc:.cursor/commands/update-readme.md)
+**目的**: プロジェクトのメインREADME.mdを最新の状態に更新
+
+**実行タイミング**:
+- 新機能追加時
+- プロジェクト構造変更時
+- セットアップ手順変更時
+
+**コマンド内容**:
+```markdown
+既存のプロジェクトを確認し、`README.md`を更新する
+```
+
+**期待される動作**:
+1. プロジェクト構造をスキャン
+2. package.jsonから依存関係を取得
+3. docsディレクトリから主要情報を集約
+4. README.mdを最新情報で更新
+
+### 2. [compress-docs.md](mdc:.cursor/commands/compress-docs.md)
+**目的**: ドキュメントの整理と圧縮、重複削除
+
+**実行タイミング**:
+- ドキュメントが肥大化した時
+- リリース前のクリーンアップ
+- 四半期ごとのメンテナンス
+
+**コマンド内容**:
+```markdown
+docs/配下を確認し、削除できるものは削除。
+圧縮できる内容は可能な限り圧縮する。
+```
+
+**期待される動作**:
+1. docs/ディレクトリ全体をスキャン
+2. 重複内容の検出
+3. 古い情報の特定
+4. 不要ファイルの削除提案
+5. 内容の統合・圧縮
+
+### 3. [generate-schema.md](mdc:.cursor/commands/generate-schema.md)
+**目的**: データベーススキーマドキュメントの自動生成
+
+**実行タイミング**:
+- DBスキーマ変更時
+- マイグレーション実行後
+- 新テーブル追加時
+
+**コマンド内容**:
+```markdown
+既存のプロジェクトを確認し、`docs/SCHEMA.md`を更新する
+```
+
+**期待される動作**:
+1. lib/db/schema.sqlを解析
+2. テーブル定義の抽出
+3. リレーションシップの検出
+4. インデックスと制約の記録
+5. docs/SCHEMA.mdに反映
+
+**参照ファイル**:
+- [lib/db/schema.sql](mdc:lib/db/schema.sql)
+- [lib/db/functions.sql](mdc:lib/db/functions.sql)
+- [docs/SCHEMA.md](mdc:docs/SCHEMA.md)
+
+### 4. [generate-api.md](mdc:.cursor/commands/generate-api.md)
+**目的**: API仕様書の自動生成
+
+**実行タイミング**:
+- 新APIエンドポイント追加時
+- APIレスポンス形式変更時
+- 認証方式変更時
+
+**コマンド内容**:
+```markdown
+既存のプロジェクトを確認し、`docs/API.md`を更新する
+```
+
+**期待される動作**:
+1. app/api/ディレクトリをスキャン
+2. 各route.tsファイルを解析
+3. HTTPメソッド、パス、リクエスト/レスポンス形式を抽出
+4. 認証要件の検出
+5. docs/API.mdに反映
+
+**参照ファイル**:
+- [app/api/](mdc:app/api/) - 全APIルート
+- [types/api.ts](mdc:types/api.ts) - API型定義
+- [docs/API.md](mdc:docs/API.md)
+
+### 5. [generate-plan.md](mdc:.cursor/commands/generate-plan.md)
+**目的**: 開発計画とバグトラッキングの詳細化
+
+**実行タイミング**:
+- スプリント計画時
+- フェーズ完了時
+- バグ発見時
+
+**コマンド内容**:
+```markdown
+docs/PLAN.mdとdocs/BUG.mdを確認し、実装計画を詳細化する
+```
+
+**期待される動作**:
+1. PLAN.mdから未完了タスクを特定
+2. BUG.mdから未解決バグをリスト
+3. 優先度と依存関係を分析
+4. 詳細な実装手順を提案
+5. タイムライン見積もり
+
+**参照ファイル**:
+- [docs/PLAN.md](mdc:docs/PLAN.md)
+- [docs/BUG.md](mdc:docs/BUG.md)
+
+## カスタムコマンドの作成ガイドライン
+
+### 命名規則
+- **動詞始まり**: `update-`, `generate-`, `compress-` など
+- **kebab-case**: ハイフン区切り
+- **拡張子**: `.md`（Markdown形式）
+
+### 内容の構成
+```markdown
+[簡潔な指示文]
+
+## 詳細（オプション）
+- 実行条件
+- 期待される結果
+- 参照すべきファイル
+
+## 制約（オプション）
+- やってはいけないこと
+- 保護すべき情報
+```
+
+### ベストプラクティス
+
+#### 1. **明確で簡潔な指示**
+❌ 悪い例:
+```markdown
+READMEを見て、何か古い情報があったら更新して
+```
+
+✅ 良い例:
+```markdown
+既存のプロジェクトを確認し、`README.md`を更新する
+
+## 確認項目
+- プロジェクト構造
+- 依存関係
+- セットアップ手順
+- 実行コマンド
+```
+
+#### 2. **具体的なファイルパス指定**
+❌ 悪い例:
+```markdown
+ドキュメントを更新する
+```
+
+✅ 良い例:
+```markdown
+`docs/API.md`を更新する
+```
+
+#### 3. **実行タイミングの明示**
+```markdown
+## 実行タイミング
+- 新APIエンドポイント追加時
+- リクエスト/レスポンス形式変更時
+```
+
+#### 4. **参照ファイルの指定**
+```markdown
+## 参照ファイル
+- [lib/db/schema.sql](mdc:lib/db/schema.sql)
+- [types/database.ts](mdc:types/database.ts)
+```
+
+## 使用方法
+
+### Cursor IDEでの実行
+1. コマンドパレットを開く（Cmd/Ctrl + Shift + P）
+2. 「Custom Command」を選択
+3. 実行したいコマンドを選択
+4. AIが自動的にタスクを実行
+
+### コマンドの実行順序（推奨）
+```
+1. generate-schema.md   # スキーマ更新
+2. generate-api.md      # API仕様書更新
+3. generate-plan.md     # 開発計画更新
+4. update-readme.md     # README更新
+5. compress-docs.md     # ドキュメント整理（定期的）
+```
+
+## 新しいコマンドの追加例
+
+### Example: Test Coverage Report
+```markdown
+# .cursor/commands/generate-test-coverage.md
+
+プロジェクトのテストカバレッジを分析し、`docs/TESTING.md`に反映する
+
+## 確認項目
+- Jestテストファイル（__tests__/）
+- Playwrightテスト（e2e/）
+- カバレッジレポート（存在する場合）
+
+## 出力形式
+- ファイルごとのカバレッジ率
+- カバーされていない重要な機能
+- テスト追加の推奨事項
+
+## 参照ファイル
+- [e2e/](mdc:e2e/)
+- [components/**/__tests__/](mdc:components/)
+- [docs/TESTING.md](mdc:docs/TESTING.md)
+```
+
+### Example: Dependency Update
+```markdown
+# .cursor/commands/check-dependencies.md
+
+`package.json`の依存関係を確認し、更新可能なパッケージをリストアップ
+
+## 確認項目
+- セキュリティ脆弱性
+- メジャーバージョン更新
+- 非推奨パッケージ
+
+## 出力
+- 更新推奨リスト
+- 破壊的変更の警告
+- 更新手順
+```
+
+## メンテナンス
+
+### 定期的な見直し
+- **月次**: コマンドの実行頻度を確認
+- **四半期**: 不要なコマンドの削除
+- **リリース前**: すべてのドキュメント更新コマンドを実行
+
+### コマンドの改善
+```bash
+# 実行ログを確認
+# → AIがどのようにコマンドを解釈したか分析
+
+# より明確な指示に改善
+# → 期待した結果が得られなかった場合
+```
+
+## 利点
+
+### 1. **一貫性**
+- 同じコマンドを実行すれば同じ品質のドキュメントが生成される
+- 開発者間でのドキュメント品質のばらつきを削減
+
+### 2. **効率性**
+- 手動更新の手間を削減
+- ヒューマンエラーを防止
+- AIが自動的に最新情報を収集
+
+### 3. **保守性**
+- ドキュメントが常に最新
+- 古い情報の放置を防止
+- プロジェクトの透明性向上
+
+## 注意事項
+
+### AIの限界
+- **100%正確ではない**: 生成された内容は必ずレビュー
+- **コンテキストの理解**: 複雑なビジネスロジックは人間が補完
+- **機密情報**: 自動生成に含めるべきでない情報を事前に定義
+
+### バージョン管理
+- カスタムコマンドもGitで管理
+- 変更履歴を追跡
+- チームメンバーと共有
+
+## 参考資料
+- [Cursor Documentation](https://cursor.sh/docs)
+- [プロジェクト構造](mdc:.cursor/rules/project_structure.mdc)
+- [ドキュメント一覧](mdc:docs/)

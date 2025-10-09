@@ -1,37 +1,36 @@
 # モック認証機能 - ブランチモード
 
+**最終更新**: 2025-10-09
+
+---
+
 ## 概要
 
 ブランチごとの環境でGoogle OAuth認証を回避するためのモック認証機能です。環境変数でモードを切り替えることで、テストユーザーでの自動ログインが可能になります。
 
 ## 目的
 
-- ブランチごとのプレビュー環境でGoogle OAuthの設定なしでログイン可能
+- ブランチごとのプレビュー環境でGoogle OAuth設定なしでログイン可能
 - 複数のテストユーザーでの動作確認
 - 認証フローをバイパスした迅速な開発・テスト
-- **全機能の利用**：モックユーザーもSupabaseに登録されるため、しおり保存・公開などすべての機能が利用可能
+- **全機能の利用**：モックユーザーもSupabaseに登録されるため、すべての機能が利用可能
+
+---
 
 ## 有効化方法
 
 ### ⚠️ 重要：ビルド時とランタイムの違い
 
-Next.jsでは、環境変数には2種類あります：
+Next.jsの環境変数には2種類あります：
 
-1. **サーバーサイド環境変数**（`ENABLE_MOCK_AUTH`）
-   - 実行時に読み込まれる
-   - API ルートなどサーバー側で使用
-
-2. **クライアントサイド環境変数**（`NEXT_PUBLIC_ENABLE_MOCK_AUTH`）
-   - **ビルド時**にコードに埋め込まれる
-   - ブラウザで実行されるコードで使用
-   - ビルド後の変更は反映されない
+1. **サーバーサイド環境変数**（`ENABLE_MOCK_AUTH`）- 実行時に読み込まれる
+2. **クライアントサイド環境変数**（`NEXT_PUBLIC_ENABLE_MOCK_AUTH`）- **ビルド時**にコードに埋め込まれる
 
 ### 環境変数の設定
 
 #### ローカル開発環境
 
-`.env.local`に以下を追加：
-
+`.env.local`:
 ```bash
 # サーバーサイド用（実行時）
 ENABLE_MOCK_AUTH=true
@@ -41,7 +40,6 @@ NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
 ```
 
 設定後、**必ずビルドしてから実行**：
-
 ```bash
 npm run build
 npm start
@@ -51,9 +49,7 @@ npm run dev
 
 > **注意**: `npm run dev`では環境変数の変更が即座に反映されますが、本番ビルド（`npm run build`）では再ビルドが必要です。
 
-### Kubernetes（ブランチ環境）
-
-#### デプロイメントマニフェスト
+#### Kubernetes（ブランチ環境）
 
 `k8s/manifests-multi-deploy/deployment.yml`:
 ```yaml
@@ -62,30 +58,25 @@ env:
     value: "true"
 ```
 
-#### Dockerビルド時の設定
-
-GitHub Actionsでイメージをビルドする際、ビルド引数として渡されます（`.github/workflows/push.yml`）：
-
+GitHub Actionsでイメージをビルドする際、ビルド引数として設定：
 ```yaml
 build-args: |
   NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
 ```
 
-この設定により、ブランチ環境のイメージには**ビルド時にモック認証が埋め込まれます**。
-
-### Docker環境
+#### Docker環境
 
 `docker-compose.yml`で`.env.local`を読み込むため、上記の環境変数を設定すればOKです。
+
+---
 
 ## 使用方法
 
 ### 1. ログインページへアクセス
 
 モック認証が有効な場合、ログインページ（`/login`）に以下が表示されます：
-
 - 🧪 ブランチモードのバッジ
 - テストユーザーでログインボタン
-- 注意書き
 
 ### 2. テストユーザーでログイン
 
@@ -97,11 +88,9 @@ build-args: |
 3. 存在しない場合は自動的に作成
 4. UUIDを取得してセッションに保存
 
-これにより、しおりの保存・公開・削除などデータベース依存のすべての機能が利用可能です。
+これにより、しおりの保存・公開・削除などすべての機能が利用可能です。
 
 ### 3. 複数ユーザーの切り替え（高度な使用）
-
-プログラムから別のテストユーザーを指定する場合：
 
 ```typescript
 import { signIn } from 'next-auth/react';
@@ -119,31 +108,18 @@ await signIn('mock', { mockUser: 'user2' });
 await signIn('mock', { mockUser: 'admin' });
 ```
 
+---
+
 ## テストユーザー一覧
 
-### デフォルトユーザー（default）
-- **ID**: `mock-user-uuid-12345`
-- **Google ID**: `mock-google-id-12345`
-- **Email**: `test@example.com`
-- **Name**: `テストユーザー`
+| ユーザー | ID | Email | Name |
+|---------|-----|-------|------|
+| **default** | `mock-user-uuid-12345` | `test@example.com` | テストユーザー |
+| **user1** | `mock-user-uuid-11111` | `user1@example.com` | ユーザー1 |
+| **user2** | `mock-user-uuid-22222` | `user2@example.com` | ユーザー2 |
+| **admin** | `mock-user-uuid-99999` | `admin@example.com` | 管理者 |
 
-### ユーザー1（user1）
-- **ID**: `mock-user-uuid-11111`
-- **Google ID**: `mock-google-id-11111`
-- **Email**: `user1@example.com`
-- **Name**: `ユーザー1`
-
-### ユーザー2（user2）
-- **ID**: `mock-user-uuid-22222`
-- **Google ID**: `mock-google-id-22222`
-- **Email**: `user2@example.com`
-- **Name**: `ユーザー2`
-
-### 管理者（admin）
-- **ID**: `mock-user-uuid-99999`
-- **Google ID**: `mock-google-id-99999`
-- **Email**: `admin@example.com`
-- **Name**: `管理者`
+---
 
 ## アーキテクチャ
 
@@ -152,8 +128,8 @@ await signIn('mock', { mockUser: 'admin' });
 ```
 lib/
 ├── auth/
-│   ├── auth-options.ts          # NextAuth設定（モック認証プロバイダー統合）
-│   └── mock-provider.ts         # モック認証プロバイダー（未使用・将来用）
+│   ├── auth-options.ts          # NextAuth設定（モック認証統合）
+│   └── mock-provider.ts         # モック認証プロバイダー
 └── mock-data/
     └── mock-users.ts            # モックユーザーデータ定義
 
@@ -166,88 +142,19 @@ k8s/
     └── deployment.yml           # ブランチ環境設定
 ```
 
-### 認証フロー
+### 認証フロー比較
 
-#### 通常モード（`ENABLE_MOCK_AUTH=false`）
+**通常モード**（`ENABLE_MOCK_AUTH=false`）:
 ```
-1. ユーザーがログインボタンをクリック
-   ↓
-2. Google OAuth認証画面にリダイレクト
-   ↓
-3. Googleで認証
-   ↓
-4. コールバック → ユーザー情報取得
-   ↓
-5. Supabaseにユーザー作成/取得
-   ↓
-6. JWTトークン生成 → ログイン完了
+ユーザー → Google OAuth → 認証 → Supabase → ログイン
 ```
 
-#### モック認証モード（`ENABLE_MOCK_AUTH=true`）
+**モック認証モード**（`ENABLE_MOCK_AUTH=true`）:
 ```
-1. ユーザーがログインボタンをクリック
-   ↓
-2. モックユーザーデータを取得
-   ↓
-3. JWTトークン生成 → ログイン完了（即座）
+ユーザー → モックユーザー取得 → JWTトークン生成 → ログイン（即座）
 ```
 
-### 実装の仕組み
-
-#### 1. プロバイダーの動的切り替え
-
-`lib/auth/auth-options.ts`:
-
-```typescript
-providers: [
-  ...(isMockAuthEnabled()
-    ? [
-        CredentialsProvider({
-          id: "mock",
-          async authorize(credentials) {
-            const mockUser = getMockUser(credentials?.mockUser || "default");
-            return mockUser;
-          },
-        }),
-      ]
-    : [
-        GoogleProvider({ ... }),
-      ]),
-]
-```
-
-#### 2. JWTコールバックの分岐
-
-```typescript
-async jwt({ token, user, account }) {
-  if (account?.provider === "mock") {
-    // モック認証の場合は即座にトークン生成
-    token.id = user.id;
-    token.googleId = user.googleId;
-    return token;
-  }
-  
-  // Google認証の場合はSupabase連携
-  if (account?.provider === "google") {
-    // Supabaseからユーザー取得...
-  }
-}
-```
-
-#### 3. UIの切り替え
-
-`components/auth/LoginButton.tsx`:
-
-```typescript
-const isMockAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === "true";
-
-return (
-  <div>
-    {!isMockAuthEnabled && <GoogleLoginButton />}
-    {isMockAuthEnabled && <MockLoginButton />}
-  </div>
-);
-```
+---
 
 ## セキュリティ考慮事項
 
@@ -259,13 +166,9 @@ return (
    ENABLE_MOCK_AUTH=false  # または未設定
    ```
 
-2. **公開環境での使用禁止**
-   - モック認証が有効な環境は一般公開しない
-   - 認証なしでアクセス可能になるため
+2. **公開環境での使用禁止** - 認証なしでアクセス可能になるため
 
-3. **環境変数の管理**
-   - `.env.local`は`.gitignore`に含める
-   - 本番環境のシークレットに`ENABLE_MOCK_AUTH`を含めない
+3. **環境変数の管理** - `.env.local`は`.gitignore`に含める
 
 ### 推奨される使用シナリオ
 
@@ -280,127 +183,51 @@ return (
 - ステージング環境（公開されている場合）
 - 外部ユーザーがアクセスできる環境
 
+---
+
 ## トラブルシューティング
 
 ### モック認証が有効にならない
-
-**原因**: 環境変数が正しく設定されていない
-
-**解決策**:
 1. `.env.local`に`ENABLE_MOCK_AUTH=true`が設定されているか確認
 2. Next.jsサーバーを再起動
 3. ブラウザのキャッシュをクリア
 
-```bash
-# 再起動
-npm run dev
-```
-
 ### ログインボタンが表示されない
-
-**原因**: クライアント側の環境変数が設定されていない
-
-**解決策**:
-```bash
-# .env.localに追加
-NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
-```
-
-`NEXT_PUBLIC_`接頭辞が必要です。
-
-### ログイン後にエラーが出る
-
-**原因**: Supabaseとの連携エラー
-
-**解決策**:
-モック認証ではSupabaseへの書き込みを行わないため、一部の機能が制限される場合があります。開発環境では問題ありませんが、データベースが必要な機能をテストする場合は、Supabase接続を確認してください。
+- `.env.local`に`NEXT_PUBLIC_ENABLE_MOCK_AUTH=true`を追加（`NEXT_PUBLIC_`接頭辞が必要）
 
 ### Kubernetesでモック認証が無効
 
 **原因1**: イメージにモック認証がビルドされていない
-
-**解決策**:
-1. `.github/workflows/push.yml`でビルド引数が設定されているか確認：
-```yaml
-build-args: |
-  NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
-```
-
-2. 変更をコミット・プッシュして、GitHub Actionsで新しいイメージをビルド
-3. デプロイメントマニフェストのイメージタグが最新か確認
+- `.github/workflows/push.yml`でビルド引数が設定されているか確認
+- 新しいイメージをビルド・プッシュ
 
 **原因2**: Deployment設定に環境変数がない
+- `k8s/manifests-multi-deploy/deployment.yml`に`ENABLE_MOCK_AUTH=true`を追加
+- 再デプロイ: `kubectl apply -f k8s/manifests-multi-deploy/`
 
-**解決策**:
-`k8s/manifests-multi-deploy/deployment.yml`に以下を追加：
+**原因3**: 古いイメージがキャッシュされている
+- `imagePullPolicy: Always`を設定
+- Podを強制再起動: `kubectl rollout restart deployment/journee-multi-deploy -n journee`
 
-```yaml
-env:
-  - name: ENABLE_MOCK_AUTH
-    value: "true"
-```
-
-変更後、再デプロイ：
-
-```bash
-kubectl apply -f k8s/manifests-multi-deploy/
-```
-
-### デプロイ後もモック認証が表示されない
-
-**原因**: 古いイメージがキャッシュされている
-
-**解決策**:
-
-1. `imagePullPolicy: Always`が設定されているか確認
-```yaml
-containers:
-  - name: journee-multi-deploy
-    image: gcr.io/my-docker-471807/journee:multi-deploy-xxxxx
-    imagePullPolicy: Always  # ←これ
-```
-
-2. Podを強制再起動：
-```bash
-kubectl rollout restart deployment/journee-multi-deploy -n journee
-```
-
-3. イメージタグが最新のコミットSHAか確認：
-```bash
-# GitHub ActionsのログでタグをSHA確認
-# deployment.ymlのイメージタグを確認
-```
+---
 
 ## カスタマイズ
 
 ### モックユーザーの事前登録（オプション）
 
-通常、モックユーザーは初回ログイン時に自動的にSupabaseに作成されますが、事前に一括登録したい場合は以下のスクリプトを使用できます：
+通常、モックユーザーは初回ログイン時に自動的にSupabaseに作成されますが、事前に一括登録したい場合：
 
 ```bash
 npm run seed:mock-users
 ```
 
-このスクリプトは：
-- すべてのモックユーザー（default, user1, user2, admin）をSupabaseに登録
-- 既存ユーザーはスキップ
-- エラーハンドリング付き
-
-**必要な環境変数**：
-```bash
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
 ### 新しいテストユーザーの追加
 
-`lib/mock-data/mock-users.ts`を編集：
-
+`lib/mock-data/mock-users.ts`:
 ```typescript
 export const MOCK_USERS: Record<string, MockUser> = {
   // 既存のユーザー...
   
-  // 新しいユーザーを追加
   newuser: {
     id: "mock-user-uuid-xxxxx",
     googleId: "mock-google-id-xxxxx",
@@ -411,73 +238,28 @@ export const MOCK_USERS: Record<string, MockUser> = {
 };
 ```
 
-使用方法：
-
-```typescript
-await signIn('mock', { mockUser: 'newuser' });
-```
-
-### モックユーザーのデフォルト変更
-
-```typescript
-export const DEFAULT_MOCK_USER: MockUser = {
-  id: "your-custom-id",
-  googleId: "your-custom-google-id",
-  email: "custom@example.com",
-  name: "カスタムユーザー",
-  image: "https://example.com/avatar.jpg",
-};
-```
+---
 
 ## FAQ
 
 ### Q: 本番環境で誤って有効化したらどうなる？
-
 A: すべてのユーザーが認証なしでログインできてしまうため、**即座に無効化**してください。
 
 ### Q: モック認証と通常認証を同時に有効化できる？
-
 A: いいえ。`ENABLE_MOCK_AUTH=true`の場合、Google OAuth認証は無効化されます。
 
 ### Q: データベースへの影響は？
+A: モック認証でもSupabaseにユーザーが作成されます。テストユーザー専用のユニークなgoogle_id（`mock-google-id-xxxxx`形式）を持つため、本番ユーザーと競合することはありません。
 
-A: モック認証でもSupabaseにユーザーが作成されます。ただし、テストユーザー専用のユニークなgoogle_id（`mock-google-id-xxxxx`形式）を持つため、本番ユーザーと競合することはありません。既存のデータには影響しません。
-
-### Q: セッションの有効期限は？
-
-A: 通常の認証と同じ30日間です。
-
-### Q: 複数ブラウザで異なるユーザーを使える？
-
-A: はい。各ブラウザで独立してログインできます。
+---
 
 ## 参考リンク
 
 - [NextAuth.js Credentials Provider](https://next-auth.js.org/providers/credentials)
-- [lib/auth/auth-options.ts](../lib/auth/auth-options.ts) - 実装コード
-- [lib/mock-data/mock-users.ts](../lib/mock-data/mock-users.ts) - モックユーザーデータ
-- [components/auth/LoginButton.tsx](../components/auth/LoginButton.tsx) - UIコンポーネント
-- [docs/API.md](./API.md) - API仕様書
+- [lib/auth/auth-options.ts](../lib/auth/auth-options.ts)
+- [lib/mock-data/mock-users.ts](../lib/mock-data/mock-users.ts)
+- [components/auth/LoginButton.tsx](../components/auth/LoginButton.tsx)
 
-## データベーススキーマ
+---
 
-モックユーザーは通常のユーザーと同じ`users`テーブルに保存されます：
-
-```sql
--- モックユーザーの例
-SELECT id, email, name, google_id, created_at
-FROM users
-WHERE google_id LIKE 'mock-google-id-%';
-```
-
-**識別方法**：
-- `google_id`が`mock-google-id-`で始まる
-- 通常のGoogle IDとは形式が異なる
-- 本番ユーザーと完全に分離可能
-
-## 更新履歴
-
-- **2025-10-09**: 
-  - 初版作成 - モック認証機能の実装
-  - Supabase統合 - モックユーザーのデータベース登録対応
-
+**最終更新**: 2025-10-09
