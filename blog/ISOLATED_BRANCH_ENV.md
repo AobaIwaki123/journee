@@ -182,8 +182,6 @@ AIが高速化してくれた分、**確認作業もスケールさせないと�
 | `GCP_SA_KEY` | GCPサービスアカウントキー | GCP IAMから作成・ダウンロード |
 | `KUBECONFIG_CONTENT` | Kubernetesクラスタの接続情報 | `~/.kube/config`の内容 |
 
-
-
 ## 環境構築
 
 ### 6.1 Kubernetes環境のセットアップ
@@ -324,7 +322,7 @@ kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
 ```sh
 argocd admin initial-password -n argocd # 初期パスワードの取得
 gQz9mVAdH7UgkdyI
-argocd login argocd.aooba.net
+argocd login argocd.example.com
 argocd account update-password
 Current Password: gQz9mVAdH7UgkdyI
 New Password: <NEW_PASSWORD>
@@ -360,7 +358,7 @@ kubectl rollout restart deployment argocd-server -n argocd
 
 ```bash
 # CLIでログイン
-argocd login argocd.aooba.net:8080
+argocd login argocd.example.com:8080
 
 # トークンの生成
 argocd account generate-token --account admin
@@ -392,7 +390,7 @@ spec:
   
   rules:
   # 公開ホスト名の設定
-  - host: argocd.aooba.net
+  - host: argocd.example.com
     http:
       paths:
       # ルートパス以下のすべてのリクエストを ArgoCD Server に転送
@@ -501,22 +499,22 @@ kubectl get pods -n cloudflare-tunnel-ingress-controller
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: journee-ingress
-  namespace: journee
+  name: my-app-ingress
+  namespace: my-app
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     cert-manager.io/cluster-issuer: letsencrypt-cloudflare
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: journee.aooba.net
+  - host: my-app.example.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: journee
+            name: my-app
             port:
               number: 80
 ```
@@ -579,7 +577,7 @@ metadata:
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: test-app.aooba.net 
+  - host: test-app.example.com 
     http:
       paths:
       - path: /
@@ -604,11 +602,11 @@ kubectl get ingress -n test-app
 ```bash
 # ArgoCD Applicationの作成
 argocd app create test-app \
-  --repo https://github.com/AobaIwaki123/journee.git \
-  --path blog/manifests \
+  --repo https://github.com/your-username/your-repo.git \
+  --path k8s/manifests \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace test-app \
-  --revision refacotr # ブランチ名
+  --revision main # ブランチ名
 
 # 同期
 argocd app sync test-app
@@ -693,32 +691,35 @@ k8s/
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: journee
-  namespace: journee
+  name: my-app
+  namespace: my-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: journee
+      app: my-app
   template:
     metadata:
       labels:
-        app: journee
+        app: my-app
     spec:
       imagePullSecrets:
         - name: gcr-pull-secret
       containers:
-        - name: journee
-          image: gcr.io/my-project/journee:v5.0.0
+        - name: my-app
+          image: gcr.io/my-project/my-app:v1.0.0
           env:
-            - name: NEXTAUTH_URL
-              value: https://journee.example.com
             # Secretから環境変数を注入
-            - name: GOOGLE_CLIENT_ID
+            - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: journee-env
-                  key: GOOGLE_CLIENT_ID
+                  name: my-app-secrets
+                  key: DATABASE_URL
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-secrets
+                  key: API_KEY
           ports:
             - containerPort: 3000
 ```
@@ -729,11 +730,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: journee
-  namespace: journee
+  name: my-app
+  namespace: my-app
 spec:
   selector:
-    app: journee
+    app: my-app
   ports:
   - port: 80
     targetPort: 3000
@@ -745,22 +746,22 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: journee-ingress
-  namespace: journee
+  name: my-app-ingress
+  namespace: my-app
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     cert-manager.io/cluster-issuer: letsencrypt-cloudflare
 spec:
   ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: journee.example.com
+  - host: my-app.example.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: journee
+            name: my-app
             port:
               number: 80
 ```
@@ -780,17 +781,17 @@ resources:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: journee
+  name: my-app
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/your-username/journee'
+    repoURL: 'https://github.com/your-username/my-app'
     targetRevision: HEAD
     path: k8s/manifests
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: journee
+    namespace: my-app
   syncPolicy:
     automated:
       selfHeal: true
@@ -799,8 +800,8 @@ spec:
 
 これらのファイルが、GitHub Actionsによってブランチ固有のリソース名に変換されます。例えば：
 
-- `journee` → `journee-a1b2c3`
-- `journee.example.com` → `journee-a1b2c3.example.com`
+- `my-app` → `my-app-a1b2c3`
+- `my-app.example.com` → `my-app-a1b2c3.example.com`
 
 次のセクションで、この変換を自動化する方法を見ていきましょう。
 
@@ -851,8 +852,8 @@ concurrency:
 
 env:
   GCR_REGISTRY: gcr.io
-  PROJECT_ID: my-docker-471807
-  IMAGE_NAME: journee
+  PROJECT_ID: my-gcp-project
+  IMAGE_NAME: my-app
 
 jobs:
   # まず ArgoCD Application を作成（初回のみ）
@@ -934,7 +935,7 @@ jobs:
         env:
           ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         run: |
-          curl -X POST https://argocd.aooba.net/api/v1/applications/${{ env.IMAGE_NAME }}-${{ env.BRANCH_HASH }}/sync \
+          curl -X POST https://argocd.example.com/api/v1/applications/${{ env.IMAGE_NAME }}-${{ env.BRANCH_HASH }}/sync \
             -H "Authorization: Bearer $ARGOCD_TOKEN" \
             -H "Content-Type: application/json"
 ```
@@ -996,7 +997,7 @@ jobs:
           APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $ARGOCD_TOKEN" \
-            https://argocd.aooba.net/api/v1/applications/$APP_NAME)
+            https://argocd.example.com/api/v1/applications/$APP_NAME)
           
           if [ "$HTTP_CODE" = "200" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
@@ -1019,21 +1020,21 @@ jobs:
           MANIFEST_DIR="k8s/manifests-$BRANCH_HASH"
           
           # Deployment名の更新
-          yq -i '.metadata.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+          yq -i '.metadata.name = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
           
           # Service名とselectorの更新
-          yq -i '.metadata.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
-          yq -i '.spec.selector.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
+          yq -i '.metadata.name = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
+          yq -i '.spec.selector.app = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
           
           # Ingress名とホストの更新
-          yq -i '.metadata.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
-          yq -i '.spec.rules[0].host = "journee-'"$BRANCH_HASH"'.aooba.net"' "$MANIFEST_DIR/ingress.yml"
-          yq -i '.spec.rules[0].http.paths[0].backend.service.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
+          yq -i '.metadata.name = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
+          yq -i '.spec.rules[0].host = "my-app-'"$BRANCH_HASH"'.example.com"' "$MANIFEST_DIR/ingress.yml"
+          yq -i '.spec.rules[0].http.paths[0].backend.service.name = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
           
           # DeploymentのラベルとselectorMatchLabelsの更新
-          yq -i '.metadata.labels.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
-          yq -i '.spec.selector.matchLabels.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
-          yq -i '.spec.template.metadata.labels.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+          yq -i '.metadata.labels.app = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+          yq -i '.spec.selector.matchLabels.app = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+          yq -i '.spec.template.metadata.labels.app = "my-app-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
 
       # マニフェストをコミット
       - name: Commit and push manifests
@@ -1054,9 +1055,9 @@ jobs:
         run: |
           BRANCH="${{ inputs.branch }}"
           BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
-          APP_NAME="journee-$BRANCH_HASH"
+          APP_NAME="my-app-$BRANCH_HASH"
           
-          curl -X POST https://argocd.aooba.net/api/v1/applications \
+          curl -X POST https://argocd.example.com/api/v1/applications \
             -H "Authorization: Bearer $ARGOCD_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{
@@ -1070,7 +1071,7 @@ jobs:
                 },
                 "destination": {
                   "server": "https://kubernetes.default.svc",
-                  "namespace": "journee"
+                  "namespace": "my-app"
                 },
                 "syncPolicy": {
                   "automated": {"selfHeal": true, "prune": true}
@@ -1085,7 +1086,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
-          DEPLOYMENT_URL="https://journee-$BRANCH_HASH.aooba.net"
+          DEPLOYMENT_URL="https://my-app-$BRANCH_HASH.example.com"
           
           # PRを検索
           PR_NUMBER=$(gh pr list --head "${{ inputs.branch }}" --json number --jq '.[0].number')
@@ -1136,7 +1137,7 @@ jobs:
 
 **現在の運用：**
 - ブランチ削除時に手動でリソースを削除
-- ArgoCD Application削除: `argocd app delete journee-<hash> --cascade`
+- ArgoCD Application削除: `argocd app delete my-app-<hash> --cascade`
 - マニフェストディレクトリ削除: `git rm -r k8s/manifests-<hash>`
 
 > **Note**: 自動削除スクリプトはまだ実装していません。現在は手動での管理となっていますが、今後の展望として追加予定です。
@@ -1152,8 +1153,7 @@ jobs:
 
 ### 参考リンク
 
-**プロジェクト関連：**
-- [Journeeプロジェクト](https://github.com/AobaIwaki123/journee) - 本記事で紹介した実装
+**参考リポジトリ：**
 - [k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster) - Kubernetesクラスタ自動セットアップ
 
 **公式ドキュメント：**
