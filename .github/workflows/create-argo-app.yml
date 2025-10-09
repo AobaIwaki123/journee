@@ -202,6 +202,12 @@ jobs:
             echo "✅ Committed and pushed manifests"
           fi
 
+      - name: install argocd
+        shell: bash
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
       - name: Create ArgoCD Application
         if: steps.check_app.outputs.exists == 'false'
         env:
@@ -213,36 +219,11 @@ jobs:
 
           echo "🚀 Creating ArgoCD Application: $APP_NAME (branch: $BRANCH)"
 
-          curl -X POST https://${{ env.ARGOCD_SERVER }}/api/v1/applications \
-            -H "Authorization: Bearer $ARGOCD_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d @- << EOF
-          {
-            "metadata": {
-              "name": "$APP_NAME"
-            },
-            "spec": {
-              "project": "default",
-              "source": {
-                "repoURL": "https://github.com/${{ github.repository }}",
-                "targetRevision": "$BRANCH",
-                "path": "k8s/manifests-$BRANCH_HASH"
-              },
-              "destination": {
-                "server": "https://kubernetes.default.svc",
-                "namespace": "journee"
-              },
-              "syncPolicy": {
-                "automated": {
-                  "selfHeal": true,
-                  "prune": true
-                }
-              }
-            }
-          }
-          EOF
+          argocd app create -f k8s/argocd-$BRANCH_HASH/app.yml \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --auth-token $ARGOCD_TOKEN \
+            --grpc-web
 
-          echo ""
           echo "✅ ArgoCD Application '$APP_NAME' created successfully"
 
       - name: Skip creation
