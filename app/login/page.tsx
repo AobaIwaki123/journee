@@ -1,6 +1,5 @@
 import { LoginButton } from '@/components/auth/LoginButton'
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session'
+import { LoginRedirect } from '@/components/auth/LoginRedirect'
 
 /**
  * ログインページ
@@ -9,14 +8,14 @@ import { getSession } from '@/lib/auth/session'
  * 既にログイン済みの場合はホームページにリダイレクトします。
  */
 export default async function LoginPage() {
-  // 既にログイン済みの場合はリダイレクト
-  const session = await getSession()
-  if (session) {
-    redirect('/')
-  }
+  // クライアントサイドでセッションチェックとリダイレクトを実行
+  // （ログアウト直後のリダイレクトループを回避）
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* ログイン済みの場合はリダイレクト */}
+      <LoginRedirect />
+      
       <div className="max-w-md w-full mx-4">
         {/* ロゴ・タイトル */}
         <div className="text-center mb-8">

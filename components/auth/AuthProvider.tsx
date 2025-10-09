@@ -21,5 +21,13 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  return <SessionProvider>{children}</SessionProvider>
+  return (
+    <SessionProvider
+      // ウィンドウフォーカス時の自動セッション更新を無効化
+      // ログアウト直後のリダイレクトループを防ぐ
+      refetchOnWindowFocus={false}
+    >
+      {children}
+    </SessionProvider>
+  )
 }

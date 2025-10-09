@@ -37,7 +37,9 @@ export function UserMenu() {
 
   const handleSignOut = async () => {
     setIsOpen(false)
-    await signOut({ callbackUrl: '/login' })
+    // ログアウト後、from=logoutパラメータ付きでログインページにリダイレクト
+    // これによりリダイレクトループを回避
+    await signOut({ callbackUrl: '/login?from=logout' })
   }
 
   return (
