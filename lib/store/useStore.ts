@@ -49,6 +49,7 @@ import {
   updateDayBudget,
   updateItineraryBudget,
 } from "@/lib/utils/budget-utils";
+import { generateId } from "@/lib/utils/id-generator";
 
 interface ToastMessage {
   id: string;
@@ -820,7 +821,7 @@ export const useStore = create<AppState>()((set, get) => ({
   toasts: [],
   addToast: (message, type) =>
     set((state) => ({
-      toasts: [...state.toasts, { id: Date.now().toString(), message, type }],
+      toasts: [...state.toasts, { id: generateId(), message, type }],
     })),
   removeToast: (id) =>
     set((state) => ({
