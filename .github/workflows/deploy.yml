@@ -109,7 +109,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     needs:
-      - docker-build-and-push-to-gcr
+      - update-deployment-manifest
     steps:
       - name: Trigger ArgoCD sync via API
         env:
