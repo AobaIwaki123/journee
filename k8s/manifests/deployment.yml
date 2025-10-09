@@ -64,5 +64,16 @@ spec:
                 secretKeyRef:
                   name: journee-env
                   key: SUPABASE_SERVICE_ROLE_KEY
+            - name: NEXT_PUBLIC_BASE_URL
+              value: https://journee.aooba.net
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: GITHUB_TOKEN
+            - name: GITHUB_OWNER
+              value: AobaIwaki123
+            - name: GITHUB_REPO
+              value: journee
           ports:
             - containerPort: 3000
