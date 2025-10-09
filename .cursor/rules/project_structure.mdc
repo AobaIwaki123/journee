@@ -268,14 +268,17 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 - [playwright.config.ts](mdc:playwright.config.ts) - Playwright設定
 
 ### `/k8s` - Kubernetes設定
-- `/manifests` - Kubernetesマニフェスト
+- `/manifests` - Kubernetesマニフェスト（main環境）
   - [deployment.yml](mdc:k8s/manifests/deployment.yml)
   - [service.yml](mdc:k8s/manifests/service.yml)
   - [ingress.yml](mdc:k8s/manifests/ingress.yml)
   - [kustomization.yml](mdc:k8s/manifests/kustomization.yml)
-- `/argocd` - ArgoCD設定
+- `/argocd` - ArgoCD設定（main環境）
   - [app.yml](mdc:k8s/argocd/app.yml)
+- `/manifests-*` - ブランチごとのマニフェスト（環境分離）
+- `/argocd-*` - ブランチごとのArgoCD設定（環境分離）
 - [secret.template.yml](mdc:k8s/secret.template.yml) - シークレットテンプレート
+- [secret.yml](mdc:k8s/secret.yml) - シークレット設定
 - [README.md](mdc:k8s/README.md) - Kubernetes設定ドキュメント
 
 ### `/scripts` - スクリプト

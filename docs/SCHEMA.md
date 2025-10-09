@@ -15,8 +15,6 @@ Journeeプロジェクトのデータベーススキーマドキュメント
 4. [テーブル詳細](#テーブル詳細)
 5. [セキュリティ（RLS）](#セキュリティrls)
 6. [インデックス戦略](#インデックス戦略)
-7. [関数・トリガー](#関数トリガー)
-8. [マイグレーション](#マイグレーション)
 
 ---
 
@@ -32,23 +30,22 @@ JourneeはSupabase（PostgreSQL）を使用してデータを永続化してい�
 - **拡張**: pgcrypto（APIキー暗号化用）
 
 ### ファイル構成
-- **スキーマ定義**: [`lib/db/schema.sql`](/lib/db/schema.sql)
-- **TypeScript型**: [`types/database.ts`](/types/database.ts)
-- **リポジトリ**: [`lib/db/itinerary-repository.ts`](/lib/db/itinerary-repository.ts)
-- **ドキュメント**: [`lib/db/README.md`](/lib/db/README.md)
+- **スキーマ定義**: [`lib/db/schema.sql`](../lib/db/schema.sql)
+- **TypeScript型**: [`types/database.ts`](../types/database.ts)
+- **リポジトリ**: [`lib/db/itinerary-repository.ts`](../lib/db/itinerary-repository.ts)
 
 ---
 
 ## テーブル一覧
 
-| テーブル名 | 説明 | 主要カラム | 関連テーブル |
-|-----------|------|----------|-------------|
-| **users** | ユーザー情報 | id, email, name, google_id | itineraries, user_settings |
-| **itineraries** | しおり本体 | id, user_id, title, destination, phase | day_schedules, chat_messages |
-| **day_schedules** | 日程詳細 | id, itinerary_id, day, status | tourist_spots |
-| **tourist_spots** | 観光スポット | id, day_schedule_id, name, location | - |
-| **chat_messages** | チャット履歴 | id, itinerary_id, role, content | - |
-| **user_settings** | ユーザー設定 | id, user_id, ai_model_preference | - |
+| テーブル名 | 説明 | 主要カラム |
+|-----------|------|----------|
+| **users** | ユーザー情報 | id, email, name, google_id |
+| **itineraries** | しおり本体 | id, user_id, title, destination, phase |
+| **day_schedules** | 日程詳細 | id, itinerary_id, day, status |
+| **tourist_spots** | 観光スポット | id, day_schedule_id, name, location |
+| **chat_messages** | チャット履歴 | id, itinerary_id, role, content |
+| **user_settings** | ユーザー設定 | id, user_id, ai_model_preference |
 
 ---
 
@@ -88,27 +85,14 @@ JourneeはSupabase（PostgreSQL）を使用してデータを永続化してい�
 
 ### 1. users（ユーザー）
 
-ユーザーの基本情報を管理。Google OAuth認証と連携。
+Google OAuth認証と連携したユーザー基本情報。
 
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  name VARCHAR(255),
-  image TEXT,
-  google_id VARCHAR(255) UNIQUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-**カラム説明**:
-- `id`: ユーザーUUID（主キー）
-- `email`: メールアドレス（一意制約）
-- `name`: ユーザー名
-- `image`: プロフィール画像URL
-- `google_id`: Google認証ID（一意制約）
-- `created_at`, `updated_at`: タイムスタンプ
+**主要カラム**:
+- `id` (UUID) - ユーザーUUID（主キー）
+- `email` (VARCHAR) - メールアドレス（一意制約）
+- `name` (VARCHAR) - ユーザー名
+- `google_id` (VARCHAR) - Google認証ID（一意制約）
+- `created_at`, `updated_at` (TIMESTAMP) - タイムスタンプ
 
 **インデックス**:
 - `idx_users_email` - メール検索用
@@ -120,43 +104,18 @@ CREATE TABLE users (
 
 旅のしおり本体。フェーズ管理と公開設定を含む。
 
-```sql
-CREATE TABLE itineraries (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title VARCHAR(255) NOT NULL,
-  destination VARCHAR(255),
-  start_date DATE,
-  end_date DATE,
-  duration INT,
-  summary TEXT,
-  total_budget DECIMAL(10, 2),
-  currency VARCHAR(10) DEFAULT 'JPY',
-  status VARCHAR(50) DEFAULT 'draft',
-  
-  -- 公開設定（Phase 5.5）
-  is_public BOOLEAN DEFAULT FALSE,
-  public_slug VARCHAR(50) UNIQUE,
-  published_at TIMESTAMP WITH TIME ZONE,
-  view_count INT DEFAULT 0,
-  allow_pdf_download BOOLEAN DEFAULT TRUE,
-  custom_message TEXT,
-  
-  -- 段階的作成（Phase 4）
-  phase VARCHAR(50) DEFAULT 'initial',
-  current_day INT,
-  
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-**カラム説明**:
-- `phase`: 作成フェーズ（`initial` → `collecting` → `skeleton` → `detailing` → `completed`）
-- `status`: しおりステータス（`draft`, `completed`, `archived`）
-- `is_public`: 公開フラグ（公開URLアクセス制御）
-- `public_slug`: 公開URL用スラッグ（一意）
-- `view_count`: 閲覧数カウンター
+**主要カラム**:
+- `id` (UUID) - しおりUUID（主キー）
+- `user_id` (UUID) - ユーザーID（外部キー）
+- `title` (VARCHAR) - タイトル
+- `destination` (VARCHAR) - 行き先
+- `start_date`, `end_date` (DATE) - 旅行期間
+- `duration` (INT) - 日数
+- `phase` (VARCHAR) - 作成フェーズ（`initial` → `collecting` → `skeleton` → `detailing` → `completed`）
+- `status` (VARCHAR) - しおりステータス（`draft`, `completed`, `archived`）
+- `is_public` (BOOLEAN) - 公開フラグ
+- `public_slug` (VARCHAR) - 公開URL用スラッグ（一意）
+- `view_count` (INT) - 閲覧数
 
 **インデックス**:
 - `idx_itineraries_user_id` - ユーザー別検索
@@ -169,36 +128,19 @@ CREATE TABLE itineraries (
 
 各日の日程情報。詳細化プロセスで順次生成。
 
-```sql
-CREATE TABLE day_schedules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  itinerary_id UUID NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
-  day INT NOT NULL,
-  date DATE,
-  title VARCHAR(255),
-  total_distance DECIMAL(10, 2),
-  total_cost DECIMAL(10, 2),
-  status VARCHAR(50) DEFAULT 'draft',
-  theme TEXT,
-  is_loading BOOLEAN DEFAULT FALSE,
-  error TEXT,
-  progress INT DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  UNIQUE(itinerary_id, day)
-);
-```
+**主要カラム**:
+- `id` (UUID) - 日程UUID（主キー）
+- `itinerary_id` (UUID) - しおりID（外部キー）
+- `day` (INT) - 日程番号（1日目、2日目...）
+- `date` (DATE) - 日付
+- `title` (VARCHAR) - 日程タイトル
+- `status` (VARCHAR) - 詳細化状態（`draft`, `skeleton`, `detailed`, `completed`）
+- `theme` (TEXT) - 日程テーマ（例: "京都の伝統を巡る"）
+- `is_loading` (BOOLEAN) - AI詳細化処理中フラグ
+- `progress` (INT) - 詳細化進捗（0-100%）
 
-**カラム説明**:
-- `day`: 日程番号（1日目、2日目...）
-- `status`: 詳細化状態（`draft`, `skeleton`, `detailed`, `completed`）
-- `is_loading`: AI詳細化処理中フラグ
-- `progress`: 詳細化進捗（0-100%）
-- `theme`: 日程テーマ（例: "京都の伝統を巡る"）
-
-**複合ユニークキー**:
-- `(itinerary_id, day)` - 同じしおりの同じ日は1つだけ
+**制約**:
+- `UNIQUE(itinerary_id, day)` - 同じしおりの同じ日は1つだけ
 
 ---
 
@@ -206,37 +148,17 @@ CREATE TABLE day_schedules (
 
 各日程の観光スポット・移動・食事など。
 
-```sql
-CREATE TABLE tourist_spots (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  day_schedule_id UUID NOT NULL REFERENCES day_schedules(id) ON DELETE CASCADE,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  scheduled_time TIME,
-  duration INT,
-  category VARCHAR(50),
-  estimated_cost DECIMAL(10, 2),
-  notes TEXT,
-  image_url TEXT,
-  
-  -- 位置情報
-  location_lat DECIMAL(10, 8),
-  location_lng DECIMAL(11, 8),
-  location_address TEXT,
-  location_place_id VARCHAR(255),
-  
-  -- 順序
-  order_index INT NOT NULL DEFAULT 0,
-  
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-**カラム説明**:
-- `category`: カテゴリ（`sightseeing`, `dining`, `transportation`, `accommodation`, `other`）
-- `location_*`: Google Maps連携用位置情報
-- `order_index`: 表示順序（ドラッグ&ドロップで変更可能）
+**主要カラム**:
+- `id` (UUID) - スポットUUID（主キー）
+- `day_schedule_id` (UUID) - 日程ID（外部キー）
+- `name` (VARCHAR) - スポット名
+- `description` (TEXT) - 説明
+- `scheduled_time` (TIME) - 予定時刻
+- `duration` (INT) - 滞在時間（分）
+- `category` (VARCHAR) - カテゴリ（`sightseeing`, `dining`, `transportation`, `accommodation`, `other`）
+- `estimated_cost` (DECIMAL) - 予算
+- `location_lat`, `location_lng` (DECIMAL) - 緯度経度（Google Maps連携）
+- `order_index` (INT) - 表示順序
 
 **インデックス**:
 - `idx_tourist_spots_order` - 並び順検索
@@ -247,19 +169,12 @@ CREATE TABLE tourist_spots (
 
 しおり作成時のAIとの対話履歴。
 
-```sql
-CREATE TABLE chat_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  itinerary_id UUID NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
-  role VARCHAR(50) NOT NULL,
-  content TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-**カラム説明**:
-- `role`: メッセージ送信者（`user`, `assistant`）
-- `content`: メッセージ本文（最大2000文字を想定）
+**主要カラム**:
+- `id` (UUID) - メッセージUUID（主キー）
+- `itinerary_id` (UUID) - しおりID（外部キー）
+- `role` (VARCHAR) - 送信者（`user`, `assistant`）
+- `content` (TEXT) - メッセージ本文
+- `created_at` (TIMESTAMP) - 送信日時
 
 ---
 
@@ -267,28 +182,18 @@ CREATE TABLE chat_messages (
 
 ユーザーごとの設定・APIキー。
 
-```sql
-CREATE TABLE user_settings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
-  encrypted_claude_api_key TEXT,
-  ai_model_preference VARCHAR(50) DEFAULT 'gemini',
-  app_settings JSONB DEFAULT '{}',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-**カラム説明**:
-- `encrypted_claude_api_key`: 暗号化されたClaude APIキー（pgcrypto使用）
-- `ai_model_preference`: デフォルトAIモデル（`gemini`, `claude`）
-- `app_settings`: その他設定（JSONB、拡張可能）
+**主要カラム**:
+- `id` (UUID) - 設定UUID（主キー）
+- `user_id` (UUID) - ユーザーID（外部キー、一意）
+- `encrypted_claude_api_key` (TEXT) - 暗号化されたClaude APIキー
+- `ai_model_preference` (VARCHAR) - デフォルトAIモデル（`gemini`, `claude`）
+- `app_settings` (JSONB) - その他設定（拡張可能）
 
 ---
 
 ## セキュリティ（RLS）
 
-全てのテーブルでRow Level Security（RLS）が有効化されています。
+全テーブルでRow Level Security（RLS）が有効化されています。
 
 ### 基本原則
 
@@ -324,10 +229,10 @@ USING (user_id = auth.uid());
 
 #### 子テーブル（day_schedules, tourist_spots）
 
-親テーブル（itineraries）の所有権を継承:
+親テーブルの所有権を継承:
 
 ```sql
-CREATE POLICY "Users can view day schedules of their itineraries and public ones" 
+CREATE POLICY "Users can view day schedules of their itineraries" 
 ON day_schedules FOR SELECT 
 USING (
   EXISTS (
@@ -345,7 +250,7 @@ USING (
 ### 一覧・検索最適化
 
 ```sql
--- ユーザーのしおり一覧（作成日順）
+-- ユーザーのしおり一覧
 CREATE INDEX idx_itineraries_user_id ON itineraries(user_id);
 CREATE INDEX idx_itineraries_created_at ON itineraries(created_at DESC);
 CREATE INDEX idx_itineraries_updated_at ON itineraries(updated_at DESC);
@@ -370,7 +275,8 @@ USING GIN (to_tsvector('simple',
 **使用例**:
 ```sql
 SELECT * FROM itineraries
-WHERE to_tsvector('simple', title || ' ' || destination) @@ to_tsquery('simple', '京都 & 温泉');
+WHERE to_tsvector('simple', title || ' ' || destination) 
+  @@ to_tsquery('simple', '京都 & 温泉');
 ```
 
 ### 地理情報検索
@@ -383,67 +289,6 @@ CREATE INDEX idx_tourist_spots_location ON tourist_spots(location_lat, location_
 
 ---
 
-## 関数・トリガー
-
-### 自動updated_at更新
-
-```sql
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 全テーブルにトリガー設定
-CREATE TRIGGER update_users_updated_at 
-BEFORE UPDATE ON users
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_itineraries_updated_at 
-BEFORE UPDATE ON itineraries
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- 他テーブルも同様...
-```
-
----
-
-## マイグレーション
-
-### LocalStorage → Supabaseマイグレーション
-
-Phase 8で実装済み。初回ログイン時に自動実行。
-
-**実装**: [`lib/db/migration.ts`](/lib/db/migration.ts)
-
-```typescript
-export async function migrateLocalStorageToDatabase(userId: string): Promise<void> {
-  // 1. LocalStorageからしおりを読込
-  const itineraries = loadItinerariesFromStorage();
-  
-  // 2. Supabaseへ保存
-  for (const itinerary of itineraries) {
-    await repository.createItinerary(userId, itinerary);
-  }
-  
-  // 3. LocalStorageをクリア（ユーザー選択）
-  if (shouldClearLocalStorage) {
-    clearAllAppData();
-  }
-}
-```
-
-### スキーマ更新手順
-
-1. `lib/db/schema.sql` を編集
-2. Supabaseダッシュボードで実行（SQL Editor）
-3. `types/database.ts` を更新
-4. リポジトリ層を更新
-
----
-
 ## 開発ガイド
 
 ### TypeScript型定義
@@ -453,7 +298,6 @@ import { Database } from '@/types/database';
 
 type Itinerary = Database['public']['Tables']['itineraries']['Row'];
 type ItineraryInsert = Database['public']['Tables']['itineraries']['Insert'];
-type ItineraryUpdate = Database['public']['Tables']['itineraries']['Update'];
 ```
 
 ### クエリ例
@@ -461,7 +305,7 @@ type ItineraryUpdate = Database['public']['Tables']['itineraries']['Update'];
 ```typescript
 import { supabase } from '@/lib/db/supabase';
 
-// しおり一覧取得（自分 + 公開）
+// しおり一覧取得（ネストされたデータ）
 const { data, error } = await supabase
   .from('itineraries')
   .select(`
@@ -472,20 +316,9 @@ const { data, error } = await supabase
     )
   `)
   .order('updated_at', { ascending: false });
-
-// しおり作成
-const { data: newItinerary, error } = await supabase
-  .from('itineraries')
-  .insert({
-    user_id: userId,
-    title: '京都3日間の旅',
-    destination: '京都',
-    duration: 3,
-    phase: 'collecting'
-  })
-  .select()
-  .single();
 ```
+
+詳細は[lib/db/README.md](../lib/db/README.md)を参照。
 
 ---
 
@@ -494,11 +327,8 @@ const { data: newItinerary, error } = await supabase
 - [Supabase公式ドキュメント](https://supabase.com/docs)
 - [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [Database Setup Guide](/lib/db/README.md)
 
 ---
 
 **作成日**: 2025-10-09  
-**バージョン**: 1.0  
-**Phase**: 8.1 完了
-
+**バージョン**: 1.0

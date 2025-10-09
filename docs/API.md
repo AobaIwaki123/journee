@@ -9,7 +9,10 @@
 - [ヘルスチェックAPI](#ヘルスチェックapi)
 - [チャットAPI](#チャットapi)
 - [しおりAPI](#しおりapi)
+- [コメントAPI](#コメントapi)
+- [フィードバックAPI](#フィードバックapi)
 - [マイグレーションAPI](#マイグレーションapi)
+- [OG画像生成API](#og画像生成api)
 
 ---
 
@@ -275,10 +278,12 @@ APIサーバーの状態を確認します。
 - `/api/itinerary/delete` - しおり削除
 - `/api/itinerary/publish` - しおり公開
 - `/api/itinerary/unpublish` - しおり非公開化
+- `/api/itinerary/[id]/comments/[commentId]` - コメント更新・削除（自分のコメントのみ）
 - `/api/migration/*` - マイグレーション関連API
 
 **認証推奨（未認証でも動作可能）**:
 - `/api/chat` - チャットAPI（未認証でも使用可能だが、しおりの保存は制限される）
+- `/api/itinerary/[id]/comments` - コメント閲覧・投稿（閲覧と匿名投稿は認証不要）
 
 認証が必要なエンドポイントに未認証でアクセスすると、`401 Unauthorized`エラーが返されます。
 
@@ -462,6 +467,106 @@ const unpublishItinerary = async (itineraryId: string) => {
 };
 ```
 
+#### コメント API
+
+```typescript
+// コメント一覧取得
+const fetchComments = async (itineraryId: string, options?: {
+  limit?: number;
+  offset?: number;
+  sortOrder?: 'asc' | 'desc';
+}) => {
+  const params = new URLSearchParams({
+    limit: String(options?.limit || 10),
+    offset: String(options?.offset || 0),
+    sortOrder: options?.sortOrder || 'desc',
+  });
+  
+  const response = await fetch(
+    `/api/itinerary/${itineraryId}/comments?${params}`
+  );
+  return await response.json();
+};
+
+// コメント投稿
+const postComment = async (
+  itineraryId: string,
+  content: string,
+  authorName: string
+) => {
+  const response = await fetch(`/api/itinerary/${itineraryId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content,
+      authorName,
+      isAnonymous: true,
+    }),
+  });
+  
+  return await response.json();
+};
+
+// コメント更新
+const updateComment = async (
+  itineraryId: string,
+  commentId: string,
+  content: string
+) => {
+  const response = await fetch(
+    `/api/itinerary/${itineraryId}/comments/${commentId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    }
+  );
+  
+  return await response.json();
+};
+
+// コメント削除
+const deleteComment = async (itineraryId: string, commentId: string) => {
+  const response = await fetch(
+    `/api/itinerary/${itineraryId}/comments/${commentId}`,
+    {
+      method: 'DELETE',
+    }
+  );
+  
+  return await response.json();
+};
+```
+
+#### フィードバック API
+
+```typescript
+// フィードバック送信
+const submitFeedback = async (feedback: {
+  category: 'bug' | 'enhancement' | 'question';
+  title: string;
+  description: string;
+}) => {
+  const response = await fetch('/api/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...feedback,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+    }),
+  });
+  
+  return await response.json();
+};
+
+// フィードバック機能の状態確認
+const checkFeedbackStatus = async () => {
+  const response = await fetch('/api/feedback');
+  return await response.json();
+};
+```
+
 #### マイグレーション API
 
 ```typescript
@@ -562,7 +667,9 @@ interface ApiErrorResponse {
 - `401 Unauthorized`: 認証が必要
 - `403 Forbidden`: アクセス権限がない
 - `404 Not Found`: リソースが見つからない
+- `429 Too Many Requests`: レート制限超過
 - `500 Internal Server Error`: サーバーエラー
+- `503 Service Unavailable`: サービス利用不可
 
 ---
 
@@ -593,6 +700,14 @@ curl -X POST http://localhost:3000/api/itinerary/save \
   -b cookies.txt \
   -H "Content-Type: application/json" \
   -d '{"itinerary":{"id":"test-123","title":"テスト旅程",...}}'
+
+# コメント一覧取得
+curl http://localhost:3000/api/itinerary/test-123/comments
+
+# フィードバック送信
+curl -X POST http://localhost:3000/api/feedback \
+  -H "Content-Type: application/json" \
+  -d '{"category":"bug","title":"テストバグ","description":"説明"}'
 ```
 
 ### ブラウザでのテスト
@@ -1001,6 +1116,273 @@ POST /api/itinerary/unpublish
 
 ---
 
+## 💬 コメントAPI
+
+公開しおりに対するコメント機能のAPI。認証ユーザー・匿名ユーザーの両方に対応。
+
+### ベースURL
+
+```
+/api/itinerary/[id]/comments
+```
+
+### エンドポイント
+
+#### 1. コメント一覧取得
+
+```http
+GET /api/itinerary/[id]/comments
+```
+
+指定されたしおりのコメント一覧を取得します。ページネーション対応。
+
+**認証**: 不要（公開しおりのみ）
+
+**パスパラメータ**:
+- `id` (string, 必須): しおりID
+
+**クエリパラメータ**:
+- `limit` (number, 任意): 取得件数（1-100、デフォルト: 10）
+- `offset` (number, 任意): オフセット（デフォルト: 0）
+- `sortOrder` (string, 任意): ソート順（asc/desc、デフォルト: desc）
+
+**レスポンス例（成功）**:
+```json
+{
+  "data": [
+    {
+      "id": "comment-123",
+      "itineraryId": "itinerary-123",
+      "userId": "user-456",
+      "authorName": "田中太郎",
+      "content": "素敵な旅程ですね！",
+      "isAnonymous": false,
+      "createdAt": "2025-10-09T12:00:00.000Z",
+      "updatedAt": "2025-10-09T12:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 5,
+    "limit": 10,
+    "offset": 0,
+    "hasMore": false
+  }
+}
+```
+
+**ステータスコード**:
+- `200 OK`: 成功
+- `400 Bad Request`: パラメータが不正
+- `404 Not Found`: 公開しおりが見つからない
+- `500 Internal Server Error`: サーバーエラー
+
+---
+
+#### 2. コメント投稿
+
+```http
+POST /api/itinerary/[id]/comments
+```
+
+指定されたしおりにコメントを投稿します。認証ユーザー・匿名ユーザーの両方が利用可能。
+
+**認証**: 不要（匿名投稿可能）
+
+**パスパラメータ**:
+- `id` (string, 必須): しおりID
+
+**リクエストボディ**:
+```typescript
+{
+  content: string;        // コメント内容（必須、最大500文字）
+  authorName: string;     // 投稿者名（必須）
+  isAnonymous?: boolean;  // 匿名フラグ（デフォルト: true）
+}
+```
+
+**レスポンス例（成功）**:
+```json
+{
+  "id": "comment-123",
+  "itineraryId": "itinerary-123",
+  "userId": null,
+  "authorName": "山田花子",
+  "content": "参考になりました！",
+  "isAnonymous": true,
+  "createdAt": "2025-10-09T12:00:00.000Z",
+  "updatedAt": "2025-10-09T12:00:00.000Z"
+}
+```
+
+**ステータスコード**:
+- `201 Created`: 成功
+- `400 Bad Request`: リクエストが不正
+- `404 Not Found`: 公開しおりが見つからない
+- `500 Internal Server Error`: サーバーエラー
+
+---
+
+#### 3. コメント更新
+
+```http
+PATCH /api/itinerary/[id]/comments/[commentId]
+```
+
+自分が投稿したコメントを更新します。
+
+**認証**: 必要（自分のコメントのみ）
+
+**パスパラメータ**:
+- `id` (string, 必須): しおりID
+- `commentId` (string, 必須): コメントID
+
+**リクエストボディ**:
+```typescript
+{
+  content: string;  // 新しいコメント内容（必須、最大500文字）
+}
+```
+
+**レスポンス例（成功）**:
+```json
+{
+  "id": "comment-123",
+  "itineraryId": "itinerary-123",
+  "userId": "user-456",
+  "authorName": "田中太郎",
+  "content": "更新したコメント内容",
+  "isAnonymous": false,
+  "createdAt": "2025-10-09T12:00:00.000Z",
+  "updatedAt": "2025-10-09T12:30:00.000Z"
+}
+```
+
+**ステータスコード**:
+- `200 OK`: 成功
+- `400 Bad Request`: リクエストが不正
+- `401 Unauthorized`: 未認証
+- `403 Forbidden`: 他人のコメント
+- `500 Internal Server Error`: サーバーエラー
+
+---
+
+#### 4. コメント削除
+
+```http
+DELETE /api/itinerary/[id]/comments/[commentId]
+```
+
+自分が投稿したコメントを削除します。
+
+**認証**: 必要（自分のコメントのみ）
+
+**パスパラメータ**:
+- `id` (string, 必須): しおりID
+- `commentId` (string, 必須): コメントID
+
+**レスポンス例（成功）**:
+```json
+{
+  "success": true
+}
+```
+
+**ステータスコード**:
+- `200 OK`: 成功
+- `401 Unauthorized`: 未認証
+- `403 Forbidden`: 他人のコメント
+- `500 Internal Server Error`: サーバーエラー
+
+---
+
+## 📣 フィードバックAPI
+
+ユーザーからのフィードバック（バグ報告・機能要望など）を受け付けるAPI。GitHub Issueとして管理。
+
+### ベースURL
+
+```
+/api/feedback
+```
+
+### エンドポイント
+
+#### 1. フィードバック送信
+
+```http
+POST /api/feedback
+```
+
+フィードバックを送信し、GitHub Issueを作成します。
+
+**認証**: 不要（匿名送信可能、認証済みユーザーは自動的に情報が付与される）
+
+**リクエストボディ**:
+```typescript
+{
+  category: 'bug' | 'enhancement' | 'question';  // カテゴリ（必須）
+  title: string;                                  // タイトル（必須、最大100文字）
+  description: string;                            // 詳細（必須、最大2000文字）
+  userEmail?: string;                             // メールアドレス（任意）
+  userName?: string;                              // 名前（任意）
+  userAgent?: string;                             // ブラウザ情報（自動付与推奨）
+  url?: string;                                   // 問題が発生したURL（自動付与推奨）
+  screenshot?: string;                            // スクリーンショット（Base64、任意）
+}
+```
+
+**レスポンス例（成功）**:
+```json
+{
+  "success": true,
+  "issueUrl": "https://github.com/your-org/journee/issues/123",
+  "issueNumber": 123
+}
+```
+
+**レスポンス例（エラー）**:
+```json
+{
+  "success": false,
+  "error": "タイトルは100文字以内で入力してください。"
+}
+```
+
+**ステータスコード**:
+- `201 Created`: 成功
+- `400 Bad Request`: リクエストが不正
+- `429 Too Many Requests`: レート制限超過（1分に3回まで）
+- `500 Internal Server Error`: サーバーエラー
+- `503 Service Unavailable`: フィードバック機能が無効
+
+**レート制限**:
+- 1ユーザー（またはIP）あたり1分間に3回まで
+
+---
+
+#### 2. フィードバック機能の状態確認
+
+```http
+GET /api/feedback
+```
+
+フィードバック機能が利用可能かどうかを確認します。
+
+**認証**: 不要
+
+**レスポンス例**:
+```json
+{
+  "configured": true,
+  "message": "Feedback system is operational"
+}
+```
+
+**ステータスコード**:
+- `200 OK`: 常に成功
+
+---
+
 ## 🔄 マイグレーションAPI
 
 LocalStorageからSupabaseデータベースへのデータ移行API。
@@ -1057,6 +1439,54 @@ LocalStorageに保存されているしおりデータをデータベースに�
 
 ---
 
+## 🖼️ OG画像生成API
+
+公開しおりのOpen Graph画像を動的に生成するAPI。
+
+### ベースURL
+
+```
+/api/og
+```
+
+### エンドポイント
+
+#### 1. OGP画像生成
+
+```http
+GET /api/og?slug={slug}
+```
+
+指定されたスラッグの公開しおりのOG画像（1200x630px）を生成します。
+
+**認証**: 不要
+
+**クエリパラメータ**:
+- `slug` (string, 必須): 公開しおりのスラグ
+
+**レスポンス**: PNG画像（1200x630px）
+
+**ステータスコード**:
+- `200 OK`: 成功
+- `400 Bad Request`: スラッグが未指定
+- `404 Not Found`: しおりが見つからない
+- `500 Internal Server Error`: 画像生成に失敗
+
+**使用例**:
+```html
+<!-- HTMLのメタタグ -->
+<meta property="og:image" content="https://journee.app/api/og?slug=abc123xyz" />
+```
+
+**画像内容**:
+- しおりのタイトル
+- 目的地
+- 日数
+- 概要（あれば）
+- Journeeブランドロゴ
+
+---
+
 ## 🔗 関連リンク
 
 ### 公式ドキュメント
@@ -1076,29 +1506,33 @@ LocalStorageに保存されているしおりデータをデータベースに�
 - [Google OAuth 設定](https://console.cloud.google.com/)
 - [Supabase プロジェクト作成](https://app.supabase.com/)
 - [Google AI Studio](https://makersuite.google.com/)
+- [GitHub Personal Access Token](https://github.com/settings/tokens)（フィードバック機能用）
 
 ---
 
 ## 📊 実装ステータス
 
-### ✅ 実装済み（Phase 1-8）
+### ✅ 実装済み（Phase 1-11）
 - ✅ 認証システム（Google OAuth）
 - ✅ ユーザー管理
 - ✅ チャットAPI（Gemini & Claude対応）
 - ✅ ストリーミングレスポンス
 - ✅ しおり保存・読込・一覧・削除
 - ✅ しおり公開・共有機能
+- ✅ コメント機能（閲覧・投稿・更新・削除）
+- ✅ フィードバック機能（GitHub Issue統合）
+- ✅ OG画像動的生成
 - ✅ データベース統合（Supabase）
 - ✅ データマイグレーション
 
 ### 📋 今後の予定
-- 📋 PDF生成API
-- 📋 画像アップロードAPI
 - 📋 リアルタイム共同編集
-- 📋 コメント機能
+- 📋 画像アップロード機能
+- 📋 通知機能
+- 📋 お気に入り機能
 
 ---
 
 **最終更新**: 2025年10月9日  
-**バージョン**: v1.0.0  
-**API仕様書バージョン**: Phase 8 対応版
+**バージョン**: v1.1.0  
+**API仕様書バージョン**: Phase 11 対応版
