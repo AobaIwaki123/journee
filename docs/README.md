@@ -1,2 +1,5 @@
 - `API.md`: 実装ずみAPIのドキュメント
 - `DOCKER.md`: Dockerコンテナの使用方法
+- `PLAM.md`: 実装計画
+- `QUICK_START.md`: クイックスタートガイド
+- `GCR_DEPLOYMENT.md`: GCRへのデプロイ方法
