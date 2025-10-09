@@ -297,6 +297,13 @@ AIとともに旅のしおりを作成するWebアプリケーション。チャ
 ### `/blog` - ブログ・技術記事
 - [README.md](mdc:blog/README.md) - ブログ下書きとアイデア（ブランチ環境分離など）
 
+### `/.cursor/commands` - Cursorカスタムコマンド
+- [update-readme.md](mdc:.cursor/commands/update-readme.md) - README.md自動更新
+- [compress-docs.md](mdc:.cursor/commands/compress-docs.md) - ドキュメント圧縮・整理
+- [generate-schema.md](mdc:.cursor/commands/generate-schema.md) - SCHEMA.md自動生成
+- [generate-api.md](mdc:.cursor/commands/generate-api.md) - API.md自動生成
+- [generate-plan.md](mdc:.cursor/commands/generate-plan.md) - 開発計画詳細化
+
 ### その他の重要ファイル
 - [middleware.ts](mdc:middleware.ts) - 認証ミドルウェア（保護されたルート自動チェック）
 - [next.config.js](mdc:next.config.js) - Next.js設定
