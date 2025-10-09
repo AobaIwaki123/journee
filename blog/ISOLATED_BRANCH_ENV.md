@@ -373,10 +373,6 @@ argocd account generate-token --account admin
 Cloudflare経由でargocdを公開します。
 こうすることで、GitHub Actionなど外部サービスからk8sクラスタ上のargocdにアクセスすることが可能となります。
 
-```sh
-kubectl apply -f manifests/ingress.yml
-```
-
 ```yaml
 # ArgoCD Server を外部に公開するための Ingress 設定
 # Cloudflare Tunnel Ingress Controller を使用して外部からアクセス可能にする
@@ -407,6 +403,13 @@ spec:
             name: argocd-server
             port:
               number: 80  # ArgoCD Server の HTTP ポート
+```
+
+ArgoCD Serverを外部に公開するためのIngress設定を適用します。
+これにより、Cloudflare Tunnelを通じてArgoCD UIとAPIにアクセスできるようになります。
+
+```sh
+kubectl apply -f manifests/ingress.yml
 ```
 
 ---
@@ -568,11 +571,15 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nginx
+  name: nginx-ingress
   namespace: test-app
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
 spec:
+  ingressClassName: "cloudflare-tunnel"
   rules:
-  - host: test.yourdomain.com
+  - host: test-app.aooba.net
     http:
       paths:
       - path: /
@@ -597,10 +604,11 @@ kubectl get ingress -n test-app
 ```bash
 # ArgoCD Applicationの作成
 argocd app create test-app \
-  --repo https://github.com/your-username/your-repo.git \
-  --path k8s/manifests \
+  --repo https://github.com/AobaIwaki123/journee.git \
+  --path blog/manifests \
   --dest-server https://kubernetes.default.svc \
-  --dest-namespace test-app
+  --dest-namespace test-app \
+  --revision refacotr # ブランチ名
 
 # 同期
 argocd app sync test-app
