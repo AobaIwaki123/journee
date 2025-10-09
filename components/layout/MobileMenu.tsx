@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, BookOpen, Settings, User, LogOut, Plane } from 'lucide-react';
+import { Menu, X, BookOpen, Settings, User, LogOut, Plane, MessageSquare } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 interface MobileMenuProps {
   userName?: string | null;
   userEmail?: string | null;
   userImage?: string | null;
+  onFeedbackClick?: () => void;
 }
 
 /**
@@ -21,6 +22,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   userName,
   userEmail,
   userImage,
+  onFeedbackClick,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
@@ -28,6 +30,11 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   const handleNavigation = (path: string) => {
     router.push(path);
     setIsOpen(false);
+  };
+
+  const handleFeedbackClick = () => {
+    setIsOpen(false);
+    onFeedbackClick?.();
   };
 
   const handleSignOut = async () => {
@@ -121,6 +128,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   >
                     <BookOpen className="w-5 h-5" />
                     <span className="text-sm font-medium">しおり一覧</span>
+                  </button>
+
+                  <button
+                    onClick={handleFeedbackClick}
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    <span className="text-sm font-medium">フィードバック</span>
                   </button>
 
                   <button

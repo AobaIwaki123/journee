@@ -22,9 +22,10 @@
 - ✅ PDF出力機能
 - ✅ モバイル対応・PWA
 - ✅ Supabaseデータベース統合
+- ✅ Phase 10.2: OGP画像の動的生成機能
 
 ### 既知の問題
-- ⚠️ 閲覧ページ（`/share/[slug]`）でPDF機能が無効化されている
+- ✅ ~~閲覧ページ（`/share/[slug]`）でPDF機能が無効化されている~~ → **Phase 10.1で修正完了**
 - ⚠️ 共有URLのOGP画像が表示されない
 - ⚠️ パフォーマンス指標が目標未達（初期ロード、Lighthouse）
 
@@ -36,8 +37,9 @@
 **期間**: 1週間  
 **ステータス**: 📝 計画中
 
-#### Phase 10.1: 閲覧ページのPDF機能修正
-**優先度**: ⭐⭐⭐ 高
+#### Phase 10.1: 閲覧ページのPDF機能修正 ✅
+**優先度**: ⭐⭐⭐ 高  
+**完了日**: 2025-10-09
 
 ##### 問題
 - 閲覧ページ（`/share/[slug]/page.tsx`）でPDF出力ボタンが無効化されている
@@ -46,18 +48,18 @@
 ##### 実装タスク
 
 1. **PDF出力ボタンの有効化**
-   - [ ] `PublicItineraryView.tsx`を調査（PDF機能の実装状況確認）
-   - [ ] PDFExportButtonを閲覧ページで使用可能にする
-   - [ ] 公開しおりデータをPDF生成関数に渡す処理を実装
+   - [x] `PublicItineraryView.tsx`を調査（PDF機能の実装状況確認）
+   - [x] PDFExportButtonを閲覧ページで使用可能にする
+   - [x] 公開しおりデータをPDF生成関数に渡す処理を実装
    
 2. **PDFプレビュー機能の修正**
-   - [ ] PDFPreviewModalを閲覧ページで利用可能にする
-   - [ ] プレビュー表示のレイアウト調整
-   - [ ] 認証不要でもPDF生成できるよう修正
+   - [x] PDFPreviewModalを閲覧ページで利用可能にする
+   - [x] プレビュー表示のレイアウト調整
+   - [x] 認証不要でもPDF生成できるよう修正
    
 3. **テスト**
-   - [ ] E2Eテスト: 閲覧ページからPDFダウンロード
-   - [ ] 手動テスト: 各ブラウザでの動作確認
+   - [x] E2Eテスト: 閲覧ページからPDFダウンロード
+   - [ ] 手動テスト: 各ブラウザでの動作確認（推奨）
 
 ##### 関連ファイル
 ```
@@ -70,8 +72,9 @@
 
 ---
 
-#### Phase 10.2: OGP画像の実装
-**優先度**: ⭐⭐⭐ 高
+#### Phase 10.2: OGP画像の実装 ✅ 完了
+**優先度**: ⭐⭐⭐ 高  
+**完了日**: 2025-10-09
 
 ##### 問題
 - SNSでURLを共有した際のプレビュー画像が表示されない
@@ -79,51 +82,52 @@
 
 ##### 実装タスク
 
-1. **OGP画像の動的生成**
-   - [ ] `/app/api/og/route.tsx` を作成（Next.js ImageResponse使用）
-   - [ ] しおりのタイトル、行き先、日数を含む画像を生成
-   - [ ] 美しいデザインテンプレート作成
+1. **OGP画像の動的生成** ✅
+   - [x] `/app/api/og/route.tsx` を作成（Next.js ImageResponse使用）
+   - [x] しおりのタイトル、行き先、日数を含む画像を生成
+   - [x] 美しいデザインテンプレート作成
    
-2. **メタタグの設定**
-   - [ ] `/app/share/[slug]/page.tsx` にmetadata設定を追加
-   ```typescript
-   export async function generateMetadata({ params }): Promise<Metadata> {
-     const itinerary = await fetchPublicItinerary(params.slug);
-     return {
-       title: itinerary.title,
-       description: itinerary.summary,
-       openGraph: {
-         title: itinerary.title,
-         description: itinerary.summary,
-         images: [`/api/og?slug=${params.slug}`],
-         type: 'website',
-       },
-       twitter: {
-         card: 'summary_large_image',
-         title: itinerary.title,
-         description: itinerary.summary,
-         images: [`/api/og?slug=${params.slug}`],
-       },
-     };
-   }
-   ```
+2. **メタタグの設定** ✅
+   - [x] `/app/share/[slug]/page.tsx` にmetadata設定を追加
+   - [x] 動的OGP画像URLの生成（`/api/og?slug=${params.slug}`）
+   - [x] OpenGraphとTwitter Cardのメタデータ設定
    
-3. **テスト**
+3. **環境設定** ✅
+   - [x] `.env.example` に `NEXT_PUBLIC_BASE_URL` を追加
+   - [x] `app/layout.tsx` にデフォルトOGP設定を追加
+   - [x] `public/images/README.md` にOGP画像のドキュメント追加
+   
+4. **テスト** ⚠️ 手動テスト推奨
    - [ ] Twitter Card Validator でテスト
    - [ ] Facebook Sharing Debugger でテスト
    - [ ] LINE、Slackでの表示確認
+   - 📖 詳細なテスト方法: [OGP_TESTING.md](./OGP_TESTING.md)
+
+##### 実装内容
+- `/app/api/og/route.tsx`: Edge Runtime対応のOGP画像生成API
+  - しおりのタイトル、目的地、日数を美しいグラデーション背景に配置
+  - 1200x630pxの標準サイズで生成
+- `/app/share/[slug]/page.tsx`: 動的メタデータ生成
+  - OpenGraphとTwitter Cardの完全対応
+  - Base URLの自動検出（本番・開発環境対応）
+- `/app/layout.tsx`: デフォルトOGP設定
+  - サイト全体のOpenGraph設定
+  - metadataBaseの設定
 
 ##### 関連ファイル
 ```
-- app/api/og/route.tsx（新規作成）
-- app/share/[slug]/page.tsx（metadata追加）
-- app/layout.tsx（デフォルトOGP設定）
+- app/api/og/route.tsx（新規作成）✅
+- app/share/[slug]/page.tsx（metadata更新）✅
+- app/layout.tsx（デフォルトOGP設定追加）✅
+- .env.example（NEXT_PUBLIC_BASE_URL追加）✅
+- public/images/README.md（ドキュメント更新）✅
 ```
 
 ##### 技術仕様
-- Next.js Image Response API（@vercel/og）
+- Next.js Image Response API（組み込み、追加パッケージ不要）
 - OGP画像サイズ: 1200x630px
 - フォーマット: PNG
+- Edge Runtime対応
 
 ---
 
@@ -560,6 +564,7 @@
 - [API仕様（API.md）](./API.md)
 - [コーディングガイドライン（GUIDELINE.md）](./GUIDELINE.md)
 - [データベーススキーマ（SCHEMA.md）](./SCHEMA.md)
+- [OGPテスト方法（OGP_TESTING.md）](./OGP_TESTING.md)
 
 ---
 

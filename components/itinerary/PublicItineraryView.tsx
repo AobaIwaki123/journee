@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ItineraryData } from "@/types/itinerary";
 import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
@@ -8,7 +8,14 @@ import { ItinerarySummary } from "./ItinerarySummary";
 import { DaySchedule } from "./DaySchedule";
 import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
-import { Download, Share2, Copy, Check } from "lucide-react";
+import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
+import { PDFPreviewModal } from "./PDFPreviewModal";
+import { Download, Share2, Copy, Check, Loader2, Eye } from "lucide-react";
+import {
+  generateItineraryPDF,
+  generateFilename,
+} from "@/lib/utils/pdf-generator";
+import { showToast } from "@/components/ui/Toast";
 
 interface PublicItineraryViewProps {
   slug: string;
@@ -30,6 +37,11 @@ export default function PublicItineraryView({
 }: PublicItineraryViewProps) {
   const [copied, setCopied] = useState(false);
   const [publishedDate, setPublishedDate] = useState<string>("");
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
@@ -73,8 +85,50 @@ export default function PublicItineraryView({
     }
   };
 
-  const handleDownloadPDF = () => {
-    alert("PDF出力機能は近日実装予定です");
+  const handleDownloadPDF = async () => {
+    try {
+      setIsGeneratingPDF(true);
+      setPdfProgress(0);
+      setShowPreview(true);
+
+      // PDF専用レイアウトを一時的にDOMに追加
+      await new Promise((resolve) => setTimeout(resolve, 100)); // DOMレンダリング待機
+
+      const filename = generateFilename(itinerary);
+
+      const result = await generateItineraryPDF("pdf-export-container-public", {
+        filename,
+        quality: 0.95,
+        margin: 10,
+        onProgress: (p) => setPdfProgress(p),
+      });
+
+      if (result.success) {
+        showToast({
+          type: "success",
+          message: `PDFを保存しました: ${result.filename}`,
+          duration: 4000,
+        });
+      } else {
+        throw new Error(result.error || "不明なエラー");
+      }
+    } catch (error) {
+      console.error("PDF生成エラー:", error);
+      showToast({
+        type: "error",
+        message: "PDF生成に失敗しました。もう一度お試しください。",
+        duration: 4000,
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+      setPdfProgress(0);
+      // プレビューを少し遅延して閉じる
+      setTimeout(() => setShowPreview(false), 500);
+    }
+  };
+
+  const handlePreviewPDF = () => {
+    setShowPreviewModal(true);
   };
 
   return (
@@ -118,16 +172,40 @@ export default function PublicItineraryView({
               )}
             </button>
 
-            {/* PDFダウンロードボタン */}
+            {/* PDFボタン */}
             {itinerary.allowPdfDownload && (
-              <button
-                onClick={handleDownloadPDF}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                title="PDFダウンロード"
-              >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">PDF</span>
-              </button>
+              <>
+                {/* プレビューボタン */}
+                <button
+                  onClick={handlePreviewPDF}
+                  disabled={isGeneratingPDF}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  title="PDFプレビュー"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span className="hidden sm:inline">プレビュー</span>
+                </button>
+
+                {/* PDFダウンロードボタン */}
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={isGeneratingPDF}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  title="PDFダウンロード"
+                >
+                  {isGeneratingPDF ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="hidden sm:inline">{pdfProgress}%</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline">PDF</span>
+                    </>
+                  )}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -198,6 +276,30 @@ export default function PublicItineraryView({
             </p>
           )}
         </div>
+
+        {/* PDFプレビューモーダル */}
+        <PDFPreviewModal
+          itinerary={itinerary}
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          onExport={() => {
+            setShowPreviewModal(false);
+            handleDownloadPDF();
+          }}
+        />
+
+        {/* PDF専用レイアウト（非表示） */}
+        {showPreview && (
+          <div
+            ref={pdfContainerRef}
+            className="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none"
+            aria-hidden="true"
+          >
+            <div id="pdf-export-container-public">
+              <ItineraryPDFLayout itinerary={itinerary} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
