@@ -12,25 +12,65 @@
 
 ## 有効化方法
 
+### ⚠️ 重要：ビルド時とランタイムの違い
+
+Next.jsでは、環境変数には2種類あります：
+
+1. **サーバーサイド環境変数**（`ENABLE_MOCK_AUTH`）
+   - 実行時に読み込まれる
+   - API ルートなどサーバー側で使用
+
+2. **クライアントサイド環境変数**（`NEXT_PUBLIC_ENABLE_MOCK_AUTH`）
+   - **ビルド時**にコードに埋め込まれる
+   - ブラウザで実行されるコードで使用
+   - ビルド後の変更は反映されない
+
 ### 環境変数の設定
 
-`.env.local`または環境設定に以下を追加：
+#### ローカル開発環境
+
+`.env.local`に以下を追加：
 
 ```bash
-# モック認証を有効化
+# サーバーサイド用（実行時）
 ENABLE_MOCK_AUTH=true
+
+# クライアントサイド用（ビルド時）
 NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
 ```
 
+設定後、**必ずビルドしてから実行**：
+
+```bash
+npm run build
+npm start
+# または開発サーバー
+npm run dev
+```
+
+> **注意**: `npm run dev`では環境変数の変更が即座に反映されますが、本番ビルド（`npm run build`）では再ビルドが必要です。
+
 ### Kubernetes（ブランチ環境）
 
-`k8s/manifests-multi-deploy/deployment.yml`に以下が既に設定されています：
+#### デプロイメントマニフェスト
 
+`k8s/manifests-multi-deploy/deployment.yml`:
 ```yaml
 env:
   - name: ENABLE_MOCK_AUTH
     value: "true"
 ```
+
+#### Dockerビルド時の設定
+
+GitHub Actionsでイメージをビルドする際、ビルド引数として渡されます（`.github/workflows/push.yml`）：
+
+```yaml
+build-args: |
+  NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
+```
+
+この設定により、ブランチ環境のイメージには**ビルド時にモック認証が埋め込まれます**。
 
 ### Docker環境
 
@@ -268,7 +308,19 @@ NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
 
 ### Kubernetesでモック認証が無効
 
-**原因**: Deployment設定に環境変数がない
+**原因1**: イメージにモック認証がビルドされていない
+
+**解決策**:
+1. `.github/workflows/push.yml`でビルド引数が設定されているか確認：
+```yaml
+build-args: |
+  NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
+```
+
+2. 変更をコミット・プッシュして、GitHub Actionsで新しいイメージをビルド
+3. デプロイメントマニフェストのイメージタグが最新か確認
+
+**原因2**: Deployment設定に環境変数がない
 
 **解決策**:
 `k8s/manifests-multi-deploy/deployment.yml`に以下を追加：
@@ -283,6 +335,31 @@ env:
 
 ```bash
 kubectl apply -f k8s/manifests-multi-deploy/
+```
+
+### デプロイ後もモック認証が表示されない
+
+**原因**: 古いイメージがキャッシュされている
+
+**解決策**:
+
+1. `imagePullPolicy: Always`が設定されているか確認
+```yaml
+containers:
+  - name: journee-multi-deploy
+    image: gcr.io/my-docker-471807/journee:multi-deploy-xxxxx
+    imagePullPolicy: Always  # ←これ
+```
+
+2. Podを強制再起動：
+```bash
+kubectl rollout restart deployment/journee-multi-deploy -n journee
+```
+
+3. イメージタグが最新のコミットSHAか確認：
+```bash
+# GitHub ActionsのログでタグをSHA確認
+# deployment.ymlのイメージタグを確認
 ```
 
 ## カスタマイズ
