@@ -1,33 +1,46 @@
 /**
  * PDF出力専用レイアウトコンポーネント
- * 
+ *
  * 印刷・PDF出力に最適化されたしおりレイアウト
  * - A4サイズに最適化
  * - 印刷用カラースキーム
  * - ページ分割を考慮したレイアウト
  */
 
-'use client';
+"use client";
 
-import React from 'react';
-import type { ItineraryData } from '@/types/itinerary';
-import { Calendar, MapPin, Wallet, Users, Camera, Utensils, Car, Hotel, Sparkles } from 'lucide-react';
+import React from "react";
+import type { ItineraryData } from "@/types/itinerary";
+import {
+  Calendar,
+  MapPin,
+  Wallet,
+  Users,
+  Camera,
+  Utensils,
+  Car,
+  Hotel,
+  Sparkles,
+} from "lucide-react";
+import { formatDate as formatDateUtil } from "@/lib/utils/date-utils";
 
 interface ItineraryPDFLayoutProps {
   itinerary: ItineraryData;
 }
 
-export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerary }) => {
+export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({
+  itinerary,
+}) => {
   // カテゴリー別アイコン
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'sightseeing':
+      case "sightseeing":
         return <Camera className="w-5 h-5" />;
-      case 'dining':
+      case "dining":
         return <Utensils className="w-5 h-5" />;
-      case 'transportation':
+      case "transportation":
         return <Car className="w-5 h-5" />;
-      case 'accommodation':
+      case "accommodation":
         return <Hotel className="w-5 h-5" />;
       default:
         return <Sparkles className="w-5 h-5" />;
@@ -36,20 +49,25 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
 
   // 日付フォーマット
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
     const date = new Date(dateStr);
-    return date.toLocaleDateString('ja-JP', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   return (
-    <div className="pdf-layout bg-white text-gray-900 font-sans" style={{ width: '210mm', minHeight: '297mm', padding: '15mm' }}>
+    <div
+      className="pdf-layout bg-white text-gray-900 font-sans"
+      style={{ width: "210mm", minHeight: "297mm", padding: "15mm" }}
+    >
       {/* ヘッダー */}
       <header className="mb-8 border-b-2 border-gray-800 pb-4">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">{itinerary.title}</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          {itinerary.title}
+        </h1>
         <div className="flex items-center gap-6 text-sm text-gray-700">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
@@ -76,7 +94,9 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
       {itinerary.summary && (
         <section className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">旅行概要</h2>
-          <p className="text-sm text-gray-700 leading-relaxed">{itinerary.summary}</p>
+          <p className="text-sm text-gray-700 leading-relaxed">
+            {itinerary.summary}
+          </p>
         </section>
       )}
 
@@ -95,7 +115,9 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
 
       {/* 日程表 */}
       <section className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">日程表</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
+          日程表
+        </h2>
         {itinerary.schedule.map((day) => (
           <div key={day.day} className="break-inside-avoid">
             {/* 日付ヘッダー */}
@@ -116,16 +138,21 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
             {/* スポット一覧 */}
             <div className="border border-gray-300 border-t-0 rounded-b-lg p-4 space-y-3">
               {day.spots.map((spot) => (
-                <div key={spot.id} className="flex gap-3 pb-3 border-b border-gray-200 last:border-b-0 last:pb-0">
+                <div
+                  key={spot.id}
+                  className="flex gap-3 pb-3 border-b border-gray-200 last:border-b-0 last:pb-0"
+                >
                   {/* アイコン */}
                   <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-700">
-                    {getCategoryIcon(spot.category || 'other')}
+                    {getCategoryIcon(spot.category || "other")}
                   </div>
 
                   {/* 詳細 */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h4 className="text-base font-semibold text-gray-900">{spot.name}</h4>
+                      <h4 className="text-base font-semibold text-gray-900">
+                        {spot.name}
+                      </h4>
                       {spot.scheduledTime && (
                         <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
                           {spot.scheduledTime}
@@ -133,12 +160,12 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
                       )}
                     </div>
                     {spot.description && (
-                      <p className="text-sm text-gray-600 mb-1">{spot.description}</p>
+                      <p className="text-sm text-gray-600 mb-1">
+                        {spot.description}
+                      </p>
                     )}
                     <div className="flex items-center gap-4 text-xs text-gray-500">
-                      {spot.duration && (
-                        <span>滞在: {spot.duration}分</span>
-                      )}
+                      {spot.duration && <span>滞在: {spot.duration}分</span>}
                       {spot.estimatedCost && (
                         <span className="font-medium text-blue-700">
                           ¥{spot.estimatedCost.toLocaleString()}
@@ -146,7 +173,9 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
                       )}
                     </div>
                     {spot.notes && (
-                      <p className="text-xs text-gray-500 mt-1 italic">{spot.notes}</p>
+                      <p className="text-xs text-gray-500 mt-1 italic">
+                        {spot.notes}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -156,7 +185,8 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
               <div className="flex items-center justify-between pt-3 border-t border-gray-300 text-sm">
                 {day.totalDistance && (
                   <span className="text-gray-600">
-                    総移動距離: <span className="font-semibold">{day.totalDistance}km</span>
+                    総移動距離:{" "}
+                    <span className="font-semibold">{day.totalDistance}km</span>
                   </span>
                 )}
                 {day.totalCost && (
@@ -173,7 +203,9 @@ export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({ itinerar
       {/* フッター */}
       <footer className="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-500">
         <p>Journee - AIとともに旅のしおりを作成</p>
-        <p className="mt-1">作成日: {formatDate(itinerary.createdAt, 'short')}</p>
+        <p className="mt-1">
+          作成日: {formatDateUtil(itinerary.createdAt, "short")}
+        </p>
       </footer>
     </div>
   );
