@@ -185,8 +185,6 @@ export const QuickActions: React.FC = () => {
           }
         }
 
-        // Phase 4.9の並列処理は未実装のため、通常のストリーミング処理にフォールバック
-        // TODO: Phase 4.9実装時に並列処理を追加
         for await (const chunk of sendChatMessageStream(
           "次へ",
           chatHistory,

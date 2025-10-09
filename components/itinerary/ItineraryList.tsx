@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { ItineraryData } from '@/types/itinerary';
-import { ItineraryCard } from './ItineraryCard';
-import { useStore } from '@/lib/store/useStore';
-import { loadItinerariesFromStorage, initializeMockData } from '@/lib/mock-data/itineraries';
-import { FileText } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from "react";
+import { ItineraryData } from "@/types/itinerary";
+import { ItineraryCard } from "./ItineraryCard";
+import { useStore } from "@/lib/store/useStore";
+import {
+  loadItinerariesFromStorage,
+  initializeMockData,
+} from "@/lib/mock-data/itineraries";
+import { FileText } from "lucide-react";
 
 /**
  * しおり一覧コンポーネント
@@ -28,9 +31,8 @@ export const ItineraryList: React.FC = () => {
     setItineraries(data);
   };
 
-  // 削除時のコールバック
   const handleDelete = () => {
-    loadItineraries(); // 再読み込み
+    loadItineraries();
   };
 
   // フィルター適用
@@ -38,7 +40,7 @@ export const ItineraryList: React.FC = () => {
     let result = [...itineraries];
 
     // ステータスフィルター
-    if (itineraryFilter.status && itineraryFilter.status !== 'all') {
+    if (itineraryFilter.status && itineraryFilter.status !== "all") {
       result = result.filter((item) => item.status === itineraryFilter.status);
     }
 
@@ -53,8 +55,7 @@ export const ItineraryList: React.FC = () => {
     // 開始日フィルター
     if (itineraryFilter.startDate) {
       result = result.filter(
-        (item) =>
-          item.startDate && item.startDate >= itineraryFilter.startDate!
+        (item) => item.startDate && item.startDate >= itineraryFilter.startDate!
       );
     }
 
@@ -77,26 +78,26 @@ export const ItineraryList: React.FC = () => {
       let bValue: any;
 
       switch (itinerarySort.field) {
-        case 'title':
+        case "title":
           aValue = a.title.toLowerCase();
           bValue = b.title.toLowerCase();
           break;
-        case 'startDate':
-          aValue = a.startDate || '';
-          bValue = b.startDate || '';
+        case "startDate":
+          aValue = a.startDate || "";
+          bValue = b.startDate || "";
           break;
-        case 'createdAt':
+        case "createdAt":
           aValue = a.createdAt.getTime();
           bValue = b.createdAt.getTime();
           break;
-        case 'updatedAt':
+        case "updatedAt":
         default:
           aValue = a.updatedAt.getTime();
           bValue = b.updatedAt.getTime();
           break;
       }
 
-      if (itinerarySort.order === 'asc') {
+      if (itinerarySort.order === "asc") {
         return aValue > bValue ? 1 : -1;
       } else {
         return aValue < bValue ? 1 : -1;
@@ -115,14 +116,14 @@ export const ItineraryList: React.FC = () => {
           しおりがありません
         </h3>
         <p className="text-sm text-gray-500 text-center mb-6">
-          {itineraryFilter.status !== 'all' ||
+          {itineraryFilter.status !== "all" ||
           itineraryFilter.destination ||
           itineraryFilter.startDate ||
           itineraryFilter.endDate
-            ? 'フィルター条件に一致するしおりがありません。条件を変更してください。'
-            : 'AIとチャットして、あなただけの旅のしおりを作成しましょう。'}
+            ? "フィルター条件に一致するしおりがありません。条件を変更してください。"
+            : "AIとチャットして、あなただけの旅のしおりを作成しましょう。"}
         </p>
-        {itineraryFilter.status === 'all' &&
+        {itineraryFilter.status === "all" &&
           !itineraryFilter.destination &&
           !itineraryFilter.startDate &&
           !itineraryFilter.endDate && (

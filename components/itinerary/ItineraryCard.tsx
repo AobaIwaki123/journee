@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Calendar, MapPin, Clock, Trash2, FileText } from 'lucide-react';
-import { ItineraryData } from '@/types/itinerary';
-import { deleteItinerary } from '@/lib/mock-data/itineraries';
+import React from "react";
+import Link from "next/link";
+import { Calendar, MapPin, Clock, Trash2, FileText } from "lucide-react";
+import { ItineraryData } from "@/types/itinerary";
+import { deleteItinerary } from "@/lib/mock-data/itineraries";
 
 interface ItineraryCardProps {
   itinerary: ItineraryData;
@@ -23,7 +23,7 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (confirm(`「${itinerary.title}」を削除しますか？`)) {
       deleteItinerary(itinerary.id);
       onDelete?.(itinerary.id);
@@ -33,45 +33,43 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
   const handlePdfExport = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // TODO: Phase 5.3 - PDF出力機能の実装
-    alert('PDF出力機能は Phase 5.3 で実装予定です');
+    alert("PDF出力機能は Phase 5.3 で実装予定です");
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "draft":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "archived":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed':
-        return '完成';
-      case 'draft':
-        return '下書き';
-      case 'archived':
-        return 'アーカイブ';
+      case "completed":
+        return "完成";
+      case "draft":
+        return "下書き";
+      case "archived":
+        return "アーカイブ";
       default:
         return status;
     }
   };
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '未定';
+    if (!dateStr) return "未定";
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+      return date.toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       });
     } catch {
       return dateStr;
@@ -116,7 +114,7 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
           <div className="flex items-center text-sm text-gray-600 mb-2">
             <Calendar className="w-4 h-4 mr-1.5" />
             <span>
-              {formatDate(itinerary.startDate)} 〜{' '}
+              {formatDate(itinerary.startDate)} 〜{" "}
               {formatDate(itinerary.endDate)}
             </span>
           </div>
@@ -162,7 +160,7 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
         {/* 更新日時 */}
         <div className="px-4 pb-3">
           <p className="text-xs text-gray-400">
-            更新: {itinerary.updatedAt.toLocaleDateString('ja-JP')}
+            更新: {itinerary.updatedAt.toLocaleDateString("ja-JP")}
           </p>
         </div>
       </div>

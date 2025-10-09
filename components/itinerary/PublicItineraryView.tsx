@@ -67,9 +67,6 @@ export default function PublicItineraryView({
   };
 
   const handleDownloadPDF = () => {
-    // Phase 5.3: PDF出力機能と連携
-    // TODO: PDF生成機能の実装後に有効化
-    console.log("PDF ダウンロード（Phase 5.3で実装予定）");
     alert("PDF出力機能は近日実装予定です");
   };
 
