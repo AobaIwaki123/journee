@@ -14,6 +14,10 @@ export const metadata: Metadata = {
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
     'http://localhost:3000'
   ),
+  icons: {
+    icon: '/icon',
+    apple: '/apple-icon',
+  },
   openGraph: {
     title: 'Journee - AI旅のしおり作成アプリ',
     description: 'AIとともに旅のしおりを作成するアプリケーション。チャット形式で簡単に旅行計画を立て、美しいしおりを自動生成。',
@@ -21,20 +25,11 @@ export const metadata: Metadata = {
     siteName: 'Journee',
     locale: 'ja_JP',
     type: 'website',
-    images: [
-      {
-        url: '/images/og-default.png',
-        width: 1200,
-        height: 630,
-        alt: 'Journee - AI旅のしおり作成アプリ',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Journee - AI旅のしおり作成アプリ',
     description: 'AIとともに旅のしおりを作成するアプリケーション。',
-    images: ['/images/og-default.png'],
     creator: '@journee_app',
     site: '@journee_app',
   },
