@@ -14,6 +14,7 @@ interface PageProps {
 /**
  * Phase 10.2: OGPメタデータ生成（動的OGP画像対応）
  * SNS共有時のリッチプレビュー表示
+ * + 構造化データ（JSON-LD）、robots、canonical等の追加
  */
 export async function generateMetadata({
   params,
@@ -25,6 +26,10 @@ export async function generateMetadata({
     return {
       title: "しおりが見つかりません | Journee",
       description: "指定されたしおりは存在しないか、非公開に設定されています。",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -44,15 +49,45 @@ export async function generateMetadata({
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000";
 
+  const shareUrl = `${baseUrl}/share/${params.slug}`;
+
   return {
     title: ogTitle,
     description: ogDescription,
+    // 検索エンジン最適化
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
+    // 正規URL
+    alternates: {
+      canonical: shareUrl,
+    },
+    // 作成者情報（将来的に実装）
+    // authors: itinerary.user_name ? [{ name: itinerary.user_name }] : undefined,
+    // キーワード（SEO）
+    keywords: [
+      itinerary.destination,
+      '旅行',
+      'しおり',
+      '旅のしおり',
+      'Journee',
+      ...(itinerary.schedule?.flatMap((day) =>
+        day.spots.map((spot) => spot.name)
+      ) || []),
+    ].filter(Boolean),
+    // Open Graph
     openGraph: {
       title: ogTitle,
       description: ogDescription,
       type: "website",
-      url: `${baseUrl}/share/${params.slug}`,
+      url: shareUrl,
       siteName: "Journee",
+      locale: "ja_JP",
       images: [
         {
           url: `${baseUrl}${ogImageUrl}`,
@@ -62,6 +97,7 @@ export async function generateMetadata({
         },
       ],
     },
+    // Twitter Card
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
@@ -114,13 +150,53 @@ export default async function PublicItineraryPage({ params }: PageProps) {
     console.error("Failed to fetch initial comments:", error);
   }
 
+  // 構造化データ（JSON-LD）の生成
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name: itinerary.title,
+    description: itinerary.summary || `${itinerary.destination}への旅行計画`,
+    touristType: "leisure",
+    ...(itinerary.destination && {
+      itinerary: {
+        "@type": "Place",
+        name: itinerary.destination,
+      },
+    }),
+    ...(itinerary.schedule && itinerary.schedule.length > 0 && {
+      startDate: itinerary.schedule[0]?.date,
+      endDate: itinerary.schedule[itinerary.schedule.length - 1]?.date,
+    }),
+    // 作成者情報（将来的に実装）
+    // ...(itinerary.user_name && {
+    //   creator: {
+    //     "@type": "Person",
+    //     name: itinerary.user_name,
+    //   },
+    // }),
+    url: `${baseUrl}/share/${params.slug}`,
+    image: `${baseUrl}/api/og?slug=${params.slug}`,
+  };
+
   return (
-    <PublicItineraryView
-      slug={params.slug}
-      itinerary={itinerary}
-      currentUserId={session?.user?.id || null}
-      initialComments={initialComments}
-      initialCommentCount={commentCount}
-    />
+    <>
+      {/* 構造化データ（JSON-LD） */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <PublicItineraryView
+        slug={params.slug}
+        itinerary={itinerary}
+        currentUserId={session?.user?.id || null}
+        initialComments={initialComments}
+        initialCommentCount={commentCount}
+      />
+    </>
   );
 }

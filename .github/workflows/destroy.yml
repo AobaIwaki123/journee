@@ -1,0 +1,149 @@
+name: Destroy ArgoCD Application
+run-name: Destroy ArgoCD Application for ${{ github.event.pull_request.head.ref }}
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  ARGOCD_SERVER: argocd.aooba.net
+  IMAGE_NAME: journee
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Generate branch hash
+        id: branch_hash
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          # Generate 6-character hash from branch name
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "hash=$BRANCH_HASH" >> $GITHUB_OUTPUT
+          echo "✅ Generated hash for branch '$BRANCH': $BRANCH_HASH"
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+          echo "✅ ArgoCD CLI installed"
+
+      - name: Check if ArgoCD Application exists
+        id: check_app
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            https://${{ env.ARGOCD_SERVER }}/api/v1/applications/$APP_NAME)
+
+          echo "HTTP_CODE=$HTTP_CODE"
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ ArgoCD Application '$APP_NAME' exists and will be deleted"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  ArgoCD Application '$APP_NAME' does not exist"
+          fi
+
+      - name: Delete ArgoCD Application
+        if: steps.check_app.outputs.exists == 'true'
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+
+          echo "🗑️  Deleting ArgoCD Application: $APP_NAME (branch: $BRANCH)"
+
+          argocd app delete $APP_NAME \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --auth-token $ARGOCD_TOKEN \
+            --grpc-web \
+            --yes
+
+          echo "✅ ArgoCD Application '$APP_NAME' deleted successfully"
+
+      - name: Delete manifests directories (releaseと競合して邪魔なら削除する)
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+
+          echo "🗑️  Deleting manifests directories for branch: $BRANCH (hash: $BRANCH_HASH)"
+
+          # Delete manifests directory
+          if [ -d "k8s/manifests-$BRANCH_HASH" ]; then
+            rm -rf "k8s/manifests-$BRANCH_HASH"
+            echo "✅ Deleted k8s/manifests-$BRANCH_HASH"
+          else
+            echo "ℹ️  Directory k8s/manifests-$BRANCH_HASH does not exist"
+          fi
+
+          # Delete argocd directory
+          if [ -d "k8s/argocd-$BRANCH_HASH" ]; then
+            rm -rf "k8s/argocd-$BRANCH_HASH"
+            echo "✅ Deleted k8s/argocd-$BRANCH_HASH"
+          else
+            echo "ℹ️  Directory k8s/argocd-$BRANCH_HASH does not exist"
+          fi
+
+      - name: Commit and push cleanup
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git add k8s/
+
+          if git diff --staged --quiet; then
+            echo "ℹ️  No changes to commit"
+          else
+            git commit -m "🗑️ Cleanup ArgoCD manifests for branch: $BRANCH (hash: $BRANCH_HASH)"
+            git push
+            echo "✅ Committed and pushed cleanup"
+          fi
+
+      - name: Comment cleanup status on PR
+        if: steps.check_app.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+
+          gh pr comment "$PR_NUMBER" --body "🗑️ **Preview Deployment Cleaned Up**
+
+          **Branch:** \`$BRANCH\`
+          **Hash:** \`$BRANCH_HASH\`
+          **ArgoCD App:** \`$APP_NAME\`
+
+          The preview environment has been deleted."
+
+          echo "✅ Posted cleanup status to PR #$PR_NUMBER"
+
+      - name: Skip cleanup
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+          echo "ℹ️  ArgoCD Application '$APP_NAME' (branch: $BRANCH) does not exist. Nothing to cleanup."

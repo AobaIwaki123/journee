@@ -1,0 +1,515 @@
+---
+globs: "components/comments/**/*,app/api/itinerary/**/comments/**/*,types/comment.ts"
+description: コメント機能の実装パターンとAPI設計
+---
+
+# コメント機能 - Phase 10.3実装
+
+## 概要
+公開しおりに対するコメント機能。認証ユーザーがコメントを投稿・削除できる。
+
+## アーキテクチャ
+
+### データフロー
+```
+┌────────────────────────────────────────┐
+│ クライアント                            │
+│ ┌────────────────────────────────────┐ │
+│ │ CommentForm.tsx                    │ │
+│ │ - コメント投稿                      │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │ POST /api/itinerary/comments
+┌──────────────▼─────────────────────────┐
+│ APIルート                               │
+│ ┌────────────────────────────────────┐ │
+│ │ app/api/itinerary/comments/route.ts│ │
+│ │ - 認証チェック                      │ │
+│ │ - Supabase挿入                     │ │
+│ └────────────┬───────────────────────┘ │
+└──────────────┼─────────────────────────┘
+               │
+┌──────────────▼─────────────────────────┐
+│ Supabase (PostgreSQL)                  │
+│ - itinerary_comments テーブル          │
+│ - Row Level Security (RLS)             │
+└────────────────────────────────────────┘
+```
+
+## ファイル構成
+
+### コンポーネント (`components/comments/`)
+- [CommentList.tsx](mdc:components/comments/CommentList.tsx) - コメント一覧
+- [CommentItem.tsx](mdc:components/comments/CommentItem.tsx) - 個別コメント表示
+- [CommentForm.tsx](mdc:components/comments/CommentForm.tsx) - コメント投稿フォーム
+- `__tests__/CommentForm.test.tsx` - コメントフォームのテスト
+
+### APIルート (`app/api/itinerary/`)
+- `comments/route.ts` - コメント作成・取得
+- `[id]/comments/route.ts` - 特定しおりのコメント操作
+
+### 型定義 (`types/`)
+- [comment.ts](mdc:types/comment.ts) - コメント関連型定義
+
+## データベーススキーマ
+
+### itinerary_comments テーブル
+```sql
+CREATE TABLE itinerary_comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  itinerary_id UUID NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_image TEXT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- インデックス
+CREATE INDEX idx_comments_itinerary_id ON itinerary_comments(itinerary_id);
+CREATE INDEX idx_comments_created_at ON itinerary_comments(created_at DESC);
+
+-- Row Level Security
+ALTER TABLE itinerary_comments ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: 公開しおりのコメントは全員が閲覧可能
+CREATE POLICY "Anyone can view comments on public itineraries"
+  ON itinerary_comments FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM itineraries
+      WHERE id = itinerary_comments.itinerary_id
+      AND is_public = TRUE
+    )
+  );
+
+-- ポリシー: 認証ユーザーはコメント投稿可能
+CREATE POLICY "Authenticated users can insert comments"
+  ON itinerary_comments FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ポリシー: コメント作成者のみ削除可能
+CREATE POLICY "Users can delete own comments"
+  ON itinerary_comments FOR DELETE
+  USING (user_id = current_user);
+```
+
+## 型定義
+
+### Comment型
+```typescript
+// types/comment.ts
+export interface Comment {
+  id: string;
+  itinerary_id: string;
+  user_id: string;
+  user_name: string;
+  user_image?: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCommentRequest {
+  itinerary_id: string;
+  content: string;
+}
+
+export interface CreateCommentResponse {
+  success: boolean;
+  comment?: Comment;
+  error?: string;
+}
+```
+
+## API実装
+
+### コメント作成
+```typescript
+// app/api/itinerary/comments/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth/session';
+import { supabase } from '@/lib/db/supabase';
+
+export async function POST(req: NextRequest) {
+  try {
+    // 認証チェック
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // リクエストボディ取得
+    const { itinerary_id, content } = await req.json();
+
+    // バリデーション
+    if (!itinerary_id || !content || content.trim() === '') {
+      return NextResponse.json(
+        { error: 'ValidationError', message: '必須項目が不足しています' },
+        { status: 400 }
+      );
+    }
+
+    // しおりの公開状態チェック
+    const { data: itinerary, error: itineraryError } = await supabase
+      .from('itineraries')
+      .select('is_public')
+      .eq('id', itinerary_id)
+      .single();
+
+    if (itineraryError || !itinerary?.is_public) {
+      return NextResponse.json(
+        { error: 'NotFound', message: 'しおりが見つかりません' },
+        { status: 404 }
+      );
+    }
+
+    // コメント挿入
+    const { data: comment, error: insertError } = await supabase
+      .from('itinerary_comments')
+      .insert({
+        itinerary_id,
+        user_id: user.id,
+        user_name: user.name || '匿名ユーザー',
+        user_image: user.image,
+        content: content.trim(),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    return NextResponse.json({
+      success: true,
+      comment,
+    });
+  } catch (error) {
+    console.error('Create comment error:', error);
+    return NextResponse.json(
+      { 
+        error: 'InternalServerError',
+        message: 'コメントの投稿に失敗しました'
+      },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### コメント取得
+```typescript
+export async function GET(req: NextRequest) {
+  try {
+    const searchParams = req.nextUrl.searchParams;
+    const itinerary_id = searchParams.get('itinerary_id');
+
+    if (!itinerary_id) {
+      return NextResponse.json(
+        { error: 'ValidationError', message: 'itinerary_idが必要です' },
+        { status: 400 }
+      );
+    }
+
+    // コメント取得
+    const { data: comments, error } = await supabase
+      .from('itinerary_comments')
+      .select('*')
+      .eq('itinerary_id', itinerary_id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({
+      success: true,
+      comments: comments || [],
+    });
+  } catch (error) {
+    console.error('Get comments error:', error);
+    return NextResponse.json(
+      { 
+        error: 'InternalServerError',
+        message: 'コメントの取得に失敗しました'
+      },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### コメント削除
+```typescript
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await req.json();
+
+    // 削除（RLSで所有者チェック）
+    const { error } = await supabase
+      .from('itinerary_comments')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete comment error:', error);
+    return NextResponse.json(
+      { 
+        error: 'InternalServerError',
+        message: 'コメントの削除に失敗しました'
+      },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## コンポーネント実装
+
+### CommentForm
+```typescript
+'use client';
+
+import React, { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { Comment } from '@/types/comment';
+
+interface CommentFormProps {
+  itineraryId: string;
+  onCommentAdded: (comment: Comment) => void;
+}
+
+export const CommentForm: React.FC<CommentFormProps> = ({
+  itineraryId,
+  onCommentAdded,
+}) => {
+  const { data: session, status } = useSession();
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!content.trim()) {
+      setError('コメントを入力してください');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/itinerary/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itinerary_id: itineraryId,
+          content: content.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'コメントの投稿に失敗しました');
+      }
+
+      // 成功
+      setContent('');
+      onCommentAdded(data.comment);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '不明なエラー');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (status === 'loading') {
+    return <div>読み込み中...</div>;
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="text-gray-500 text-sm">
+        コメントを投稿するにはログインが必要です
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="コメントを入力..."
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+        rows={3}
+        disabled={isSubmitting}
+      />
+      
+      {error && (
+        <div className="text-red-500 text-sm">{error}</div>
+      )}
+
+      <button
+        type="submit"
+        disabled={isSubmitting || !content.trim()}
+        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isSubmitting ? '投稿中...' : 'コメントを投稿'}
+      </button>
+    </form>
+  );
+};
+```
+
+### CommentList
+```typescript
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { Comment } from '@/types/comment';
+import { CommentItem } from './CommentItem';
+
+interface CommentListProps {
+  itineraryId: string;
+}
+
+export const CommentList: React.FC<CommentListProps> = ({ itineraryId }) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const response = await fetch(
+          `/api/itinerary/comments?itinerary_id=${itineraryId}`
+        );
+
+        if (!response.ok) {
+          throw new Error('コメントの取得に失敗しました');
+        }
+
+        const data = await response.json();
+        setComments(data.comments);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '不明なエラー');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchComments();
+  }, [itineraryId]);
+
+  if (isLoading) {
+    return <div>読み込み中...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
+
+  if (comments.length === 0) {
+    return (
+      <div className="text-gray-500 text-center py-8">
+        まだコメントがありません
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {comments.map((comment) => (
+        <CommentItem key={comment.id} comment={comment} />
+      ))}
+    </div>
+  );
+};
+```
+
+## セキュリティ
+
+### 認証チェック
+- コメント投稿には認証必須
+- NextAuth.jsセッションを使用
+
+### バリデーション
+- コメント内容の空文字チェック
+- しおりの公開状態チェック
+- 最大文字数制限（推奨: 1000文字）
+
+### Row Level Security (RLS)
+- 公開しおりのコメントのみ閲覧可能
+- コメント削除は作成者のみ
+
+### XSS対策
+- コメント内容のサニタイズ（DOMPurify使用推奨）
+- Next.jsの自動エスケープ
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ コメント投稿時に認証チェック
+- ✅ しおりの公開状態を確認
+- ✅ コメント内容をサニタイズ
+- ✅ エラーハンドリングを適切に実装
+- ✅ ローディング状態を表示
+- ✅ 楽観的UI更新（Optimistic Update）
+
+### DON'T（非推奨）
+- ❌ 認証なしでコメント投稿を許可
+- ❌ 非公開しおりへのコメント
+- ❌ XSS攻撃可能なHTMLをそのまま表示
+- ❌ エラーを無視する
+- ❌ ユーザー情報を手動で入力させる
+
+## テスト
+
+### E2Eテスト
+```typescript
+// e2e/comment-feature.spec.ts
+test('コメント投稿と表示', async ({ page }) => {
+  // ログイン
+  await page.goto('/login');
+  await page.click('button:has-text("Googleでログイン")');
+
+  // 公開しおりページに移動
+  await page.goto('/share/test-slug');
+
+  // コメント投稿
+  await page.fill('textarea[placeholder*="コメント"]', 'テストコメント');
+  await page.click('button:has-text("コメントを投稿")');
+
+  // コメントが表示されることを確認
+  await expect(page.locator('text=テストコメント')).toBeVisible();
+});
+```
+
+## 参考リンク
+
+- [docs/FEEDBACK.md](mdc:docs/FEEDBACK.md) - フィードバック機能ドキュメント
+- [e2e/comment-feature.spec.ts](mdc:e2e/comment-feature.spec.ts) - コメント機能E2Eテスト
+- [components/comments/](mdc:components/comments/) - コメントコンポーネント
+- [types/comment.ts](mdc:types/comment.ts) - コメント型定義

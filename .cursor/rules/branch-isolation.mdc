@@ -1,0 +1,277 @@
+---
+globs: "k8s/manifests-*/**/*,k8s/argocd-*/**/*,scripts/create-branch-infra.sh,scripts/clean-manifests.sh"
+description: ブランチごとの独立環境構築と管理パターン
+---
+
+# ブランチ環境分離 - Branch Isolation Strategy
+
+## 概要
+このプロジェクトでは、各ブランチに独立したKubernetes環境を自動作成し、レビュー時にブランチを切り替えることなく複数の環境を同時に稼働できる仕組みを実装しています。
+
+## アーキテクチャ
+
+### 環境分離の仕組み
+```
+main ブランチ
+├── k8s/manifests/          → journee.example.com
+├── k8s/argocd/            → ArgoCD Application (main)
+
+feature/xxx ブランチ
+├── k8s/manifests-098f6b/   → journee-098f6b.example.com
+├── k8s/argocd-098f6b/     → ArgoCD Application (feature)
+
+feature/yyy ブランチ
+├── k8s/manifests-573443/   → journee-573443.example.com
+└── k8s/argocd-573443/     → ArgoCD Application (feature)
+```
+
+各ブランチは：
+- **独立したURL** でアクセス可能
+- **独立したKubernetesリソース** を持つ
+- **独立したArgoCD Application** で管理される
+- **並行して稼働可能** （レビューが容易）
+
+## スクリプト
+
+### 環境作成: [create-branch-infra.sh](mdc:scripts/create-branch-infra.sh)
+```bash
+#!/bin/bash
+# 現在のブランチ名から6文字のハッシュを生成し、
+# そのハッシュを使って独立した環境設定を作成
+
+./scripts/create-branch-infra.sh
+```
+
+**処理内容**：
+1. ブランチ名から一意のハッシュ生成（例: `098f6b`）
+2. `k8s/manifests-{hash}/` ディレクトリ作成
+3. `k8s/argocd-{hash}/` ディレクトリ作成
+4. マニフェストファイルのコピーと変数置換
+   - Deployment名: `journee-{hash}`
+   - Service名: `journee-{hash}`
+   - Ingress: `journee-{hash}.example.com`
+   - ArgoCD Application名: `journee-{hash}`
+
+### 環境削除: [clean-manifests.sh](mdc:scripts/clean-manifests.sh)
+```bash
+#!/bin/bash
+# 不要になった環境設定を一括削除
+
+./scripts/clean-manifests.sh
+```
+
+**処理内容**：
+- `k8s/manifests-*` ディレクトリの削除
+- `k8s/argocd-*` ディレクトリの削除
+- main環境 (`k8s/manifests/`, `k8s/argocd/`) は保護
+
+## ディレクトリ構造
+
+### Main環境
+```
+k8s/
+├── manifests/
+│   ├── deployment.yml      # journee Deployment
+│   ├── service.yml         # journee Service
+│   ├── ingress.yml         # journee.example.com
+│   └── kustomization.yml
+└── argocd/
+    └── app.yml             # ArgoCD Application (journee)
+```
+
+### ブランチ環境（例: hash=098f6b）
+```
+k8s/
+├── manifests-098f6b/
+│   ├── deployment.yml      # journee-098f6b Deployment
+│   ├── service.yml         # journee-098f6b Service
+│   ├── ingress.yml         # journee-098f6b.example.com
+│   └── kustomization.yml
+└── argocd-098f6b/
+    └── app.yml             # ArgoCD Application (journee-098f6b)
+```
+
+## Kubernetes マニフェストの変更点
+
+### Deployment
+```yaml
+metadata:
+  name: journee-098f6b  # ブランチごとに一意
+spec:
+  selector:
+    matchLabels:
+      app: journee-098f6b
+  template:
+    metadata:
+      labels:
+        app: journee-098f6b
+        branch-hash: "098f6b"  # トラッキング用
+```
+
+### Service
+```yaml
+metadata:
+  name: journee-098f6b
+spec:
+  selector:
+    app: journee-098f6b
+```
+
+### Ingress
+```yaml
+metadata:
+  name: journee-098f6b
+spec:
+  rules:
+  - host: journee-098f6b.example.com  # ブランチごとの独立URL
+    http:
+      paths:
+      - path: /
+        backend:
+          service:
+            name: journee-098f6b
+            port:
+              number: 3000
+```
+
+## ArgoCD統合
+
+### Application定義
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: journee-098f6b  # ブランチごとの独立Application
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/journee
+    targetRevision: feature/xxx  # ブランチ名
+    path: k8s/manifests-098f6b
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: journee-098f6b  # 独立したnamespace
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+### 利点
+- **自動同期**: ブランチへのpushで自動デプロイ
+- **独立管理**: 各環境の状態を個別に管理
+- **自動削除**: ブランチ削除時にリソースも削除（prune: true）
+
+## ワークフロー
+
+### 新機能開発
+```bash
+# 1. 新ブランチ作成
+git checkout -b feature/new-feature
+
+# 2. 環境設定作成
+./scripts/create-branch-infra.sh
+# → k8s/manifests-abc123/ と k8s/argocd-abc123/ が作成される
+
+# 3. commit & push
+git add k8s/
+git commit -m "Add branch infrastructure"
+git push origin feature/new-feature
+
+# 4. ArgoCD Application作成
+kubectl apply -f k8s/argocd-abc123/app.yml
+
+# 5. 開発
+# → journee-abc123.example.com でアクセス可能
+```
+
+### レビュー
+```bash
+# レビュワーは複数の環境を同時に確認可能
+# - main: journee.example.com
+# - feature A: journee-abc123.example.com
+# - feature B: journee-def456.example.com
+
+# ブランチを切り替える必要なし！
+```
+
+### クリーンアップ
+```bash
+# ブランチマージ後、環境設定削除
+git checkout main
+git branch -d feature/new-feature
+
+# ローカル環境設定削除
+./scripts/clean-manifests.sh
+
+# ArgoCD Application削除（自動的にKubernetesリソースも削除される）
+kubectl delete application journee-abc123 -n argocd
+```
+
+## メリット
+
+### 1. レビュー効率の向上
+- **並行確認**: 複数のブランチを同時にレビュー
+- **コンテキスト維持**: ブランチ切り替え不要
+- **リアルタイム**: 最新のコミットが即座に反映
+
+### 2. 安全性
+- **環境分離**: ブランチ間で干渉しない
+- **独立したデータ**: 各環境が独自のDBを持つ（設定次第）
+- **ロールバック容易**: 問題があっても他の環境に影響なし
+
+### 3. 開発速度
+- **待機時間削減**: 環境の取り合いがない
+- **並行開発**: 複数の機能を同時に開発可能
+- **CI/CD統合**: 自動デプロイで手動作業削減
+
+## ベストプラクティス
+
+### 命名規則
+- **ハッシュ長**: 6文字（衝突リスクとURLの長さのバランス）
+- **プレフィックス**: `journee-{hash}` で統一
+- **ドメイン**: `{app}-{hash}.{domain}` パターン
+
+### リソース管理
+- **リソース制限**: 各環境に適切なlimitsとrequests設定
+- **自動削除**: 古い環境は定期的にクリーンアップ
+- **コスト監視**: 環境数が増えすぎないよう監視
+
+### セキュリティ
+- **アクセス制限**: 開発環境は認証必須
+- **シークレット管理**: 各環境で独立したシークレット
+- **ネットワークポリシー**: 環境間の通信を制限
+
+## トラブルシューティング
+
+### ハッシュ衝突
+```bash
+# 異なるブランチで同じハッシュが生成された場合
+# → ブランチ名を変更するか、手動でハッシュを指定
+
+BRANCH_HASH="custom123" ./scripts/create-branch-infra.sh
+```
+
+### リソース不足
+```bash
+# 使用していない環境を削除
+./scripts/clean-manifests.sh
+
+# ArgoCD Applicationsも削除
+kubectl delete applications -l project=journee -n argocd
+```
+
+### URL衝突
+```bash
+# DNS設定を確認
+nslookup journee-abc123.example.com
+
+# Ingress設定を確認
+kubectl get ingress -n journee-abc123
+```
+
+## 参考資料
+- [ブログ記事案](mdc:blog/README.md) - 技術解説・モチベーション
+- [Kubernetes README](mdc:k8s/README.md) - Kubernetes設定詳細
+- [デプロイスクリプト](mdc:scripts/deploy-gcr.sh) - Cloud Runデプロイ

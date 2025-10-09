@@ -16,9 +16,7 @@ Journeeプロジェクトの統一的なコーディング規約・ベストプ�
 5. [スタイリング規約](#スタイリング規約)
 6. [状態管理（Zustand）](#状態管理zustand)
 7. [API・認証](#api認証)
-8. [AI統合](#ai統合)
-9. [テスト](#テスト)
-10. [コミット規約](#コミット規約)
+8. [コミット規約](#コミット規約)
 
 ---
 
@@ -52,78 +50,23 @@ Deploy:    Vercel, Google Cloud Run
 ```
 journee/
 ├── app/                     # Next.js App Router
-│   ├── api/                 # APIルート（サーバーサイド）
-│   │   ├── auth/            # NextAuth認証
-│   │   ├── chat/            # AIチャット
-│   │   ├── itinerary/       # しおりCRUD
-│   │   └── user/            # ユーザー情報
-│   ├── login/               # ログインページ
-│   ├── mypage/              # マイページ
-│   ├── settings/            # 設定ページ
-│   ├── share/[slug]/        # 公開しおり閲覧
-│   ├── layout.tsx           # ルートレイアウト
-│   ├── page.tsx             # トップページ（認証必須）
-│   └── globals.css          # グローバルスタイル
-│
+│   ├── api/                 # APIルート
+│   ├── (pages)/             # ページコンポーネント
+│   └── layout.tsx           # ルートレイアウト
 ├── components/              # Reactコンポーネント
 │   ├── auth/                # 認証UI
-│   │   ├── AuthProvider.tsx
-│   │   ├── LoginButton.tsx
-│   │   └── UserMenu.tsx
 │   ├── chat/                # チャット機能
-│   │   ├── ChatBox.tsx
-│   │   ├── MessageList.tsx
-│   │   ├── MessageInput.tsx
-│   │   └── AISelector.tsx
 │   ├── itinerary/           # しおり機能
-│   │   ├── ItineraryPreview.tsx
-│   │   ├── DaySchedule.tsx
-│   │   ├── SpotCard.tsx
-│   │   └── ...
 │   ├── layout/              # レイアウト
-│   │   ├── Header.tsx
-│   │   ├── ResizableLayout.tsx
-│   │   └── AutoSave.tsx
-│   ├── settings/            # 設定UI
 │   └── ui/                  # 共通UI
-│       ├── LoadingSpinner.tsx
-│       ├── ErrorNotification.tsx
-│       └── Toast.tsx
-│
 ├── lib/                     # ユーティリティ・ロジック
 │   ├── ai/                  # AI統合
-│   │   ├── gemini.ts        # Google Gemini API
-│   │   ├── claude.ts        # Anthropic Claude API
-│   │   └── prompts.ts       # プロンプト管理
 │   ├── auth/                # 認証ロジック
-│   │   ├── auth-options.ts  # NextAuth設定
-│   │   └── session.ts       # セッション管理
 │   ├── db/                  # データベース
-│   │   ├── supabase.ts      # Supabaseクライアント
-│   │   ├── itinerary-repository.ts
-│   │   ├── migration.ts     # LocalStorage→DB
-│   │   └── schema.sql       # SQLスキーマ
 │   ├── store/               # Zustand状態管理
-│   │   ├── useStore.ts      # メインストア
-│   │   ├── chatSlice.ts
-│   │   ├── itinerarySlice.ts
-│   │   └── settingsSlice.ts
 │   └── utils/               # ヘルパー関数
-│       ├── api-client.ts
-│       ├── date-utils.ts
-│       └── storage.ts
-│
 ├── types/                   # TypeScript型定義
-│   ├── chat.ts              # チャット型
-│   ├── itinerary.ts         # しおり型
-│   ├── auth.ts              # 認証型
-│   ├── database.ts          # Supabase型
-│   └── api.ts               # API共通型
-│
-├── docs/                    # ドキュメント
-├── public/                  # 静的ファイル
-├── middleware.ts            # 認証ミドルウェア
-└── [設定ファイル]
+└── docs/                    # ドキュメント
 ```
 
 ### ファイル命名規則
@@ -149,12 +92,6 @@ export interface Message {
   content: string;
   timestamp: Date;
 }
-
-export interface ChatState {
-  messages: Message[];
-  isStreaming: boolean;
-  streamingMessage: string;
-}
 ```
 
 ### 型の厳格性
@@ -163,11 +100,9 @@ export interface ChatState {
 // ✅ Good - 厳格な型定義
 const [itinerary, setItinerary] = useState<Itinerary | null>(null);
 const [error, setError] = useState<string | null>(null);
-const [count, setCount] = useState<number>(0);
 
 // ❌ Bad - any, 暗黙的型
 const [itinerary, setItinerary] = useState(null);
-const [error, setError] = useState();
 let data: any = fetchData();
 ```
 
@@ -181,17 +116,14 @@ export interface Itinerary {
   id: string;
   title: string;
   destination: string;
-  duration: number;
 }
 
 export interface DetailedItinerary extends Itinerary {
   daySchedules: DaySchedule[];
-  chatHistory: Message[];
 }
 
 // ⚠️ type - Union型・ユーティリティ型のみ
 export type ItineraryPhase = 'initial' | 'collecting' | 'skeleton' | 'detailing' | 'completed';
-export type PartialItinerary = Partial<Itinerary>;
 ```
 
 ### 命名規則
@@ -199,31 +131,6 @@ export type PartialItinerary = Partial<Itinerary>;
 - **型・インターフェース**: PascalCase（`Message`, `Itinerary`, `AppState`）
 - **変数・関数**: camelCase（`currentItinerary`, `handleSubmit`）
 - **定数**: UPPER_SNAKE_CASE（`API_BASE_URL`, `MAX_MESSAGE_LENGTH`）
-
-```typescript
-// ✅ Good
-export interface Message { }
-const handleSubmit = () => { };
-const MAX_RETRIES = 3;
-
-// ❌ Bad
-export interface message { }
-const HandleSubmit = () => { };
-const maxRetries = 3;
-```
-
-### Import/Export
-
-**Named export優先** (default exportは避ける):
-
-```typescript
-// ✅ Good - Named export
-export const ChatBox: React.FC = () => { };
-export interface ChatBoxProps { }
-
-// ❌ Bad - Default export
-export default function ChatBox() { }
-```
 
 ### Import順序
 
@@ -272,7 +179,6 @@ export const ChatBox: React.FC = () => {
 ### Props定義
 
 ```typescript
-// ✅ Good - コンポーネント名 + Props
 interface MessageListProps {
   messages: Message[];
   isLoading?: boolean; // オプショナル
@@ -290,21 +196,17 @@ export const MessageList: React.FC<MessageListProps> = ({
 
 ### State管理
 
-**グローバル状態はZustand、ローカル状態はuseState**:
-
 ```typescript
 // ✅ Good - Global state (Zustand)
 const { messages, addMessage, isStreaming } = useStore();
 
 // ✅ Good - Local state
 const [isOpen, setIsOpen] = useState<boolean>(false);
-const [inputValue, setInputValue] = useState<string>('');
 ```
 
 ### イベントハンドラ
 
 ```typescript
-// ✅ Good - handleXxx命名 + 型定義
 const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
   // ...
@@ -312,11 +214,6 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 
 const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   setValue(e.target.value);
-};
-
-const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-  e.stopPropagation();
-  // ...
 };
 ```
 
@@ -329,24 +226,16 @@ export const MyComponent: React.FC = () => {
   
   // 2. useState
   const [isOpen, setIsOpen] = useState(false);
-  const [count, setCount] = useState(0);
   
   // 3. useEffect
   useEffect(() => {
     // ...
   }, []);
   
-  // 4. Custom Hooks
-  const { data } = useCustomHook();
-  
-  // 5. useCallback / useMemo
+  // 4. useCallback / useMemo
   const handleClick = useCallback(() => {
     // ...
   }, [dep]);
-  
-  const expensiveValue = useMemo(() => {
-    return computeExpensiveValue(count);
-  }, [count]);
   
   return <div>...</div>;
 };
@@ -377,7 +266,7 @@ const sortedSpots = useMemo(() => {
 
 ### Tailwind CSS基本ルール
 
-**クラス命名順序** (可読性のため):
+**クラス命名順序**:
 
 ```tsx
 <div className="
@@ -403,7 +292,6 @@ text-gray-700  // メインテキスト
 text-gray-500  // 補助テキスト
 bg-gray-50     // 背景（薄い）
 bg-white       // カード背景
-border-gray-200 // ボーダー
 
 // アクセントカラー（青）
 bg-blue-500    // メインボタン
@@ -425,16 +313,9 @@ bg-gradient-to-r from-blue-500 to-purple-600
 
 **プライマリボタン**:
 ```tsx
-<button className="flex items-center gap-2 px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+<button className="flex items-center gap-2 px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 transition-all">
   <Send size={16} />
   送信
-</button>
-```
-
-**セカンダリボタン**:
-```tsx
-<button className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-  キャンセル
 </button>
 ```
 
@@ -452,30 +333,9 @@ bg-gradient-to-r from-blue-500 to-purple-600
 ```tsx
 import { Send, User, Bot, MapPin } from 'lucide-react';
 
-// サイズ
 <Send size={16} />  // ボタン内
 <User size={20} />  // 標準
 <MapPin size={24} /> // ヘッダー
-
-// カラー
-<Bot size={20} className="text-blue-500" />
-<User size={20} className="text-gray-500" />
-```
-
-### 禁止事項
-
-```tsx
-// ❌ Bad - インラインstyle
-<div style={{ color: 'red', fontSize: '14px' }}>
-
-// ❌ Bad - カスタムCSSファイル
-import './MyComponent.css';
-
-// ❌ Bad - !important
-<div className="!text-red-500">
-
-// ✅ Good - Tailwindクラスのみ
-<div className="text-red-500 text-sm">
 ```
 
 ---
@@ -484,13 +344,10 @@ import './MyComponent.css';
 
 ### ストア構造
 
-**`lib/store/useStore.ts`** にグローバルストアを統合:
+`lib/store/useStore.ts`:
 
 ```typescript
 import { create } from 'zustand';
-import { createChatSlice, ChatSlice } from './chatSlice';
-import { createItinerarySlice, ItinerarySlice } from './itinerarySlice';
-import { createSettingsSlice, SettingsSlice } from './settingsSlice';
 
 type StoreState = ChatSlice & ItinerarySlice & SettingsSlice;
 
@@ -505,36 +362,23 @@ export const useStore = create<StoreState>()((...a) => ({
 
 ```typescript
 // lib/store/chatSlice.ts
-import { StateCreator } from 'zustand';
-import { Message } from '@/types/chat';
-
 export interface ChatSlice {
   messages: Message[];
   isStreaming: boolean;
-  streamingMessage: string;
   
   addMessage: (message: Message) => void;
-  appendStreamingMessage: (chunk: string) => void;
   setStreaming: (streaming: boolean) => void;
-  clearMessages: () => void;
 }
 
 export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
   messages: [],
   isStreaming: false,
-  streamingMessage: '',
   
   addMessage: (message) => set((state) => ({
     messages: [...state.messages, message],
   })),
   
-  appendStreamingMessage: (chunk) => set((state) => ({
-    streamingMessage: state.streamingMessage + chunk,
-  })),
-  
   setStreaming: (streaming) => set({ isStreaming: streaming }),
-  
-  clearMessages: () => set({ messages: [], streamingMessage: '' }),
 });
 ```
 
@@ -546,38 +390,6 @@ const { messages, addMessage, isStreaming } = useStore();
 
 // 選択的購読（パフォーマンス最適化）
 const messages = useStore((state) => state.messages);
-const addMessage = useStore((state) => state.addMessage);
-
-// 複数の状態をまとめて購読
-const { messages, isStreaming, streamingMessage } = useStore((state) => ({
-  messages: state.messages,
-  isStreaming: state.isStreaming,
-  streamingMessage: state.streamingMessage,
-}));
-```
-
-### LocalStorage永続化
-
-```typescript
-import { persist } from 'zustand/middleware';
-
-export const useStore = create<StoreState>()(
-  persist(
-    (...a) => ({
-      ...createChatSlice(...a),
-      ...createItinerarySlice(...a),
-      ...createSettingsSlice(...a),
-    }),
-    {
-      name: 'journee-storage',
-      partialize: (state) => ({
-        // 永続化する状態のみ指定
-        currentItinerary: state.currentItinerary,
-        settings: state.settings,
-      }),
-    }
-  )
-);
 ```
 
 ---
@@ -590,47 +402,21 @@ export const useStore = create<StoreState>()(
 // app/api/itinerary/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
-import { ItineraryRepository } from '@/lib/db/itinerary-repository';
 
 export async function GET(request: NextRequest) {
   try {
-    // 認証チェック
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // ビジネスロジック
-    const repository = new ItineraryRepository();
-    const itineraries = await repository.getItinerariesByUser(user.id);
+    // ビジネスロジック...
     
-    return NextResponse.json({ data: itineraries }, { status: 200 });
+    return NextResponse.json({ data }, { status: 200 });
   } catch (error) {
     console.error('[API Error]', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-```
-
-### クライアントサイドAPI呼び出し
-
-```typescript
-// lib/utils/api-client.ts
-export async function fetchItineraries(): Promise<Itinerary[]> {
-  const res = await fetch('/api/itinerary', {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  
-  if (!res.ok) {
-    throw new Error(`API Error: ${res.status}`);
-  }
-  
-  const { data } = await res.json();
-  return data;
 }
 ```
 
@@ -639,122 +425,14 @@ export async function fetchItineraries(): Promise<Itinerary[]> {
 ```typescript
 // lib/auth/session.ts
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from './auth-options';
-
-export async function getSession() {
-  return await getServerSession(authOptions);
-}
 
 export async function getCurrentUser() {
-  const session = await getSession();
+  const session = await getServerSession(authOptions);
   return session?.user || null;
 }
 ```
 
-**使用例**:
-```typescript
-// Server Component
-import { getCurrentUser } from '@/lib/auth/session';
-
-export default async function MyPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
-  
-  return <div>Welcome, {user.name}</div>;
-}
-```
-
----
-
-## AI統合
-
-### Gemini API（ストリーミング）
-
-```typescript
-// lib/ai/gemini.ts
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
-export async function* streamGeminiResponse(
-  prompt: string,
-  conversationHistory: Message[]
-): AsyncGenerator<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-  
-  const chat = model.startChat({
-    history: conversationHistory.map((msg) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    })),
-  });
-  
-  const result = await chat.sendMessageStream(prompt);
-  
-  for await (const chunk of result.stream) {
-    const text = chunk.text();
-    yield text;
-  }
-}
-```
-
-### プロンプト管理
-
-```typescript
-// lib/ai/prompts.ts
-export const SYSTEM_PROMPTS = {
-  collecting: `あなたは旅行プランナーです。ユーザーから行き先・日数・予算・興味を聞き出してください。`,
-  skeleton: `収集した情報を基に、各日のテーマを含む骨組みを作成してください。JSON形式で出力。`,
-  detailing: (day: number, theme: string) =>
-    `${day}日目（テーマ: ${theme}）の詳細なスポットを提案してください。`,
-};
-
-export function parseItineraryJSON(response: string): Itinerary {
-  const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/);
-  if (!jsonMatch) throw new Error('JSON not found');
-  
-  return JSON.parse(jsonMatch[1]);
-}
-```
-
----
-
-## テスト
-
-### Playwright E2Eテスト
-
-```typescript
-// e2e/chat.spec.ts
-import { test, expect } from '@playwright/test';
-
-test.describe('Chat flow', () => {
-  test('should send message and receive AI response', async ({ page }) => {
-    await page.goto('http://localhost:3000');
-    
-    // ログイン（事前にテストユーザー作成）
-    await page.click('text=ログイン');
-    // ... Google OAuth モック
-    
-    // メッセージ送信
-    await page.fill('textarea[placeholder*="メッセージ"]', '京都に3日間行きたい');
-    await page.click('button[aria-label="送信"]');
-    
-    // AI応答を待つ
-    await expect(page.locator('text=京都')).toBeVisible({ timeout: 10000 });
-    
-    // しおりプレビュー確認
-    await expect(page.locator('text=旅のしおり')).toBeVisible();
-  });
-});
-```
-
-### 実行
-
-```bash
-npm run test:e2e          # 全テスト
-npm run test:e2e:ui       # UIモード
-npm run test:e2e:debug    # デバッグモード
-```
+詳細は[lib/auth/README.md](../lib/auth/README.md)を参照。
 
 ---
 
@@ -766,8 +444,6 @@ npm run test:e2e:debug    # デバッグモード
 type(scope): subject
 
 body (optional)
-
-footer (optional)
 ```
 
 **type**:
@@ -785,7 +461,6 @@ feat(chat): add streaming response support
 
 - Implement Gemini streaming API
 - Add streaming indicator in MessageList
-- Update ChatBox to handle real-time chunks
 
 Closes #42
 ```
@@ -799,8 +474,6 @@ Closes #42
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction)
-- [NextAuth.js](https://next-auth.js.org/)
-- [Supabase](https://supabase.com/docs)
 
 ### プロジェクト内ドキュメント
 - [実装計画](./PLAN.md)
@@ -811,6 +484,4 @@ Closes #42
 ---
 
 **作成日**: 2025-10-09  
-**バージョン**: 1.0  
-**メンテナンス**: プロジェクト進行に応じて随時更新
-
+**バージョン**: 1.0

@@ -1,4 +1,4 @@
-# Database (Supabase) - Phase 8
+# Database (Supabase) - Phase 8-11
 
 ## 📋 セットアップ手順
 
@@ -52,6 +52,7 @@ await testSupabaseConnection(); // true が返ればOK
 4. **tourist_spots** - 観光スポット
 5. **chat_messages** - チャット履歴
 6. **user_settings** - ユーザー設定
+7. **comments** - しおりコメント（Phase 11）
 
 ### ER図
 
@@ -62,9 +63,12 @@ users (1) ─── (N) itineraries
                  │         │
                  │         └─── (N) tourist_spots
                  │
-                 └─── (N) chat_messages
+                 ├─── (N) chat_messages
+                 │
+                 └─── (N) comments (Phase 11)
 
 users (1) ─── (1) user_settings
+users (1) ─── (N) comments (optional)
 ```
 
 ---
@@ -89,6 +93,29 @@ CREATE POLICY "Users can view their own itineraries and public ones" ON itinerar
 -- INSERT: 自分のしおりのみ作成可能
 CREATE POLICY "Users can insert their own itineraries" ON itineraries
   FOR INSERT WITH CHECK (user_id = auth.uid());
+```
+
+**例**: commentsテーブル（Phase 11）
+```sql
+-- SELECT: 全員が公開しおりのコメントを閲覧可能
+CREATE POLICY "Anyone can view comments on public itineraries" ON comments
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM itineraries 
+      WHERE itineraries.id = comments.itinerary_id 
+      AND itineraries.is_public = TRUE
+    )
+  );
+
+-- INSERT: 認証ユーザーと匿名ユーザーが公開しおりにコメント投稿可能
+CREATE POLICY "Anyone can insert comments on public itineraries" ON comments
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM itineraries 
+      WHERE itineraries.id = comments.itinerary_id 
+      AND itineraries.is_public = TRUE
+    )
+  );
 ```
 
 ### APIキーの暗号化
@@ -219,5 +246,5 @@ npm run test:e2e
 
 ---
 
-**最終更新**: 2025-10-08  
-**Phase**: 8.1 完了
+**最終更新**: 2025-10-09  
+**Phase**: 11 完了（コメント機能実装済み）
