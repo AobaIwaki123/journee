@@ -3,3 +3,4 @@ resources:
 - service.yml
 - ingress.yml
 - auth-service.yml
+- auth-service-prod.yml
