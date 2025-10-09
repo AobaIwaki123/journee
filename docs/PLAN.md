@@ -99,9 +99,12 @@
    - [x] 各種ブラウザでの表示確認
 
 ##### 実装内容
-- `/components/feedback/FeedbackModal.tsx`: テキスト色とプレースホルダー色を改善
-  - プレースホルダー: より濃いグレー（`placeholder:text-gray-500`）
-  - 入力テキスト: 濃いグレー（`text-gray-900`）
+- `/components/feedback/FeedbackModal.tsx`: チャット欄と同じスタイリングを適用
+  - 入力テキスト: `text-gray-900`（濃い黒色）
+  - プレースホルダー: `placeholder:text-gray-400`（適度なグレー）
+  - 背景色: `bg-white`（明示的に白背景を指定）
+  - フォーカス時: `focus:border-blue-500 focus:ring-2 focus:ring-blue-200`
+  - MessageInput.tsxと完全に統一されたスタイル
   - より濃い色にすることで視認性が大幅に向上
   - アクセシビリティ基準を満たすコントラスト比を確保
 
