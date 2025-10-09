@@ -6,6 +6,10 @@ on:
     branches-ignore:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
 permissions:
   contents: write
 
@@ -15,7 +19,15 @@ env:
   IMAGE_NAME: journee
 
 jobs:
+  create-argo-app:
+    uses: ./.github/workflows/create-argo-app.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.ref_name }}
+
   push:
+    needs:
+      - create-argo-app
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -34,7 +46,7 @@ jobs:
           registry: ${{ env.GCR_REGISTRY }}
           username: _json_key
           password: ${{ secrets.GCP_SA_KEY }}
-          
+
       - name: Push image to GCR
         uses: docker/build-push-action@v6
         with:

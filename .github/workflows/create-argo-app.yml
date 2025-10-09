@@ -1,0 +1,235 @@
+name: Create ArgoCD Application
+run-name: Create ArgoCD Application for ${{ github.ref_name }}
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "Branch name"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  ARGOCD_SERVER: argocd.aooba.net
+  IMAGE_NAME: journee
+
+jobs:
+  check-and-create-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Check if ArgoCD Application exists
+        id: check_app
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          APP_NAME="${{ env.IMAGE_NAME }}-${{ inputs.branch }}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            https://${{ env.ARGOCD_SERVER }}/api/v1/applications/$APP_NAME)
+
+          echo "HTTP_CODE=$HTTP_CODE"
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ ArgoCD Application '$APP_NAME' already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "❌ ArgoCD Application '$APP_NAME' does not exist"
+          fi
+
+      - name: Install yq
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Create manifests directory for branch
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          echo "📁 Creating manifests directory for branch: $BRANCH"
+
+          # Create manifests directory if it doesn't exist
+          if [ ! -d "k8s/manifests-$BRANCH" ]; then
+            cp -r k8s/manifests k8s/manifests-$BRANCH
+            echo "✅ Created k8s/manifests-$BRANCH"
+          else
+            echo "ℹ️  Directory k8s/manifests-$BRANCH already exists"
+          fi
+
+          # Create argocd directory if it doesn't exist
+          if [ ! -d "k8s/argocd-$BRANCH" ]; then
+            mkdir -p k8s/argocd-$BRANCH
+            echo "✅ Created k8s/argocd-$BRANCH"
+          else
+            echo "ℹ️  Directory k8s/argocd-$BRANCH already exists"
+          fi
+
+      - name: Update resource names in manifests
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          MANIFEST_DIR="k8s/manifests-$BRANCH"
+
+          echo "🔧 Updating resource names in manifests to include branch suffix"
+
+          # Update Deployment name
+          if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
+            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            echo "✅ Updated Deployment name in deployment.yml"
+          fi
+
+          # Update Service name and selector
+          if [ -f "$MANIFEST_DIR/service.yml" ]; then
+            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/service.yml"
+            yq -i '.spec.selector.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/service.yml"
+            echo "✅ Updated Service name in service.yml"
+          fi
+
+          # Update Ingress name and backend service name
+          if [ -f "$MANIFEST_DIR/ingress.yml" ]; then
+            yq -i '.metadata.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/ingress.yml"
+            yq -i '.spec.rules[0].http.paths[0].backend.service.name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/ingress.yml"
+            # Update host to include branch name
+            yq -i '.spec.rules[0].host = "'"$BRANCH"'.${{ env.IMAGE_NAME }}.aooba.net"' "$MANIFEST_DIR/ingress.yml"
+            echo "✅ Updated Ingress name and host in ingress.yml"
+          fi
+
+          # Update Deployment labels and selectors
+          if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
+            yq -i '.metadata.labels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '.spec.selector.matchLabels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '.spec.template.metadata.labels.app = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            echo "✅ Updated Deployment labels and selectors"
+          fi
+
+          # Update container name
+          if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
+            yq -i '.spec.template.spec.containers[0].name = "${{ env.IMAGE_NAME }}-'"$BRANCH"'"' "$MANIFEST_DIR/deployment.yml"
+            echo "✅ Updated container name in deployment.yml"
+          fi
+
+          # Add ENABLE_MOCK_AUTH environment variable
+          if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
+            # Check if ENABLE_MOCK_AUTH already exists
+            ENABLE_MOCK_AUTH_EXISTS=$(yq '.spec.template.spec.containers[0].env[] | select(.name == "ENABLE_MOCK_AUTH")' "$MANIFEST_DIR/deployment.yml")
+            if [ -z "$ENABLE_MOCK_AUTH_EXISTS" ]; then
+              # Find the index after NEXTAUTH_URL to insert the new env var
+              yq -i '.spec.template.spec.containers[0].env += [{"name": "ENABLE_MOCK_AUTH", "value": "true"}]' "$MANIFEST_DIR/deployment.yml"
+              echo "✅ Added ENABLE_MOCK_AUTH=true environment variable"
+            else
+              # Update existing value
+              yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "ENABLE_MOCK_AUTH") | .value) = "true"' "$MANIFEST_DIR/deployment.yml"
+              echo "✅ Updated ENABLE_MOCK_AUTH=true environment variable"
+            fi
+          fi
+
+          # Update NEXT_PUBLIC_BASE_URL to branch-specific URL
+          if [ -f "$MANIFEST_DIR/deployment.yml" ]; then
+            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXT_PUBLIC_BASE_URL") | .value) = "https://${{ env.IMAGE_NAME }}-'"$BRANCH"'.aooba.net"' "$MANIFEST_DIR/deployment.yml"
+            yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "NEXTAUTH_URL") | .value) = "https://${{ env.IMAGE_NAME }}-'"$BRANCH"'.aooba.net"' "$MANIFEST_DIR/deployment.yml"
+            echo "✅ Updated NEXT_PUBLIC_BASE_URL and NEXTAUTH_URL to branch-specific URL"
+          fi
+
+          echo "✅ All resource names and configurations updated successfully"
+
+      - name: Generate ArgoCD Application manifest
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH"
+
+          cat > k8s/argocd-$BRANCH/app.yml << EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: $APP_NAME
+          spec:
+            project: default
+            source:
+              repoURL: 'https://github.com/${{ github.repository }}'
+              targetRevision: $BRANCH
+              path: k8s/manifests-$BRANCH
+            destination:
+              server: 'https://kubernetes.default.svc'
+              namespace: journee
+            syncPolicy:
+              automated:
+                selfHeal: true
+                prune: true
+          EOF
+
+          echo "✅ Generated ArgoCD Application manifest for $APP_NAME"
+          cat k8s/argocd-$BRANCH/app.yml
+
+      - name: Commit and push manifests
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add k8s/manifests-$BRANCH k8s/argocd-$BRANCH
+
+          if git diff --staged --quiet; then
+            echo "ℹ️  No changes to commit"
+          else
+            git commit -m "🚀 Create ArgoCD manifests for branch: $BRANCH"
+            git push
+            echo "✅ Committed and pushed manifests"
+          fi
+
+      - name: Create ArgoCD Application
+        if: steps.check_app.outputs.exists == 'false'
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          APP_NAME="${{ env.IMAGE_NAME }}-${{ inputs.branch }}"
+          BRANCH="${{ inputs.branch }}"
+
+          echo "🚀 Creating ArgoCD Application: $APP_NAME"
+
+          curl -X POST https://${{ env.ARGOCD_SERVER }}/api/v1/applications \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @- << EOF
+          {
+            "metadata": {
+              "name": "$APP_NAME"
+            },
+            "spec": {
+              "project": "default",
+              "source": {
+                "repoURL": "https://github.com/${{ github.repository }}",
+                "targetRevision": "$BRANCH",
+                "path": "k8s/manifests-$BRANCH"
+              },
+              "destination": {
+                "server": "https://kubernetes.default.svc",
+                "namespace": "journee"
+              },
+              "syncPolicy": {
+                "automated": {
+                  "selfHeal": true,
+                  "prune": true
+                }
+              }
+            }
+          }
+          EOF
+
+          echo ""
+          echo "✅ ArgoCD Application '$APP_NAME' created successfully"
+
+      - name: Skip creation
+        if: steps.check_app.outputs.exists == 'true'
+        run: |
+          APP_NAME="${{ env.IMAGE_NAME }}-${{ inputs.branch }}"
+          echo "ℹ️  ArgoCD Application '$APP_NAME' already exists. Skipping creation."
