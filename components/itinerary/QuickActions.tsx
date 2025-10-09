@@ -6,6 +6,7 @@ import type { ItineraryPhase } from "@/types/itinerary";
 import { ArrowRight, RotateCcw, Check, AlertCircle } from "lucide-react";
 import { sendChatMessageStream } from "@/lib/utils/api-client";
 import { mergeItineraryData } from "@/lib/ai/prompts";
+import { generateId } from "@/lib/utils/id-generator";
 
 /**
  * Phase 4.4, 4.5, 4.8: 段階的旅程構築のクイックアクション
@@ -141,7 +142,7 @@ export const QuickActions: React.FC = () => {
 
       // 「次へ」メッセージをAIに送信
       const userMessage = {
-        id: `user-${Date.now()}`,
+        id: generateId(),
         role: "user" as const,
         content: "次へ",
         timestamp: new Date(),
@@ -236,7 +237,7 @@ export const QuickActions: React.FC = () => {
       // ストリーミング完了後、アシスタントメッセージを追加
       if (fullResponse) {
         const assistantMessage = {
-          id: `assistant-${Date.now()}`,
+          id: generateId(),
           role: "assistant" as const,
           content: fullResponse,
           timestamp: new Date(),

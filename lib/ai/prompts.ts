@@ -2,7 +2,13 @@
  * AIプロンプトテンプレート
  */
 
-import type { ItineraryData, DaySchedule, TouristSpot, ItineraryPhase } from '@/types/itinerary';
+import type {
+  ItineraryData,
+  DaySchedule,
+  TouristSpot,
+  ItineraryPhase,
+} from "@/types/itinerary";
+import { generateId } from "@/lib/utils/id-generator";
 
 /**
  * システムプロンプト
@@ -172,7 +178,9 @@ export function createUpdatePrompt(currentItinerary: ItineraryData): string {
   return `現在作成中の旅のしおり情報：
 タイトル: ${currentItinerary.title}
 行き先: ${currentItinerary.destination}
-期間: ${currentItinerary.startDate} 〜 ${currentItinerary.endDate} (${currentItinerary.duration}日間)
+期間: ${currentItinerary.startDate} 〜 ${currentItinerary.endDate} (${
+    currentItinerary.duration
+  }日間)
 
 現在のスケジュール:
 ${formatScheduleForPrompt(currentItinerary.schedule)}
@@ -185,16 +193,23 @@ ${formatScheduleForPrompt(currentItinerary.schedule)}
  */
 function formatScheduleForPrompt(schedule: DaySchedule[]): string {
   if (!schedule || schedule.length === 0) {
-    return '（まだスケジュールが設定されていません）';
+    return "（まだスケジュールが設定されていません）";
   }
 
-  return schedule.map(day => {
-    const spots = day.spots.map(spot => 
-      `  - ${spot.scheduledTime || '時間未定'}: ${spot.name} (${spot.duration || 0}分)`
-    ).join('\n');
-    
-    return `【${day.day}日目】 ${day.date || '日付未定'}\n${spots}`;
-  }).join('\n\n');
+  return schedule
+    .map((day) => {
+      const spots = day.spots
+        .map(
+          (spot) =>
+            `  - ${spot.scheduledTime || "時間未定"}: ${spot.name} (${
+              spot.duration || 0
+            }分)`
+        )
+        .join("\n");
+
+      return `【${day.day}日目】 ${day.date || "日付未定"}\n${spots}`;
+    })
+    .join("\n\n");
 }
 
 /**
@@ -214,7 +229,7 @@ export function parseAIResponse(response: string): {
   // すべてのJSONブロックを検出（グローバルフラグ付き）
   const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/g;
   const matches = Array.from(response.matchAll(jsonBlockRegex));
-  
+
   if (matches.length === 0) {
     // JSONが含まれていない場合は、メッセージのみ
     return {
@@ -225,13 +240,13 @@ export function parseAIResponse(response: string): {
 
   // 最初のJSONブロックからしおりデータを抽出
   let itineraryData: Partial<ItineraryData> | null = null;
-  
+
   try {
     const firstMatch = matches[0];
     const jsonString = firstMatch[1];
     itineraryData = JSON.parse(jsonString) as Partial<ItineraryData>;
   } catch (error) {
-    console.error('Failed to parse itinerary JSON:', error);
+    console.error("Failed to parse itinerary JSON:", error);
     // パースに失敗した場合はJSONを削除せずに元のメッセージを返す
     return {
       message: response.trim(),
@@ -242,22 +257,22 @@ export function parseAIResponse(response: string): {
   // すべてのJSONブロックをメッセージから削除
   let message = response;
   for (const match of matches) {
-    message = message.replace(match[0], '');
+    message = message.replace(match[0], "");
   }
-  
+
   // 余分な空白・改行を整理
   message = message
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .join('\n')
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join("\n")
     .trim();
-  
+
   // メッセージが空の場合はデフォルトメッセージを設定
   if (!message) {
-    message = 'しおりを更新しました。';
+    message = "しおりを更新しました。";
   }
-  
+
   return {
     message,
     itineraryData,
@@ -273,14 +288,14 @@ export function mergeItineraryData(
   updates: Partial<ItineraryData>
 ): ItineraryData {
   const now = new Date();
-  
+
   // 基本データ
   const baseData: ItineraryData = current || {
-    id: `itinerary-${Date.now()}`,
-    title: '新しい旅のしおり',
-    destination: '',
+    id: generateId(),
+    title: "新しい旅のしおり",
+    destination: "",
     schedule: [],
-    status: 'draft',
+    status: "draft",
     createdAt: now,
     updatedAt: now,
   };
@@ -290,16 +305,17 @@ export function mergeItineraryData(
   if (updates.schedule) {
     mergedSchedule = updates.schedule.map((newDay, index) => {
       const existingDay = baseData.schedule[index];
-      
+
       // スポットにIDを付与（なければ）
-      const spots = newDay.spots.map((spot, spotIndex) => ({
+      const spots = newDay.spots.map((spot) => ({
         ...spot,
-        id: spot.id || `spot-${newDay.day}-${spotIndex}-${Date.now()}`,
+        id: spot.id || generateId(),
       }));
 
       return {
         ...existingDay,
         ...newDay,
+        id: newDay.id || existingDay?.id || generateId(), // DayScheduleにもIDを付与
         spots,
       };
     });
@@ -307,12 +323,16 @@ export function mergeItineraryData(
 
   // 日付フィールドを常にDateオブジェクトに変換
   // APIレスポンスでは文字列になっている可能性があるため
-  const createdAt = updates.createdAt 
-    ? (updates.createdAt instanceof Date ? updates.createdAt : new Date(updates.createdAt))
+  const createdAt = updates.createdAt
+    ? updates.createdAt instanceof Date
+      ? updates.createdAt
+      : new Date(updates.createdAt)
     : baseData.createdAt;
-  
+
   const publishedAt = updates.publishedAt
-    ? (updates.publishedAt instanceof Date ? updates.publishedAt : new Date(updates.publishedAt))
+    ? updates.publishedAt instanceof Date
+      ? updates.publishedAt
+      : new Date(updates.publishedAt)
     : baseData.publishedAt;
 
   return {
@@ -328,28 +348,30 @@ export function mergeItineraryData(
 /**
  * チャット履歴をプロンプト用にフォーマット
  */
-export function formatChatHistory(messages: Array<{ role: string; content: string }>): string {
+export function formatChatHistory(
+  messages: Array<{ role: string; content: string }>
+): string {
   return messages
-    .map(msg => {
-      const role = msg.role === 'user' ? 'ユーザー' : 'アシスタント';
+    .map((msg) => {
+      const role = msg.role === "user" ? "ユーザー" : "アシスタント";
       return `${role}: ${msg.content}`;
     })
-    .join('\n\n');
+    .join("\n\n");
 }
 
 /**
  * エラーメッセージの生成
  */
 export function generateErrorMessage(error: any): string {
-  if (error.message?.includes('API key')) {
-    return '申し訳ございません。APIキーの設定に問題があるようです。設定をご確認ください。';
+  if (error.message?.includes("API key")) {
+    return "申し訳ございません。APIキーの設定に問題があるようです。設定をご確認ください。";
   }
-  
-  if (error.message?.includes('rate limit')) {
-    return '申し訳ございません。現在アクセスが集中しております。少し時間をおいて再度お試しください。';
+
+  if (error.message?.includes("rate limit")) {
+    return "申し訳ございません。現在アクセスが集中しております。少し時間をおいて再度お試しください。";
   }
-  
-  return '申し訳ございません。エラーが発生しました。もう一度お試しいただくか、別の表現で質問してみてください。';
+
+  return "申し訳ございません。エラーが発生しました。もう一度お試しいただくか、別の表現で質問してみてください。";
 }
 
 // ============================================================================
@@ -362,12 +384,12 @@ export function generateErrorMessage(error: any): string {
  */
 export function createSkeletonPrompt(itinerary: ItineraryData): string {
   const { destination, duration, summary } = itinerary;
-  
+
   return `【骨組み作成フェーズ】
 ユーザーから以下の基本情報を受け取りました：
 - 行き先: ${destination}
 - 期間: ${duration}日間
-- 旅行の概要: ${summary || '（未設定）'}
+- 旅行の概要: ${summary || "（未設定）"}
 
 次のステップとして、各日の**大まかなテーマ・エリア**を提案してください。
 
@@ -409,19 +431,21 @@ export function createDayDetailPrompt(
 ): string {
   // 安全性チェック: scheduleが存在しない場合の対応
   if (!itinerary || !itinerary.schedule || itinerary.schedule.length === 0) {
-    console.warn(`createDayDetailPrompt: Invalid itinerary for day ${targetDay}`);
+    console.warn(
+      `createDayDetailPrompt: Invalid itinerary for day ${targetDay}`
+    );
     return `【日程詳細化フェーズ】\n${targetDay}日目の詳細を作成してください。`;
   }
-  
-  const daySchedule = itinerary.schedule.find(d => d.day === targetDay);
+
+  const daySchedule = itinerary.schedule.find((d) => d.day === targetDay);
   const theme = daySchedule?.theme || `${targetDay}日目`;
-  
+
   return `【日程詳細化フェーズ】
 現在、${targetDay}日目の詳細を作成しています。
 
 【${targetDay}日目の骨組み】
 - テーマ: ${theme}
-- タイトル: ${daySchedule?.title || '（未設定）'}
+- タイトル: ${daySchedule?.title || "（未設定）"}
 
 【他の日の情報（参考）】
 ${formatScheduleForPrompt(itinerary.schedule)}
@@ -467,32 +491,32 @@ export function createNextStepPrompt(
   itinerary?: ItineraryData
 ): string {
   switch (currentPhase) {
-    case 'initial':
-    case 'collecting':
+    case "initial":
+    case "collecting":
       return `【情報収集】
 まだ基本情報が不足しています。以下の情報を教えてください：
 
-${!itinerary?.destination ? '- 行き先（どこに行きたいですか？）' : ''}
-${!itinerary?.duration ? '- 旅行期間（何日間の旅行ですか？）' : ''}
-${!itinerary?.summary ? '- 旅行の目的や興味（どんなことをしたいですか？）' : ''}
+${!itinerary?.destination ? "- 行き先（どこに行きたいですか？）" : ""}
+${!itinerary?.duration ? "- 旅行期間（何日間の旅行ですか？）" : ""}
+${!itinerary?.summary ? "- 旅行の目的や興味（どんなことをしたいですか？）" : ""}
 
 これらの情報が揃えば、旅程の骨組みを作成できます。`;
 
-    case 'skeleton':
+    case "skeleton":
       return `【骨組み確認】
 各日の大まかなテーマは決まりました。
 次のステップでは、1日ずつ具体的な観光スポットと時間を決めていきます。
 
 準備ができたら「次へ」または「1日目を詳しく」とお伝えください。`;
 
-    case 'detailing':
+    case "detailing":
       if (!itinerary) {
-        return '次の日の詳細化に進む準備ができています。';
+        return "次の日の詳細化に進む準備ができています。";
       }
-      
+
       const currentDay = itinerary.currentDay || 1;
       const totalDays = itinerary.duration || itinerary.schedule.length;
-      
+
       if (currentDay < totalDays) {
         return `【${currentDay}日目完了】
 ${currentDay}日目の詳細が決まりました。
@@ -507,7 +531,7 @@ ${currentDay}日目の詳細が決まりました。
 問題なければ、この旅のしおりは完成です！`;
       }
 
-    case 'completed':
+    case "completed":
       return `【旅のしおり完成】
 旅のしおりが完成しました！
 
@@ -515,7 +539,7 @@ ${currentDay}日目の詳細が決まりました。
 何かご要望があればお気軽にお知らせください。`;
 
     default:
-      return '';
+      return "";
   }
 }
 
@@ -524,10 +548,10 @@ ${currentDay}日目の詳細が決まりました。
  */
 export function getSystemPromptForPhase(phase: ItineraryPhase): string {
   // Phase 4では段階的構築用のシステムプロンプトを使用
-  if (phase !== 'initial') {
+  if (phase !== "initial") {
     return INCREMENTAL_SYSTEM_PROMPT;
   }
-  
+
   // 初期状態では通常のシステムプロンプト
   return SYSTEM_PROMPT;
 }

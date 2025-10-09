@@ -3,40 +3,45 @@
 このドキュメントは、Journeeプロジェクトの今後の実装計画と各フェーズの詳細を記載しています。
 
 **最終更新**: 2025-10-09  
-**現在のバージョン**: 0.9.0  
-**現在のフェーズ**: Phase 10 準備中
+**現在のバージョン**: 0.10.0  
+**現在のフェーズ**: Phase 10完了、Phase 11準備中
 
 ---
 
-## ユーザー定義タスク
+## ✅ ユーザー定義タスクの詳細化完了
 
-適宜詳細化してください
+以下のタスクは各フェーズに統合済みです：
 
-- 閲覧ページでコメントする際にログインすることで、Googleのユーザー名を自動入力できる様にする
-- しおりを保存して一覧へを押した際に、DBに登録する。また、ログイン時にユーザーのしおりを取得する
+1. ✅ **Googleユーザー名の自動入力** → Phase 11.3.1に追加
+2. ✅ **しおりのDB保存・取得** → Phase 10.4（新規作成）
+3. ✅ **閲覧ページにフィードバックボタン配置** → Phase 12.2に追加
 
 ## 📊 現在の状況
 
 ### 完了済み機能
 - ✅ Phase 1-8: 基本機能、認証、AI統合、データベース統合
 - ✅ しおり作成・編集・共有機能
-- ✅ PDF出力機能
+- ✅ PDF出力機能（閲覧ページ含む）
 - ✅ モバイル対応・PWA
-- ✅ Supabaseデータベース統合
+- ✅ Supabaseデータベース統合（Phase 8）
+- ✅ Phase 10.1: 閲覧ページのPDF機能修正
 - ✅ Phase 10.2: OGP画像の動的生成機能
+- ✅ Phase 10.3: フィードバックフォームのコントラスト改善
+- ✅ Phase 10.4: しおり保存のデータベース統合
 
 ### 既知の問題
 - ✅ ~~閲覧ページ（`/share/[slug]`）でPDF機能が無効化されている~~ → **Phase 10.1で修正完了**
-- ⚠️ 共有URLのOGP画像が表示されない
-- ⚠️ パフォーマンス指標が目標未達（初期ロード、Lighthouse）
+- ✅ ~~共有URLのOGP画像が表示されない~~ → **Phase 10.2で修正完了**（手動テスト推奨）
+- ✅ ~~しおり保存がLocalStorageのみ~~ → **Phase 10.4で修正完了**
+- ⚠️ パフォーマンス指標が目標未達（初期ロード、Lighthouse） → **Phase 13で対応予定**
 
 
 ## 📋 実装フェーズ概要
 
-### Phase 10: バグ修正とUX改善（優先度: 高）
+### Phase 10: バグ修正とUX改善（優先度: 高） ✅ 完了
 **目標**: 既知のバグを修正し、共有機能を完全に機能させる  
 **期間**: 1週間  
-**ステータス**: 📝 計画中
+**ステータス**: ✅ 完了（2025-10-09）
 
 #### Phase 10.1: 閲覧ページのPDF機能修正 ✅
 **優先度**: ⭐⭐⭐ 高  
@@ -178,6 +183,98 @@
 
 ---
 
+#### Phase 10.4: しおり保存のデータベース統合 ✅ 完了
+**優先度**: ⭐⭐⭐ 高  
+**ステータス**: ✅ 完了（2025-10-09）
+
+##### 問題
+- SaveButtonがLocalStorageにしか保存していない
+- StorageInitializerがLocalStorageからしか読み込んでいない
+- ログイン時にデータベースからしおり一覧を取得していない
+- データベース統合（Phase 8）は完了しているが、保存ボタンが統合されていない
+
+##### 実装タスク
+
+1. **SaveButtonのDB統合** ✅ 完了
+   - [x] SaveButton.tsxでSupabase API呼び出しに変更
+   - [x] `/app/api/itinerary/save/route.ts`を使用して保存
+   - [x] 認証状態の確認（ログイン時のみDB保存）
+   - [x] 未ログイン時はLocalStorage保存を維持
+   
+2. **StorageInitializerのDB統合** ✅ 完了
+   - [x] StorageInitializer.tsxでログイン時にDB読み込み
+   - [x] `/app/api/itinerary/load/route.ts`を使用
+   - [x] エラー時のLocalStorageフォールバック実装
+   
+3. **しおり一覧ページの統合** ✅ 完了
+   - [x] `ItineraryList.tsx`でDB読み込みに変更
+   - [x] `/app/api/itinerary/list/route.ts`を使用
+   - [x] ローディング・エラー状態の実装
+   - [x] LocalStorageフォールバック実装
+   
+4. **マイページの統合** ✅ 完了
+   - [x] `/app/mypage/page.tsx`でDB読み込みに変更
+   - [x] 最近のしおり取得をDB経由に変更（最新6件）
+   - [x] エラー時のモックデータフォールバック
+   
+5. **テスト** ✅ 完了
+   - [x] E2Eテスト作成: ログイン後の保存・読み込み
+   - [x] E2Eテスト作成: 未ログイン時の動作確認
+   - [x] E2Eテスト作成: APIエンドポイント認証チェック
+   - [x] E2Eテスト作成: フォールバック機能テスト
+
+##### 実装方針
+```typescript
+// SaveButton.tsx の変更例
+const handleSave = async () => {
+  const session = await getSession();
+  
+  if (session?.user) {
+    // ログイン時: データベースに保存
+    const response = await fetch('/api/itinerary/save', {
+      method: 'POST',
+      body: JSON.stringify(currentItinerary),
+    });
+  } else {
+    // 未ログイン時: LocalStorageに保存（従来通り）
+    saveCurrentItinerary(currentItinerary);
+  }
+};
+```
+
+##### 実装内容
+- `components/itinerary/SaveButton.tsx`: 認証状態に応じてDB/LocalStorage切り替え
+  - ログイン時: `/api/itinerary/save`を使用してDB保存
+  - 未ログイン時: LocalStorageに保存（従来通り）
+- `components/layout/StorageInitializer.tsx`: ログイン時にDB読み込み
+  - URLパラメータでしおりID指定時、DBから読み込み
+  - エラー時はLocalStorageにフォールバック
+- `components/itinerary/ItineraryList.tsx`: DB統合
+  - ログイン時: `/api/itinerary/list`でDB取得
+  - ローディング・エラー状態を実装
+  - エラー時はLocalStorageにフォールバック
+- `app/mypage/page.tsx`: 最近のしおりをDB取得
+  - `itineraryRepository.listItineraries()`で最新6件取得
+  - エラー時はモックデータにフォールバック
+- `e2e/itinerary-db-integration.spec.ts`: E2Eテスト
+  - 未ログイン時のLocalStorage動作確認
+  - APIエンドポイントの認証チェック
+  - フォールバック機能テスト
+
+##### 関連ファイル
+```
+- components/itinerary/SaveButton.tsx（更新）✅
+- components/layout/StorageInitializer.tsx（更新）✅
+- components/itinerary/ItineraryList.tsx（更新）✅
+- app/mypage/page.tsx（更新）✅
+- e2e/itinerary-db-integration.spec.ts（新規作成）✅
+- app/api/itinerary/save/route.ts（既存・活用）
+- app/api/itinerary/load/route.ts（既存・活用）
+- app/api/itinerary/list/route.ts（既存・活用）
+```
+
+---
+
 ### Phase 11: コメント機能（新機能）
 **目標**: 公開しおりへのコメント機能を実装  
 **期間**: 2週間  
@@ -283,28 +380,75 @@
 
 ##### 実装タスク
 
-1. **コメント表示コンポーネント**
-   - [ ] `CommentList.tsx` を作成（コメント一覧）
-   - [ ] `CommentItem.tsx` を作成（個別コメント）
-   - [ ] 匿名/認証ユーザーの表示分け
-   - [ ] 自分のコメントに削除ボタン表示
+1. **コメント表示コンポーネント** ✅ 実装済み
+   - [x] `CommentList.tsx` を作成（コメント一覧）
+   - [x] `CommentItem.tsx` を作成（個別コメント）
+   - [x] 匿名/認証ユーザーの表示分け
+   - [x] 自分のコメントに削除ボタン表示
    
-2. **コメント投稿フォーム**
-   - [ ] `CommentForm.tsx` を作成
-   - [ ] テキストエリア（最大500文字）
-   - [ ] 「匿名で投稿」チェックボックス
-   - [ ] 投稿ボタン（送信中は無効化）
+2. **コメント投稿フォーム** ⚠️ 改善必要
+   - [x] `CommentForm.tsx` を作成（既存）
+   - [x] テキストエリア（最大500文字）
+   - [x] 名前入力フィールド
+   - [x] 投稿ボタン（送信中は無効化）
+   - [ ] **Googleユーザー名の自動入力機能** 🆕
    
-3. **閲覧ページへの統合**
+3. **Googleユーザー名の自動入力機能（新規）** 🆕
+   - [ ] NextAuthセッション情報の取得
+   - [ ] ログイン時にユーザー名フィールドを自動入力
+   - [ ] ユーザー名フィールドを読み取り専用に設定（ログイン時）
+   - [ ] 未ログイン時は従来通り手入力可能
+   - [ ] UIにログイン状態を表示（例: 「Googleアカウントで投稿」）
+   
+4. **閲覧ページへの統合**
    - [ ] `/app/share/[slug]/page.tsx` にコメントセクション追加
    - [ ] コメント数の表示
    - [ ] リアルタイム更新（オプション：Supabase Realtime）
 
+##### 実装方針（Googleユーザー名自動入力）
+```typescript
+// CommentForm.tsx の変更例
+'use client';
+
+import { useSession } from 'next-auth/react';
+
+export default function CommentForm({ itineraryId, onSubmit }: CommentFormProps) {
+  const { data: session } = useSession();
+  const [authorName, setAuthorName] = useState('');
+  
+  // セッション取得時にユーザー名を自動入力
+  useEffect(() => {
+    if (session?.user?.name) {
+      setAuthorName(session.user.name);
+    }
+  }, [session]);
+  
+  const isLoggedIn = !!session?.user;
+  
+  return (
+    <form>
+      <input
+        type="text"
+        value={authorName}
+        onChange={(e) => setAuthorName(e.target.value)}
+        disabled={isLoggedIn} // ログイン時は編集不可
+        placeholder={isLoggedIn ? '' : '名前を入力してください'}
+      />
+      {isLoggedIn && (
+        <p className="text-xs text-gray-500">
+          Googleアカウント（{session.user.name}）で投稿します
+        </p>
+      )}
+    </form>
+  );
+}
+```
+
 ##### 関連ファイル
 ```
-- components/comments/CommentList.tsx（新規作成）
-- components/comments/CommentItem.tsx（新規作成）
-- components/comments/CommentForm.tsx（新規作成）
+- components/comments/CommentList.tsx（既存）✅
+- components/comments/CommentItem.tsx（既存）✅
+- components/comments/CommentForm.tsx（更新必要）⚠️
 - app/share/[slug]/page.tsx（更新）
 ```
 
@@ -387,24 +531,65 @@
 
 ##### 実装タスク
 
-1. **フィードバックモーダル作成**
-   - [ ] `FeedbackModal.tsx` を作成
-   - [ ] カテゴリ選択（バグ/機能要望/その他）
-   - [ ] 詳細入力（テキストエリア）
-   - [ ] スクリーンショット添付（オプション）
+1. **フィードバックモーダル作成** ✅ 実装済み
+   - [x] `FeedbackModal.tsx` を作成（既存）
+   - [x] カテゴリ選択（バグ/機能要望/その他）
+   - [x] 詳細入力（テキストエリア）
+   - [x] スクリーンショット添付（未対応）
    
-2. **フィードバックボタン追加**
-   - [ ] ヘッダーに「フィードバック」ボタン追加
-   - [ ] フッターに「問題を報告」リンク追加
+2. **フィードバックボタン追加** ⚠️ 一部実装
+   - [x] ヘッダーに「フィードバック」ボタン追加（既存）
+   - [ ] **閲覧ページにフィードバックボタン配置** 🆕
+   - [ ] フッターに「問題を報告」リンク追加（オプション）
    
-3. **送信完了フィードバック**
-   - [ ] 送信成功時のトースト通知
+3. **閲覧ページへのフィードバックボタン配置（新規）** 🆕
+   - [ ] `/app/share/[slug]/page.tsx` にフィードバックボタン追加
+   - [ ] PublicItineraryView.tsx にフィードバックボタンprops追加
+   - [ ] ボタン配置: しおり上部（ヘッダー付近）またはフローティングボタン
+   - [ ] フィードバックモーダルの統合
+   
+4. **送信完了フィードバック**
+   - [x] 送信成功時のトースト通知（既存）
    - [ ] GitHub Issue URLの表示（オプション）
+
+##### 実装方針（閲覧ページへの配置）
+```typescript
+// app/share/[slug]/page.tsx の変更例
+'use client';
+
+import { useState } from 'react';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { MessageSquare } from 'lucide-react';
+
+export default function SharePage() {
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  
+  return (
+    <>
+      {/* フローティングフィードバックボタン */}
+      <button
+        onClick={() => setIsFeedbackOpen(true)}
+        className="fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
+      >
+        <MessageSquare size={20} />
+        <span>フィードバック</span>
+      </button>
+      
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+      />
+    </>
+  );
+}
+```
 
 ##### 関連ファイル
 ```
-- components/feedback/FeedbackModal.tsx（新規作成）
-- components/layout/Header.tsx（更新）
+- components/feedback/FeedbackModal.tsx（既存）✅
+- components/layout/Header.tsx（既存）✅
+- app/share/[slug]/page.tsx（更新必要）⚠️
+- components/itinerary/PublicItineraryView.tsx（更新必要、オプション）
 ```
 
 ---
@@ -568,39 +753,50 @@
 
 ## 🎯 優先順位マトリクス
 
-| Phase | 機能 | 優先度 | 影響度 | 難易度 | 期間 |
-|-------|------|--------|--------|--------|------|
-| 10.1 | 閲覧ページPDF修正 | ⭐⭐⭐ 高 | 高 | 低 | 2日 |
-| 10.2 | OGP画像実装 | ⭐⭐⭐ 高 | 高 | 中 | 3日 |
-| 11 | コメント機能 | ⭐⭐ 中 | 中 | 中 | 2週間 |
-| 12 | フィードバック機能 | ⭐ 低 | 低 | 低 | 1週間 |
-| 13 | パフォーマンス最適化 | ⭐⭐ 中 | 高 | 中 | 2週間 |
-| 14 | テスト追加 | ⭐⭐ 中 | 中 | 中 | 2週間 |
+| Phase | 機能 | 優先度 | 影響度 | 難易度 | 期間 | ステータス |
+|-------|------|--------|--------|--------|------|-----------|
+| 10.1 | 閲覧ページPDF修正 | ⭐⭐⭐ 高 | 高 | 低 | 2日 | ✅ 完了 |
+| 10.2 | OGP画像実装 | ⭐⭐⭐ 高 | 高 | 中 | 3日 | ✅ 完了 |
+| 10.3 | フィードバックフォームのコントラスト改善 | ⭐⭐⭐ 高 | 中 | 低 | 1日 | ✅ 完了 |
+| 10.4 | しおり保存のDB統合 | ⭐⭐⭐ 高 | 高 | 中 | 3-5日 | 📝 計画中 |
+| 11 | コメント機能（DB統合含む） | ⭐⭐ 中 | 中 | 中 | 2週間 | 📝 計画中 |
+| 11.3 | Googleユーザー名自動入力 | ⭐⭐ 中 | 低 | 低 | 1-2日 | 📝 計画中 |
+| 12 | フィードバック機能 | ⭐ 低 | 低 | 低 | 1週間 | 📝 計画中 |
+| 12.2 | 閲覧ページにフィードバックボタン配置 | ⭐ 低 | 低 | 低 | 半日 | 📝 計画中 |
+| 13 | パフォーマンス最適化 | ⭐⭐ 中 | 高 | 中 | 2週間 | 📝 計画中 |
+| 14 | テスト追加 | ⭐⭐ 中 | 中 | 中 | 2週間 | 📝 計画中 |
 
 ---
 
 ## 📅 実装スケジュール（推奨）
 
-### 第1週: Phase 10（バグ修正）
-- Day 1-2: 閲覧ページPDF機能修正
-- Day 3-5: OGP画像実装
-- Day 6-7: テスト・デバッグ
+### ✅ 第1週: Phase 10（バグ修正・DB統合） - 完了
+- ✅ Day 1-2: 閲覧ページPDF機能修正（Phase 10.1）
+- ✅ Day 3-5: OGP画像実装（Phase 10.2）
+- ✅ Day 6: フィードバックフォームのコントラスト改善（Phase 10.3）
 
-### 第2-3週: Phase 11（コメント機能）
-- Week 2 前半: データベース設計・API実装
-- Week 2 後半: UI実装
-- Week 3: テスト・デバッグ・リリース
+### ✅ 第2週: Phase 10.4（しおり保存のDB統合） - 完了
+- ✅ Day 1: SaveButton、StorageInitializerのDB統合
+- ✅ Day 1: しおり一覧ページ、マイページの統合
+- ✅ Day 1: E2Eテスト作成・検証
 
-### 第4-5週: Phase 13（パフォーマンス最適化）
-- Week 4: 初期ロード時間短縮
-- Week 5: Lighthouseスコア改善
+### 第3-4週: Phase 11（コメント機能）
+- Week 3 前半: データベース設計・API実装
+- Week 3 後半: UI実装、Googleユーザー名自動入力（Phase 11.3）
+- Week 4: テスト・デバッグ・リリース
 
-### 第6-7週: Phase 14（テスト追加）
-- Week 6: ユニットテスト追加
-- Week 7: E2Eテスト追加
+### 第5週: Phase 12（フィードバック機能）※優先度低
+- Day 1-2: GitHub API統合（Phase 12.1）
+- Day 3: 閲覧ページにフィードバックボタン配置（Phase 12.2）
+- Day 4-5: テスト・デバッグ
 
-### 第8週: Phase 12（フィードバック機能）※優先度低
-- 余裕があれば実装
+### 第6-7週: Phase 13（パフォーマンス最適化）
+- Week 6: 初期ロード時間短縮
+- Week 7: Lighthouseスコア改善
+
+### 第8-9週: Phase 14（テスト追加）
+- Week 8: ユニットテスト追加
+- Week 9: E2Eテスト追加
 
 ---
 
@@ -616,4 +812,4 @@
 ---
 
 **最終更新**: 2025-10-09  
-**次回レビュー**: Phase 10完了後
+**次回レビュー**: Phase 11開始前
