@@ -1,4 +1,4 @@
-# 【AI駆動開発】まだレビューする時にブランチ移動してるの？ブランチごとに独立環境を立てて爆速開発する方法
+# 🚀⚡ 【AI駆動開発】まだレビューする時にブランチ移動してるの？ブランチごとに独立環境を立てて爆速開発する方法
 
 ## 目次
 1. [はじめに](#はじめに)
@@ -20,21 +20,31 @@
 
 ---
 
-## はじめに
+## 😱 ブランチを切り替えるたびに「儀式」をしていませんか？
 
-<!-- ここに記載する内容 -->
-- 個人開発でも複数タスクを並列に進める現代の開発スタイルについて
-- ブランチ移動してレビューする手間の問題提起
-- AI駆動開発で10タスクを同時進行する際の課題
-- この記事で解決できること：ブランチごとの独立環境で即座にレビュー可能に
-- 技術的に面白く、個人レベルではまだあまり実践されていない手法の紹介
+今、開発の現場は劇的に変わっています。Cursor AIとかGitHub Copilotのおかげで、1人で同時に10個、20個のブランチを管理するなんてのも夢じゃなくなりました。まさに「AI駆動開発」の時代です。
 
-**期待できるメリット：**
+でも、その一方で新しい問題が出てきたんですよね。
+
+そう、**ブランチを切り替えるたびに、ローカル環境の再構築地獄が始まる**問題です。
+
+PRのレビュー依頼が来た → `git checkout feature/xxx` → 依存関係が違うから`npm install` → ローカルサーバー立ち上げ → やっと確認できる → 次のPR見たいからまた`git checkout` → また`npm install`...
+
+この繰り返し、正直しんどくないですか？せっかくAIが高速でコード書いてくれても、レビューと確認のフローがボトルネックになってたら本末転倒です。
+本記事では、この問題を根本的に解決する方法を紹介します。
+
+**ブランチごとに独立した環境を自動で立ち上げ、それぞれに固有のURLを割り当てる仕組み**です。これにより、ブランチを切り替えることなく、URLにアクセスするだけで各ブランチの動作を確認できるようになります。
+
+大企業では一般的なプレビュー環境ですが、**個人開発でここまでの仕組みを構築している例はまだ少ない**のが現状かと思います。
+
+本記事では、KubernetesとArgoCDを活用し、GitHub Actionsで完全自動化する方法を、実際のコードとともに詳しく解説していきます
+
+**この記事を読むことで得られるメリット：**
 - ✅ ブランチ移動なしで複数PRを同時レビュー
-- ✅ 各ブランチの動作を独立したURLで確認
-- ✅ CI/CDパイプラインの高速化
-- ✅ チーム開発での衝突回避
-- ✅ AI駆動開発との親和性が高い
+- ✅ 各ブランチの動作を独立したURLで確認（例：`feature-123.example.com`）
+- ✅ CI/CDパイプラインの高速化と自動化
+- ✅ AI駆動開発での並列タスク処理が劇的に効率化
+- ✅ ステークホルダーへのプレビュー共有が簡単に
 
 ---
 
@@ -147,13 +157,24 @@
 ### 6.1 Kubernetes環境のセットアップ
 
 #### オプションA: 自前のクラスタ構築
-<!-- ここに記載する内容 -->
-- ミニPC3台でのクラスタ構築例 (自宅の写真を挿入予定)
-- RaspberryPiでの構築も可能
+
+私はミニPC3台で自宅にKubernetesクラスタを構築しています（写真を挿入予定）。RaspberryPiでの構築も可能なはずです。
+
+**メリット：**
+- 無料で運用可能（電気代のみ）
+- 学習に最適
+- 完全なコントロール
+
+**デメリット：**
+- 初期設定の手間
+- メンテナンスが必要
+- 可用性は自己責任
 
 
 #### オプションB: マネージドKubernetes（GKE）
-<!-- ここに記載する内容 -->
+
+> **注意**: 以下のチュートリアルはAIによって作成されました。公式ドキュメントも併せてご確認ください。
+
 ```bash
 # GKEクラスタの作成例
 gcloud container clusters create my-cluster \
@@ -165,8 +186,19 @@ gcloud container clusters create my-cluster \
 gcloud container clusters get-credentials my-cluster --zone us-central1-a
 ```
 
+**メリット：**
+- セットアップが簡単
+- 高可用性
+- Google Cloudとの統合
+
+**デメリット：**
+- コストがかかる
+- Google Cloudアカウント必須
+
 #### オプションC: マネージドKubernetes（EKS）
-<!-- ここに記載する内容 -->
+
+> **注意**: 以下のチュートリアルはAIによって作成されました。公式ドキュメントも併せてご確認ください。
+
 ```bash
 # EKSクラスタの作成例（eksctl使用）
 eksctl create cluster \
@@ -179,12 +211,30 @@ eksctl create cluster \
 aws eks update-kubeconfig --name my-cluster --region us-west-2
 ```
 
+**メリット：**
+- AWSエコシステムとの統合
+- エンタープライズグレード
+
+**デメリット：**
+- コストがかかる
+- AWSアカウント必須
+
+---
+
 #### k8sクラスタのセットアップ
 
-- 参考リポジトリ: [k8s-cluster](https://github.com/AobaIwaki123/k8s-cluster)
-  - このリポジトリを使えばどこで立てるかに関わらず基本的なセットアップが直ぐに完了する
-  - このリポジトリのREADMEを参考にしてブログに引用する
-  - このリポジトリを流行らせていきたい気持ちを綴る
+どのオプションを選んでも、基本的なセットアップは共通です。
+
+**参考リポジトリ: [k8s-cluster](https://github.com/AobaIwaki123/k8s-cluster)**
+
+このリポジトリは、Kubernetesクラスタの基本的なセットアップを自動化するために作成しました。どこでクラスタを立てるかに関わらず、このリポジトリを使えば以下のような基本的なセットアップが直ぐに完了します：
+
+- **ArgoCD**: GitOpsデプロイ
+- **Cloudflare Tunnel Controller**: ドメイン自動発行
+
+個人開発でここまでのインフラを簡単にセットアップできるのは、本当に便利です。ぜひ使ってみてください！このリポジトリをもっと多くの人に知ってもらい、**個人開発のインフラ構築のハードルを下げていきたい**という思いがあります。
+
+詳細なセットアップ手順はリポジトリのREADMEを参照してください。特に、**手順`1'`まで進めれば、ArgoCDとCloudflare Tunnel Controllerが動作する環境が整います。**（以下でも同様の手順を説明しています）
 
 #### 動作確認
 ```bash
@@ -244,44 +294,60 @@ argocd account generate-token --account admin
 
 ---
 
-### 6.3 Cloudflare Ingress Controllerのセットアップ
+### 6.3 Cloudflare Tunnel Controllerのセットアップ
 
-#### なぜCloudflare Ingress Controllerなのか
-- ドメインをYAMLに書くだけで自動発行
-- SSL証明書の自動設定（Let's Encrypt不要）
-- DDoS保護が標準で有効
-- 無料プランでも十分な機能
+#### なぜCloudflare Tunnel Controllerなのか
+
+従来のIngress Controllerと比較して、Cloudflare Tunnel Controllerには圧倒的なメリットがあります：
+
+**メリット：**
+- ✅ **ドメインをYAMLに書くだけで自動発行**（DNS設定不要！）
+- ✅ **SSL証明書の自動設定**（Let's Encrypt不要）
+- ✅ **DDoS保護が標準で有効**（Cloudflareのネットワークを経由）
+- ✅ **無料プランでも十分な機能**
+- ✅ **プライベートIPでも公開可能**（Tunnelを使用）
+- ✅ **ファイアウォールの穴あけ不要**（アウトバウンド接続のみ）
+
+これは特に、自宅サーバーや企業ネットワーク内でKubernetesを運用している場合に絶大な効果を発揮します。
 
 #### インストール手順
-<!-- ここに記載する内容 -->
-詳細は[k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster)の手順`1'`まで実施。
 
-概要：
-1. Cloudflare APIトークンの作成
-2. Cloudflare Tunnel Controllerのインストール
-3. Ingressリソースの作成
+詳細は[k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster)の手順`1'`まで実施してください。
+
+**概要：**
+1. Cloudflareアカウントの作成・ドメインの追加
+2. Cloudflare API Tokenの作成
+3. Cloudflare Tunnel Controllerのインストール
+4. Ingressリソースの作成
+
+> **Note**: このセットアップは初回のみ必要です。一度設定すれば、以降はIngressリソースを作成するだけで自動的にドメインが発行されます。
 
 #### サンプルIngress
+
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: example-ingress
+  name: journee-a1b2c3
+  namespace: journee
   annotations:
-    # Cloudflareの設定
+    # Cloudflare Tunnelを使用する場合の設定
+    external-dns.alpha.kubernetes.io/target: <tunnel-id>.cfargotunnel.com
 spec:
   rules:
-  - host: example.yourdomain.com
+  - host: journee-a1b2c3.aooba.net
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: example-service
+            name: journee-a1b2c3
             port:
               number: 80
 ```
+
+このIngressを`kubectl apply`するだけで、数分以内に`https://journee-a1b2c3.aooba.net`でアクセス可能になります！
 
 ---
 
@@ -388,158 +454,308 @@ argocd app get test-app
 ### 7.2 ブランチ固有のマニフェスト管理
 
 #### `.github/workflows/push.yml`の詳細
-<!-- ここに記載する内容 -->
 
 **ワークフローの役割：**
-- ブランチごとにDockerイメージをビルド
-- GCRにプッシュ
-- Kubernetesマニフェストをブランチ固有に変換
-  - `metadata.name` → `<app-name>-<branch-name>`
-  - `namespace` → `<branch-name>`
-  - `image` → `gcr.io/<project>/<app-name>:<branch-name>-<sha>`
+1. ブランチごとにDockerイメージをビルド・GCRにプッシュ
+2. Kubernetesマニフェストをブランチ固有に変換
+3. 変換したマニフェストをコミット・プッシュ
+4. ArgoCD同期をトリガー
 
-**サンプルコード：**
+**キーポイント：ブランチハッシュの生成**
+
+ブランチ名をそのままリソース名に使うと、長すぎたり特殊文字が含まれる問題があります。そこで、ブランチ名からMD5ハッシュの最初の6文字を生成し、それを使用します：
+
+```bash
+BRANCH="feature/add-new-component"
+BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+# 例: "a1b2c3"
+```
+
+これにより、どんなブランチ名でも短くユニークなIDに変換できます。
+
+**実際のワークフローコード：**
+
 ```yaml
-name: Build and Push Branch Image
+name: push
+run-name: Push Branch Image to GCR
 
 on:
   push:
     branches-ignore:
       - main
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      # ... その他のパス
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GCR_REGISTRY: gcr.io
+  PROJECT_ID: my-docker-471807
+  IMAGE_NAME: journee
 
 jobs:
-  build:
+  # まず ArgoCD Application を作成（初回のみ）
+  create-argo-app:
+    uses: ./.github/workflows/create-argo-app.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.ref_name }}
+
+  # Dockerイメージのビルド・プッシュ
+  push:
+    needs: [create-argo-app]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate branch hash
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "BRANCH_HASH=$BRANCH_HASH" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Authenticate to GCR
-        uses: google-github-actions/auth@v1
+      - name: Login to GCR
+        uses: docker/login-action@v3
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          registry: ${{ env.GCR_REGISTRY }}
+          username: _json_key
+          password: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker
+      - name: Push image to GCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          push: true
+          tags: ${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH_HASH }}-${{ env.SHORT_SHA }}
 
-      - name: Extract branch name
-        id: branch
-        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+  # マニフェストの更新
+  update-deployment-manifest:
+    runs-on: ubuntu-latest
+    needs: [push]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Build and Push Docker Image
+      - name: Generate branch hash
         run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
-          IMAGE_TAG=gcr.io/${{ secrets.GCP_PROJECT_ID }}/journee:${BRANCH_NAME}-${GITHUB_SHA::7}
-          docker build -t $IMAGE_TAG -f Dockerfile.prod .
-          docker push $IMAGE_TAG
+          BRANCH="${{ github.ref_name }}"
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "BRANCH_HASH=$BRANCH_HASH" >> $GITHUB_ENV
 
-      - name: Generate Branch-specific Manifests
+      - name: Install yq
         run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
-          mkdir -p k8s/manifests-${BRANCH_NAME}
-          
-          # Copy base manifests
-          cp -r k8s/manifests/* k8s/manifests-${BRANCH_NAME}/
-          
-          # Update metadata.name and namespace
-          sed -i "s/name: journee/name: journee-${BRANCH_NAME}/g" k8s/manifests-${BRANCH_NAME}/*.yml
-          sed -i "s/namespace: default/namespace: ${BRANCH_NAME}/g" k8s/manifests-${BRANCH_NAME}/*.yml
-          
-          # Update image tag
-          sed -i "s|image: gcr.io/.*/journee:.*|image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/journee:${BRANCH_NAME}-${GITHUB_SHA::7}|g" k8s/manifests-${BRANCH_NAME}/deployment.yml
-          
-          # Update ingress host
-          sed -i "s/host: .*/host: ${BRANCH_NAME}.yourdomain.com/g" k8s/manifests-${BRANCH_NAME}/ingress.yml
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
-      - name: Commit and Push Manifests
+      - name: Update deployment manifest
         run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add k8s/manifests-${BRANCH_NAME}/
-          git commit -m "Update manifests for branch ${BRANCH_NAME}"
+          yq -i '.spec.template.spec.containers[0].image = "${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH_HASH }}-${{ env.SHORT_SHA }}"' k8s/manifests-${{ env.BRANCH_HASH }}/deployment.yml
+
+      - name: Commit and push deployment manifest
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update deployment manifest"
           git push
+
+  # ArgoCD同期
+  sync:
+    runs-on: ubuntu-latest
+    needs: [update-deployment-manifest]
+    steps:
+      - name: Trigger ArgoCD sync via API
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          curl -X POST https://argocd.aooba.net/api/v1/applications/${{ env.IMAGE_NAME }}-${{ env.BRANCH_HASH }}/sync \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            -H "Content-Type: application/json"
 ```
+
+**重要なポイント：**
+
+1. **paths指定**: 不要なファイルの変更では実行されない
+2. **concurrency**: 同じブランチへの複数プッシュは最新のみ実行
+3. **ジョブの依存関係**: `needs`で順序を制御
+4. **yqの使用**: `sed`よりも安全にYAMLを変更
 
 ---
 
 ### 7.3 ArgoCD Applicationの自動作成
 
 #### `.github/workflows/create-argo-app.yml`の詳細
-<!-- ここに記載する内容 -->
 
 **ワークフローの役割：**
-- ブランチごとにNamespaceを作成
-- ArgoCD Applicationを作成
-- 自動同期の設定
+1. ArgoCD Applicationが既に存在するかチェック
+2. 存在しない場合のみ、以下を実行：
+   - ブランチ固有のマニフェストディレクトリを作成
+   - リソース名をハッシュ付きに変更（yq使用）
+   - ArgoCD Applicationを作成
+   - PRに自動的にデプロイURLをコメント
 
-**サンプルコード：**
+**キーポイント：冪等性**
+
+このワークフローは何度実行しても安全です。既にApplicationが存在する場合はスキップされます。これにより、ブランチへの複数回のプッシュでも問題ありません。
+
+**実際のワークフローコード（抜粋）：**
+
 ```yaml
 name: Create ArgoCD Application
 
 on:
-  workflow_run:
-    workflows: ["Build and Push Branch Image"]
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
 
 jobs:
-  create-argo-app:
+  check-and-create-app:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Extract branch name
-        id: branch
-        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-
-      - name: Install ArgoCD CLI
+      - name: Generate branch hash
+        id: branch_hash
         run: |
-          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x /usr/local/bin/argocd
+          BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "hash=$BRANCH_HASH" >> $GITHUB_OUTPUT
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: Configure kubeconfig
+      # ArgoCD Applicationの存在チェック
+      - name: Check if ArgoCD Application exists
+        id: check_app
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         run: |
-          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > $HOME/.kube/config
-
-      - name: Create Namespace
-        run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
-          kubectl create namespace ${BRANCH_NAME} --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Login to ArgoCD
-        run: |
-          argocd login ${{ secrets.ARGOCD_SERVER }} \
-            --auth-token ${{ secrets.ARGOCD_TOKEN }} \
-            --insecure
-
-      - name: Create ArgoCD Application
-        run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            https://argocd.aooba.net/api/v1/applications/$APP_NAME)
           
-          argocd app create journee-${BRANCH_NAME} \
-            --repo https://github.com/${{ github.repository }}.git \
-            --path k8s/manifests-${BRANCH_NAME} \
-            --dest-server https://kubernetes.default.svc \
-            --dest-namespace ${BRANCH_NAME} \
-            --sync-policy automated \
-            --auto-prune \
-            --self-heal \
-            || echo "Application already exists"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Sync Application
+      # マニフェストディレクトリの作成
+      - name: Create manifests directory for branch
+        if: steps.check_app.outputs.exists == 'false'
         run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
-          argocd app sync journee-${BRANCH_NAME} --force
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          cp -r k8s/manifests k8s/manifests-$BRANCH_HASH
+
+      # yqでリソース名を更新
+      - name: Update resource names in manifests
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          MANIFEST_DIR="k8s/manifests-$BRANCH_HASH"
+          
+          # Deployment名の更新
+          yq -i '.metadata.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+          
+          # Service名とselectorの更新
+          yq -i '.metadata.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
+          yq -i '.spec.selector.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/service.yml"
+          
+          # Ingress名とホストの更新
+          yq -i '.metadata.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
+          yq -i '.spec.rules[0].host = "journee-'"$BRANCH_HASH"'.aooba.net"' "$MANIFEST_DIR/ingress.yml"
+          yq -i '.spec.rules[0].http.paths[0].backend.service.name = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/ingress.yml"
+          
+          # DeploymentのラベルとselectorMatchLabelsの更新
+          yq -i '.metadata.labels.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+          yq -i '.spec.selector.matchLabels.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+          yq -i '.spec.template.metadata.labels.app = "journee-'"$BRANCH_HASH"'"' "$MANIFEST_DIR/deployment.yml"
+
+      # マニフェストをコミット
+      - name: Commit and push manifests
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add k8s/manifests-$BRANCH_HASH
+          git commit -m "🚀 Create ArgoCD manifests for branch (hash: $BRANCH_HASH)"
+          git push
+
+      # ArgoCD Applicationの作成（API経由）
+      - name: Create ArgoCD Application
+        if: steps.check_app.outputs.exists == 'false'
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="journee-$BRANCH_HASH"
+          
+          curl -X POST https://argocd.aooba.net/api/v1/applications \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "metadata": {"name": "'"$APP_NAME"'"},
+              "spec": {
+                "project": "default",
+                "source": {
+                  "repoURL": "https://github.com/'"${{ github.repository }}"'",
+                  "targetRevision": "'"$BRANCH"'",
+                  "path": "k8s/manifests-'"$BRANCH_HASH"'"
+                },
+                "destination": {
+                  "server": "https://kubernetes.default.svc",
+                  "namespace": "journee"
+                },
+                "syncPolicy": {
+                  "automated": {"selfHeal": true, "prune": true}
+                }
+              }
+            }'
+
+      # PRにデプロイURLをコメント
+      - name: Comment deployment URL on PR
+        if: steps.check_app.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          DEPLOYMENT_URL="https://journee-$BRANCH_HASH.aooba.net"
+          
+          # PRを検索
+          PR_NUMBER=$(gh pr list --head "${{ inputs.branch }}" --json number --jq '.[0].number')
+          
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr comment "$PR_NUMBER" --body "🚀 **Preview Deployment Created**
+            
+            **Branch:** \`${{ inputs.branch }}\`
+            **Hash:** \`$BRANCH_HASH\`
+            **URL:** $DEPLOYMENT_URL
+            
+            The preview environment will be available shortly."
+          fi
 ```
+
+**重要な技術ポイント：**
+
+1. **yqでのYAML操作**: `sed`と違い構造を理解して変更するため安全
+2. **ArgoCD API**: CLI不要でApplicationを作成
+3. **workflow_call**: 他のワークフローから呼び出し可能
+4. **冪等性**: 既存のApplicationはスキップ
+5. **PRへの自動コメント**: GitHub CLIでURLを通知
 
 ---
 
@@ -585,18 +801,26 @@ jobs:
         run: |
           BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
           argocd app delete journee-${BRANCH_NAME} --cascade
-
-      - name: Delete Namespace
-        run: |
-          BRANCH_NAME=${{ steps.branch.outputs.BRANCH_NAME }}
-          kubectl delete namespace ${BRANCH_NAME}
 ```
 
 ### コスト管理
-- ブランチが増えるとリソースも増える
+
+**注意点：**
+- ブランチが増えるとKubernetesリソースも増える
+- 各ブランチがPod、Service、Ingressを持つため、リソース消費に注意
 - 定期的な棚卸しとクリーンアップが重要
-- 未使用ブランチの自動削除スクリプト導入を推奨
-  - これは自分もまだ実装してしないので、ブログの今後の展望に加えたい
+
+**現在の運用：**
+- ブランチ削除時に手動でリソースを削除
+- ArgoCD Application削除: `argocd app delete journee-<hash> --cascade`
+- マニフェストディレクトリ削除: `git rm -r k8s/manifests-<hash>`
+
+**今後の改善予定：**
+- 未使用ブランチの自動検出・削除スクリプト
+- 一定期間（例：7日間）更新がないブランチの自動クリーンアップ
+- リソース使用量の監視とアラート
+
+> **Note**: 自動削除スクリプトはまだ実装していません。現在は手動での管理となっていますが、今後の展望として追加予定です。
 
 ---
 
@@ -610,23 +834,48 @@ jobs:
 - ✅ AI駆動開発との高い親和性
 
 ### 今後の発展
-- Ephemeral環境（一定期間後自動削除）の実装
-- プレビュー環境へのBasic認証追加
-- コメントでのデプロイ制御（ChatOps）
-- メトリクス・ログの集約
+
+この仕組みを導入したことで、さらなる改善のアイデアが見えてきました：
+
+1. **Ephemeral環境（一定期間後自動削除）**
+   - GitHub Actionsのcronで定期的にチェック
+   - 最終更新から7日以上経過したブランチを自動削除
+   - Slack通知で削除前に確認
+
+2. **プレビュー環境へのBasic認証追加**
+   - 公開環境に認証を追加してセキュリティ向上
+   - Kubernetes Secretで認証情報を管理
+
+3. **コメントでのデプロイ制御（ChatOps）**
+   - PRコメントで `/deploy` → 手動デプロイ
+   - `/destroy` → 環境削除
+   - `/restart` → Pod再起動
+
+4. **自動パフォーマンステスト**
+   - Lighthouse CIを各プレビュー環境で実行
+   - パフォーマンススコアをPRにコメント
+
+5. **E2Eテストの自動実行**
+   - Playwright/Cypressで自動テスト
+   - プレビュー環境で実行し結果をPRに通知
 
 ### 参考リンク
-- [本プロジェクトのリポジトリ](https://github.com/your-username/journee)
-- [Kubernetesクラスタ構築リポジトリ](https://github.com/AobaIwaki123/k8s-cluster)
+
+**プロジェクト関連：**
+- [Journeeプロジェクト](https://github.com/AobaIwaki123/journee) - 本記事で紹介した実装
+- [k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster) - Kubernetesクラスタ自動セットアップ
+
+**公式ドキュメント：**
 - [ArgoCD公式ドキュメント](https://argo-cd.readthedocs.io/)
-- [Cloudflare Tunnel Controller](https://github.com/cloudflare/cloudflare-ingress-controller)
+- [Kubernetes公式ドキュメント](https://kubernetes.io/docs/)
+- [GitHub Actions公式ドキュメント](https://docs.github.com/actions)
+- [yq - YAMLプロセッサ](https://github.com/mikefarah/yq)
+
+**Cloudflare関連：**
+- [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
+- [Cloudflare Tunnel Controller（非公式）](https://github.com/cloudflare/cloudflare-ingress-controller)
 
 ---
 
-## 著者について
-<!-- 自己紹介・SNSリンクなど -->
-
----
-
-**質問・フィードバックは[GitHub Issues](https://github.com/your-username/journee/issues)までお願いします！**
+この記事が役に立ったら、[k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster)にスターをいただけると嬉しいです ⭐
 
