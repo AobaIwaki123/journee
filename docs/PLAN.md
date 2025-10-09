@@ -93,6 +93,7 @@
    - [ ] Twitter Card Validator でテスト
    - [ ] Facebook Sharing Debugger でテスト
    - [ ] LINE、Slackでの表示確認
+   - 📖 詳細なテスト方法: [OGP_TESTING.md](./OGP_TESTING.md)
 
 ##### 実装内容
 - `/app/api/og/route.tsx`: Edge Runtime対応のOGP画像生成API
@@ -555,6 +556,7 @@
 - [API仕様（API.md）](./API.md)
 - [コーディングガイドライン（GUIDELINE.md）](./GUIDELINE.md)
 - [データベーススキーマ（SCHEMA.md）](./SCHEMA.md)
+- [OGPテスト方法（OGP_TESTING.md）](./OGP_TESTING.md)
 
 ---
 
