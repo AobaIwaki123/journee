@@ -23,6 +23,7 @@ PRのレビュー依頼が来た → git checkout feature/xxx → 依存関係�
 - ブランチ移動なしで複数PRを同時レビュー
 - 各ブランチの動作を独立したURLで確認（例 :`feature-123.example.com`）
 - CI/CDパイプラインの高速化と自動化
+- PRクローズ時の自動クリーンアップ（リソース管理の完全自動化）
 - AI駆動開発での並列タスク処理が劇的に効率化
 - ステークホルダーへのプレビュー共有が簡単に
 
@@ -145,6 +146,8 @@ AIが高速化してくれた分、**確認作業もスケールさせないと�
 - **GitHub Actions**: CI/CDパイプライン
 
 ### ワークフロー
+
+**環境構築時：**
 1. ブランチにプッシュ
 2. GitHub ActionsがArgoCD Applicationを作成（初回のみ）
 3. Dockerイメージをビルド・GCRにプッシュ
@@ -155,6 +158,12 @@ AIが高速化してくれた分、**確認作業もスケールさせないと�
 6. ArgoCDが自動的にデプロイを実行
 7. Cloudflare Tunnel Controllerが`<app-name>-<hash>.example.com`を自動発行
 8. PRに自動的にデプロイURLをコメント
+
+**環境削除時：**
+1. PRをマージまたはクローズ
+2. GitHub ActionsがArgoCD Applicationを削除（関連リソースも一緒に削除）
+3. ブランチ固有のマニフェストディレクトリを削除
+4. PRにクリーンアップ完了を通知
 
 ![](https://storage.googleapis.com/zenn-user-upload/1b52f2dcf4b9-20251010.png)
 
@@ -661,6 +670,7 @@ kubectl get namespace test-app
 1. **`.github/workflows/push.yml`**: ブランチプッシュ時にイメージビルド・マニフェスト生成
 2. **`.github/workflows/create-argo-app.yml`**: ArgoCD Applicationの作成・同期
 3. **`.github/workflows/deploy.yml`**: mainブランチのデプロイ
+4. **`.github/workflows/destroy.yml`**: PRクローズ時にリソース削除
 
 #### ディレクトリ構成
 
@@ -1053,7 +1063,14 @@ jobs:
           git commit -m "🚀 Create ArgoCD manifests for branch (hash: $BRANCH_HASH)"
           git push
 
-      # ArgoCD Applicationの作成（API経由）
+      # ArgoCD CLIのインストール
+      - name: Install ArgoCD CLI
+        if: steps.check_app.outputs.exists == 'false'
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      # ArgoCD Applicationの作成（CLI使用）
       - name: Create ArgoCD Application
         if: steps.check_app.outputs.exists == 'false'
         env:
@@ -1063,27 +1080,14 @@ jobs:
           BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
           APP_NAME="my-app-$BRANCH_HASH"
           
-          curl -X POST https://argocd.example.com/api/v1/applications \
-            -H "Authorization: Bearer $ARGOCD_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "metadata": {"name": "'"$APP_NAME"'"},
-              "spec": {
-                "project": "default",
-                "source": {
-                  "repoURL": "https://github.com/'"${{ github.repository }}"'",
-                  "targetRevision": "'"$BRANCH"'",
-                  "path": "k8s/manifests-'"$BRANCH_HASH"'"
-                },
-                "destination": {
-                  "server": "https://kubernetes.default.svc",
-                  "namespace": "my-app"
-                },
-                "syncPolicy": {
-                  "automated": {"selfHeal": true, "prune": true}
-                }
-              }
-            }'
+          echo "🚀 Creating ArgoCD Application: $APP_NAME (branch: $BRANCH)"
+          
+          argocd app create -f k8s/argocd-$BRANCH_HASH/app.yml \
+            --server argocd.example.com \
+            --auth-token $ARGOCD_TOKEN \
+            --grpc-web
+          
+          echo "✅ ArgoCD Application '$APP_NAME' created successfully"
 
       # PRにデプロイURLをコメント
       - name: Comment deployment URL on PR
@@ -1110,9 +1114,9 @@ jobs:
 
 **キーポイント：**
 
-2. **ArgoCD API**: CLI不要でApplicationを作成
-3. **workflow_call**: 他のワークフローから呼び出し可能
-5. **PRへの自動コメント**: GitHub CLIでURLを通知
+1. **ArgoCD CLI**: マニフェストファイルから直接Applicationを作成
+2. **workflow_call**: 他のワークフローから呼び出し可能
+3. **PRへの自動コメント**: GitHub CLIでURLを通知
 
 ## 運用編
 
@@ -1129,10 +1133,14 @@ jobs:
 2. レビュアーはURLにアクセスして動作確認
 3. ブランチを切り替える必要なし
 
-#### マージ時
+#### マージ・クローズ時
 
-1. PRをマージ
-2. ブランチを削除
+1. PRをマージまたはクローズ
+2. GitHub Actionsが自動的に環境をクリーンアップ
+   - ArgoCD Applicationを削除（関連リソースも一緒に削除）
+   - マニフェストディレクトリを削除
+   - PRにクリーンアップ完了を通知
+3. 必要に応じてブランチを削除
 
 ### コスト管理
 
@@ -1141,12 +1149,123 @@ jobs:
 - 各ブランチがPod、Service、Ingressを持つため、リソース消費に注意
 - 定期的な棚卸しとクリーンアップが重要
 
-**現在の運用：**
-- ブランチ削除時に手動でリソースを削除
-- ArgoCD Application削除: `argocd app delete my-app-<hash> --cascade`
-- マニフェストディレクトリ削除: `git rm -r k8s/manifests-<hash>`
+### ブランチ環境の自動削除
 
-> **Note**: 自動削除スクリプトはまだ実装していません。現在は手動での管理となっていますが、今後の展望として追加予定です。
+PRがクローズされた際に、ブランチ環境を自動的に削除する仕組みを実装しています。
+
+**`.github/workflows/destroy.yml`**
+
+```yaml
+name: Destroy ArgoCD Application
+run-name: Destroy ArgoCD Application for ${{ github.event.pull_request.head.ref }}
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  ARGOCD_SERVER: argocd.example.com
+  IMAGE_NAME: my-app
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Generate branch hash
+        id: branch_hash
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH_HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-6)
+          echo "hash=$BRANCH_HASH" >> $GITHUB_OUTPUT
+          echo "✅ Generated hash for branch '$BRANCH': $BRANCH_HASH"
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Check if ArgoCD Application exists
+        id: check_app
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+          
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            https://${{ env.ARGOCD_SERVER }}/api/v1/applications/$APP_NAME)
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Delete ArgoCD Application
+        if: steps.check_app.outputs.exists == 'true'
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          APP_NAME="${{ env.IMAGE_NAME }}-$BRANCH_HASH"
+          
+          argocd app delete $APP_NAME \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --auth-token $ARGOCD_TOKEN \
+            --grpc-web \
+            --yes
+
+      - name: Delete manifests directories
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          
+          rm -rf "k8s/manifests-$BRANCH_HASH"
+          rm -rf "k8s/argocd-$BRANCH_HASH"
+
+      - name: Commit and push cleanup
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add k8s/
+          git commit -m "🗑️ Cleanup ArgoCD manifests for branch (hash: $BRANCH_HASH)"
+          git push
+
+      - name: Comment cleanup status on PR
+        if: steps.check_app.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH_HASH="${{ steps.branch_hash.outputs.hash }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          
+          gh pr comment "$PR_NUMBER" --body "🗑️ **Preview Deployment Cleaned Up**
+          
+          **Branch:** \`${{ github.event.pull_request.head.ref }}\`
+          **Hash:** \`$BRANCH_HASH\`
+          
+          The preview environment has been deleted."
+```
+
+**キーポイント：**
+
+1. **PRクローズ時にトリガー**: `pull_request.types: [closed]`でマージ時・クローズ時に自動実行
+2. **ArgoCD Application削除**: `--cascade`オプションで関連リソースも一緒に削除
+3. **マニフェスト削除**: ブランチ固有のマニフェストディレクトリを削除
+4. **PRへの通知**: クリーンアップ完了をPRにコメント
+
+これにより、PRをマージ・クローズするだけで、ブランチ環境が完全に削除されます。手動での管理は不要です。
 
 ## まとめ
 
@@ -1155,6 +1274,7 @@ jobs:
 -  各ブランチが独自のURLを持つ
 -  ブランチ移動なしで複数PRを同時レビュー
 -  GitOpsによる宣言的で信頼性の高いデプロイ
+-  PRクローズ時の自動クリーンアップ（リソース削除）
 -  AI駆動開発との高い親和性
 
 ### 参考リンク
