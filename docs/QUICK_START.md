@@ -50,6 +50,8 @@ openssl rand -base64 32
 
 ## 🔑 Google OAuth設定
 
+> **💡 開発時のヒント**: Google OAuth設定が面倒な場合は、[モック認証機能](#-モック認証ブランチモード)を使用することで、この手順をスキップできます。
+
 ### 1. Google Cloud Consoleにアクセス
 
 [Google Cloud Console](https://console.cloud.google.com/) にアクセスしてログインします。
@@ -249,6 +251,34 @@ Phase 1 & 2の実装が完了しました！
 - しおりデータの構造化
 
 開発に参加したい方は、issueまたはPull Requestをお待ちしています！
+
+---
+
+## 🧪 モック認証（ブランチモード）
+
+開発・テスト環境でGoogle OAuth設定をスキップしたい場合は、モック認証機能を使用できます。
+
+### 有効化方法
+
+`.env.local` に以下を追加：
+
+```env
+ENABLE_MOCK_AUTH=true
+NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
+```
+
+### 使い方
+
+1. アプリを起動: `npm run dev`
+2. ログインページ（`http://localhost:3000/login`）にアクセス
+3. 「テストユーザーでログイン」ボタンをクリック
+4. 即座にログイン完了！
+
+### 注意事項
+
+- **本番環境では絶対に有効化しないでください**
+- モック認証が有効な場合、Google OAuthは無効化されます
+- 詳細: [MOCK_AUTH.md](./MOCK_AUTH.md)
 
 ---
 

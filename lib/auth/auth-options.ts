@@ -2,25 +2,64 @@ import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { supabase, supabaseAdmin } from "@/lib/db/supabase";
 import type { Database } from "@/types/database";
+import {
+  isMockAuthEnabled,
+  DEFAULT_MOCK_USER,
+} from "@/lib/mock-data/mock-users";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 /**
  * NextAuth設定オプション
  *
  * Phase 8: Supabaseデータベースと統合
+ * ブランチモード: モック認証サポート（ENABLE_MOCK_AUTH=true）
  */
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-        },
-      },
-    }),
+    // モック認証が有効な場合は、Credentialsプロバイダーを使用
+    ...(isMockAuthEnabled()
+      ? [
+          CredentialsProvider({
+            id: "mock",
+            name: "Mock Authentication",
+            credentials: {
+              mockUser: { label: "Mock User", type: "text" },
+            },
+            async authorize(credentials) {
+              // モック認証では常にデフォルトユーザーを返す
+              const mockUserKey = credentials?.mockUser || "default";
+
+              // モックユーザーデータを動的にインポート
+              const { getMockUser } = await import(
+                "@/lib/mock-data/mock-users"
+              );
+              const mockUser = getMockUser(mockUserKey);
+
+              console.log("🧪 Mock authentication:", mockUser.email);
+
+              return {
+                id: mockUser.id,
+                email: mockUser.email,
+                name: mockUser.name,
+                image: mockUser.image,
+                googleId: mockUser.googleId,
+              };
+            },
+          }),
+        ]
+      : [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+            authorization: {
+              params: {
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code",
+              },
+            },
+          }),
+        ]),
   ],
 
   // セッション設定
@@ -46,10 +85,22 @@ export const authOptions: NextAuthOptions = {
      * JWTコールバック
      * トークンにユーザー情報を追加
      * Phase 8: SupabaseのUUIDをトークンに保存
+     * ブランチモード: モック認証のサポート
      */
     async jwt({ token, user, account }) {
       // 初回サインイン時
       if (account && user) {
+        // モック認証の場合
+        if (account.provider === "mock") {
+          token.id = user.id;
+          token.googleId = (user as any).googleId || "mock-google-id";
+          token.email = user.email;
+          token.name = user.name;
+          token.picture = user.image;
+          console.log("🧪 Mock JWT token created:", token.email);
+          return token;
+        }
+
         // Google IDを保存
         if (account.provider === "google") {
           token.googleId = account.providerAccountId;
@@ -119,8 +170,15 @@ export const authOptions: NextAuthOptions = {
      * サインインコールバック
      * サインインを許可するかどうかを決定
      * Phase 8: Supabaseにユーザーを作成/取得
+     * ブランチモード: モック認証を許可
      */
     async signIn({ account, profile, user }) {
+      // モック認証の場合は常に許可
+      if (account?.provider === "mock") {
+        console.log("🧪 Mock authentication allowed:", user.email);
+        return true;
+      }
+
       // Googleプロバイダーのみを許可
       if (account?.provider === "google") {
         // メールアドレスが確認済みかチェック

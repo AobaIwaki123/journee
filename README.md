@@ -83,9 +83,13 @@ GOOGLE_CLIENT_SECRET=your_secret
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key
 NEXT_PUBLIC_SUPABASE_URL=your_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+
+# ブランチモード（開発・テスト環境のみ）
+ENABLE_MOCK_AUTH=false  # trueでモック認証を有効化
+NEXT_PUBLIC_ENABLE_MOCK_AUTH=false
 ```
 
-詳細: [DOCKER.md](./DOCKER.md) | [QUICK_START.md](./docs/QUICK_START.md)
+詳細: [DOCKER.md](./DOCKER.md) | [QUICK_START.md](./docs/QUICK_START.md) | [モック認証（MOCK_AUTH.md）](./docs/MOCK_AUTH.md)
 
 ## 📚 ドキュメント
 
@@ -101,6 +105,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 
 ### API・技術仕様
 - [API仕様（API.md）](./docs/API.md) - REST API詳細仕様
+- [モック認証（MOCK_AUTH.md）](./docs/MOCK_AUTH.md) - ブランチモード・テストユーザー認証
 
 ## 📄 ライセンス
 

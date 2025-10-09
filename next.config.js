@@ -7,6 +7,7 @@ const nextConfig = {
   // 環境変数の検証
   env: {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    NEXT_PUBLIC_ENABLE_MOCK_AUTH: process.env.ENABLE_MOCK_AUTH || "false",
   },
 
   // APIルートのタイムアウトを延長（ストリーミング対応）
