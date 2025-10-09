@@ -9,6 +9,9 @@ const nextConfig = {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   },
 
+  // NEXT_PUBLIC_ で始まる環境変数は自動的にクライアントサイドで利用可能
+  // ビルド時に NEXT_PUBLIC_ENABLE_MOCK_AUTH が設定される
+
   // APIルートのタイムアウトを延長（ストリーミング対応）
   experimental: {
     serverActions: {
