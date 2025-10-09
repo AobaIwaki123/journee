@@ -123,8 +123,7 @@ export class CommentRepository {
         total: count || 0,
         limit: pagination.limit,
         offset: pagination.offset,
-        hasMore:
-          pagination.offset + pagination.limit < (count || 0),
+        hasMore: pagination.offset + pagination.limit < (count || 0),
       },
     };
   }
@@ -165,11 +164,14 @@ export class CommentRepository {
       }
     }
 
-    const { data, error } = await supabase
+    // 更新データを準備
+    const updatePayload = {
+      content: updates.content!.trim(),
+    };
+
+    const { data, error } = await (supabase as any)
       .from("comments")
-      .update({
-        content: updates.content?.trim(),
-      } as any)
+      .update(updatePayload)
       .eq("id", commentId)
       .eq("user_id", userId)
       .select()

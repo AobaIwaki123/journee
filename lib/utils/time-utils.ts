@@ -140,3 +140,20 @@ export const shouldReorderByTime = (
 
   return { shouldReorder: false };
 };
+
+/**
+ * Date型、文字列、数値を安全にDate型に変換
+ * LocalStorageやAPIから取得したデータをDateに変換する際に使用
+ */
+export const toSafeDate = (
+  value: Date | string | number | undefined | null
+): Date | undefined => {
+  if (!value) return undefined;
+
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? undefined : value;
+  }
+
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? undefined : date;
+};

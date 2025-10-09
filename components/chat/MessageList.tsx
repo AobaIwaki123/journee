@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useStore } from "@/lib/store/useStore";
 import { Bot, User } from "lucide-react";
+import { toSafeDate } from "@/lib/utils/time-utils";
 
 /**
  * リアルタイムでJSONブロックを除去する関数
@@ -207,11 +208,13 @@ export const MessageList: React.FC = () => {
                         : "text-gray-500"
                     }`}
                   >
-                    {toSafeDate(message.timestamp)?.toLocaleTimeString("ja-JP", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }) || ""}
-                    
+                    {toSafeDate(message.timestamp)?.toLocaleTimeString(
+                      "ja-JP",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    ) || ""}
                   </p>
                 </div>
               </div>
