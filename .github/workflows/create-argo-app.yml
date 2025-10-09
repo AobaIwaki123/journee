@@ -282,19 +282,21 @@ jobs:
           echo "🔧 Creating PR for branch '$BRANCH'"
 
           # Create PR with title and body
-          PR_NUMBER=$(gh pr create \
+          PR_URL=$(gh pr create \
             --title "🚀 Deploy: $BRANCH" \
             --body "## Auto-generated PR for branch deployment
-
+          
           **Branch:** \`$BRANCH\`
           **Hash:** \`$BRANCH_HASH\`
-
+          
           This PR was automatically created for preview deployment.
-
+          
           Preview URL will be posted as a comment once the deployment is complete." \
             --base main \
-            --head "$BRANCH" \
-            --json number --jq '.number')
+            --head "$BRANCH")
+
+          # Extract PR number from URL
+          PR_NUMBER=$(echo "$PR_URL" | sed 's|.*/pull/||')
 
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "✅ Created PR #$PR_NUMBER for branch '$BRANCH'"
