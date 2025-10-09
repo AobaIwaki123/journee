@@ -17,7 +17,7 @@ permissions:
 
 env:
   GCR_REGISTRY: gcr.io
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_ID: my-docker-471807
   IMAGE_NAME: journee
   DEPLOYMENT_FILE_PATH: k8s/manifests/deployment.yml
 
