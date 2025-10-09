@@ -67,13 +67,6 @@ export const EmptyItinerary: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* CTA */}
-        <div className="flex items-center justify-center gap-2 text-blue-600 font-medium">
-          <MessageCircle className="w-5 h-5" />
-          <span>左側のチャットボックスから始めましょう</span>
-          <ArrowRight className="w-5 h-5 animate-pulse" />
-        </div>
       </div>
     </div>
   );

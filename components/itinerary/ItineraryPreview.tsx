@@ -67,7 +67,7 @@ export const ItineraryPreview: React.FC = () => {
         {!isAutoProgressing && <PlanningProgress className="hidden md:block" />}
         
         {/* メインコンテンツ（スクロール可能） */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="flex-1 overflow-y-auto bg-gray-50 pt-4 md:pt-0">
           {/* Header */}
           <ItineraryHeader itinerary={currentItinerary} editable={true} />
 
