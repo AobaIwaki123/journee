@@ -85,7 +85,7 @@ export const MobileLayout: React.FC = () => {
       />
 
       {/* コンテンツ表示（スワイプ対応） */}
-      <div ref={containerRef} className="flex-1 overflow-hidden touch-pan-y">
+      <div ref={containerRef} className="flex-1 overflow-y-auto touch-pan-y">
         {mobileActiveTab === 'chat' ? (
           <ChatBox />
         ) : (
