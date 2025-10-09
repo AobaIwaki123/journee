@@ -1,0 +1,169 @@
+name: deploy
+run-name: Deploy Sakamichi Penlight Quiz
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag (e.g. latest, dev, v1.0.0)"
+        required: true
+        default: dev
+      release:
+        description: "Release Type (e.g. main, dev)"
+        required: true
+        default: dev
+  workflow_run:
+    workflows: ["release-action"]
+    types:
+      - completed
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: write
+
+env:
+  GCR_REGISTRY: gcr.io
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  IMAGE_NAME: penlight/prod-view-penlight
+  DEPLOYMENT_FILE_PATH: k8s/manifests/deployment.yml
+  PACKAGE_JSON_PATH: view/package.json
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  determine-path:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.set-release.outputs.release }}
+      deployment_file_path: ${{ steps.set-deployment-path.outputs.deployment_file_path }}
+    steps:
+      - name: Set release
+        id: set-release
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "release=${{ github.event.inputs.release }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "release=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+          else
+            echo "release=main" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set deployment file path
+        id: set-deployment-path
+        run: |
+          echo "deployment_file_path=k8s/manifests/${{ steps.set-release.outputs.release }}/deployment.yml" >> $GITHUB_OUTPUT
+
+  determine-image-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.image_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # タグ取得のため必須
+
+      - name: Determine Docker image tag
+        id: set-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "image_tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            short_sha=$(git rev-parse --short=8 HEAD)
+            echo "image_tag=dev-${short_sha}" >> "$GITHUB_OUTPUT"
+          else
+            latest_tag=$(git tag | sort -V | tail -n 1)
+            echo "Using latest tag: $latest_tag"
+            echo "image_tag=$latest_tag" >> "$GITHUB_OUTPUT"
+          fi
+
+  docker-build-and-push-to-gcr:
+    runs-on: ubuntu-latest
+    needs:
+      - determine-path
+      - determine-image-tag
+      - update-deployment-manifest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.determine-path.outputs.release }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GCR_REGISTRY }}
+          username: _json_key
+          password: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build and Push Docker image to GCR
+        uses: docker/build-push-action@v6
+        with:
+          context: ./view
+          file: ./view/Dockerfile
+          target: prod
+          push: true
+          tags: ${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ needs.determine-image-tag.outputs.image_tag }}
+
+  update-deployment-manifest:
+    runs-on: ubuntu-latest
+    needs:
+      - determine-path
+      - determine-image-tag
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.determine-path.outputs.release }}
+
+      - name: Update deployment YAML with new image tag
+        uses: mikefarah/yq@v4
+        with:
+          cmd: yq -i '.spec.template.spec.containers[0].image = "${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ needs.determine-image-tag.outputs.image_tag }}"' "${{ needs.determine-path.outputs.deployment_file_path }}"
+
+      - name: Check updated deployment file
+        run: |
+          echo "Updated image in ${{ needs.determine-path.outputs.deployment_file_path }}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        if: ${{ needs.determine-path.outputs.release != 'dev' }}
+        with:
+          node-version: 22
+
+      - name: Bump version in package.json
+        if: ${{ needs.determine-path.outputs.release != 'dev' }}
+        run: |
+          cd view
+          npm version --no-git-tag-version "${{ needs.determine-image-tag.outputs.image_tag }}" 
+          cd ..
+
+      - name: Commit and push deployment update
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update version to ${{ needs.determine-image-tag.outputs.image_tag }}"
+          git push
+
+  sync:
+    runs-on: ubuntu-latest
+    needs:
+      - docker-build-and-push-to-gcr
+      - determine-image-tag
+      - determine-path
+    steps:
+      - name: Trigger ArgoCD sync via API
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+        run: |
+          curl -X POST https://argocd.aooba.net/api/v1/applications/penlight-${{ needs.determine-path.outputs.release }}/sync \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            -H "Content-Type: application/json"
