@@ -24,7 +24,6 @@ describe('CommentItem', () => {
     authorName: 'テストユーザー',
     content: 'これはテストコメントです',
     isAnonymous: false,
-    isReported: false,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
   };
@@ -70,22 +69,6 @@ describe('CommentItem', () => {
     expect(deleteButton).toBeInTheDocument();
   });
 
-  it('他人のコメントに報告ボタンを表示', () => {
-    const mockOnReport = jest.fn();
-
-    render(
-      <CommentItem
-        comment={mockComment}
-        currentUserId="user-2"
-        onReport={mockOnReport}
-      />
-    );
-
-    // 報告ボタンが表示されている
-    const reportButton = screen.getByTitle('報告');
-    expect(reportButton).toBeInTheDocument();
-  });
-
   it('削除ボタンクリックで確認ダイアログを表示', async () => {
     const mockOnDelete = jest.fn().mockResolvedValue(undefined);
     window.confirm = jest.fn().mockReturnValue(true);
@@ -127,34 +110,6 @@ describe('CommentItem', () => {
 
     expect(window.confirm).toHaveBeenCalled();
     expect(mockOnDelete).not.toHaveBeenCalled();
-  });
-
-  it('報告ボタンクリックで確認ダイアログを表示', async () => {
-    const mockOnReport = jest.fn().mockResolvedValue(undefined);
-    window.confirm = jest.fn().mockReturnValue(true);
-    window.alert = jest.fn();
-
-    render(
-      <CommentItem
-        comment={mockComment}
-        currentUserId="user-2"
-        onReport={mockOnReport}
-      />
-    );
-
-    const reportButton = screen.getByTitle('報告');
-    fireEvent.click(reportButton);
-
-    expect(window.confirm).toHaveBeenCalledWith(
-      'このコメントを不適切として報告しますか？'
-    );
-
-    await waitFor(() => {
-      expect(mockOnReport).toHaveBeenCalledWith('comment-1');
-      expect(window.alert).toHaveBeenCalledWith(
-        'コメントを報告しました。管理者が確認します。'
-      );
-    });
   });
 
   it('無効な日付でもエラーにならない', () => {

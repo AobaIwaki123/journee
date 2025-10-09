@@ -32,7 +32,6 @@ export class CommentRepository {
       authorName: dbComment.author_name || "匿名ユーザー",
       content: dbComment.content,
       isAnonymous: dbComment.is_anonymous || false,
-      isReported: dbComment.is_reported || false,
       createdAt: new Date(dbComment.created_at),
       updatedAt: new Date(dbComment.updated_at),
     };
@@ -93,8 +92,7 @@ export class CommentRepository {
     const { count, error: countError } = await supabase
       .from("comments")
       .select("*", { count: "exact", head: true })
-      .eq("itinerary_id", filters.itineraryId)
-      .eq("is_reported", false); // 報告されたコメントは非表示
+      .eq("itinerary_id", filters.itineraryId);
 
     if (countError) {
       throw new Error(`コメント数の取得に失敗しました: ${countError.message}`);
@@ -105,7 +103,6 @@ export class CommentRepository {
       .from("comments")
       .select("*")
       .eq("itinerary_id", filters.itineraryId)
-      .eq("is_reported", false)
       .order(sortBy, { ascending: sortOrder === "asc" })
       .range(pagination.offset, pagination.offset + pagination.limit - 1);
 
@@ -202,33 +199,13 @@ export class CommentRepository {
   }
 
   /**
-   * コメントの報告
-   */
-  async reportComment(commentId: string): Promise<boolean> {
-    // Admin権限を使用（RLSをバイパス）
-    const client = (supabaseAdmin || supabase) as typeof supabase;
-
-    const { error } = await (client as any)
-      .from("comments")
-      .update({ is_reported: true })
-      .eq("id", commentId);
-
-    if (error) {
-      throw new Error(`コメントの報告に失敗しました: ${error.message}`);
-    }
-
-    return true;
-  }
-
-  /**
    * しおりのコメント数を取得
    */
   async getCommentCount(itineraryId: string): Promise<number> {
     const { count, error } = await supabase
       .from("comments")
       .select("*", { count: "exact", head: true })
-      .eq("itinerary_id", itineraryId)
-      .eq("is_reported", false);
+      .eq("itinerary_id", itineraryId);
 
     if (error) {
       console.error("Failed to get comment count:", error);

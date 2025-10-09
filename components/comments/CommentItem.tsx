@@ -6,7 +6,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Flag, User } from "lucide-react";
+import { Trash2, User } from "lucide-react";
 import type { Comment } from "@/types/comment";
 import { getRelativeTime } from "@/lib/utils/date-utils";
 
@@ -14,17 +14,14 @@ interface CommentItemProps {
   comment: Comment;
   currentUserId?: string | null;
   onDelete?: (commentId: string) => void;
-  onReport?: (commentId: string) => void;
 }
 
 export default function CommentItem({
   comment,
   currentUserId,
   onDelete,
-  onReport,
 }: CommentItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isReporting, setIsReporting] = useState(false);
 
   const isOwner = currentUserId && comment.userId === currentUserId;
 
@@ -36,18 +33,6 @@ export default function CommentItem({
       await onDelete?.(comment.id);
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const handleReport = async () => {
-    if (!confirm("このコメントを不適切として報告しますか？")) return;
-
-    setIsReporting(true);
-    try {
-      await onReport?.(comment.id);
-      alert("コメントを報告しました。管理者が確認します。");
-    } finally {
-      setIsReporting(false);
     }
   };
 
@@ -82,16 +67,6 @@ export default function CommentItem({
               title="削除"
             >
               <Trash2 className="h-4 w-4" />
-            </button>
-          )}
-          {!isOwner && onReport && (
-            <button
-              onClick={handleReport}
-              disabled={isReporting}
-              className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
-              title="報告"
-            >
-              <Flag className="h-4 w-4" />
             </button>
           )}
         </div>
