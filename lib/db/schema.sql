@@ -327,6 +327,58 @@ CREATE POLICY "Users can delete their own settings" ON user_settings
 -- 9. pgcrypto拡張（APIキー暗号化用）
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- 10. コメントテーブル（Phase 11）
+CREATE TABLE IF NOT EXISTS comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  itinerary_id UUID NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- NULL = 匿名
+  author_name VARCHAR(100), -- 匿名時の表示名
+  content TEXT NOT NULL,
+  is_anonymous BOOLEAN DEFAULT FALSE,
+  is_reported BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- インデックス
+CREATE INDEX IF NOT EXISTS idx_comments_itinerary_id ON comments(itinerary_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id) WHERE user_id IS NOT NULL;
+
+-- updated_atトリガー
+CREATE TRIGGER update_comments_updated_at BEFORE UPDATE ON comments
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- commentsテーブルのRLS
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+
+-- 全員が公開しおりのコメントを閲覧可能
+CREATE POLICY "Anyone can view comments on public itineraries" ON comments
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM itineraries 
+      WHERE itineraries.id = comments.itinerary_id 
+      AND itineraries.is_public = TRUE
+    )
+  );
+
+-- 認証ユーザーと匿名ユーザーがコメント投稿可能
+CREATE POLICY "Anyone can insert comments on public itineraries" ON comments
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM itineraries 
+      WHERE itineraries.id = comments.itinerary_id 
+      AND itineraries.is_public = TRUE
+    )
+  );
+
+-- 自分のコメントのみ削除可能（匿名は削除不可）
+CREATE POLICY "Users can delete their own comments" ON comments
+  FOR DELETE USING (user_id = auth.uid() AND user_id IS NOT NULL);
+
+-- 自分のコメントのみ更新可能（報告フラグの更新は除く）
+CREATE POLICY "Users can update their own comments" ON comments
+  FOR UPDATE USING (user_id = auth.uid() AND user_id IS NOT NULL);
+
 -- 完了メッセージ
 DO $$
 BEGIN

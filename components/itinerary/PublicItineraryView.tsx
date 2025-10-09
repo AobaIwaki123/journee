@@ -2,22 +2,30 @@
 
 import React, { useState, useEffect } from "react";
 import { ItineraryData } from "@/types/itinerary";
+import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { DaySchedule } from "./DaySchedule";
+import CommentList from "@/components/comments/CommentList";
 import { Download, Share2, Copy, Check } from "lucide-react";
 
 interface PublicItineraryViewProps {
   slug: string;
   itinerary: ItineraryData;
+  currentUserId?: string | null;
+  initialComments?: Comment[];
+  initialCommentCount?: number;
 }
 
 /**
- * Phase 8: 公開しおり閲覧用コンポーネント（Read-only、Database版）
+ * Phase 8 + Phase 11: 公開しおり閲覧用コンポーネント（Read-only、Database版 + コメント機能）
  */
 export default function PublicItineraryView({
   slug,
   itinerary,
+  currentUserId = null,
+  initialComments = [],
+  initialCommentCount = 0,
 }: PublicItineraryViewProps) {
   const [copied, setCopied] = useState(false);
   const [publishedDate, setPublishedDate] = useState<string>("");
@@ -151,6 +159,16 @@ export default function PublicItineraryView({
               editable={false} // Read-onlyモード
             />
           ))}
+        </div>
+
+        {/* コメントセクション（Phase 11） */}
+        <div className="mt-12">
+          <CommentList
+            itineraryId={itinerary.id!}
+            initialComments={initialComments}
+            initialTotal={initialCommentCount}
+            currentUserId={currentUserId}
+          />
         </div>
 
         {/* フッター */}
