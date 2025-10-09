@@ -27,17 +27,3 @@ docker build -f Dockerfile.prod -t gcr.io/$PROJECT_ID/$IMAGE_NAME:$TAG .
 echo ""
 echo "☁️  GCRにプッシュ中..."
 docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:$TAG
-
-# 完了
-echo ""
-echo "✅ デプロイ完了！"
-echo "📍 イメージ: gcr.io/$PROJECT_ID/$IMAGE_NAME:$TAG"
-echo ""
-echo "🚢 Cloud Runにデプロイするには:"
-echo "gcloud run deploy journee \\"
-echo "  --image gcr.io/$PROJECT_ID/$IMAGE_NAME:$TAG \\"
-echo "  --platform managed \\"
-echo "  --region asia-northeast1 \\"
-echo "  --allow-unauthenticated \\"
-echo "  --set-env-vars \"GEMINI_API_KEY=your-api-key,NEXTAUTH_URL=https://your-domain.com,NEXTAUTH_SECRET=your-secret\""
-
