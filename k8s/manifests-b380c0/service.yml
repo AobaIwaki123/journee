@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: journee-b380c0
+  namespace: journee
+spec:
+  selector:
+    app: journee-b380c0
+  ports:
+    - port: 80
+      targetPort: 3000
