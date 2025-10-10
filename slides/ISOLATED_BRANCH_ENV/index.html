@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ブランチごとの独立環境構築 - HTMLスライド</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      .landing-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .landing-content {
+        max-width: 900px;
+        width: 100%;
+      }
+
+      .slide-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 3rem;
+      }
+
+      .slide-link {
+        background-color: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .slide-link:hover {
+        border-color: var(--accent-blue);
+        background-color: var(--bg-tertiary);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+      }
+
+      .slide-number-badge {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--accent-blue);
+        margin-bottom: 0.5rem;
+      }
+
+      .slide-title {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+      }
+
+      .start-button {
+        display: inline-block;
+        background: linear-gradient(
+          135deg,
+          var(--accent-blue) 0%,
+          var(--accent-purple) 100%
+        );
+        color: white;
+        padding: 1.5rem 3rem;
+        border-radius: 12px;
+        text-decoration: none;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-top: 2rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .start-button:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.4);
+      }
+
+      .info-section {
+        margin-top: 3rem;
+        text-align: left;
+        background-color: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 2rem;
+      }
+
+      .keyboard-shortcuts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .shortcut-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        background-color: var(--bg-tertiary);
+        border-radius: 8px;
+      }
+
+      .key {
+        background-color: var(--bg-primary);
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.9rem;
+        border: 2px solid var(--border-color);
+        min-width: 60px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="landing-container">
+      <div class="landing-content">
+        <!-- タイトル -->
+        <div class="emoji">⚡</div>
+        <h1 style="margin-bottom: 1rem">ブランチごとの<br />独立環境構築</h1>
+        <p
+          style="
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+          "
+        >
+          まだレビューする時にブランチ移動してるの？
+        </p>
+        <div>
+          <span class="badge">Kubernetes</span>
+          <span class="badge purple">ArgoCD</span>
+          <span class="badge green">GitOps</span>
+          <span class="badge yellow">Cloudflare</span>
+        </div>
+
+        <!-- スタートボタン -->
+        <a href="slides/slide_01.html" class="start-button">
+          🚀 スライドを開始
+        </a>
+
+        <!-- スライド一覧 -->
+        <div style="margin-top: 4rem">
+          <h3 style="margin-bottom: 2rem">スライド一覧（全18ページ）</h3>
+          <div class="slide-grid">
+            <a href="slides/slide_01.html" class="slide-link">
+              <div class="slide-number-badge">01</div>
+              <div class="slide-title">タイトル</div>
+            </a>
+            <a href="slides/slide_02.html" class="slide-link">
+              <div class="slide-number-badge">02</div>
+              <div class="slide-title">問題提起</div>
+            </a>
+            <a href="slides/slide_03.html" class="slide-link">
+              <div class="slide-number-badge">03</div>
+              <div class="slide-title">ソリューション概要</div>
+            </a>
+            <a href="slides/slide_04.html" class="slide-link">
+              <div class="slide-number-badge">04</div>
+              <div class="slide-title">メリット一覧</div>
+            </a>
+            <a href="slides/slide_05.html" class="slide-link">
+              <div class="slide-number-badge">05</div>
+              <div class="slide-title">具体的な問題</div>
+            </a>
+            <a href="slides/slide_06.html" class="slide-link">
+              <div class="slide-number-badge">06</div>
+              <div class="slide-title">独立環境の利点</div>
+            </a>
+            <a href="slides/slide_07.html" class="slide-link">
+              <div class="slide-number-badge">07</div>
+              <div class="slide-title">AI駆動開発の時代</div>
+            </a>
+            <a href="slides/slide_08.html" class="slide-link">
+              <div class="slide-number-badge">08</div>
+              <div class="slide-title">システム概要</div>
+            </a>
+            <a href="slides/slide_09.html" class="slide-link">
+              <div class="slide-number-badge">09</div>
+              <div class="slide-title">技術スタック</div>
+            </a>
+            <a href="slides/slide_10.html" class="slide-link">
+              <div class="slide-number-badge">10</div>
+              <div class="slide-title">ワークフロー</div>
+            </a>
+            <a href="slides/slide_11.html" class="slide-link">
+              <div class="slide-number-badge">11</div>
+              <div class="slide-title">前提条件</div>
+            </a>
+            <a href="slides/slide_12.html" class="slide-link">
+              <div class="slide-number-badge">12</div>
+              <div class="slide-title">セットアップオプション</div>
+            </a>
+            <a href="slides/slide_13.html" class="slide-link">
+              <div class="slide-number-badge">13</div>
+              <div class="slide-title">ArgoCDセットアップ</div>
+            </a>
+            <a href="slides/slide_14.html" class="slide-link">
+              <div class="slide-number-badge">14</div>
+              <div class="slide-title">Cloudflare Tunnel</div>
+            </a>
+            <a href="slides/slide_15.html" class="slide-link">
+              <div class="slide-number-badge">15</div>
+              <div class="slide-title">マニフェスト管理</div>
+            </a>
+            <a href="slides/slide_16.html" class="slide-link">
+              <div class="slide-number-badge">16</div>
+              <div class="slide-title">GitHub Actions実装</div>
+            </a>
+            <a href="slides/slide_17.html" class="slide-link">
+              <div class="slide-number-badge">17</div>
+              <div class="slide-title">運用方法</div>
+            </a>
+            <a href="slides/slide_18.html" class="slide-link">
+              <div class="slide-number-badge">18</div>
+              <div class="slide-title">まとめ</div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 操作方法 -->
+        <div class="info-section">
+          <h3 style="margin-bottom: 1.5rem">⌨️ キーボード操作</h3>
+          <div class="keyboard-shortcuts">
+            <div class="shortcut-item">
+              <div class="key">→</div>
+              <div>次のスライド</div>
+            </div>
+            <div class="shortcut-item">
+              <div class="key">←</div>
+              <div>前のスライド</div>
+            </div>
+            <div class="shortcut-item">
+              <div class="key">Space</div>
+              <div>次のスライド</div>
+            </div>
+            <div class="shortcut-item">
+              <div class="key">Home</div>
+              <div>最初のスライド</div>
+            </div>
+            <div class="shortcut-item">
+              <div class="key">End</div>
+              <div>最後のスライド</div>
+            </div>
+            <div class="shortcut-item">
+              <div class="key">F</div>
+              <div>フルスクリーン</div>
+            </div>
+            <div class="shortcut-item">
+              <div class="key">Esc</div>
+              <div>ホームに戻る</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 参考情報 -->
+        <div class="info-section">
+          <h3 style="margin-bottom: 1.5rem">📚 参考リンク</h3>
+          <ul style="font-size: 1.1rem; line-height: 2">
+            <li>
+              <a
+                href="https://github.com/AobaIwaki123/k8s-cluster"
+                style="color: var(--accent-blue)"
+              >
+                k8s-cluster リポジトリ
+              </a>
+              - Kubernetesクラスタ自動セットアップ
+            </li>
+            <li>
+              <a
+                href="https://argo-cd.readthedocs.io/"
+                style="color: var(--accent-blue)"
+              >
+                ArgoCD 公式ドキュメント
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/"
+                style="color: var(--accent-blue)"
+              >
+                Cloudflare Tunnel
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- フッター -->
+        <div
+          style="
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-color);
+          "
+        >
+          <p style="color: var(--text-muted); font-size: 0.9rem">
+            元記事:
+            <a
+              href="../../blog/ISOLATED_BRANCH_ENV.md"
+              style="color: var(--accent-blue)"
+            >
+              blog/ISOLATED_BRANCH_ENV.md
+            </a>
+          </p>
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.9rem;
+              margin-top: 0.5rem;
+            "
+          >
+            © 2025 - HTML Slides
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

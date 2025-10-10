@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ワークフロー | スライド 10</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <!-- プログレスバー -->
+    <div class="progress-bar">
+      <div class="progress-bar-fill"></div>
+    </div>
+
+    <!-- スライドコンテナ -->
+    <div class="slide-container">
+      <div class="slide-content">
+        <h2>🔄 デプロイワークフロー</h2>
+
+        <div
+          style="
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 2px solid var(--accent-blue);
+          "
+        >
+          <ol style="font-size: 1.2rem; line-height: 2.2">
+            <li><strong>ブランチにプッシュ</strong></li>
+            <li>GitHub ActionsがArgoCD Applicationを作成（初回のみ）</li>
+            <li>
+              Dockerイメージをビルド・<strong class="highlight"
+                >GCRにプッシュ</strong
+              >
+            </li>
+            <li>
+              ブランチ固有のKubernetesマニフェストを<strong class="highlight"
+                >動的生成</strong
+              >
+              <ul style="font-size: 1rem; color: var(--text-muted)">
+                <li>ブランチ名からMD5ハッシュ（6文字）を生成</li>
+                <li>リソース名に <code>-&lt;hash&gt;</code> を付与</li>
+              </ul>
+            </li>
+            <li>マニフェストをコミット・プッシュ</li>
+            <li>
+              ArgoCDが自動的に<strong class="highlight">デプロイを実行</strong>
+            </li>
+            <li>
+              Cloudflare Tunnel Controllerが
+              <code>&lt;app&gt;-&lt;hash&gt;.example.com</code> を自動発行
+            </li>
+            <li>
+              PRに<strong class="highlight">デプロイURLを自動コメント</strong>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- スライド番号 -->
+    <div class="slide-number"></div>
+
+    <!-- ナビゲーション -->
+    <div class="navigation">
+      <button class="nav-button prev">← 前へ</button>
+      <button class="nav-button home">🏠 ホーム</button>
+      <button class="nav-button next">次へ →</button>
+    </div>
+
+    <script src="../assets/js/navigation.js"></script>
+  </body>
+</html>

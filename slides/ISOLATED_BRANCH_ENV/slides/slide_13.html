@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArgoCDセットアップ | スライド 13</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <!-- プログレスバー -->
+    <div class="progress-bar">
+      <div class="progress-bar-fill"></div>
+    </div>
+
+    <!-- スライドコンテナ -->
+    <div class="slide-container">
+      <div class="slide-content">
+        <h2>🔧 ArgoCDのセットアップ</h2>
+
+        <div class="card">
+          <h3>インストール手順</h3>
+          <pre><code class="language-bash"># Namespaceの作成
+kubectl create namespace argocd
+
+# ArgoCDのインストール
+kubectl apply -n argocd -f \
+  https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# ArgoCD CLIのインストール（macOS）
+brew install argocd</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>APIトークンの作成</h3>
+          <pre><code class="language-bash"># CLIでログイン
+argocd login argocd.example.com
+
+# トークンの生成
+argocd account generate-token --account admin</code></pre>
+          <p style="margin-top: 1rem; color: var(--accent-yellow)">
+            ⚠️ このトークンをGitHubシークレット <code>ARGOCD_TOKEN</code> に設定
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- スライド番号 -->
+    <div class="slide-number"></div>
+
+    <!-- ナビゲーション -->
+    <div class="navigation">
+      <button class="nav-button prev">← 前へ</button>
+      <button class="nav-button home">🏠 ホーム</button>
+      <button class="nav-button next">次へ →</button>
+    </div>
+
+    <script src="../assets/js/navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css"
+    />
+    <script>
+      hljs.highlightAll();
+    </script>
+  </body>
+</html>

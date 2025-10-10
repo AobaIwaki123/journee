@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>運用方法 | スライド 17</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <!-- プログレスバー -->
+  <div class="progress-bar">
+    <div class="progress-bar-fill"></div>
+  </div>
+
+  <!-- スライドコンテナ -->
+  <div class="slide-container">
+    <div class="slide-content">
+      <h2>🔄 運用方法</h2>
+      
+      <div class="grid">
+        <div class="card">
+          <h3>ブランチ作成時</h3>
+          <ol style="font-size: 1.1rem;">
+            <li>通常通りブランチを作成</li>
+            <li>プッシュすると自動構築</li>
+            <li><code>&lt;branch&gt;.example.com</code> でアクセス可能に</li>
+          </ol>
+        </div>
+        
+        <div class="card">
+          <h3>レビュー時</h3>
+          <ol style="font-size: 1.1rem;">
+            <li>PRにURLが自動コメント</li>
+            <li>URLにアクセスして確認</li>
+            <li>ブランチ移動不要</li>
+          </ol>
+        </div>
+        
+        <div class="card">
+          <h3>マージ・削除時</h3>
+          <ol style="font-size: 1.1rem;">
+            <li>PRをマージ</li>
+            <li>ブランチを削除</li>
+            <li>リソースを手動削除</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 2rem;">
+        <h3>コスト管理</h3>
+        <p style="font-size: 1.2rem;">
+          ⚠️ <strong>注意:</strong> ブランチが増えるとKubernetesリソースも増える<br>
+          各ブランチがPod、Service、Ingressを持つため、定期的なクリーンアップが重要
+        </p>
+        <pre style="margin-top: 1rem;"><code class="language-bash"># リソースの削除
+argocd app delete my-app-<hash> --cascade
+git rm -r k8s/manifests-<hash></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- スライド番号 -->
+  <div class="slide-number"></div>
+
+  <!-- ナビゲーション -->
+  <div class="navigation">
+    <button class="nav-button prev">← 前へ</button>
+    <button class="nav-button home">🏠 ホーム</button>
+    <button class="nav-button next">次へ →</button>
+  </div>
+
+  <script src="../assets/js/navigation.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+
