@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MessageCircle, ChevronDown } from "lucide-react";
+import { MessageCircle, ChevronDown, LogIn } from "lucide-react";
 import CommentItem from "./CommentItem";
 import CommentForm from "./CommentForm";
 import type { Comment, PaginatedCommentsResponse } from "@/types/comment";
@@ -128,14 +128,39 @@ export default function CommentList({
         </h2>
       </div>
 
-      {/* コメント投稿フォーム */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <CommentForm
-          itineraryId={itineraryId}
-          isAuthenticated={!!currentUserId}
-          onSubmit={handleSubmit}
-        />
-      </div>
+      {/* コメント投稿フォーム or ログインプロンプト */}
+      {currentUserId ? (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <CommentForm
+            itineraryId={itineraryId}
+            isAuthenticated={!!currentUserId}
+            onSubmit={handleSubmit}
+          />
+        </div>
+      ) : (
+        <div className="rounded-lg border border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 p-6 shadow-sm">
+          <div className="flex flex-col items-center space-y-3 text-center">
+            <div className="rounded-full bg-white p-3 shadow-sm">
+              <MessageCircle className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                コメントを投稿するにはログインが必要です
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                ログインして、このしおりにコメントを投稿しましょう
+              </p>
+            </div>
+            <a
+              href="/login"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-md hover:shadow-lg font-medium"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>ログイン</span>
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* コメント一覧 */}
       {comments.length > 0 ? (
