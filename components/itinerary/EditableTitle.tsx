@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/lib/store/useStore';
+import { useItineraryEditor } from '@/lib/hooks/itinerary';
 import { Edit2, Check, X } from 'lucide-react';
 
 interface EditableTitleProps {
@@ -9,13 +10,17 @@ interface EditableTitleProps {
   className?: string;
 }
 
+/**
+ * Phase 6.2: インライン編集可能タイトルコンポーネント
+ * useItineraryEditor Hookを活用
+ */
 export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className = '' }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const updateItineraryTitle = useStore((state: any) => state.updateItineraryTitle);
-  const addToast = useStore((state: any) => state.addToast);
+  const { updateTitle } = useItineraryEditor();
+  const addToast = useStore((state) => state.addToast);
 
   // 編集モードに入ったときにフォーカス
   useEffect(() => {
@@ -43,7 +48,7 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
       return;
     }
 
-    updateItineraryTitle(trimmedValue);
+    updateTitle(trimmedValue);
     setIsEditing(false);
     addToast('タイトルを更新しました', 'success');
   };
