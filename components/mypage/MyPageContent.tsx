@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { UserProfile } from '@/components/mypage/UserProfile';
 import { UserStats } from '@/components/mypage/UserStats';
-import { ItineraryCard } from '@/components/mypage/ItineraryCard';
+import { ItineraryCard } from '@/components/itinerary/ItineraryCard';
 import { PullToRefresh } from '@/components/ui/PullToRefresh';
 import { getMockUserStats } from '@/lib/mock-data/user-stats';
 import { getMockRecentItineraries } from '@/lib/mock-data/recent-itineraries';
@@ -101,7 +101,12 @@ export const MyPageContent: React.FC = () => {
           {recentItineraries.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recentItineraries.map((itinerary) => (
-                <ItineraryCard key={itinerary.id} itinerary={itinerary} />
+                <ItineraryCard 
+                  key={itinerary.id} 
+                  itinerary={itinerary} 
+                  variant="compact"
+                  showActions={false}
+                />
               ))}
             </div>
           ) : (

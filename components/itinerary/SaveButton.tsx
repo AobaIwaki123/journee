@@ -1,110 +1,59 @@
 "use client";
 
-import React, { useState } from "react";
-import { useSession } from "next-auth/react";
+import React from "react";
 import { Save, FilePlus } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
-import { saveCurrentItinerary } from "@/lib/utils/storage";
-import { updateItinerary, addItinerary } from "@/lib/mock-data/itineraries";
+import { useItinerarySave } from "@/lib/hooks/itinerary";
 import { generateId } from "@/lib/utils/id-generator";
 
 /**
- * Phase 10.4: しおり保存ボタン（DB統合版）
+ * しおり保存ボタン（リファクタリング版）
+ *
+ * useItinerarySaveカスタムHookを使用してロジックを分離
  *
  * ログイン時: データベースに保存
- * 未ログイン時: LocalStorageに保存（従来通り）
+ * 未ログイン時: LocalStorageに保存
  *
  * 保存モード:
  * - overwrite: 既存のしおりを上書き保存
  * - new: 新規のしおりとして保存（新しいIDを生成）
  */
 export const SaveButton: React.FC = () => {
-  const { data: session } = useSession();
   const currentItinerary = useStore((state) => state.currentItinerary);
   const setItinerary = useStore((state) => state.setItinerary);
-  const addToast = useStore((state) => state.addToast);
-  const [isSaving, setIsSaving] = useState(false);
+  
+  // カスタムHookを使用
+  const { save, isSaving } = useItinerarySave({
+    storage: 'auto', // ログイン状態に応じて自動選択
+  });
 
   const handleSave = async (mode: "overwrite" | "new" = "overwrite") => {
     if (!currentItinerary) return;
 
-    setIsSaving(true);
+    // 新規保存の場合は新しいIDを生成してストアを更新
+    if (mode === "new") {
+      const newId = generateId();
+      const newItinerary = {
+        ...currentItinerary,
+        id: newId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        // 公開情報をクリア（新規保存時は非公開に）
+        isPublic: false,
+        publicSlug: undefined,
+        publishedAt: undefined,
+        viewCount: undefined,
+      };
 
-    try {
-      let itineraryToSave = currentItinerary;
-
-      // 新規保存の場合は新しいIDを生成
-      if (mode === "new") {
-        const newId = generateId();
-        itineraryToSave = {
-          ...currentItinerary,
-          id: newId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          // 公開情報をクリア（新規保存時は非公開に）
-          isPublic: false,
-          publicSlug: undefined,
-          publishedAt: undefined,
-          viewCount: undefined,
-        };
-
-        // ZustandストアのcurrentItineraryを更新
-        setItinerary(itineraryToSave);
-      }
-
-      if (session?.user) {
-        // ログイン時: データベースに保存
-        const response = await fetch("/api/itinerary/save", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            itinerary: itineraryToSave,
-            saveMode: mode,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to save itinerary to database");
-        }
-
-        const data = await response.json();
-        addToast(data.message || "しおりを保存しました", "success");
-      } else {
-        // 未ログイン時: LocalStorageに保存（従来通り）
-        const success = saveCurrentItinerary(itineraryToSave);
-
-        if (success) {
-          // しおり一覧に追加/更新
-          const itineraries = JSON.parse(
-            localStorage.getItem("journee_itineraries") || "[]"
-          );
-          const existingIndex = itineraries.findIndex(
-            (item: any) => item.id === itineraryToSave.id
-          );
-
-          if (existingIndex !== -1 && mode === "overwrite") {
-            updateItinerary(itineraryToSave.id, itineraryToSave);
-            addToast("しおりを更新しました", "success");
-          } else {
-            addItinerary(itineraryToSave);
-            addToast(
-              mode === "new"
-                ? "新規しおりとして保存しました"
-                : "しおりを保存しました",
-              "success"
-            );
-          }
-        } else {
-          throw new Error("Failed to save to LocalStorage");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to save itinerary:", error);
-      addToast("保存に失敗しました", "error");
-    } finally {
-      setIsSaving(false);
+      setItinerary(newItinerary);
+      
+      // 新しいIDで保存（次のレンダリングで反映されるため、少し待つ）
+      setTimeout(async () => {
+        await save(mode);
+      }, 100);
+    } else {
+      // 上書き保存の場合はそのまま保存
+      await save(mode);
     }
   };
 

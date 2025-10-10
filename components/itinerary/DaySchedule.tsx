@@ -4,7 +4,6 @@ import React, { useState, memo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { SpotCard } from './SpotCard';
-import { EditableSpotCard } from './EditableSpotCard';
 import { AddSpotForm } from './AddSpotForm';
 import { useStore } from '@/lib/store/useStore';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -237,8 +236,9 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
 
                                 {/* Drag Handle & Spot Card */}
                                 <div {...provided.dragHandleProps}>
-                                  <EditableSpotCard 
+                                  <SpotCard 
                                     spot={spot} 
+                                    editable={true}
                                     dayIndex={dayIndex} 
                                     spotIndex={index} 
                                   />
@@ -262,7 +262,7 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
                       </div>
 
                       {/* Spot Card */}
-                      <SpotCard spot={spot} />
+                      <SpotCard spot={spot} editable={false} />
                     </div>
                   ))}
                 </div>
