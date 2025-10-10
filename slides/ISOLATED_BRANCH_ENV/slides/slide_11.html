@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>前提条件 | スライド 11</title>
+    <title>マニフェスト管理 | スライド 11</title>
     <link rel="stylesheet" href="../assets/css/styles.css" />
   </head>
   <body>
@@ -15,62 +15,78 @@
     <!-- スライドコンテナ -->
     <div class="slide-container">
       <div class="slide-content">
-        <h2>📋 前提条件</h2>
+        <h2>🔑 キーアイデア：ブランチをハッシュ化</h2>
 
-        <div class="card">
-          <h3>必要なもの</h3>
-          <ul style="font-size: 1.2rem">
-            <li>
-              <strong>Kubernetesクラスタ</strong><br />
-              <span style="font-size: 0.9rem; color: var(--text-muted)"
-                >自前のクラスタ or GKE/EKS/AKS</span
-              >
-            </li>
-            <li>
-              <strong>Cloudflareアカウント</strong><br />
-              <span style="font-size: 0.9rem; color: var(--text-muted)"
-                >ドメイン管理・API Token発行</span
-              >
-            </li>
-            <li>
-              <strong>Google Cloud Platformアカウント</strong><br />
-              <span style="font-size: 0.9rem; color: var(--text-muted)"
-                >Container Registry (GCR)の使用</span
-              >
-            </li>
-            <li>
-              <strong>GitHubリポジトリ</strong><br />
-              <span style="font-size: 0.9rem; color: var(--text-muted)"
-                >GitHub Actionsの使用</span
-              >
-            </li>
-          </ul>
+        <div
+          class="card"
+          style="
+            background-color: var(--bg-secondary);
+            border: 3px solid var(--accent-blue);
+          "
+        >
+          <h3 style="text-align: center; margin-bottom: 2rem">
+            ブランチ名から6文字のハッシュを生成
+          </h3>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 2rem;
+              font-size: 1.5rem;
+            "
+          >
+            <code style="font-size: 1.3rem">feature/add-new-component</code>
+            <div style="font-size: 2rem; color: var(--accent-green)">→</div>
+            <code
+              style="
+                font-size: 1.8rem;
+                color: var(--accent-green);
+                font-weight: bold;
+              "
+              >a1b2c3</code
+            >
+          </div>
         </div>
 
-        <div class="card">
-          <h3>必要な環境変数（GitHubシークレット）</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>変数名</th>
-                <th>説明</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>ARGOCD_TOKEN</code></td>
-                <td>ArgoCD APIトークン</td>
-              </tr>
-              <tr>
-                <td><code>GCP_SA_KEY</code></td>
-                <td>GCPサービスアカウントキー</td>
-              </tr>
-              <tr>
-                <td><code>KUBECONFIG_CONTENT</code></td>
-                <td>Kubernetesクラスタの接続情報</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="grid" style="margin-top: 2rem">
+          <div class="card">
+            <h3 style="font-size: 1.2rem">📦 リソース名</h3>
+            <p style="margin-top: 1rem">
+              <code>my-app</code><br />
+              ↓<br />
+              <code style="color: var(--accent-green)">my-app-a1b2c3</code>
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size: 1.2rem">🌐 ドメイン名</h3>
+            <p style="margin-top: 1rem">
+              <code>my-app.example.com</code><br />
+              ↓<br />
+              <code style="color: var(--accent-green)"
+                >my-app-a1b2c3.example.com</code
+              >
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size: 1.2rem">📁 マニフェスト</h3>
+            <p style="margin-top: 1rem">
+              <code>k8s/manifests/</code><br />
+              ↓<br />
+              <code style="color: var(--accent-green)"
+                >k8s/manifests-a1b2c3/</code
+              >
+            </p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 2rem">
+          <p style="font-size: 1.3rem; text-align: center; margin: 0">
+            💡 すべてのリソースが<strong class="highlight">ユニーク</strong
+            >になる = 衝突しない
+          </p>
         </div>
       </div>
     </div>
