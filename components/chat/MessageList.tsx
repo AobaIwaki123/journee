@@ -7,6 +7,10 @@ import rehypeRaw from "rehype-raw";
 import { useStore } from "@/lib/store/useStore";
 import { Bot, User, Edit2, Trash2, Save, X } from "lucide-react";
 import { toSafeDate } from "@/lib/utils/time-utils";
+import { sendChatMessageStream } from "@/lib/utils/api-client";
+import { mergeItineraryData, parseAIResponse } from "@/lib/ai/prompts";
+import { generateId } from "@/lib/utils/id-generator";
+import type { Message } from "@/types/chat";
 
 /**
  * リアルタイムでJSONブロックを除去する関数
@@ -46,6 +50,27 @@ export const MessageList: React.FC = () => {
   const deleteMessage = useStore((state: any) => state.deleteMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editContent, setEditContent] = useState("");
+  
+  // 送信関連のストア
+  const addMessage = useStore((state: any) => state.addMessage);
+  const setLoading = useStore((state: any) => state.setLoading);
+  const setStreaming = useStore((state: any) => state.setStreaming);
+  const setStreamingMessage = useStore((state: any) => state.setStreamingMessage);
+  const appendStreamingMessage = useStore((state: any) => state.appendStreamingMessage);
+  const currentItinerary = useStore((state: any) => state.currentItinerary);
+  const setItinerary = useStore((state: any) => state.setItinerary);
+  const selectedAI = useStore((state: any) => state.selectedAI);
+  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
+  const setError = useStore((state: any) => state.setError);
+  const planningPhase = useStore((state: any) => state.planningPhase);
+  const currentDetailingDay = useStore((state: any) => state.currentDetailingDay);
+  const currency = useStore((state: any) => state.settings.general.currency);
+  const setAbortController = useStore((state: any) => state.setAbortController);
+  const updateChecklist = useStore((state: any) => state.updateChecklist);
+  const shouldTriggerAutoProgress = useStore((state: any) => state.shouldTriggerAutoProgress);
+  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
+  const setIsAutoProgressing = useStore((state: any) => state.setIsAutoProgressing);
+  const setAutoProgressState = useStore((state: any) => state.setAutoProgressState);
 
   // ストリーミング中のメッセージからJSONブロックを除去
   const cleanStreamingMessage = useMemo(() => {
@@ -63,13 +88,122 @@ export const MessageList: React.FC = () => {
   };
 
   const handleSaveEdit = async (messageId: string) => {
-    if (editContent.trim()) {
-      // メッセージを保存（古いAI応答も削除される）
-      saveEditedMessage(messageId, editContent.trim());
-      setEditContent("");
-      
-      // 編集完了後、編集されたメッセージを再送信するか確認
-      // ここでは自動的に再送信しない（ユーザーが再度送信ボタンを押す必要がある）
+    if (!editContent.trim()) return;
+
+    const editedContent = editContent.trim();
+    
+    // メッセージを保存（古いAI応答も削除される）
+    saveEditedMessage(messageId, editedContent);
+    setEditContent("");
+
+    // 編集されたメッセージをAIに送信
+    await sendEditedMessageToAI(editedContent);
+  };
+
+  /**
+   * 編集されたメッセージをAIに送信
+   */
+  const sendEditedMessageToAI = async (content: string) => {
+    if (isLoading || isStreaming) return;
+
+    setLoading(true);
+    setStreaming(true);
+    setStreamingMessage("");
+    setError(null);
+
+    // AbortController を作成してストアに保存
+    const abortController = new AbortController();
+    setAbortController(abortController);
+
+    try {
+      // チャット履歴を準備（最新10件）
+      const chatHistory = messages.slice(-10).map((msg: any) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+
+      let fullResponse = "";
+
+      // ストリーミングレスポンスを処理
+      for await (const chunk of sendChatMessageStream(
+        content,
+        chatHistory,
+        currentItinerary || undefined,
+        selectedAI,
+        claudeApiKey || undefined,
+        planningPhase,
+        currentDetailingDay,
+        currency,
+        abortController.signal
+      )) {
+        if (chunk.type === "message" && chunk.content) {
+          appendStreamingMessage(chunk.content);
+          fullResponse += chunk.content;
+        } else if (chunk.type === "itinerary" && chunk.itinerary) {
+          const mergedItinerary = mergeItineraryData(
+            currentItinerary || undefined,
+            chunk.itinerary
+          );
+          setItinerary(mergedItinerary);
+        } else if (chunk.type === "error") {
+          throw new Error(chunk.error || "Unknown error occurred");
+        } else if (chunk.type === "done") {
+          break;
+        }
+      }
+
+      // ストリーミング完了後、JSONブロックを削除してAIメッセージを追加
+      const { message: cleanMessage } = parseAIResponse(fullResponse);
+
+      const aiMessage: Message = {
+        id: generateId(),
+        role: "assistant" as const,
+        content: cleanMessage,
+        timestamp: new Date(),
+      };
+      addMessage(aiMessage);
+      setStreamingMessage("");
+
+      // チェックリスト更新と自動進行チェック
+      updateChecklist();
+
+      if (shouldTriggerAutoProgress() && !isAutoProgressing) {
+        console.log("🚀 Auto progress triggered");
+        setIsAutoProgressing(true);
+        setTimeout(() => {
+          // executeAutoProgress(); // 自動進行は省略
+        }, 500);
+      }
+    } catch (error: any) {
+      // AbortErrorの場合は、エラーメッセージを表示しない
+      if (error.name === 'AbortError') {
+        console.log("AI応答がキャンセルされました");
+        const cancelMessage: Message = {
+          id: generateId(),
+          role: "assistant" as const,
+          content: "メッセージの送信がキャンセルされました。",
+          timestamp: new Date(),
+        };
+        addMessage(cancelMessage);
+        setStreamingMessage("");
+      } else {
+        console.error("Chat error:", error);
+        const errorMessage: Message = {
+          id: generateId(),
+          role: "assistant" as const,
+          content: `申し訳ございません。エラーが発生しました: ${error.message}`,
+          timestamp: new Date(),
+        };
+        addMessage(errorMessage);
+        setError(error.message);
+        setStreamingMessage("");
+      }
+    } finally {
+      setLoading(false);
+      setStreaming(false);
+      setAbortController(null);
     }
   };
 
