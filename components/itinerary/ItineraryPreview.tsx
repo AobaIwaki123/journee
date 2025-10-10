@@ -46,6 +46,7 @@ export const ItineraryPreview: React.FC = () => {
         {/* <div className="hidden md:block">
           {planningPhase !== 'initial' && <PlanningProgress />}
         </div> */}
+        {/* モバイル向け進捗表示を非表示 */}
         {/* <MobilePlannerControls /> */}
 
         {/* 空状態 */}
@@ -81,6 +82,7 @@ export const ItineraryPreview: React.FC = () => {
           </div>
         )} */}
 
+        {/* モバイル向け進捗表示を非表示 */}
         {/* <MobilePlannerControls /> */}
 
         {/* メインコンテンツ（スクロール可能） */}
