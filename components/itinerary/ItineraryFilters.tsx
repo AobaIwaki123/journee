@@ -2,26 +2,24 @@
 
 import React, { useState } from 'react';
 import { Search, Filter, X } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { useItineraryUIStore } from '@/lib/store/itinerary';
 
 /**
- * しおりフィルターコンポーネント
+ * Phase 6.2: しおりフィルターコンポーネント
+ * useItineraryUIStoreを活用してストアスライスに移行
  * - ステータスフィルター
  * - 目的地検索
  * - 期間フィルター
  */
 export const ItineraryFilters: React.FC = () => {
-  const { itineraryFilter, setItineraryFilter, resetItineraryFilters } =
-    useStore();
+  const { filter, setFilter, resetFilters } = useItineraryUIStore();
 
-  const [searchTerm, setSearchTerm] = useState(
-    itineraryFilter.destination || ''
-  );
+  const [searchTerm, setSearchTerm] = useState(filter.destination || '');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleStatusChange = (status: 'all' | 'draft' | 'completed' | 'archived') => {
-    setItineraryFilter({
-      ...itineraryFilter,
+    setFilter({
+      ...filter,
       status,
     });
   };
@@ -29,37 +27,37 @@ export const ItineraryFilters: React.FC = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    setItineraryFilter({
-      ...itineraryFilter,
+    setFilter({
+      ...filter,
       destination: value,
     });
   };
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setItineraryFilter({
-      ...itineraryFilter,
+    setFilter({
+      ...filter,
       startDate: e.target.value,
     });
   };
 
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setItineraryFilter({
-      ...itineraryFilter,
+    setFilter({
+      ...filter,
       endDate: e.target.value,
     });
   };
 
   const handleReset = () => {
     setSearchTerm('');
-    resetItineraryFilters();
+    resetFilters();
     setShowAdvanced(false);
   };
 
   const hasActiveFilters =
-    itineraryFilter.status !== 'all' ||
-    itineraryFilter.destination ||
-    itineraryFilter.startDate ||
-    itineraryFilter.endDate;
+    filter.status !== 'all' ||
+    filter.destination ||
+    filter.startDate ||
+    filter.endDate;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
@@ -84,7 +82,7 @@ export const ItineraryFilters: React.FC = () => {
           <button
             onClick={() => handleStatusChange('all')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              itineraryFilter.status === 'all'
+              filter.status === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -94,7 +92,7 @@ export const ItineraryFilters: React.FC = () => {
           <button
             onClick={() => handleStatusChange('draft')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              itineraryFilter.status === 'draft'
+              filter.status === 'draft'
                 ? 'bg-yellow-500 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -104,7 +102,7 @@ export const ItineraryFilters: React.FC = () => {
           <button
             onClick={() => handleStatusChange('completed')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              itineraryFilter.status === 'completed'
+              filter.status === 'completed'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -114,7 +112,7 @@ export const ItineraryFilters: React.FC = () => {
           <button
             onClick={() => handleStatusChange('archived')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              itineraryFilter.status === 'archived'
+              filter.status === 'archived'
                 ? 'bg-gray-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -126,49 +124,46 @@ export const ItineraryFilters: React.FC = () => {
         {/* 詳細フィルタートグル */}
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
         >
-          <Filter className="w-4 h-4 mr-2" />
-          詳細
+          <Filter className="w-4 h-4" />
+          <span>詳細</span>
         </button>
 
         {/* リセットボタン */}
         {hasActiveFilters && (
           <button
             onClick={handleReset}
-            className="inline-flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
           >
-            <X className="w-4 h-4 mr-2" />
-            リセット
+            <X className="w-4 h-4" />
+            <span>リセット</span>
           </button>
         )}
       </div>
 
       {/* 詳細フィルター */}
       {showAdvanced && (
-        <div className="pt-4 border-t border-gray-200">
+        <div className="border-t border-gray-200 pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* 開始日フィルター */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                開始日（以降）
+                出発日（開始）
               </label>
               <input
                 type="date"
-                value={itineraryFilter.startDate || ''}
+                value={filter.startDate || ''}
                 onChange={handleStartDateChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            {/* 終了日フィルター */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                終了日（以前）
+                出発日（終了）
               </label>
               <input
                 type="date"
-                value={itineraryFilter.endDate || ''}
+                value={filter.endDate || ''}
                 onChange={handleEndDateChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />

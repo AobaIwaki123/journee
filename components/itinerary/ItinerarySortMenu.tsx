@@ -2,16 +2,17 @@
 
 import React from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { useItineraryUIStore } from '@/lib/store/itinerary';
 import type { ItinerarySortField } from '@/lib/store/useStore';
 
 /**
- * しおりソートメニューコンポーネント
+ * Phase 6.2: しおりソートメニューコンポーネント
+ * useItineraryUIStoreを活用してストアスライスに移行
  * - ソートフィールド選択（更新日、作成日、タイトル、旅行開始日）
  * - 昇順/降順切り替え
  */
 export const ItinerarySortMenu: React.FC = () => {
-  const { itinerarySort, setItinerarySort } = useStore();
+  const { sort, setSort } = useItineraryUIStore();
 
   const sortOptions: { value: ItinerarySortField; label: string }[] = [
     { value: 'updatedAt', label: '更新日' },
@@ -21,16 +22,16 @@ export const ItinerarySortMenu: React.FC = () => {
   ];
 
   const handleFieldChange = (field: ItinerarySortField) => {
-    setItinerarySort({
-      ...itinerarySort,
+    setSort({
+      ...sort,
       field,
     });
   };
 
   const handleOrderToggle = () => {
-    setItinerarySort({
-      ...itinerarySort,
-      order: itinerarySort.order === 'asc' ? 'desc' : 'asc',
+    setSort({
+      ...sort,
+      order: sort.order === 'asc' ? 'desc' : 'asc',
     });
   };
 
@@ -48,7 +49,7 @@ export const ItinerarySortMenu: React.FC = () => {
             key={option.value}
             onClick={() => handleFieldChange(option.value)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              itinerarySort.field === option.value
+              sort.field === option.value
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -62,9 +63,9 @@ export const ItinerarySortMenu: React.FC = () => {
       <button
         onClick={handleOrderToggle}
         className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-        title={itinerarySort.order === 'asc' ? '昇順' : '降順'}
+        title={sort.order === 'asc' ? '昇順' : '降順'}
       >
-        {itinerarySort.order === 'asc' ? (
+        {sort.order === 'asc' ? (
           <>
             <ArrowUp className="w-4 h-4 mr-1" />
             昇順
