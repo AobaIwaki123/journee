@@ -4,13 +4,17 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { isMockAuthEnabled } from "@/lib/utils/env";
 
+interface LoginButtonProps {
+  callbackUrl?: string;
+}
+
 /**
  * ログインボタンコンポーネント
  *
  * Googleアカウントまたはモック認証でログインするためのボタン。
  * 環境変数でモック認証が有効な場合は、モック認証ボタンを表示します。
  */
-export function LoginButton() {
+export function LoginButton({ callbackUrl = "/" }: LoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMockLoading, setIsMockLoading] = useState(false);
 
@@ -20,7 +24,7 @@ export function LoginButton() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/" });
+      await signIn("google", { callbackUrl });
     } catch (error) {
       console.error("Login error:", error);
       setIsLoading(false);
@@ -31,7 +35,7 @@ export function LoginButton() {
     setIsMockLoading(true);
     try {
       await signIn("mock", {
-        callbackUrl: "/",
+        callbackUrl,
         mockUser,
       });
     } catch (error) {
