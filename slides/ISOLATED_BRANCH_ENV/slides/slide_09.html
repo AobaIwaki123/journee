@@ -205,24 +205,6 @@
         box-shadow: 0 4px 16px rgba(50, 108, 229, 0.3);
       }
 
-      .k8s-namespace::after {
-        content: "✓";
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        width: 24px;
-        height: 24px;
-        background: var(--accent-green);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
-        font-weight: 800;
-        color: white;
-        animation: checkPulse 2s ease-in-out infinite;
-      }
-
       .branch-column.main .k8s-namespace::after {
         animation-delay: 0s;
       }
@@ -250,6 +232,7 @@
         margin-bottom: 0.75rem;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
       }
 
@@ -422,7 +405,6 @@
               <!-- Kubernetes Namespace -->
               <div class="k8s-namespace">
                 <div class="namespace-title">
-                  <span>☸️</span>
                   <span>Namespace: main</span>
                 </div>
               </div>
@@ -459,7 +441,6 @@
               <!-- Kubernetes Namespace -->
               <div class="k8s-namespace">
                 <div class="namespace-title">
-                  <span>☸️</span>
                   <span>Namespace: feature-A</span>
                 </div>
               </div>
@@ -496,7 +477,6 @@
               <!-- Kubernetes Namespace -->
               <div class="k8s-namespace">
                 <div class="namespace-title">
-                  <span>☸️</span>
                   <span>Namespace: feature-B</span>
                 </div>
               </div>
