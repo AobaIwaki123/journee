@@ -4,7 +4,7 @@
  */
 
 // スライドの総数
-const TOTAL_SLIDES = 12;
+const TOTAL_SLIDES = 13;
 
 // 現在のスライド番号を取得
 function getCurrentSlideNumber() {

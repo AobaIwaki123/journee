@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ワークフロー | スライド 10</title>
+    <title>技術スタック | スライド 9</title>
     <link rel="stylesheet" href="../assets/css/styles.css" />
   </head>
   <body>
@@ -15,45 +15,42 @@
     <!-- スライドコンテナ -->
     <div class="slide-container">
       <div class="slide-content">
-        <h2>🔄 デプロイワークフロー</h2>
+        <h2>🛠️ 使用する技術スタック</h2>
 
-        <div
-          style="
-            background-color: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 2rem;
-            border: 2px solid var(--accent-blue);
-          "
-        >
-          <ol style="font-size: 1.2rem; line-height: 2.2">
-            <li><strong>ブランチにプッシュ</strong></li>
-            <li>GitHub ActionsがArgoCD Applicationを作成（初回のみ）</li>
-            <li>
-              Dockerイメージをビルド・<strong class="highlight"
-                >GCRにプッシュ</strong
-              >
-            </li>
-            <li>
-              ブランチ固有のKubernetesマニフェストを<strong class="highlight"
-                >動的生成</strong
-              >
-              <ul style="font-size: 1rem; color: var(--text-muted)">
-                <li>ブランチ名からMD5ハッシュ（6文字）を生成</li>
-                <li>リソース名に <code>-&lt;hash&gt;</code> を付与</li>
-              </ul>
-            </li>
-            <li>マニフェストをコミット・プッシュ</li>
-            <li>
-              ArgoCDが自動的に<strong class="highlight">デプロイを実行</strong>
-            </li>
-            <li>
-              Cloudflare Tunnel Controllerが
-              <code>&lt;app&gt;-&lt;hash&gt;.example.com</code> を自動発行
-            </li>
-            <li>
-              PRに<strong class="highlight">デプロイURLを自動コメント</strong>
-            </li>
-          </ol>
+        <div class="grid">
+          <div class="card">
+            <h3>Kubernetes</h3>
+            <div class="badge">Container Orchestration</div>
+            <p style="margin-top: 1rem">
+              コンテナのデプロイ、スケーリング、管理を自動化
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>ArgoCD</h3>
+            <div class="badge purple">GitOps</div>
+            <p style="margin-top: 1rem">
+              Gitリポジトリの変更を自動的にKubernetesに反映
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>Cloudflare Tunnel</h3>
+            <div class="badge green">Ingress Controller</div>
+            <p style="margin-top: 1rem">ドメイン自動発行・SSL自動設定</p>
+          </div>
+
+          <div class="card">
+            <h3>GCR</h3>
+            <div class="badge yellow">Container Registry</div>
+            <p style="margin-top: 1rem">Dockerイメージの保存と配信</p>
+          </div>
+
+          <div class="card">
+            <h3>GitHub Actions</h3>
+            <div class="badge red">CI/CD</div>
+            <p style="margin-top: 1rem">自動ビルド・テスト・デプロイ</p>
+          </div>
         </div>
       </div>
     </div>

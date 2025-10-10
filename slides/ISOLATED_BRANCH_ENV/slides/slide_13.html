@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>まとめ | スライド 12</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <!-- プログレスバー -->
+    <div class="progress-bar">
+      <div class="progress-bar-fill"></div>
+    </div>
+
+    <!-- スライドコンテナ -->
+    <div class="slide-container">
+      <div class="slide-content">
+        <h2>🎉 まとめ</h2>
+
+        <div class="card">
+          <h3>実現できたこと</h3>
+          <ul style="font-size: 1.3rem; line-height: 2">
+            <li>✅ ブランチプッシュだけで独立環境が自動構築</li>
+            <li>✅ 各ブランチが独自のURLを持つ</li>
+            <li>✅ ブランチ移動なしで複数PRを同時レビュー</li>
+            <li>✅ GitOpsによる宣言的で信頼性の高いデプロイ</li>
+            <li>✅ AI駆動開発との高い親和性</li>
+          </ul>
+        </div>
+
+        <div
+          class="card"
+          style="
+            background: linear-gradient(
+              135deg,
+              var(--accent-blue) 0%,
+              var(--accent-purple) 100%
+            );
+            border: none;
+            margin-top: 2rem;
+          "
+        >
+          <h3 style="color: white">📚 参考リポジトリ</h3>
+          <p style="font-size: 1.3rem; margin-top: 1rem">
+            <a
+              href="https://github.com/AobaIwaki123/k8s-cluster"
+              style="color: white; text-decoration: underline"
+            >
+              k8s-cluster
+            </a>
+          </p>
+          <p style="font-size: 1rem; margin-top: 0.5rem">
+            Kubernetesクラスタ自動セットアップツール<br />
+            ArgoCDとCloudflare Tunnel Controllerを含む
+          </p>
+          <p style="font-size: 1.2rem; margin-top: 1.5rem">
+            ⭐ スターをいただけると嬉しいです！
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 3rem; font-size: 3rem">
+          ⚡
+        </div>
+        <p style="text-align: center; font-size: 1.5rem; margin-top: 1rem">
+          ご清聴ありがとうございました
+        </p>
+      </div>
+    </div>
+
+    <!-- スライド番号 -->
+    <div class="slide-number"></div>
+
+    <!-- ナビゲーション -->
+    <div class="navigation">
+      <button class="nav-button prev">← 前へ</button>
+      <button class="nav-button home">🏠 ホーム</button>
+      <button class="nav-button next" style="opacity: 0.5; cursor: not-allowed">
+        次へ →
+      </button>
+    </div>
+
+    <script src="../assets/js/navigation.js"></script>
+  </body>
+</html>
