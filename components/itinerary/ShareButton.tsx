@@ -1,55 +1,60 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Share2, Link2, Copy, Check, Globe, Lock, Download, X } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
-import { PublicItinerarySettings } from '@/types/itinerary';
+import { useItineraryPublish } from '@/lib/hooks/itinerary';
+import type { PublicItinerarySettings } from '@/types/itinerary';
 
 /**
- * Phase 5.5: しおり公開・共有ボタンコンポーネント
+ * Phase 6.1: しおり公開・共有ボタンコンポーネント
+ * useItineraryPublish Hookを活用してロジックを分離
  */
 export const ShareButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
   
-  const currentItinerary = useStore((state: any) => state.currentItinerary);
-  const publishItinerary = useStore((state: any) => state.publishItinerary);
-  const unpublishItinerary = useStore((state: any) => state.unpublishItinerary);
-  const updatePublicSettings = useStore((state: any) => state.updatePublicSettings);
-  const addToast = useStore((state: any) => state.addToast);
+  const currentItinerary = useStore((state) => state.currentItinerary);
   
-  const [settings, setSettings] = useState<PublicItinerarySettings>({
-    isPublic: currentItinerary?.isPublic || false,
-    allowPdfDownload: currentItinerary?.allowPdfDownload ?? true,
-    customMessage: currentItinerary?.customMessage || '',
+  // useItineraryPublish Hookを活用
+  const {
+    isPublic,
+    publicUrl,
+    isPublishing,
+    allowPdfDownload,
+    customMessage,
+    publish,
+    unpublish,
+    updateSettings,
+    copyPublicUrl: copyUrl,
+    shareViaWebApi,
+  } = useItineraryPublish(currentItinerary?.id || '');
+
+  // ローカル設定状態（フォーム用）
+  const [localSettings, setLocalSettings] = useState<PublicItinerarySettings>({
+    isPublic: isPublic,
+    allowPdfDownload: allowPdfDownload,
+    customMessage: customMessage,
   });
+
+  // currentItineraryが変更されたらローカル設定を同期
+  useEffect(() => {
+    setLocalSettings({
+      isPublic: isPublic,
+      allowPdfDownload: allowPdfDownload,
+      customMessage: customMessage,
+    });
+  }, [isPublic, allowPdfDownload, customMessage]);
 
   if (!currentItinerary) {
     return null;
   }
 
-  const publicUrl = currentItinerary.publicSlug
-    ? `${window.location.origin}/share/${currentItinerary.publicSlug}`
-    : '';
-
   const handlePublish = async () => {
-    setIsPublishing(true);
-    
-    try {
-      const result = await publishItinerary(settings);
-      
-      if (result.success) {
-        addToast('しおりを公開しました！', 'success');
-        setSettings({ ...settings, isPublic: true });
-      } else {
-        addToast(result.error || '公開に失敗しました', 'error');
-      }
-    } catch (error) {
-      console.error('Error publishing:', error);
-      addToast('公開に失敗しました', 'error');
-    } finally {
-      setIsPublishing(false);
+    const result = await publish(localSettings);
+    if (result.success) {
+      // 公開成功時に設定を同期
+      setLocalSettings({ ...localSettings, isPublic: true });
     }
   };
 
@@ -57,67 +62,42 @@ export const ShareButton: React.FC = () => {
     if (!confirm('しおりを非公開にしますか？公開URLは無効になります。')) {
       return;
     }
-
-    setIsPublishing(true);
     
     try {
-      const result = await unpublishItinerary();
-      
-      if (result.success) {
-        addToast('しおりを非公開にしました', 'success');
-        setSettings({ ...settings, isPublic: false });
-      } else {
-        addToast(result.error || '非公開化に失敗しました', 'error');
-      }
+      await unpublish();
+      setLocalSettings({ ...localSettings, isPublic: false });
     } catch (error) {
       console.error('Error unpublishing:', error);
-      addToast('非公開化に失敗しました', 'error');
-    } finally {
-      setIsPublishing(false);
     }
   };
 
-  const handleUpdateSettings = () => {
-    updatePublicSettings({
-      allowPdfDownload: settings.allowPdfDownload,
-      customMessage: settings.customMessage,
-    });
-    addToast('設定を更新しました', 'success');
+  const handleUpdateSettings = async () => {
+    try {
+      await updateSettings({
+        allowPdfDownload: localSettings.allowPdfDownload,
+        customMessage: localSettings.customMessage,
+      });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+    }
   };
 
-  const copyPublicUrl = async () => {
-    if (!publicUrl) return;
-
+  const handleCopyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(publicUrl);
+      await copyUrl();
       setCopied(true);
-      addToast('URLをコピーしました', 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Error copying URL:', error);
-      addToast('URLのコピーに失敗しました', 'error');
     }
   };
 
   const handleShare = async () => {
-    if (!publicUrl) return;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: currentItinerary.title,
-          text: `${currentItinerary.destination}への旅行計画を見てください！`,
-          url: publicUrl,
-        });
-      } catch (error) {
-        // ユーザーがキャンセルした場合は何もしない
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
-        }
-      }
-    } else {
-      // フォールバック: URLコピー
-      await copyPublicUrl();
+    try {
+      await shareViaWebApi();
+    } catch (error) {
+      // Web Share APIが利用できない場合はURLコピーにフォールバック
+      await handleCopyUrl();
     }
   };
 
@@ -158,7 +138,7 @@ export const ShareButton: React.FC = () => {
               </button>
             </div>
 
-            {currentItinerary.isPublic ? (
+            {isPublic ? (
               <>
                 {/* 公開中 */}
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -172,46 +152,48 @@ export const ShareButton: React.FC = () => {
                 </div>
 
                 {/* 公開URL */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    公開URL
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={publicUrl}
-                      readOnly
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      onClick={copyPublicUrl}
-                      className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                      title="URLをコピー"
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-gray-600" />
-                      )}
-                    </button>
-                    <button
-                      onClick={handleShare}
-                      className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
-                      title="共有"
-                    >
-                      <Share2 className="w-4 h-4 text-blue-600" />
-                    </button>
+                {publicUrl && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      公開URL
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={publicUrl}
+                        readOnly
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={handleCopyUrl}
+                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        title="URLをコピー"
+                      >
+                        {copied ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-gray-600" />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleShare}
+                        className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                        title="共有"
+                      >
+                        <Share2 className="w-4 h-4 text-blue-600" />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* 公開設定 */}
                 <div className="space-y-3 mb-4">
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={settings.allowPdfDownload}
+                      checked={localSettings.allowPdfDownload}
                       onChange={(e) =>
-                        setSettings({ ...settings, allowPdfDownload: e.target.checked })
+                        setLocalSettings({ ...localSettings, allowPdfDownload: e.target.checked })
                       }
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -223,9 +205,9 @@ export const ShareButton: React.FC = () => {
                       カスタムメッセージ（オプション）
                     </label>
                     <textarea
-                      value={settings.customMessage}
+                      value={localSettings.customMessage}
                       onChange={(e) =>
-                        setSettings({ ...settings, customMessage: e.target.value })
+                        setLocalSettings({ ...localSettings, customMessage: e.target.value })
                       }
                       placeholder="閲覧者へのメッセージを入力..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -238,8 +220,8 @@ export const ShareButton: React.FC = () => {
                 </div>
 
                 {/* 設定更新ボタン */}
-                {(settings.allowPdfDownload !== currentItinerary.allowPdfDownload ||
-                  settings.customMessage !== currentItinerary.customMessage) && (
+                {(localSettings.allowPdfDownload !== allowPdfDownload ||
+                  localSettings.customMessage !== customMessage) && (
                   <button
                     onClick={handleUpdateSettings}
                     className="w-full mb-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
@@ -285,9 +267,9 @@ export const ShareButton: React.FC = () => {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={settings.isPublic}
+                      checked={localSettings.isPublic}
                       onChange={(e) =>
-                        setSettings({ ...settings, isPublic: e.target.checked })
+                        setLocalSettings({ ...localSettings, isPublic: e.target.checked })
                       }
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -297,11 +279,11 @@ export const ShareButton: React.FC = () => {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={settings.allowPdfDownload}
+                      checked={localSettings.allowPdfDownload}
                       onChange={(e) =>
-                        setSettings({ ...settings, allowPdfDownload: e.target.checked })
+                        setLocalSettings({ ...localSettings, allowPdfDownload: e.target.checked })
                       }
-                      disabled={!settings.isPublic}
+                      disabled={!localSettings.isPublic}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                     />
                     <span className="text-sm text-gray-700">PDFダウンロードを許可</span>
@@ -312,11 +294,11 @@ export const ShareButton: React.FC = () => {
                       カスタムメッセージ（オプション）
                     </label>
                     <textarea
-                      value={settings.customMessage}
+                      value={localSettings.customMessage}
                       onChange={(e) =>
-                        setSettings({ ...settings, customMessage: e.target.value })
+                        setLocalSettings({ ...localSettings, customMessage: e.target.value })
                       }
-                      disabled={!settings.isPublic}
+                      disabled={!localSettings.isPublic}
                       placeholder="閲覧者へのメッセージを入力..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:bg-gray-50"
                       rows={3}
@@ -327,7 +309,7 @@ export const ShareButton: React.FC = () => {
                 {/* 公開ボタン */}
                 <button
                   onClick={handlePublish}
-                  disabled={!settings.isPublic || isPublishing}
+                  disabled={!localSettings.isPublic || isPublishing}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isPublishing ? (
@@ -343,7 +325,7 @@ export const ShareButton: React.FC = () => {
                   )}
                 </button>
 
-                {!settings.isPublic && (
+                {!localSettings.isPublic && (
                   <p className="mt-3 text-xs text-gray-500 text-center">
                     「公開する」にチェックを入れてください
                   </p>
@@ -357,7 +339,7 @@ export const ShareButton: React.FC = () => {
                 <strong>公開URL:</strong> 誰でもアクセス可能なリンクが発行されます
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                <strong>注意:</strong> Phase 8以降で他ユーザーとの共有が可能になります
+                <strong>注意:</strong> 公開したしおりは他のユーザーと共有できます
               </p>
             </div>
           </div>

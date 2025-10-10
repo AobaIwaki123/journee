@@ -2,14 +2,18 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/lib/store/useStore";
+import { useSpotEditor } from "@/lib/hooks/itinerary";
 import { TouristSpot } from "@/types/itinerary";
 import { Plus, X } from "lucide-react";
-import { generateId } from "@/lib/utils/id-generator";
 
 interface AddSpotFormProps {
   dayIndex: number;
 }
 
+/**
+ * Phase 6.1: スポット追加フォームコンポーネント
+ * useSpotEditor Hookを活用してロジックを分離
+ */
 export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState({
@@ -22,19 +26,22 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
     notes: "",
   });
 
-  const addSpot = useStore((state: any) => state.addSpot);
-  const addToast = useStore((state: any) => state.addToast);
+  const currentItinerary = useStore((state) => state.currentItinerary);
+  const addToast = useStore((state) => state.addToast);
+
+  // useSpotEditor Hookを活用
+  const { addSpot, validateSpot } = useSpotEditor();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formValues.name.trim()) {
-      addToast("スポット名を入力してください", "error");
+    if (!currentItinerary) {
+      addToast("しおりが見つかりません", "error");
       return;
     }
 
-    const newSpot: TouristSpot = {
-      id: generateId(),
+    // バリデーション
+    const spotData: Partial<TouristSpot> = {
       name: formValues.name.trim(),
       description: formValues.description.trim(),
       category: formValues.category,
@@ -46,20 +53,33 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
       notes: formValues.notes.trim() || undefined,
     };
 
-    addSpot(dayIndex, newSpot);
-    addToast("スポットを追加しました", "success");
+    const validation = validateSpot(spotData);
+    if (!validation.valid) {
+      const errorMessage = validation.errors[0] || "入力内容にエラーがあります";
+      addToast(errorMessage, "error");
+      return;
+    }
 
-    // Reset form
-    setFormValues({
-      name: "",
-      description: "",
-      category: "sightseeing",
-      scheduledTime: "",
-      duration: "",
-      estimatedCost: "",
-      notes: "",
-    });
-    setIsOpen(false);
+    // スポットを追加
+    try {
+      addSpot(dayIndex, spotData as Omit<TouristSpot, 'id'>);
+      addToast("スポットを追加しました", "success");
+
+      // Reset form
+      setFormValues({
+        name: "",
+        description: "",
+        category: "sightseeing",
+        scheduledTime: "",
+        duration: "",
+        estimatedCost: "",
+        notes: "",
+      });
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Failed to add spot:", error);
+      addToast("スポットの追加に失敗しました", "error");
+    }
   };
 
   const handleCancel = () => {
@@ -122,7 +142,22 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            カテゴリ
+            説明
+          </label>
+          <textarea
+            value={formValues.description}
+            onChange={(e) =>
+              setFormValues({ ...formValues, description: e.target.value })
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
+            rows={2}
+            placeholder="スポットの概要を入力..."
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            カテゴリー
           </label>
           <select
             value={formValues.category}
@@ -135,26 +170,13 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="sightseeing">観光</option>
-            <option value="dining">食事</option>
-            <option value="transportation">移動</option>
-            <option value="accommodation">宿泊</option>
+            <option value="restaurant">レストラン</option>
+            <option value="hotel">宿泊</option>
+            <option value="shopping">ショッピング</option>
+            <option value="transport">移動</option>
+            <option value="activity">アクティビティ</option>
             <option value="other">その他</option>
           </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            説明
-          </label>
-          <textarea
-            value={formValues.description}
-            onChange={(e) =>
-              setFormValues({ ...formValues, description: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
-            rows={2}
-            placeholder="スポットの説明を入力"
-          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -174,7 +196,7 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              所要時間（分）
+              滞在時間（分）
             </label>
             <input
               type="number"
@@ -216,24 +238,24 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
             }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
             rows={2}
-            placeholder="注意事項やメモを入力"
+            placeholder="個人的なメモを入力..."
           />
         </div>
       </div>
 
       <div className="flex gap-2">
         <button
-          type="submit"
-          className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-        >
-          追加
-        </button>
-        <button
           type="button"
           onClick={handleCancel}
-          className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-medium transition-colors"
+          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
           キャンセル
+        </button>
+        <button
+          type="submit"
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        >
+          追加
         </button>
       </div>
     </form>

@@ -2,22 +2,22 @@
  * useItineraryPDF - PDF生成ロジック
  * 
  * PDF生成処理とプログレス管理をカプセル化するカスタムHook
+ * Phase 6.1: 実際のPDF生成ロジックに対応
  */
 
 import { useCallback, useState } from 'react';
-import { useStore } from '@/lib/store/useStore';
 import type { ItineraryData } from '@/types/itinerary';
-import { generateItineraryPDF } from '@/lib/utils/pdf-generator';
+import { generateItineraryPDF, generateFilename } from '@/lib/utils/pdf-generator';
+import { showToast } from '@/components/ui/Toast';
 
 export interface UseItineraryPDFOptions {
   quality?: number;
   margin?: number;
-  format?: 'a4' | 'letter';
 }
 
 export interface PDFResult {
   success: boolean;
-  filename: string;
+  filename?: string;
   blob?: Blob;
   error?: string;
 }
@@ -29,7 +29,7 @@ export interface UseItineraryPDFReturn {
   error: Error | null;
   
   // Operations
-  generatePDF: (itinerary: ItineraryData) => Promise<PDFResult>;
+  generatePDF: (itinerary: ItineraryData, elementId: string) => Promise<PDFResult>;
   openPreview: () => void;
   closePreview: () => void;
   
@@ -47,7 +47,6 @@ export function useItineraryPDF(
   const {
     quality = 0.95,
     margin = 10,
-    format = 'a4',
   } = options;
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -56,42 +55,53 @@ export function useItineraryPDF(
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Zustand storeからトースト機能を取得
-  const addToast = useStore((state) => state.addToast);
-
   // PDF生成処理
   const generatePDFDocument = useCallback(
-    async (itinerary: ItineraryData): Promise<PDFResult> => {
+    async (itinerary: ItineraryData, elementId: string): Promise<PDFResult> => {
       setIsGenerating(true);
       setProgress(0);
       setError(null);
+      setShowPreview(true); // プレビュー表示
 
       try {
+        // DOMレンダリング待機
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        const filename = generateFilename(itinerary);
+
         // プログレスコールバック
         const onProgress = (progressValue: number) => {
           setProgress(progressValue);
         };
 
         // PDF生成
-        // TODO: generateItineraryPDFは要素IDを受け取るので、使い方を調整する必要がある
-        // ここでは一旦モックの実装として成功を返す
-        const result: PDFResult = {
-          success: true,
-          filename: `${itinerary.title}.pdf`,
-        };
+        const result = await generateItineraryPDF(elementId, {
+          filename,
+          quality,
+          margin,
+          onProgress,
+        });
 
         if (!result.success) {
           throw new Error(result.error || 'PDF generation failed');
         }
 
         setProgress(100);
-        addToast('PDFを生成しました', 'success');
+        showToast({
+          type: 'success',
+          message: `PDFを保存しました: ${result.filename}`,
+          duration: 4000,
+        });
 
         return result;
       } catch (err) {
         const errorObj = err instanceof Error ? err : new Error('Unknown error');
         setError(errorObj);
-        addToast('PDF生成に失敗しました', 'error');
+        showToast({
+          type: 'error',
+          message: 'PDF生成に失敗しました。もう一度お試しください。',
+          duration: 4000,
+        });
 
         return {
           success: false,
@@ -100,9 +110,12 @@ export function useItineraryPDF(
         };
       } finally {
         setIsGenerating(false);
+        setProgress(0);
+        // プレビューを少し遅延して閉じる
+        setTimeout(() => setShowPreview(false), 500);
       }
     },
-    [quality, margin, format, addToast]
+    [quality, margin]
   );
 
   // プレビューを開く

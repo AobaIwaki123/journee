@@ -10,6 +10,7 @@ import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
 import { PDFPreviewModal } from "./PDFPreviewModal";
+import { useItineraryPDF } from "@/lib/hooks/itinerary";
 import {
   Download,
   Share2,
@@ -19,11 +20,6 @@ import {
   Eye,
   LogIn,
 } from "lucide-react";
-import {
-  generateItineraryPDF,
-  generateFilename,
-} from "@/lib/utils/pdf-generator";
-import { showToast } from "@/components/ui/Toast";
 
 interface PublicItineraryViewProps {
   slug: string;
@@ -34,7 +30,8 @@ interface PublicItineraryViewProps {
 }
 
 /**
- * Phase 8 + Phase 11: 公開しおり閲覧用コンポーネント（Read-only、Database版 + コメント機能）
+ * Phase 6.1: 公開しおり閲覧用コンポーネント
+ * useItineraryPDF Hookを活用してPDF生成ロジックを分離
  */
 export default function PublicItineraryView({
   slug,
@@ -45,11 +42,16 @@ export default function PublicItineraryView({
 }: PublicItineraryViewProps) {
   const [copied, setCopied] = useState(false);
   const [publishedDate, setPublishedDate] = useState<string>("");
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [pdfProgress, setPdfProgress] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+
+  // useItineraryPDF Hookを活用
+  const {
+    isGenerating: isGeneratingPDF,
+    progress: pdfProgress,
+    showPreview,
+    generatePDF,
+  } = useItineraryPDF({ quality: 0.95, margin: 10 });
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
@@ -94,45 +96,7 @@ export default function PublicItineraryView({
   };
 
   const handleDownloadPDF = async () => {
-    try {
-      setIsGeneratingPDF(true);
-      setPdfProgress(0);
-      setShowPreview(true);
-
-      // PDF専用レイアウトを一時的にDOMに追加
-      await new Promise((resolve) => setTimeout(resolve, 100)); // DOMレンダリング待機
-
-      const filename = generateFilename(itinerary);
-
-      const result = await generateItineraryPDF("pdf-export-container-public", {
-        filename,
-        quality: 0.95,
-        margin: 10,
-        onProgress: (p) => setPdfProgress(p),
-      });
-
-      if (result.success) {
-        showToast({
-          type: "success",
-          message: `PDFを保存しました: ${result.filename}`,
-          duration: 4000,
-        });
-      } else {
-        throw new Error(result.error || "不明なエラー");
-      }
-    } catch (error) {
-      console.error("PDF生成エラー:", error);
-      showToast({
-        type: "error",
-        message: "PDF生成に失敗しました。もう一度お試しください。",
-        duration: 4000,
-      });
-    } finally {
-      setIsGeneratingPDF(false);
-      setPdfProgress(0);
-      // プレビューを少し遅延して閉じる
-      setTimeout(() => setShowPreview(false), 500);
-    }
+    await generatePDF(itinerary, "pdf-export-container-public");
   };
 
   const handlePreviewPDF = () => {
