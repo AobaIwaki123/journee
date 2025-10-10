@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { ItineraryData } from "@/types/itinerary";
 import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
@@ -18,7 +18,7 @@ import {
 } from "@/lib/utils/pdf-generator";
 import { showToast } from "@/components/ui/Toast";
 import { UserMenu } from "@/components/auth/UserMenu";
-import { signIn } from "next-auth/react";
+import { isMockAuthEnabled } from "@/lib/utils/env";
 
 interface PublicItineraryViewProps {
   slug: string;
@@ -47,7 +47,9 @@ export default function PublicItineraryView({
   const [pdfProgress, setPdfProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const mockAuthEnabled = isMockAuthEnabled();
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
@@ -137,6 +139,17 @@ export default function PublicItineraryView({
     setShowPreviewModal(true);
   };
 
+  const handleLogin = async () => {
+    setIsLoggingIn(true);
+    try {
+      const provider = mockAuthEnabled ? "mock" : "google";
+      await signIn(provider, { callbackUrl: window.location.href });
+    } catch (error) {
+      console.error("Login error:", error);
+      setIsLoggingIn(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
@@ -152,12 +165,22 @@ export default function PublicItineraryView({
               <UserMenu />
             ) : (
               <button
-                onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                onClick={handleLogin}
+                disabled={isLoggingIn}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 title="ログイン"
               >
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">ログイン</span>
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="hidden sm:inline">ログイン中...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    <span className="hidden sm:inline">ログイン</span>
+                  </>
+                )}
               </button>
             )}
             
