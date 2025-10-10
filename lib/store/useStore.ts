@@ -262,18 +262,42 @@ export const useStore = create<AppState>()((set, get) => ({
       }
     }
 
-    set((state) => ({
-      currentItinerary: itinerary,
-      history: {
-        past: itinerary
-          ? ([...state.history.past, state.currentItinerary].filter(
-              Boolean
-            ) as ItineraryData[])
-          : [],
-        present: itinerary,
-        future: [],
-      },
-    }));
+    set((state) => {
+      // Update planningPhase based on itinerary.phase if provided
+      const newPhase = itinerary?.phase || state.planningPhase;
+
+      // If itinerary has schedule data but phase is still initial, advance to collecting
+      const shouldAdvancePhase =
+        itinerary &&
+        itinerary.schedule &&
+        itinerary.schedule.length > 0 &&
+        state.planningPhase === "initial" &&
+        !itinerary.phase;
+
+      const finalPhase = shouldAdvancePhase ? "collecting" : newPhase;
+
+      console.log("📝 setItinerary called:", {
+        hasItinerary: !!itinerary,
+        scheduleLength: itinerary?.schedule?.length || 0,
+        itineraryPhase: itinerary?.phase,
+        currentPhase: state.planningPhase,
+        newPhase: finalPhase,
+      });
+
+      return {
+        currentItinerary: itinerary,
+        planningPhase: finalPhase,
+        history: {
+          past: itinerary
+            ? ([...state.history.past, state.currentItinerary].filter(
+                Boolean
+              ) as ItineraryData[])
+            : [],
+          present: itinerary,
+          future: [],
+        },
+      };
+    });
   },
   updateItinerary: (updates) =>
     set((state) => {
@@ -304,8 +328,12 @@ export const useStore = create<AppState>()((set, get) => ({
         }
       }
 
+      // Update planningPhase if phase field is in updates
+      const newPhase = updates.phase || state.planningPhase;
+
       return {
         currentItinerary: newItinerary,
+        planningPhase: newPhase,
         history: {
           past: state.currentItinerary
             ? [...state.history.past, state.currentItinerary]
