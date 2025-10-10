@@ -158,7 +158,12 @@ export const ItineraryPreview: React.FC = () => {
             {/* Map View */}
             {viewMode === "map" && hasLocations && (
               <div className="mb-6">
-                <MapView days={currentItinerary.schedule} height="600px" />
+                <MapView
+                  days={currentItinerary.schedule}
+                  showDaySelector={true}
+                  numberingMode="perDay"
+                  height="600px"
+                />
               </div>
             )}
 
