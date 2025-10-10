@@ -36,12 +36,12 @@ export const ItineraryContentArea: React.FC<ItineraryContentAreaProps> = ({
   
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50">
-      {/* Header */}
+      {/* Header - 常に表示 */}
       <ItineraryHeader itinerary={itinerary} editable={true} />
       
       {/* Content */}
       <div className="p-4 md:p-6 max-w-5xl mx-auto">
-        {/* Toolbar */}
+        {/* Toolbar - scheduleがある場合のみ表示 */}
         {hasSchedule && (
           <ItineraryToolbar
             hasLocations={hasLocations}
@@ -50,13 +50,13 @@ export const ItineraryContentArea: React.FC<ItineraryContentAreaProps> = ({
           />
         )}
         
-        {/* Summary */}
+        {/* Summary - scheduleがある場合のみ表示 */}
         {viewMode === 'schedule' && hasSchedule && (
           <ItinerarySummary itinerary={itinerary} />
         )}
         
-        {/* Map View */}
-        {viewMode === 'map' && hasLocations && (
+        {/* Map View - 地図モード かつ 位置情報がある場合のみ */}
+        {viewMode === 'map' && hasLocations && hasSchedule && (
           <div className="mb-6">
             <MapView
               days={itinerary.schedule}
@@ -67,19 +67,20 @@ export const ItineraryContentArea: React.FC<ItineraryContentAreaProps> = ({
           </div>
         )}
         
-        {/* Schedule View */}
-        {viewMode === 'schedule' && (
-          hasSchedule ? (
-            <ScheduleListView
-              schedule={itinerary.schedule}
-              editable={true}
-            />
-          ) : (
-            <EmptyScheduleMessage />
-          )
+        {/* Schedule View - スケジュールモードの場合 */}
+        {viewMode === 'schedule' && hasSchedule && (
+          <ScheduleListView
+            schedule={itinerary.schedule}
+            editable={true}
+          />
         )}
         
-        {/* PDF Export Button */}
+        {/* Empty Schedule Message - スケジュールモード かつ scheduleが空の場合のみ */}
+        {viewMode === 'schedule' && !hasSchedule && (
+          <EmptyScheduleMessage />
+        )}
+        
+        {/* PDF Export Button - スケジュールモード かつ scheduleがある場合のみ */}
         {viewMode === 'schedule' && hasSchedule && (
           <div className="mt-10 mb-6 flex justify-center">
             <PDFExportButton itinerary={itinerary} />
