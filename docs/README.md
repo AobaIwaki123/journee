@@ -7,6 +7,7 @@
 ### 技術仕様
 - [`SCHEMA.md`](./SCHEMA.md): データベーススキーマ（Supabase PostgreSQL）
 - [`GUIDELINE.md`](./GUIDELINE.md): コーディングガイドライン（TypeScript, React, Tailwind CSS）
+- [`itinerary/`](./itinerary/): しおり機能アーキテクチャ仕様書（コンポーネント、Hooks、API全体像）
 
 ### 開発ドキュメント
 - [`PLAN.md`](./PLAN.md): 実装計画（フェーズ別の詳細な実装内容と技術仕様）
@@ -30,8 +31,13 @@
 
 ### 開発者向け
 - コーディング規約は [`GUIDELINE.md`](./GUIDELINE.md) を参照
+- しおり機能の実装は [`itinerary/`](./itinerary/) でアーキテクチャを確認
+  - [コンポーネント仕様](./itinerary/components.md)
+  - [カスタムHooks仕様](./itinerary/hooks.md)
+  - [状態管理仕様](./itinerary/state-management.md)
+  - [API仕様](./itinerary/api.md)
 - 実装を進める際は [`PLAN.md`](./PLAN.md) で各フェーズの詳細を確認
-- APIを使う際は [`API.md`](./API.md) で仕様を確認
+- APIを使う際は [`API.md`](./API.md) または [`itinerary/api.md`](./itinerary/api.md) で仕様を確認
 - データベースは [`SCHEMA.md`](./SCHEMA.md) でスキーマを確認
 - バグや改善点は [`BUG.md`](./BUG.md) に記録
 
@@ -41,4 +47,4 @@
 
 ---
 
-**最終更新**: 2025-10-09
+**最終更新**: 2025-01-10
