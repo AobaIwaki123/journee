@@ -10,7 +10,15 @@ import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
 import { PDFPreviewModal } from "./PDFPreviewModal";
-import { Download, Share2, Copy, Check, Loader2, Eye, LogIn } from "lucide-react";
+import {
+  Download,
+  Share2,
+  Copy,
+  Check,
+  Loader2,
+  Eye,
+  LogIn,
+} from "lucide-react";
 import {
   generateItineraryPDF,
   generateFilename,
@@ -144,7 +152,7 @@ export default function PublicItineraryView({
             {/* ログインボタン（ログインしていない場合のみ表示） */}
             {!currentUserId && (
               <a
-                href="/login"
+                href={`/login?callbackUrl=/share/${slug}`}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-sm"
                 title="ログイン"
               >
