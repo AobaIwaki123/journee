@@ -347,10 +347,13 @@ export const MessageList: React.FC = () => {
                   <Bot className="w-5 h-5 text-gray-600 animate-pulse" />
                 </div>
                 <div className="rounded-lg p-3 bg-gray-100">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600 text-sm">考え中</span>
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                    </div>
                   </div>
                 </div>
               </div>
