@@ -1,5 +1,5 @@
 ---
-title : "AIと対話して旅のしおりを作る「Journee」を2週間で作った話 - Next.js App Router × Supabase × Gemini API"
+title : "AIと対話して旅のしおりを作る「Journee」を4日で作った話 - Next.js App Router × Supabase × Gemini API"
 emoji : "✈️"
 type : "tech"
 topics : ["nextjs","ai","supabase","個人開発","typescript"]
