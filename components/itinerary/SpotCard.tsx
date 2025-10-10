@@ -4,6 +4,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { TouristSpot } from '@/types/itinerary';
 import { useSpotEditor } from '@/lib/hooks/itinerary';
 import { useStore } from '@/lib/store/useStore';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import { formatCurrency } from '@/lib/utils/currency';
 import { 
   Clock, 
@@ -96,7 +97,8 @@ export const SpotCard: React.FC<SpotCardProps> = memo(({
     notes: spot.notes || '',
   });
 
-  const currentItinerary = useStore((state) => state.currentItinerary);
+  // ストアスライスから状態を取得
+  const { currentItinerary } = useItineraryStore();
   const currency = currentItinerary?.currency;
   const addToast = useStore((state) => state.addToast);
 

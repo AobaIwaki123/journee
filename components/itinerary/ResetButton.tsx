@@ -3,19 +3,19 @@
 import React, { useState } from 'react';
 import { RotateCcw, AlertCircle } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
+import { useItineraryStore } from '@/lib/store/itinerary';
+import { useItineraryProgressStore } from '@/lib/store/itinerary';
 import { clearCurrentItinerary } from '@/lib/utils/storage';
 
 /**
- * Phase 5.2.9: しおりリセットボタン
- * 
- * 現在のしおりをクリアして新規作成モードに戻る
+ * Phase 6.2: しおりリセットボタン
+ * useItineraryStoreとuseItineraryProgressStoreに移行
  */
 export const ResetButton: React.FC = () => {
-  const setItinerary = useStore((state) => state.setItinerary);
-  const resetPlanning = useStore((state) => state.resetPlanning);
+  const { currentItinerary, setItinerary } = useItineraryStore();
+  const { resetPlanning } = useItineraryProgressStore();
   const clearMessages = useStore((state) => state.clearMessages);
   const addToast = useStore((state) => state.addToast);
-  const currentItinerary = useStore((state) => state.currentItinerary);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleReset = () => {

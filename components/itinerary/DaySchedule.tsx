@@ -6,6 +6,8 @@ import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { SpotCard } from './SpotCard';
 import { AddSpotForm } from './AddSpotForm';
 import { useStore } from '@/lib/store/useStore';
+import { useSpotStore } from '@/lib/store/itinerary';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import { formatCurrency } from '@/lib/utils/currency';
 import { 
   ChevronDown, 
@@ -42,9 +44,11 @@ const getDayOfWeek = (dateString?: string): string => {
 
 export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, editable = true, onRetry }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const reorderSpots = useStore((state: any) => state.reorderSpots);
+  
+  // ストアスライスから状態を取得
+  const { reorderSpots } = useSpotStore();
+  const { currentItinerary } = useItineraryStore();
   const addToast = useStore((state: any) => state.addToast);
-  const currentItinerary = useStore((state: any) => state.currentItinerary);
 
   const dayOfWeek = getDayOfWeek(day.date);
   const currency = currentItinerary?.currency;

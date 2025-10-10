@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useItineraryProgressStore } from '@/lib/store/itinerary';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import type { ItineraryData, ItineraryPhase } from '@/types/itinerary';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
 
@@ -47,14 +48,15 @@ export const calculatePlanningProgress = (
 };
 
 /**
- * Phase 4.4: 段階的旅程構築の進捗インジケーター
- * 現在のフェーズと進捗状況を視覚的に表示
+ * Phase 6.2: 段階的旅程構築の進捗インジケーター
+ * useItineraryProgressStoreとuseItineraryStoreに移行
  */
 export const PlanningProgress: React.FC<PlanningProgressProps> = ({
   className = '',
   showBorder = true,
 }) => {
-  const { planningPhase, currentItinerary, currentDetailingDay } = useStore();
+  const { planningPhase, currentDetailingDay } = useItineraryProgressStore();
+  const { currentItinerary } = useItineraryStore();
 
   // 現在のフェーズのインデックス
   const currentPhaseIndex = PHASE_ORDER.indexOf(planningPhase);
