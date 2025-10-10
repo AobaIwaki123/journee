@@ -16,37 +16,20 @@ import {
   MapPin,
   Wallet,
   Users,
-  Camera,
-  Utensils,
-  Car,
-  Hotel,
-  Sparkles,
 } from "lucide-react";
+import { getCategoryIcon } from '@/lib/utils/category-utils';
 import { formatDate as formatDateUtil } from "@/lib/utils/date-utils";
 
 interface ItineraryPDFLayoutProps {
   itinerary: ItineraryData;
 }
 
+/**
+ * Phase 7.1: PDF出力用レイアウト - カテゴリヘルパーを共通ユーティリティに移行
+ */
 export const ItineraryPDFLayout: React.FC<ItineraryPDFLayoutProps> = ({
   itinerary,
 }) => {
-  // カテゴリー別アイコン
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "sightseeing":
-        return <Camera className="w-5 h-5" />;
-      case "dining":
-        return <Utensils className="w-5 h-5" />;
-      case "transportation":
-        return <Car className="w-5 h-5" />;
-      case "accommodation":
-        return <Hotel className="w-5 h-5" />;
-      default:
-        return <Sparkles className="w-5 h-5" />;
-    }
-  };
-
   // 日付フォーマット
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";

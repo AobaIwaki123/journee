@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useStore } from "@/lib/store/useStore";
 import { useSpotEditor } from "@/lib/hooks/itinerary";
 import { TouristSpot } from "@/types/itinerary";
+import { CATEGORY_OPTIONS } from '@/lib/utils/category-utils';
 import { Plus, X } from "lucide-react";
 
 interface AddSpotFormProps {

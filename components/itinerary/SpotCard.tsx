@@ -7,15 +7,16 @@ import { useStore } from '@/lib/store/useStore';
 import { useItineraryStore } from '@/lib/store/itinerary';
 import { formatCurrency } from '@/lib/utils/currency';
 import { 
+  getCategoryLabel,
+  getCategoryColor,
+  getCategoryIcon,
+  getCategoryGradient,
+} from '@/lib/utils/category-utils';
+import { 
   Clock, 
   MapPin, 
   Wallet, 
   Info, 
-  Camera,
-  Utensils,
-  Car,
-  Hotel,
-  Sparkles,
   Edit2,
   Trash2,
   Check,
@@ -32,52 +33,9 @@ interface SpotCardProps {
   onDelete?: () => void;
 }
 
-// ユーティリティ関数を共通化
-const getCategoryLabel = (category?: string): string => {
-  const labels: Record<string, string> = {
-    sightseeing: '観光',
-    dining: '食事',
-    transportation: '移動',
-    accommodation: '宿泊',
-    other: 'その他',
-  };
-  return category ? labels[category] || 'その他' : '';
-};
-
-const getCategoryColor = (category?: string): string => {
-  const colors: Record<string, string> = {
-    sightseeing: 'bg-blue-100 text-blue-700 border-blue-200',
-    dining: 'bg-orange-100 text-orange-700 border-orange-200',
-    transportation: 'bg-green-100 text-green-700 border-green-200',
-    accommodation: 'bg-purple-100 text-purple-700 border-purple-200',
-    other: 'bg-gray-100 text-gray-700 border-gray-200',
-  };
-  return category ? colors[category] || colors.other : colors.other;
-};
-
-const getCategoryIcon = (category?: string) => {
-  const iconClass = "w-5 h-5";
-  const icons: Record<string, JSX.Element> = {
-    sightseeing: <Camera className={iconClass} />,
-    dining: <Utensils className={iconClass} />,
-    transportation: <Car className={iconClass} />,
-    accommodation: <Hotel className={iconClass} />,
-    other: <Sparkles className={iconClass} />,
-  };
-  return category ? icons[category] || icons.other : icons.other;
-};
-
-const getCategoryGradient = (category?: string): string => {
-  const gradients: Record<string, string> = {
-    sightseeing: 'from-blue-400 to-blue-600',
-    dining: 'from-orange-400 to-orange-600',
-    transportation: 'from-green-400 to-green-600',
-    accommodation: 'from-purple-400 to-purple-600',
-    other: 'from-gray-400 to-gray-600',
-  };
-  return category ? gradients[category] || gradients.other : gradients.other;
-};
-
+/**
+ * Phase 7.1: SpotCard - カテゴリヘルパーを共通ユーティリティに移行
+ */
 export const SpotCard: React.FC<SpotCardProps> = memo(({ 
   spot, 
   editable = false,
