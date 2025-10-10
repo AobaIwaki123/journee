@@ -110,29 +110,50 @@ export const SaveButton: React.FC = () => {
 
   if (!currentItinerary) return null;
 
-  return (
-    <div className="flex items-center gap-2">
-      {/* 上書き保存ボタン */}
-      <button
-        onClick={() => handleSave("overwrite")}
-        disabled={isSaving}
-        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        title="現在のしおりを上書き保存"
-      >
-        <Save size={20} />
-        <span>{isSaving ? "保存中..." : "上書き保存"}</span>
-      </button>
+  // 保存先を示すツールチップテキスト
+  const getSaveTooltip = (mode: "overwrite" | "new") => {
+    if (session?.user) {
+      return mode === "overwrite"
+        ? "現在のしおりをデータベースに上書き保存します"
+        : "新しいしおりとしてデータベースに保存します";
+    }
+    return mode === "overwrite"
+      ? "現在のしおりをブラウザに上書き保存します（ログインするとデータベースに保存されます）"
+      : "新しいしおりとしてブラウザに保存します（ログインするとデータベースに保存されます）";
+  };
 
-      {/* 新規保存ボタン */}
-      <button
-        onClick={() => handleSave("new")}
-        disabled={isSaving}
-        className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        title="別のしおりとして保存"
-      >
-        <FilePlus size={20} />
-        <span>{isSaving ? "保存中..." : "新規保存"}</span>
-      </button>
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        {/* 上書き保存ボタン */}
+        <button
+          onClick={() => handleSave("overwrite")}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title={getSaveTooltip("overwrite")}
+        >
+          <Save size={20} />
+          <span>{isSaving ? "保存中..." : "上書き保存"}</span>
+        </button>
+
+        {/* 新規保存ボタン */}
+        <button
+          onClick={() => handleSave("new")}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title={getSaveTooltip("new")}
+        >
+          <FilePlus size={20} />
+          <span>{isSaving ? "保存中..." : "新規保存"}</span>
+        </button>
+      </div>
+
+      {/* 未ログインユーザー向けの説明テキスト */}
+      {!session?.user && (
+        <p className="text-xs text-gray-500">
+          ※現在はブラウザにのみ保存されます。<a href="/login" className="text-blue-600 hover:underline">ログイン</a>するとデータベースに永続的に保存されます。
+        </p>
+      )}
     </div>
   );
 };

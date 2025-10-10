@@ -1,17 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { useStore } from '@/lib/store/useStore';
-import { Check, Save, AlertCircle } from 'lucide-react';
+import { Check, Save, AlertCircle, Database, HardDrive } from 'lucide-react';
 
 /**
- * Phase 5.2: 保存状態表示コンポーネント
+ * Phase 5.2 + Phase 11: 保存状態表示コンポーネント
  * 
  * しおりの自動保存状態を視覚的にフィードバック
+ * - 保存場所（ブラウザ/データベース）を明示
+ * - ログイン状態に応じたメッセージ表示
  */
 export const SaveStatus: React.FC = () => {
+  const { data: session } = useSession();
   const isSaving = useStore((state) => state.isSaving);
   const lastSaveTime = useStore((state) => state.lastSaveTime);
+  const saveLocation = useStore((state) => state.saveLocation);
   const currentItinerary = useStore((state) => state.currentItinerary);
   const isStorageInitialized = useStore((state) => state.isStorageInitialized);
   const [timeAgo, setTimeAgo] = useState<string>('');
@@ -52,25 +57,64 @@ export const SaveStatus: React.FC = () => {
     return null;
   }
 
+  // 保存場所に応じたアイコンとテキスト
+  const getSaveLocationInfo = () => {
+    if (isSaving) {
+      return {
+        icon: <Save size={16} className="text-blue-500 animate-pulse" />,
+        text: '保存中...',
+        className: 'text-gray-600',
+      };
+    }
+
+    if (!lastSaveTime) {
+      return {
+        icon: <AlertCircle size={16} className="text-gray-400" />,
+        text: '未保存',
+        className: 'text-gray-400',
+      };
+    }
+
+    switch (saveLocation) {
+      case 'both':
+        return {
+          icon: <Check size={16} className="text-green-500" />,
+          text: `データベースに保存済み ${timeAgo && `(${timeAgo})`}`,
+          className: 'text-gray-600',
+        };
+      case 'database':
+        return {
+          icon: <Database size={16} className="text-green-500" />,
+          text: `データベースに保存済み ${timeAgo && `(${timeAgo})`}`,
+          className: 'text-gray-600',
+        };
+      case 'browser':
+        return {
+          icon: <HardDrive size={16} className="text-yellow-500" />,
+          text: session?.user 
+            ? `ブラウザに一時保存 ${timeAgo && `(${timeAgo})`}`
+            : `ブラウザに保存済み ${timeAgo && `(${timeAgo})`}`,
+          className: 'text-gray-600',
+        };
+      default:
+        return {
+          icon: <Check size={16} className="text-green-500" />,
+          text: `保存済み ${timeAgo && `(${timeAgo})`}`,
+          className: 'text-gray-600',
+        };
+    }
+  };
+
+  const { icon, text, className } = getSaveLocationInfo();
+
   return (
     <div className="flex items-center gap-2 text-sm">
-      {isSaving ? (
-        <>
-          <Save size={16} className="text-blue-500 animate-pulse" />
-          <span className="text-gray-600">保存中...</span>
-        </>
-      ) : lastSaveTime ? (
-        <>
-          <Check size={16} className="text-green-500" />
-          <span className="text-gray-600">
-            保存済み {timeAgo && `(${timeAgo})`}
-          </span>
-        </>
-      ) : (
-        <>
-          <AlertCircle size={16} className="text-gray-400" />
-          <span className="text-gray-400">未保存</span>
-        </>
+      {icon}
+      <span className={className}>{text}</span>
+      {saveLocation === 'browser' && !session?.user && (
+        <span className="text-xs text-amber-600 ml-2">
+          ※ログインすると永続的に保存されます
+        </span>
       )}
     </div>
   );
