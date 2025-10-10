@@ -82,6 +82,7 @@ jobs:
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_ENABLE_MOCK_AUTH=true
+            NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
 
   update-deployment-manifest:
     runs-on: ubuntu-latest
@@ -222,13 +223,8 @@ jobs:
 
             ### 📦 デプロイ情報
             - **GCRイメージ**: \`${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${imageTag}\`
-            - **ArgoCD**: [アプリケーションを確認](${argocdUrl})
-
-            ### ✅ 完了したステップ
-            1. ✅ ArgoCD アプリケーション作成
-            2. ✅ Docker イメージビルド & プッシュ
-            3. ✅ デプロイメントマニフェスト更新
-            4. ✅ ArgoCD 同期トリガー
+            - **ArgoCD**: [ArgoCDを確認](${argocdUrl})
+            - **デプロイURL**: [アプリケーションを確認](https://${{ env.IMAGE_NAME }}-${branchHash}.aooba.net)
 
             ---
             *自動デプロイワークフロー by GitHub Actions*`;
