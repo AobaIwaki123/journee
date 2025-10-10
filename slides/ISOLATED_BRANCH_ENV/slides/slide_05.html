@@ -5,6 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>具体的な問題 | スライド 5</title>
     <link rel="stylesheet" href="../assets/css/styles.css" />
+    <style>
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+          transform: translateX(-3px);
+        }
+        20%,
+        40%,
+        60%,
+        80% {
+          transform: translateX(3px);
+        }
+      }
+
+      @keyframes pulse-glow {
+        0%,
+        100% {
+          box-shadow: 0 0 20px rgba(220, 38, 38, 0.5),
+            inset 0 0 20px rgba(220, 38, 38, 0.1);
+        }
+        50% {
+          box-shadow: 0 0 40px rgba(220, 38, 38, 0.8),
+            inset 0 0 30px rgba(220, 38, 38, 0.2);
+        }
+      }
+
+      .hell-card {
+        animation: pulse-glow 2s ease-in-out infinite;
+        background: linear-gradient(
+          135deg,
+          rgba(220, 38, 38, 0.1),
+          rgba(185, 28, 28, 0.15)
+        );
+      }
+
+      .hell-text {
+        animation: shake 0.5s ease-in-out 1s;
+        text-shadow: 0 0 10px rgba(220, 38, 38, 0.5),
+          0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+    </style>
   </head>
   <body>
     <!-- プログレスバー -->
@@ -17,51 +65,56 @@
       <div class="slide-content">
         <h2>具体的にどんな問題があるのか</h2>
 
-        <p style="font-size: 1.3rem; margin-bottom: 2rem">
-          あなたは今、Cursor
-          AIに<strong>5つの機能</strong>を同時に作らせています
-        </p>
-
         <div class="grid">
           <div class="card">
-            <h3 style="font-size: 1.2rem">🔐 ブランチA</h3>
+            <h3 style="font-size: 1.2rem">ブランチA</h3>
             <p>ユーザー認証機能</p>
           </div>
 
           <div class="card">
-            <h3 style="font-size: 1.2rem">💬 ブランチB</h3>
+            <h3 style="font-size: 1.2rem">ブランチB</h3>
             <p>コメント機能</p>
           </div>
 
           <div class="card">
-            <h3 style="font-size: 1.2rem">📄 ブランチC</h3>
+            <h3 style="font-size: 1.2rem">ブランチC</h3>
             <p>PDF出力機能</p>
           </div>
 
           <div class="card">
-            <h3 style="font-size: 1.2rem">🔍 ブランチD</h3>
+            <h3 style="font-size: 1.2rem">ブランチD</h3>
             <p>検索機能</p>
           </div>
 
           <div class="card">
-            <h3 style="font-size: 1.2rem">🔔 ブランチE</h3>
+            <h3 style="font-size: 1.2rem">ブランチE</h3>
             <p>通知機能</p>
           </div>
         </div>
 
         <div
-          class="card"
-          style="margin-top: 2rem; border-color: var(--accent-red)"
+          class="card hell-card"
+          style="
+            margin-top: 2rem;
+            border: 3px solid var(--accent-red);
+            border-width: 3px;
+            padding: 2rem;
+          "
         >
           <p
+            class="hell-text"
             style="
-              font-size: 1.3rem;
+              font-size: 2rem;
+              font-weight: 900;
               color: var(--accent-red);
               text-align: center;
               margin: 0;
+              letter-spacing: 0.05em;
+              line-height: 1.6;
             "
           >
-            しかし、レビューしようとした瞬間に地獄が始まります
+            しかし、レビューしようとした瞬間に<br />
+            <span style="font-size: 2.4rem">地獄が始まります</span>
           </p>
         </div>
       </div>
