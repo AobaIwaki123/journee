@@ -2,6 +2,10 @@ import { LoginButton } from '@/components/auth/LoginButton'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
 
+// ログインページは常に動的にレンダリングして、認証状態のキャッシュによる
+// 不正なリダイレクト（例: ログアウト直後にホームへ戻される）を防ぐ
+export const dynamic = 'force-dynamic'
+
 /**
  * ログインページ
  * 
