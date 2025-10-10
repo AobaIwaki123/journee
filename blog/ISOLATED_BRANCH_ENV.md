@@ -3,25 +3,26 @@ title : "【AI駆動開発】まだレビューする時にブランチ移動し
 emoji : "⚡"
 type : "tech" # tech : 技術記事 / idea : アイデア
 topics : ["kubernetes","argocd","zennfes2025infra","cloudflare"]
-published : false
+published : true
 ---
 
 ## 😱 ブランチを切り替えるたびに「儀式」をしていませんか？
 
-正直、しんどいですよね。ブランチを切り替えるたびに、ローカル環境の再構築地獄が始まる問題。
+正直、しんどいですよね。
+ブランチを切り替えるたびに、ローカル環境の再構築地獄が始まる問題。
 
-PRのレビュー依頼が来た → git checkout feature/xxx → 依存関係が違うからnpm install → ローカルサーバー立ち上げ → やっと確認できる → 次のPR見たいからまたgit checkout → またnpm install...
+PRのレビュー依頼が来た → `git checkout feature/xxx` → 依存関係が違うから`npm install` → ローカルサーバー立ち上げ → やっと確認できる → 次のPR見たいからまた`git checkout` → また`npm install...`
 
-せっかくCursorやDevinなど自立型のAI Agentの登場により、1人で同時に10個、20個のブランチを管理するなんていうことも現実味を帯びてきたというのに、レビューと確認のフローがボトルネックになっていたら本末転倒です。
+せっかくCursorやDevinなど自律型AI Agentの登場により、1人で同時に10個、20個のブランチを管理するなんていうことも現実味を帯びてきたというのに、レビューと確認のフローがボトルネックになっていたら本末転倒です。
 
 そこで大きな役割を果たすのが、**ブランチごとに独立した環境を自動で立ち上げ、それぞれに固有のURLを割り当てる仕組み**です。
 これにより、ブランチを切り替えることなく、URLにアクセスするだけで各ブランチの動作を確認できるようになります。
 大企業では一般的なプレビュー環境ですが、**個人開発でここまでの仕組みを構築している例はまだ少ない**のが現状かと思います。
 そこで本記事では、KubernetesとArgoCDを活用し、GitHub Actionsで完全自動化する方法を、実際のコードとともに詳しく解説していきます。
 
-**この記事を読むことでできるようになること :**
+**この記事を読むことでできるようになること：**
 - ブランチ移動なしで複数PRを同時レビュー
-- 各ブランチの動作を独立したURLで確認（例 :`feature-123.example.com`）
+- 各ブランチの動作を独立したURLで確認（例：`feature-123.example.com`）
 - CI/CDパイプラインの高速化と自動化
 - PRクローズ時の自動クリーンアップ（リソース管理の完全自動化）
 - AI駆動開発での並列タスク処理が劇的に効率化
@@ -33,11 +34,11 @@ PRのレビュー依頼が来た → git checkout feature/xxx → 依存関係�
 
 想像してみてください。あなたは今、Cursor AIに5つの機能を同時に作らせています。
 
-- ブランチA :ユーザー認証機能
-- ブランチB :コメント機能
-- ブランチC :PDF出力機能
-- ブランチD :検索機能
-- ブランチE :通知機能
+- ブランチA：ユーザー認証機能
+- ブランチB：コメント機能
+- ブランチC：PDF出力機能
+- ブランチD：検索機能
+- ブランチE：通知機能
 
 それぞれのブランチでコードは順調に進んでいます。
 しかし、レビューしようとした瞬間に地獄が始まります。
@@ -63,7 +64,7 @@ git checkout feature/auth
 
 ### 独立環境があると何が変わるのか
 
-ブランチごとに独立した環境とURLがあれば、こうなります :
+ブランチごとに独立した環境とURLがあれば、こうなります：
 
 - `feature-auth.example.com` ← ブランチAの環境（常時稼働）
 - `feature-comments.example.com` ← ブランチBの環境（常時稼働）
@@ -72,19 +73,18 @@ git checkout feature/auth
 ブランチを切り替える必要なし。URLにアクセスするだけで各ブランチの動作が確認できます。
 
 **さらに、** 複数のブラウザタブで同時に開いて、機能を比較することだってできます。
-「こっちのデザインの方が良かったかも」って思ったら、即座に見比べられる。
-これは、とても便利です。
+「こっちのデザインの方が良かったかも」と感じた場合には、即座に見比べて比較することができます。
 
 ### ステークホルダーへの共有も爆速に
 
 「この機能、どんな感じか見てもらえますか？」ってときに、URLをSlackに投げるだけでOKです。
 従来であれば、
 
-- スクリーンショット撮る
-- または動画録画する
-- またはzoomで画面共有する
+- スクリーンショットを撮る
+- または動画を録画する
+- またはZoomで画面共有する
 
-必要がありました。
+などする必要がありました。
 一方、独立環境があれば
 
 1. URLを共有するだけ（終わり）
@@ -97,27 +97,27 @@ git checkout feature/auth
 
 AI駆動開発では、**開発速度が圧倒的に上がります**。
 Cursor AIが1日で5機能を同時に進めてくれるなんてのは、もう普通になってきました。
-Issue Driven開発を活用して人によっては、自動で開発を進めている人も多いかと思います。
+Issue Driven開発を活用している人の中には、自動で開発を進めている人も多いかと思います。
 
 しかし、レビューと確認のフローが旧態依然のままだったら？
 せっかくの高速開発が台無しになります。
 AIが高速化してくれた分、**確認作業もスケールさせないと意味がない**んです。
 
-個人開発だからこそ、1人で10ブランチ、20ブランチを同時に管理する。
-そんな時代に、ブランチごとの独立環境は開発体験を左右する大きなものだと考えています。
-特に新規プロジェクト立ち上げ時には複数の機能開発が乱立するためその影響は非常に大きいです。
+個人開発だからこそ、1人で10ブランチ、20ブランチを同時に管理する時代です。
+そのような状況では、ブランチごとの独立環境が開発体験を左右する重要な要素になると考えています。
+特に新規プロジェクト立ち上げ時は複数の機能開発が同時進行するので、その恩恵は非常に大きいです。
 
 ## 想定読者
 
 ### このブログが役立つ人
--  `kubectl`コマンドを使ったことがある、または学習意欲がある
--  Kubernetesの基本概念を理解している
--  ブランチごとのデプロイに興味があるが実装方法がわからなかった
--  個人開発でCI/CDを構築したい
--  AI駆動開発で複数タスクを並列処理している
+- `kubectl`コマンドを使ったことがある、または学習意欲がある
+- Kubernetesの基本概念を理解している
+- ブランチごとのデプロイに興味があるが実装方法がわからなかった
+- 個人開発でCI/CDを構築したい
+- AI駆動開発で複数タスクを並列処理している
 
 ### 想定しないレベル
--  Docker/Kubernetesを全く触ったことがない方
+- Docker/Kubernetesを全く触ったことがない方
   - （ただし、興味があれば環境構築の参考にはなります）
 
 ## システム概要
@@ -202,17 +202,15 @@ AIが高速化してくれた分、**確認作業もスケールさせないと�
 やったことはありませんが、RaspberryPiでの構築も可能なはずです。
 オンプレk8sクラスタ構築に挑戦する場合は、[k8s-cluster](https://github.com/AobaIwaki123/k8s-cluster)を参考にしてみてください。
 `k0sctl`というツールを使ったクラスタ構築の手順を解説しています。
-SSHが理解できるなら実装できる程度のシンプルな手順なので興味があればぜひみてみてください。
+SSHが理解できるなら実装できる程度のシンプルな手順なので興味があればぜひチェックしてみてください。
 
 **メリット：**
 - 無料で運用可能（電気代のみ）
-- 学習に最適
-- 完全なコントロール
 
 **デメリット：**
 - 初期設定の手間
 - メンテナンスが必要
-- 可用性は自己責任
+- 可用性は自己責任 (おうちインフラ使っているとクラウドのありがたみが身に沁みます...)
 
 **我が家のミニPCインフラ**
 
@@ -273,16 +271,16 @@ aws eks update-kubeconfig --name my-cluster --region us-west-2
 **参考リポジトリ: [k8s-cluster](https://github.com/AobaIwaki123/k8s-cluster)**
 
 このリポジトリは、Kubernetesクラスタの基本的なセットアップを自動化するために作成しました。
-どこでクラスタを立てるかに関わらず、このリポジトリを使えば以下のような基本的なセットアップが直ぐに完了します：
+どこでクラスタを立てるかに関わらず、このリポジトリを使えば以下のような基本的なセットアップがすぐに完了します：
 
 - **ArgoCD**: GitOpsデプロイ
 - **Cloudflare Tunnel Controller**: ドメイン自動発行
 
 個人開発でここまでのインフラを簡単にセットアップできるのは、本当に便利です。
 ぜひ使ってみてください！
-このリポジトリをもっと多くの人に知ってもらい、**個人開発のインフラ構築のハードルを下げていきたい**という思っています。
+このリポジトリをもっと多くの人に知ってもらい、**個人開発のインフラ構築のハードルを下げていきたい**と思っています。
 
-詳細なセットアップ手順はリポジトリのREADMEを参照してください。**手順`1'`まで進めれば、ArgoCDとCloudflare Tunnel Controllerが動作する環境が整います。**（以下でも同様の手順を説明しています）
+詳細なセットアップ手順はリポジトリのREADMEを参照してください。**手順1まで進めれば、ArgoCDとCloudflare Tunnel Controllerが動作する環境が整います。**（以下でも同様の手順を説明しています）
 
 #### k8sクラスタの動作確認
 ```bash
@@ -318,7 +316,7 @@ chmod +x /usr/local/bin/argocd
 
 ```sh
 kubectl apply -n argocd -f manifests/argocd-cmd-params-cm.yml
-kubectl rollout restart deployment argocd-server -n argocd # ArgoCD Server を再起動
+kubectl rollout restart deployment argocd-server -n argocd # ArgoCDサーバーを再起動
 ```
 
 #### ArgoCD の Service を NodePort に変更
@@ -382,11 +380,11 @@ argocd account generate-token --account admin
 
 ### Cloudflare Ingress Controllerのセットアップ後
 
-Cloudflare経由でargocdを公開します。
-こうすることで、GitHub Actionなど外部サービスからk8sクラスタ上のargocdにアクセスすることが可能となります。
+Cloudflare経由でArgoCDを公開します。
+こうすることで、GitHub Actionsなど外部サービスからKubernetesクラスタ上のArgoCDにアクセスできるようになります。
 
 ```yaml
-# ArgoCD Server を外部に公開するための Ingress 設定
+# ArgoCDサーバーを外部に公開するための Ingress 設定
 # Cloudflare Tunnel Ingress Controller を使用して外部からアクセス可能にする
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -394,7 +392,7 @@ metadata:
   name: argocd-ingress
   namespace: argocd
   annotations:
-    # SSL リダイレクトを無効化 - ArgoCD Server が insecure モードで動作するため
+    # SSL リダイレクトを無効化 - ArgoCDサーバーが insecure モードで動作するため
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     # バックエンドプロトコルを HTTP に指定
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
@@ -407,17 +405,17 @@ spec:
   - host: argocd.example.com
     http:
       paths:
-      # ルートパス以下のすべてのリクエストを ArgoCD Server に転送
+      # ルートパス以下のすべてのリクエストを ArgoCDサーバーに転送
       - path: /
         pathType: Prefix
         backend:
           service:
             name: argocd-server
             port:
-              number: 80  # ArgoCD Server の HTTP ポート
+              number: 80  # ArgoCDサーバーの HTTP ポート
 ```
 
-ArgoCD Serverを外部に公開するためのIngress設定を適用します。
+ArgoCDサーバーを外部に公開するためのIngress設定を適用します。
 これにより、Cloudflare Tunnelを通じてArgoCD UIとAPIにアクセスできるようになります。
 
 ```sh
@@ -431,12 +429,12 @@ kubectl apply -f manifests/ingress.yml
 従来のIngress Controllerと比較して、Cloudflare Tunnel Controllerには圧倒的なメリットがあります：
 
 **メリット：**
--  **ドメインをYAMLに書くだけで自動発行**（DNS設定不要！）
--  **SSL証明書の自動設定**（Let's Encrypt不要）
--  **DDoS保護が標準で有効**（Cloudflareのネットワークを経由）
--  **無料プランでも十分な機能**
--  **プライベートIPでも公開可能**（Tunnelを使用）
--  **ファイアウォールの穴あけ不要**（アウトバウンド接続のみ）
+- **ドメインをYAMLに書くだけで自動発行**（DNS設定不要！）
+- **SSL証明書の自動設定**（Let's Encrypt不要）
+- **DDoS保護が標準で有効**（Cloudflareのネットワークを経由）
+- **無料プランでも十分な機能**
+- **プライベートIPでも公開可能**（Tunnelを使用）
+- **ファイアウォールの穴あけ不要**（アウトバウンド接続のみ）
 
 これは特に、自宅サーバーや企業ネットワーク内でKubernetesを運用している場合に絶大な効果を発揮します。
 
@@ -971,7 +969,7 @@ jobs:
 1. ArgoCD Applicationが既に存在するかチェック
 2. 存在しない場合のみ、以下を実行：
    - ブランチ固有のマニフェストディレクトリを作成
-   - リソース名をハッシュ付きに変更（yq使用）
+   - リソース名をハッシュ付きに変更
    - ArgoCD Applicationを作成
    - PRに自動的にデプロイURLをコメント
 
@@ -1270,12 +1268,12 @@ jobs:
 ## まとめ
 
 ### 実現できたこと
--  ブランチプッシュだけで独立環境が自動構築
--  各ブランチが独自のURLを持つ
--  ブランチ移動なしで複数PRを同時レビュー
--  GitOpsによる宣言的で信頼性の高いデプロイ
--  PRクローズ時の自動クリーンアップ（リソース削除）
--  AI駆動開発との高い親和性
+- ブランチプッシュだけで独立環境が自動構築
+- 各ブランチが独自のURLを持つ
+- ブランチ移動なしで複数PRを同時レビュー
+- GitOpsによる宣言的で信頼性の高いデプロイ
+- PRクローズ時の自動クリーンアップ（リソース削除）
+- AI駆動開発との高い親和性
 
 ### 参考リンク
 
@@ -1288,4 +1286,3 @@ jobs:
 - [Cloudflare Tunnel Controller（非公式）](https://github.com/cloudflare/cloudflare-ingress-controller)
 
 この記事が役に立ったら、[k8s-clusterリポジトリ](https://github.com/AobaIwaki123/k8s-cluster)にスターをいただけると嬉しいです ⭐
-
