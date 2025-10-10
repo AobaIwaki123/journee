@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: journee-8a63f7
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/AobaIwaki123/journee'
+    targetRevision: cursor/implement-plan-and-create-pr-38bb
+    path: k8s/manifests-8a63f7
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: journee
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
