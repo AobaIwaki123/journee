@@ -3,6 +3,7 @@
 import React from "react";
 import { Save, FilePlus } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
+import { useItineraryStore } from "@/lib/store/itinerary";
 import { useItinerarySave } from "@/lib/hooks/itinerary";
 import { generateId } from "@/lib/utils/id-generator";
 
@@ -19,8 +20,8 @@ import { generateId } from "@/lib/utils/id-generator";
  * - new: 新規のしおりとして保存（新しいIDを生成）
  */
 export const SaveButton: React.FC = () => {
-  const currentItinerary = useStore((state) => state.currentItinerary);
-  const setItinerary = useStore((state) => state.setItinerary);
+  // Phase 9 Bug Fix: useItineraryStoreからcurrentItineraryとsetItineraryを取得
+  const { currentItinerary, setItinerary } = useItineraryStore();
   
   // カスタムHookを使用
   const { save, isSaving } = useItinerarySave({

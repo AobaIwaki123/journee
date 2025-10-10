@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/lib/store/useStore";
+import { useItineraryStore, useItineraryProgressStore } from "@/lib/store/itinerary";
 import { Send } from "lucide-react";
 import { sendChatMessageStream } from "@/lib/utils/api-client";
 import { mergeItineraryData, parseAIResponse } from "@/lib/ai/prompts";
@@ -23,11 +24,13 @@ export const MessageInput: React.FC = () => {
   const appendStreamingMessage = useStore(
     (state: any) => state.appendStreamingMessage
   );
-  const currentItinerary = useStore((state: any) => state.currentItinerary);
-  const setItinerary = useStore((state: any) => state.setItinerary);
   const selectedAI = useStore((state: any) => state.selectedAI);
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setError = useStore((state: any) => state.setError);
+  
+  // Phase 9 Bug Fix: useItineraryStoreとuseItineraryProgressStoreを使用
+  const { currentItinerary, setItinerary } = useItineraryStore();
+  const { planningPhase, currentDetailingDay } = useItineraryProgressStore();
   const setHasReceivedResponse = useStore(
     (state: any) => state.setHasReceivedResponse
   );
@@ -41,11 +44,6 @@ export const MessageInput: React.FC = () => {
   // Local input state (uses messageDraft from store)
   const [input, setInput] = useState("");
 
-  // Phase 4.5: プランニングフェーズ状態を取得
-  const planningPhase = useStore((state: any) => state.planningPhase);
-  const currentDetailingDay = useStore(
-    (state: any) => state.currentDetailingDay
-  );
 
   // Phase 4.10: 自動進行機能
   const updateChecklist = useStore((state: any) => state.updateChecklist);

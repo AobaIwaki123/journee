@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useStore } from "@/lib/store/useStore";
+import { useItineraryStore, useItineraryProgressStore } from "@/lib/store/itinerary";
 import { Bot, User, Edit2, Trash2, Save, X } from "lucide-react";
 import { toSafeDate } from "@/lib/utils/time-utils";
 import { MessageSkeleton } from "./MessageSkeleton";
@@ -70,15 +71,13 @@ export const MessageList: React.FC = () => {
   const appendStreamingMessage = useStore(
     (state: any) => state.appendStreamingMessage
   );
-  const currentItinerary = useStore((state: any) => state.currentItinerary);
-  const setItinerary = useStore((state: any) => state.setItinerary);
   const selectedAI = useStore((state: any) => state.selectedAI);
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setError = useStore((state: any) => state.setError);
-  const planningPhase = useStore((state: any) => state.planningPhase);
-  const currentDetailingDay = useStore(
-    (state: any) => state.currentDetailingDay
-  );
+  
+  // Phase 9 Bug Fix: useItineraryStoreとuseItineraryProgressStoreを使用
+  const { currentItinerary, setItinerary } = useItineraryStore();
+  const { planningPhase, currentDetailingDay } = useItineraryProgressStore();
   const currency = useStore((state: any) => state.settings.general.currency);
   const setAbortController = useStore((state: any) => state.setAbortController);
   const updateChecklist = useStore((state: any) => state.updateChecklist);

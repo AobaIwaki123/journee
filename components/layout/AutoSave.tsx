@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/lib/store/useStore';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import { saveCurrentItinerary } from '@/lib/utils/storage';
 import { updateItinerary } from '@/lib/mock-data/itineraries';
 
@@ -11,9 +12,12 @@ import { updateItinerary } from '@/lib/mock-data/itineraries';
  * - 変更から2秒後にデバウンス保存
  * - 5分ごとに定期保存
  * - LocalStorageとしおり一覧の両方を更新
+ * 
+ * Phase 9 Bug Fix: useItineraryStoreのcurrentItineraryを使用するように修正
  */
 export const AutoSave: React.FC = () => {
-  const currentItinerary = useStore((state) => state.currentItinerary);
+  // Phase 9 Bug Fix: useItineraryStoreからcurrentItineraryを取得
+  const { currentItinerary } = useItineraryStore();
   const setSaving = useStore((state) => state.setSaving);
   const setLastSaveTime = useStore((state) => state.setLastSaveTime);
   const isInitialMount = useRef(true);

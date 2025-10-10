@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Share2, Link2, Copy, Check, Globe, Lock, Download, X } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import { useItineraryPublish } from '@/lib/hooks/itinerary';
 import type { PublicItinerarySettings } from '@/types/itinerary';
 
@@ -14,7 +15,8 @@ export const ShareButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   
-  const currentItinerary = useStore((state) => state.currentItinerary);
+  // Phase 9 Bug Fix: useItineraryStoreからcurrentItineraryを取得
+  const { currentItinerary } = useItineraryStore();
   
   // useItineraryPublish Hookを活用
   const {

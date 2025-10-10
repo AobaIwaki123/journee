@@ -9,6 +9,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/lib/store/useStore";
+import { useItineraryStore } from "@/lib/store/itinerary";
 import { useSpotEditor } from "@/lib/hooks/itinerary";
 import { TouristSpot } from "@/types/itinerary";
 import { SpotFormFields } from "./spot-form";
@@ -33,7 +34,8 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState(initialFormValues);
 
-  const currentItinerary = useStore((state) => state.currentItinerary);
+  // Phase 9 Bug Fix: useItineraryStoreからcurrentItineraryを取得
+  const { currentItinerary } = useItineraryStore();
   const addToast = useStore((state) => state.addToast);
   const { addSpot, validateSpot } = useSpotEditor();
 

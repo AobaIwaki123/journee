@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useStore } from '@/lib/store/useStore';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import { getItineraryById } from '@/lib/mock-data/itineraries';
 import { loadCurrentItinerary, getLastSaveTime } from '@/lib/utils/storage';
 
@@ -12,14 +13,19 @@ import { loadCurrentItinerary, getLastSaveTime } from '@/lib/utils/storage';
  * 
  * ログイン時: データベースから最新のしおりを読み込む
  * 未ログイン時: LocalStorageから読み込む（従来通り）
+ * 
+ * Phase 9 Bug Fix: useItineraryStoreのsetItineraryを使用するように修正
  */
 export const StorageInitializer: React.FC = () => {
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
   const initializeFromStorage = useStore((state) => state.initializeFromStorage);
-  const setItinerary = useStore((state) => state.setItinerary);
   const setLastSaveTime = useStore((state) => state.setLastSaveTime);
   const setStorageInitialized = useStore((state) => state.setStorageInitialized);
+  
+  // Phase 9 Bug Fix: useItineraryStoreのsetItineraryを使用
+  const { setItinerary } = useItineraryStore();
+  
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
