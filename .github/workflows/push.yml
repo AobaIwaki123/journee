@@ -48,7 +48,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
 
       - name: Set short SHA
         run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-6)" >> $GITHUB_ENV
@@ -89,7 +89,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: |
+          git pull origin ${{ github.ref_name }}
 
       - name: Set short SHA
         run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-6)" >> $GITHUB_ENV
@@ -101,18 +106,36 @@ jobs:
           echo "BRANCH_HASH=$BRANCH_HASH" >> $GITHUB_ENV
           echo "✅ Generated hash for branch '$BRANCH': $BRANCH_HASH"
 
-      - name: Set manifest path
-        run: |
-          echo "MANIFEST_PATH=k8s/manifests-${{ env.BRANCH_HASH }}/deployment.yml" >> $GITHUB_ENV
-
       - name: Install yq
         run: |
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
+      - name: Check manifest directory
+        run: |
+          echo "Checking for manifests directory..."
+          ls -la k8s/
+          echo "Looking for manifests-${{ env.BRANCH_HASH }}"
+          if [ -d "k8s/manifests-${{ env.BRANCH_HASH }}" ]; then
+            echo "✅ Directory exists"
+            ls -la "k8s/manifests-${{ env.BRANCH_HASH }}/"
+          else
+            echo "❌ Directory does not exist"
+            exit 1
+          fi
+
       - name: Update deployment manifest
         run: |
-          yq -i '.spec.template.spec.containers[0].image = "${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH_HASH }}-${{ env.SHORT_SHA }}"' ${{ env.MANIFEST_PATH }}
+          MANIFEST_PATH="k8s/manifests-${{ env.BRANCH_HASH }}/deployment.yml"
+          echo "Updating manifest at: $MANIFEST_PATH"
+
+          if [ ! -f "$MANIFEST_PATH" ]; then
+            echo "❌ Manifest file not found: $MANIFEST_PATH"
+            exit 1
+          fi
+
+          yq -i '.spec.template.spec.containers[0].image = "${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH_HASH }}-${{ env.SHORT_SHA }}"' "$MANIFEST_PATH"
+          echo "✅ Manifest updated successfully"
 
       - name: Commit and push deployment manifest
         run: |
