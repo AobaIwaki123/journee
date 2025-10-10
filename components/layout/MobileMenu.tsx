@@ -69,12 +69,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             <div className="flex flex-col h-full">
               {/* ヘッダー */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <div className="flex items-center space-x-2">
-                  <div className="bg-blue-500 rounded-lg p-2">
-                    <Plane className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-lg font-bold text-gray-800">Journee</span>
+              <Link href="/" className="flex items-center space-x-2" onClick={() => setIsOpen(false)}>
+                <div className="bg-blue-500 rounded-lg p-2">
+                  <Plane className="w-5 h-5 text-white" />
                 </div>
+                <span className="text-lg font-bold text-gray-800">Journee</span>
+              </Link>
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
