@@ -85,7 +85,7 @@ export default async function MyPage() {
           <UserStats stats={userStats} />
 
           {/* クイックアクション */}
-          <QuickActions />
+          {/* <QuickActions /> */}
 
           {/* 最近のしおりセクション */}
           <div className="bg-white rounded-lg shadow-md p-6">
