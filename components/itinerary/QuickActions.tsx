@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useStore } from "@/lib/store/useStore";
+import { useItineraryProgressStore } from "@/lib/store/itinerary";
+import { useItineraryStore } from "@/lib/store/itinerary";
 import type { ItineraryPhase } from "@/types/itinerary";
 import { ArrowRight, RotateCcw, Check, AlertCircle } from "lucide-react";
 import { sendChatMessageStream } from "@/lib/utils/api-client";
@@ -14,33 +16,35 @@ interface QuickActionsProps {
 }
 
 /**
- * Phase 4.4, 4.5, 4.8: 段階的旅程構築のクイックアクション
- * 「次へ」ボタンやリセットボタンなどを提供
- * Phase 4.8: 動的スタイリングと情報充足度判定を追加
+ * Phase 6.2: 段階的旅程構築のクイックアクション
+ * useItineraryProgressStore と useItineraryStore に移行
  */
 export const QuickActions: React.FC<QuickActionsProps> = ({
   className = "",
   showBorder = true,
 }) => {
+  // ストアスライスから状態を取得
   const {
     planningPhase,
-    currentItinerary,
+    currentDetailingDay,
+    buttonReadiness,
+    checklistStatus,
+    updateChecklist,
     proceedToNextStep,
     resetPlanning,
+  } = useItineraryProgressStore();
+
+  const { currentItinerary, setItinerary } = useItineraryStore();
+
+  // チャット系の状態は useStore から取得
+  const {
     messages,
     addMessage,
     setStreamingMessage,
     appendStreamingMessage,
-    setItinerary,
     setLoading,
     setStreaming,
     setError,
-    currentDetailingDay,
-    // Phase 4.8
-    buttonReadiness,
-    checklistStatus,
-    updateChecklist,
-    // Phase 6: AI model selection
     selectedAI,
     claudeApiKey,
   } = useStore();
@@ -48,9 +52,9 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  // Phase 4.8: メッセージやしおりが更新されたらチェックリストを更新
+  // メッセージやしおりが更新されたらチェックリストを更新
   useEffect(() => {
-    updateChecklist();
+    updateChecklist(messages, currentItinerary);
   }, [messages, currentItinerary, planningPhase, updateChecklist]);
 
   // フェーズごとのボタンラベル
@@ -112,11 +116,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     return false; // 常に進める（情報不足でも警告を出すのみ）
   };
 
-  // Phase 4.5 & 4.8: 「次へ」ボタンでAIにメッセージ送信
+  // 「次へ」ボタンでAIにメッセージ送信
   const handleNextStep = async () => {
     if (isProcessing || planningPhase === "completed") return;
 
-    // Phase 4.8: 必須情報が不足している場合は警告を表示
+    // 必須情報が不足している場合は警告を表示
     if (
       buttonReadiness &&
       buttonReadiness.level === "not_ready" &&
@@ -145,8 +149,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       proceedToNextStep();
 
       // フェーズを進めた後の状態を取得
-      const newPhase = useStore.getState().planningPhase;
-      const newDetailingDay = useStore.getState().currentDetailingDay;
+      const newPhase = useItineraryProgressStore.getState().planningPhase;
+      const newDetailingDay = useItineraryProgressStore.getState().currentDetailingDay;
 
       // 「次へ」メッセージをAIに送信
       const userMessage = {
@@ -168,7 +172,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
       let fullResponse = "";
 
-      // Phase 4.9: skeleton → detailing への移行時は並列バッチ処理を使用
+      // skeleton → detailing への移行時は並列バッチ処理を使用
       if (currentPhase === "skeleton" && newPhase === "detailing") {
         console.log("🚀 並列バッチ処理開始: 全日程を並列で詳細化");
 
@@ -176,7 +180,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         for await (const chunk of sendChatMessageStream(
           "骨組みが完成しました。これから各日の詳細を作成します。",
           chatHistory,
-          useStore.getState().currentItinerary || undefined,
+          useItineraryStore.getState().currentItinerary || undefined,
           selectedAI,
           claudeApiKey,
           "skeleton",
@@ -187,7 +191,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             fullResponse += chunk.content;
           } else if (chunk.type === "itinerary" && chunk.itinerary) {
             const mergedItinerary = mergeItineraryData(
-              useStore.getState().currentItinerary || undefined,
+              useItineraryStore.getState().currentItinerary || undefined,
               chunk.itinerary
             );
             setItinerary(mergedItinerary);
@@ -197,7 +201,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         for await (const chunk of sendChatMessageStream(
           "次へ",
           chatHistory,
-          useStore.getState().currentItinerary || undefined,
+          useItineraryStore.getState().currentItinerary || undefined,
           selectedAI,
           claudeApiKey,
           newPhase,
@@ -208,7 +212,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             fullResponse += chunk.content;
           } else if (chunk.type === "itinerary" && chunk.itinerary) {
             const mergedItinerary = mergeItineraryData(
-              useStore.getState().currentItinerary || undefined,
+              useItineraryStore.getState().currentItinerary || undefined,
               chunk.itinerary
             );
             setItinerary(mergedItinerary);
@@ -219,7 +223,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         for await (const chunk of sendChatMessageStream(
           "次へ",
           chatHistory,
-          useStore.getState().currentItinerary || undefined,
+          useItineraryStore.getState().currentItinerary || undefined,
           selectedAI,
           claudeApiKey,
           newPhase,
@@ -230,7 +234,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             fullResponse += chunk.content;
           } else if (chunk.type === "itinerary" && chunk.itinerary) {
             const mergedItinerary = mergeItineraryData(
-              useStore.getState().currentItinerary || undefined,
+              useItineraryStore.getState().currentItinerary || undefined,
               chunk.itinerary
             );
             setItinerary(mergedItinerary);
@@ -272,13 +276,13 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     }
   };
 
-  // Phase 4.8: 情報不足でも強制的に進む
+  // 情報不足でも強制的に進む
   const handleForceNext = async () => {
     setShowWarning(false);
     await proceedAndSendMessage();
   };
 
-  // Phase 4.8: ボタンのスタイルを取得
+  // ボタンのスタイルを取得
   const getButtonStyles = () => {
     if (planningPhase === "completed") {
       return "bg-green-500 text-white cursor-default";
@@ -288,7 +292,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       return "bg-gray-200 text-gray-400 cursor-not-allowed";
     }
 
-    // Phase 4.8: 動的スタイリング
+    // 動的スタイリング
     if (buttonReadiness) {
       switch (buttonReadiness.level) {
         case "ready":
@@ -312,7 +316,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
   return (
     <div className={containerClassName}>
-      {/* Phase 4.8: 警告ダイアログ */}
+      {/* 警告ダイアログ */}
       {showWarning && checklistStatus && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start space-x-3">
@@ -394,7 +398,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         )}
       </div>
 
-      {/* Phase 4.8: 不足情報のヒント */}
+      {/* 不足情報のヒント */}
       {buttonReadiness?.missingInfo &&
         buttonReadiness.missingInfo.length > 0 && (
           <div className="mt-2 text-xs text-gray-500 text-center">
