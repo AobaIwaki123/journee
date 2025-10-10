@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { ItineraryData } from "@/types/itinerary";
 import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
@@ -10,17 +11,20 @@ import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
 import { PDFPreviewModal } from "./PDFPreviewModal";
-import { Download, Share2, Copy, Check, Loader2, Eye } from "lucide-react";
+import { Download, Share2, Copy, Check, Loader2, Eye, LogIn } from "lucide-react";
 import {
   generateItineraryPDF,
   generateFilename,
 } from "@/lib/utils/pdf-generator";
 import { showToast } from "@/components/ui/Toast";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { signIn } from "next-auth/react";
 
 interface PublicItineraryViewProps {
   slug: string;
   itinerary: ItineraryData;
   currentUserId?: string | null;
+  currentUserName?: string | null;
   initialComments?: Comment[];
   initialCommentCount?: number;
 }
@@ -32,9 +36,11 @@ export default function PublicItineraryView({
   slug,
   itinerary,
   currentUserId = null,
+  currentUserName = null,
   initialComments = [],
   initialCommentCount = 0,
 }: PublicItineraryViewProps) {
+  const { data: session } = useSession();
   const [copied, setCopied] = useState(false);
   const [publishedDate, setPublishedDate] = useState<string>("");
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -140,7 +146,21 @@ export default function PublicItineraryView({
             <h1 className="text-xl font-bold text-gray-800">Journee</h1>
             <p className="text-sm text-gray-500">共有されたしおり</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* ログイン/ユーザーメニュー */}
+            {session?.user ? (
+              <UserMenu />
+            ) : (
+              <button
+                onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                title="ログイン"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">ログイン</span>
+              </button>
+            )}
+            
             {/* 共有ボタン */}
             <button
               onClick={handleShare}
@@ -246,6 +266,7 @@ export default function PublicItineraryView({
               initialComments={initialComments}
               initialTotal={initialCommentCount}
               currentUserId={currentUserId}
+              currentUserName={currentUserName}
             />
           </div>
         ) : (

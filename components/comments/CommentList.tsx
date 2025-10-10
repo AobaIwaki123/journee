@@ -16,6 +16,7 @@ interface CommentListProps {
   initialComments?: Comment[];
   initialTotal?: number;
   currentUserId?: string | null;
+  currentUserName?: string | null;
 }
 
 export default function CommentList({
@@ -23,6 +24,7 @@ export default function CommentList({
   initialComments = [],
   initialTotal = 0,
   currentUserId,
+  currentUserName,
 }: CommentListProps) {
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [total, setTotal] = useState(initialTotal);
@@ -133,6 +135,7 @@ export default function CommentList({
         <CommentForm
           itineraryId={itineraryId}
           isAuthenticated={!!currentUserId}
+          currentUserName={currentUserName}
           onSubmit={handleSubmit}
         />
       </div>

@@ -5,12 +5,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Send } from "lucide-react";
 
 interface CommentFormProps {
   itineraryId: string;
   isAuthenticated: boolean;
+  currentUserName?: string | null;
   onSubmit: (data: {
     content: string;
     isAnonymous: boolean;
@@ -21,12 +22,20 @@ interface CommentFormProps {
 export default function CommentForm({
   itineraryId,
   isAuthenticated,
+  currentUserName,
   onSubmit,
 }: CommentFormProps) {
   const [content, setContent] = useState("");
-  const [authorName, setAuthorName] = useState("");
+  const [authorName, setAuthorName] = useState(currentUserName || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ユーザー名が変更されたら更新（ログイン後など）
+  useEffect(() => {
+    if (currentUserName) {
+      setAuthorName(currentUserName);
+    }
+  }, [currentUserName]);
 
   const maxLength = 500;
   const remainingChars = maxLength - content.length;
@@ -88,12 +97,18 @@ export default function CommentForm({
           id="authorName"
           value={authorName}
           onChange={(e) => setAuthorName(e.target.value)}
-          placeholder="名前を入力してください"
+          placeholder={isAuthenticated ? "" : "名前を入力してください"}
           maxLength={100}
-          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
-          disabled={isSubmitting}
+          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all disabled:bg-gray-100 disabled:text-gray-600"
+          disabled={isSubmitting || isAuthenticated}
+          readOnly={isAuthenticated}
           required
         />
+        {!isAuthenticated && (
+          <p className="mt-1 text-xs text-gray-500">
+            ログインすると、ユーザー名が自動で補完されます
+          </p>
+        )}
       </div>
 
       {/* コメント入力 */}

@@ -194,6 +194,7 @@ export default async function PublicItineraryPage({ params }: PageProps) {
         slug={params.slug}
         itinerary={itinerary}
         currentUserId={session?.user?.id || null}
+        currentUserName={session?.user?.name || null}
         initialComments={initialComments}
         initialCommentCount={commentCount}
       />
