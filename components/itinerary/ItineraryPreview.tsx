@@ -44,7 +44,7 @@ export const ItineraryPreview: React.FC = () => {
         <div className="hidden md:block">
           {planningPhase !== 'initial' && <PlanningProgress />}
         </div>
-        <MobilePlannerControls />
+        {/* <MobilePlannerControls /> */}
 
         {/* 空状態 */}
         <EmptyItinerary />
@@ -79,7 +79,7 @@ export const ItineraryPreview: React.FC = () => {
           </div>
         )}
 
-        <MobilePlannerControls />
+        {/* <MobilePlannerControls /> */}
         
         {/* メインコンテンツ（スクロール可能） */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
