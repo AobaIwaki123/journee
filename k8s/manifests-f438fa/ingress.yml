@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: journee-f438fa
+  namespace: journee
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+spec:
+  ingressClassName: "cloudflare-tunnel"
+  rules:
+    - host: journee-f438fa.aooba.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: journee-f438fa
+                port:
+                  number: 80

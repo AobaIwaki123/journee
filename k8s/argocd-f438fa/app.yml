@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: journee-f438fa
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/AobaIwaki123/journee'
+    targetRevision: cursor/update-package-json-versions-fc50
+    path: k8s/manifests-f438fa
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: journee
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
