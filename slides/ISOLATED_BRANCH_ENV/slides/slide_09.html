@@ -3,8 +3,392 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>技術スタック | スライド 9</title>
+    <title>アーキテクチャ図 | スライド 9</title>
     <link rel="stylesheet" href="../assets/css/styles.css" />
+    <style>
+      .architecture-diagram {
+        width: 100%;
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 2rem;
+        position: relative;
+      }
+
+      /* GitHub Repository Header */
+      .github-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .github-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #f0f6fc;
+        background: linear-gradient(135deg, #24292e 0%, #1a1e22 100%);
+        border: 2px solid #30363d;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Branch Environments Grid */
+      .branch-environments {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        position: relative;
+      }
+
+      /* Individual Branch Column */
+      .branch-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        position: relative;
+      }
+
+      /* Branch colors */
+      .branch-column.main {
+        --branch-color: #3b82f6;
+        --branch-color-light: rgba(59, 130, 246, 0.2);
+        --branch-color-glow: rgba(59, 130, 246, 0.4);
+      }
+
+      .branch-column.feature-a {
+        --branch-color: #f59e0b;
+        --branch-color-light: rgba(245, 158, 11, 0.2);
+        --branch-color-glow: rgba(245, 158, 11, 0.4);
+      }
+
+      .branch-column.feature-b {
+        --branch-color: #8b5cf6;
+        --branch-color-light: rgba(139, 92, 246, 0.2);
+        --branch-color-glow: rgba(139, 92, 246, 0.4);
+      }
+
+      /* Vertical connecting line */
+      .branch-column::before {
+        content: "";
+        position: absolute;
+        top: 80px;
+        left: 50%;
+        width: 4px;
+        height: calc(100% - 80px);
+        background: linear-gradient(
+          180deg,
+          var(--branch-color),
+          var(--branch-color-light)
+        );
+        transform: translateX(-50%);
+        z-index: 0;
+        animation: flowPulse 2s ease-in-out infinite;
+        border-radius: 2px;
+      }
+
+      .branch-column.main::before {
+        animation-delay: 0s;
+      }
+      .branch-column.feature-a::before {
+        animation-delay: 0.3s;
+      }
+      .branch-column.feature-b::before {
+        animation-delay: 0.6s;
+      }
+
+      @keyframes flowPulse {
+        0%,
+        100% {
+          opacity: 0.6;
+          box-shadow: 0 0 10px var(--branch-color-glow);
+        }
+        50% {
+          opacity: 1;
+          box-shadow: 0 0 20px var(--branch-color-glow);
+        }
+      }
+
+      /* Branch Box */
+      .branch-box {
+        background: var(--branch-color-light);
+        border: 3px solid var(--branch-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 4px 20px var(--branch-color-glow);
+        animation: branchPulse 2s ease-in-out infinite;
+      }
+
+      .branch-column.main .branch-box {
+        animation-delay: 0s;
+      }
+      .branch-column.feature-a .branch-box {
+        animation-delay: 0.3s;
+      }
+      .branch-column.feature-b .branch-box {
+        animation-delay: 0.6s;
+      }
+
+      @keyframes branchPulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .branch-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .branch-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Pipeline Stage */
+      .pipeline-stage {
+        background: linear-gradient(
+          135deg,
+          var(--bg-secondary) 0%,
+          var(--bg-tertiary) 100%
+        );
+        border: 2px solid var(--branch-color);
+        border-radius: 10px;
+        padding: 1.25rem;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
+      }
+
+      .pipeline-stage:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px var(--branch-color-glow);
+      }
+
+      .stage-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .stage-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+      }
+
+      .stage-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+      }
+
+      /* Kubernetes Namespace */
+      .k8s-namespace {
+        background: linear-gradient(135deg, #326ce5 0%, #1e4ba8 100%);
+        border: 2px solid var(--branch-color);
+        border-radius: 10px;
+        padding: 1.25rem;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 4px 16px rgba(50, 108, 229, 0.3);
+      }
+
+      .k8s-namespace::after {
+        content: "✓";
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 24px;
+        height: 24px;
+        background: var(--accent-green);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: white;
+        animation: checkPulse 2s ease-in-out infinite;
+      }
+
+      .branch-column.main .k8s-namespace::after {
+        animation-delay: 0s;
+      }
+      .branch-column.feature-a .k8s-namespace::after {
+        animation-delay: 0.3s;
+      }
+      .branch-column.feature-b .k8s-namespace::after {
+        animation-delay: 0.6s;
+      }
+
+      @keyframes checkPulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+      }
+
+      .namespace-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .pod-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 0.5rem;
+      }
+
+      .pod-indicator:last-child {
+        margin-bottom: 0;
+      }
+
+      .pod-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--accent-green);
+        border-radius: 50%;
+        animation: blink 1.5s ease-in-out infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* Ingress/Tunnel stage */
+      .tunnel-stage {
+        background: linear-gradient(135deg, #f6821f 0%, #d86419 100%);
+        border: 2px solid var(--branch-color);
+        border-radius: 10px;
+        padding: 1.25rem;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 4px 16px rgba(246, 130, 31, 0.3);
+      }
+
+      .tunnel-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      /* Public URL */
+      .url-box {
+        background: var(--bg-secondary);
+        border: 3px solid var(--branch-color);
+        border-radius: 10px;
+        padding: 1.25rem;
+        text-align: center;
+        font-family: "JetBrains Mono", monospace;
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px var(--branch-color-glow);
+      }
+
+      .url-box:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 24px var(--branch-color-glow);
+      }
+
+      .url-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .url-text {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--branch-color);
+        word-break: break-all;
+      }
+
+      /* Data flow particles */
+      .data-particle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--branch-color);
+        border-radius: 50%;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: particleFlow 3s ease-in-out infinite;
+        box-shadow: 0 0 10px var(--branch-color-glow);
+        z-index: 2;
+      }
+
+      .branch-column.main .data-particle {
+        animation-delay: 0s;
+      }
+      .branch-column.feature-a .data-particle {
+        animation-delay: 1s;
+      }
+      .branch-column.feature-b .data-particle {
+        animation-delay: 2s;
+      }
+
+      @keyframes particleFlow {
+        0% {
+          top: 80px;
+          opacity: 0;
+          transform: translateX(-50%) scale(0);
+        }
+        10% {
+          opacity: 1;
+          transform: translateX(-50%) scale(1);
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          top: calc(100% - 80px);
+          opacity: 0;
+          transform: translateX(-50%) scale(0);
+        }
+      }
+
+      /* Legend */
+      .legend {
+        margin-top: 2rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+    </style>
   </head>
   <body>
     <!-- プログレスバー -->
@@ -15,41 +399,167 @@
     <!-- スライドコンテナ -->
     <div class="slide-container">
       <div class="slide-content">
-        <h2>🛠️ 使用する技術スタック</h2>
+        <h2>🏗️ ブランチごとの環境分離アーキテクチャ</h2>
 
-        <div class="grid">
-          <div class="card">
-            <h3>Kubernetes</h3>
-            <div class="badge">Container Orchestration</div>
-            <p style="margin-top: 1rem">
-              コンテナのデプロイ、スケーリング、管理を自動化
-            </p>
+        <div class="architecture-diagram">
+          <!-- GitHub Repository Header -->
+          <div class="github-header">
+            <div class="github-title">
+              <span>🐙</span>
+              <span>GitHub Repository</span>
+            </div>
           </div>
 
-          <div class="card">
-            <h3>ArgoCD</h3>
-            <div class="badge purple">GitOps</div>
-            <p style="margin-top: 1rem">
-              Gitリポジトリの変更を自動的にKubernetesに反映
-            </p>
+          <!-- Branch Environments Grid -->
+          <div class="branch-environments">
+            <!-- Main Branch Column -->
+            <div class="branch-column main">
+              <div class="data-particle"></div>
+
+              <!-- Git Branch -->
+              <div class="branch-box">
+                <div class="branch-icon">🔷</div>
+                <div class="branch-name">main</div>
+              </div>
+
+              <!-- CI/CD -->
+              <div class="pipeline-stage">
+                <div class="stage-icon">🔨</div>
+                <div class="stage-title">Build & Deploy</div>
+                <div class="stage-subtitle">GitHub Actions</div>
+              </div>
+
+              <!-- Kubernetes Namespace -->
+              <div class="k8s-namespace">
+                <div class="namespace-title">
+                  <span>☸️</span>
+                  <span>Namespace: main</span>
+                </div>
+                <div class="pod-indicator">
+                  <span class="pod-dot"></span>
+                  <span>Pod: journee-main</span>
+                </div>
+                <div class="pod-indicator">
+                  <span class="pod-dot"></span>
+                  <span>Service: journee-main</span>
+                </div>
+              </div>
+
+              <!-- Cloudflare Tunnel -->
+              <div class="tunnel-stage">
+                <div class="tunnel-title">
+                  <span>☁️</span>
+                  <span>Cloudflare Tunnel</span>
+                </div>
+              </div>
+
+              <!-- Public URL -->
+              <div class="url-box">
+                <div class="url-icon">🌐</div>
+                <div class="url-text">main.journee.dev</div>
+              </div>
+            </div>
+
+            <!-- Feature-A Branch Column -->
+            <div class="branch-column feature-a">
+              <div class="data-particle"></div>
+
+              <!-- Git Branch -->
+              <div class="branch-box">
+                <div class="branch-icon">🔶</div>
+                <div class="branch-name">feature-A</div>
+              </div>
+
+              <!-- CI/CD -->
+              <div class="pipeline-stage">
+                <div class="stage-icon">🔨</div>
+                <div class="stage-title">Build & Deploy</div>
+                <div class="stage-subtitle">GitHub Actions</div>
+              </div>
+
+              <!-- Kubernetes Namespace -->
+              <div class="k8s-namespace">
+                <div class="namespace-title">
+                  <span>☸️</span>
+                  <span>Namespace: feature-A</span>
+                </div>
+                <div class="pod-indicator">
+                  <span class="pod-dot"></span>
+                  <span>Pod: journee-feat-a</span>
+                </div>
+                <div class="pod-indicator">
+                  <span class="pod-dot"></span>
+                  <span>Service: journee-feat-a</span>
+                </div>
+              </div>
+
+              <!-- Cloudflare Tunnel -->
+              <div class="tunnel-stage">
+                <div class="tunnel-title">
+                  <span>☁️</span>
+                  <span>Cloudflare Tunnel</span>
+                </div>
+              </div>
+
+              <!-- Public URL -->
+              <div class="url-box">
+                <div class="url-icon">🌐</div>
+                <div class="url-text">feature-a.journee.dev</div>
+              </div>
+            </div>
+
+            <!-- Feature-B Branch Column -->
+            <div class="branch-column feature-b">
+              <div class="data-particle"></div>
+
+              <!-- Git Branch -->
+              <div class="branch-box">
+                <div class="branch-icon">🔵</div>
+                <div class="branch-name">feature-B</div>
+              </div>
+
+              <!-- CI/CD -->
+              <div class="pipeline-stage">
+                <div class="stage-icon">🔨</div>
+                <div class="stage-title">Build & Deploy</div>
+                <div class="stage-subtitle">GitHub Actions</div>
+              </div>
+
+              <!-- Kubernetes Namespace -->
+              <div class="k8s-namespace">
+                <div class="namespace-title">
+                  <span>☸️</span>
+                  <span>Namespace: feature-B</span>
+                </div>
+                <div class="pod-indicator">
+                  <span class="pod-dot"></span>
+                  <span>Pod: journee-feat-b</span>
+                </div>
+                <div class="pod-indicator">
+                  <span class="pod-dot"></span>
+                  <span>Service: journee-feat-b</span>
+                </div>
+              </div>
+
+              <!-- Cloudflare Tunnel -->
+              <div class="tunnel-stage">
+                <div class="tunnel-title">
+                  <span>☁️</span>
+                  <span>Cloudflare Tunnel</span>
+                </div>
+              </div>
+
+              <!-- Public URL -->
+              <div class="url-box">
+                <div class="url-icon">🌐</div>
+                <div class="url-text">feature-b.journee.dev</div>
+              </div>
+            </div>
           </div>
 
-          <div class="card">
-            <h3>Cloudflare Tunnel</h3>
-            <div class="badge green">Ingress Controller</div>
-            <p style="margin-top: 1rem">ドメイン自動発行・SSL自動設定</p>
-          </div>
-
-          <div class="card">
-            <h3>GCR</h3>
-            <div class="badge yellow">Container Registry</div>
-            <p style="margin-top: 1rem">Dockerイメージの保存と配信</p>
-          </div>
-
-          <div class="card">
-            <h3>GitHub Actions</h3>
-            <div class="badge red">CI/CD</div>
-            <p style="margin-top: 1rem">自動ビルド・テスト・デプロイ</p>
+          <!-- Legend -->
+          <div class="legend">
+            💡 各ブランチから独立した環境が自動生成される
           </div>
         </div>
       </div>

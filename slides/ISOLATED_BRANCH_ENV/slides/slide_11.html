@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>マニフェスト管理 | スライド 11</title>
+    <title>ワークフロー | スライド 10</title>
     <link rel="stylesheet" href="../assets/css/styles.css" />
   </head>
   <body>
@@ -15,78 +15,45 @@
     <!-- スライドコンテナ -->
     <div class="slide-container">
       <div class="slide-content">
-        <h2>🔑 キーアイデア：ブランチをハッシュ化</h2>
+        <h2>🔄 デプロイワークフロー</h2>
 
         <div
-          class="card"
           style="
             background-color: var(--bg-secondary);
-            border: 3px solid var(--accent-blue);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 2px solid var(--accent-blue);
           "
         >
-          <h3 style="text-align: center; margin-bottom: 2rem">
-            ブランチ名から6文字のハッシュを生成
-          </h3>
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 2rem;
-              font-size: 1.5rem;
-            "
-          >
-            <code style="font-size: 1.3rem">feature/add-new-component</code>
-            <div style="font-size: 2rem; color: var(--accent-green)">→</div>
-            <code
-              style="
-                font-size: 1.8rem;
-                color: var(--accent-green);
-                font-weight: bold;
-              "
-              >a1b2c3</code
-            >
-          </div>
-        </div>
-
-        <div class="grid" style="margin-top: 2rem">
-          <div class="card">
-            <h3 style="font-size: 1.2rem">📦 リソース名</h3>
-            <p style="margin-top: 1rem">
-              <code>my-app</code><br />
-              ↓<br />
-              <code style="color: var(--accent-green)">my-app-a1b2c3</code>
-            </p>
-          </div>
-
-          <div class="card">
-            <h3 style="font-size: 1.2rem">🌐 ドメイン名</h3>
-            <p style="margin-top: 1rem">
-              <code>my-app.example.com</code><br />
-              ↓<br />
-              <code style="color: var(--accent-green)"
-                >my-app-a1b2c3.example.com</code
+          <ol style="font-size: 1.2rem; line-height: 2.2">
+            <li><strong>ブランチにプッシュ</strong></li>
+            <li>GitHub ActionsがArgoCD Applicationを作成（初回のみ）</li>
+            <li>
+              Dockerイメージをビルド・<strong class="highlight"
+                >GCRにプッシュ</strong
               >
-            </p>
-          </div>
-
-          <div class="card">
-            <h3 style="font-size: 1.2rem">📁 マニフェスト</h3>
-            <p style="margin-top: 1rem">
-              <code>k8s/manifests/</code><br />
-              ↓<br />
-              <code style="color: var(--accent-green)"
-                >k8s/manifests-a1b2c3/</code
+            </li>
+            <li>
+              ブランチ固有のKubernetesマニフェストを<strong class="highlight"
+                >動的生成</strong
               >
-            </p>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top: 2rem">
-          <p style="font-size: 1.3rem; text-align: center; margin: 0">
-            💡 すべてのリソースが<strong class="highlight">ユニーク</strong
-            >になる = 衝突しない
-          </p>
+              <ul style="font-size: 1rem; color: var(--text-muted)">
+                <li>ブランチ名からMD5ハッシュ（6文字）を生成</li>
+                <li>リソース名に <code>-&lt;hash&gt;</code> を付与</li>
+              </ul>
+            </li>
+            <li>マニフェストをコミット・プッシュ</li>
+            <li>
+              ArgoCDが自動的に<strong class="highlight">デプロイを実行</strong>
+            </li>
+            <li>
+              Cloudflare Tunnel Controllerが
+              <code>&lt;app&gt;-&lt;hash&gt;.example.com</code> を自動発行
+            </li>
+            <li>
+              PRに<strong class="highlight">デプロイURLを自動コメント</strong>
+            </li>
+          </ol>
         </div>
       </div>
     </div>
