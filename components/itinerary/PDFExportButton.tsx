@@ -1,21 +1,16 @@
 /**
- * PDF出力ボタンコンポーネント
- * 
- * しおりをPDFとして出力する機能
- * - プログレス表示
- * - エラーハンドリング
- * - Toast通知
+ * Phase 6.3: PDF出力ボタンコンポーネント
+ * useItineraryPDF Hookを活用してロジックを分離
  */
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FileDown, Loader2, Eye } from 'lucide-react';
 import type { ItineraryData } from '@/types/itinerary';
-import { generateItineraryPDF, generateFilename } from '@/lib/utils/pdf-generator';
+import { useItineraryPDF } from '@/lib/hooks/itinerary';
 import { ItineraryPDFLayout } from './ItineraryPDFLayout';
 import { PDFPreviewModal } from './PDFPreviewModal';
-import { showToast } from '@/components/ui/Toast';
 
 interface PDFExportButtonProps {
   itinerary: ItineraryData;
@@ -29,61 +24,20 @@ export const PDFExportButton: React.FC<PDFExportButtonProps> = ({
   className = '',
   showPreviewButton = true
 }) => {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const pdfContainerRef = useRef<HTMLDivElement>(null);
+
+  // useItineraryPDF Hookを活用
+  const {
+    generatePDF,
+    isGenerating,
+    progress,
+    showPreview,
+  } = useItineraryPDF();
 
   // PDF生成処理
   const handleExportPDF = async () => {
-    try {
-      setIsGenerating(true);
-      setProgress(0);
-      setShowPreview(true);
-
-      // PDF専用レイアウトを一時的にDOMに追加
-      await new Promise(resolve => setTimeout(resolve, 100)); // DOMレンダリング待機
-
-      const filename = generateFilename(itinerary);
-      
-      const result = await generateItineraryPDF('pdf-export-container', {
-        filename,
-        quality: 0.95,
-        margin: 10,
-        onProgress: (p) => setProgress(p),
-      });
-
-      if (result.success) {
-        showToast({
-          type: 'success',
-          message: `PDFを保存しました: ${result.filename}`,
-          duration: 4000,
-        });
-      } else {
-        throw new Error(result.error || '不明なエラー');
-      }
-    } catch (error) {
-      console.error('PDF生成エラー:', error);
-      showToast({
-        type: 'error',
-        message: 'PDF生成に失敗しました。もう一度お試しください。',
-        duration: 4000,
-      });
-    } finally {
-      setIsGenerating(false);
-      setProgress(0);
-      // プレビューを少し遅延して閉じる
-      setTimeout(() => setShowPreview(false), 500);
-    }
+    await generatePDF(itinerary, 'pdf-export-container');
   };
-
-  // プレビューが表示されるときにスクロール位置を調整
-  useEffect(() => {
-    if (showPreview && pdfContainerRef.current) {
-      pdfContainerRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [showPreview]);
 
   return (
     <>
@@ -150,7 +104,6 @@ export const PDFExportButton: React.FC<PDFExportButtonProps> = ({
       {/* PDF専用レイアウト（非表示） */}
       {showPreview && (
         <div 
-          ref={pdfContainerRef}
           className="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none"
           aria-hidden="true"
         >

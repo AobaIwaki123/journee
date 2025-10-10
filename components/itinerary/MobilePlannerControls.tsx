@@ -1,21 +1,29 @@
+/**
+ * Phase 6.3: モバイル向けプランニングコントロール
+ * useItineraryProgressStoreとuseItineraryStoreに移行
+ */
+
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Clock, ChevronUp, X, ListTodo } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { useItineraryProgressStore } from '@/lib/store/itinerary';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import { PlanningProgress, PLANNING_PHASE_LABELS, calculatePlanningProgress } from './PlanningProgress';
 import { QuickActions } from './QuickActions';
 import { PhaseStatusBar } from './PhaseStatusBar';
 import type { ItineraryPhase } from '@/types/itinerary';
 
 export const MobilePlannerControls: React.FC = () => {
+  // ストアスライスから状態を取得
   const {
     planningPhase,
-    currentItinerary,
     currentDetailingDay,
     isAutoProgressing,
     autoProgressState,
-  } = useStore();
+  } = useItineraryProgressStore();
+
+  const { currentItinerary } = useItineraryStore();
 
   const [isOpen, setIsOpen] = useState(false);
 

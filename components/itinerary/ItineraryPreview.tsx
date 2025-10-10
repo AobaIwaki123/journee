@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useStore } from "@/lib/store/useStore";
+import { useItineraryStore } from "@/lib/store/itinerary";
+import { useItineraryProgressStore } from "@/lib/store/itinerary";
 import { DaySchedule } from "./DaySchedule";
 import { MapView } from "./MapView";
 import { PlanningProgress } from "./PlanningProgress";
@@ -21,13 +22,18 @@ import { MobilePlannerControls } from "./MobilePlannerControls";
 
 type ViewMode = "schedule" | "map";
 
+/**
+ * Phase 6.3: しおりプレビューコンポーネント
+ * useItineraryStoreとuseItineraryProgressStoreに移行
+ */
 export const ItineraryPreview: React.FC = () => {
+  // ストアスライスから状態を取得
+  const { currentItinerary } = useItineraryStore();
   const {
-    currentItinerary,
     planningPhase,
     isAutoProgressing,
     autoProgressState,
-  } = useStore();
+  } = useItineraryProgressStore();
 
   const [viewMode, setViewMode] = useState<ViewMode>("schedule");
 
