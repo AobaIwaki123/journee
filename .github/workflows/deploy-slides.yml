@@ -1,0 +1,43 @@
+name: Deploy Slides to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # または master
+    paths:
+      - "slides/ISOLATED_BRANCH_ENV/**"
+  workflow_dispatch: # 手動実行も可能
+
+# GitHub Pagesへのデプロイ権限を付与
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時実行を制限
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # スライドディレクトリのみをアップロード
+          path: "./slides/ISOLATED_BRANCH_ENV"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

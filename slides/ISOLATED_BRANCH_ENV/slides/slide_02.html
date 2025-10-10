@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>問題提起 | スライド 2</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <!-- プログレスバー -->
+    <div class="progress-bar">
+      <div class="progress-bar-fill"></div>
+    </div>
+
+    <!-- スライドコンテナ -->
+    <div class="slide-container">
+      <div class="slide-content">
+        <h2>😱 ブランチを切り替えるたびに<br />「儀式」をしていませんか？</h2>
+
+        <div class="card">
+          <h3 style="color: var(--accent-red)">従来の開発フロー</h3>
+          <pre><code class="language-bash"># PRのレビュー依頼が来た
+git checkout feature/xxx
+npm install  # 依存関係が違う...待ち時間
+npm run dev  # ポート3000で起動
+
+# 確認完了。次のPR
+git checkout feature/yyy
+npm install  # また待つ...
+npm run dev  # また起動
+
+# あれ、さっきのブランチどうだったっけ？
+git checkout feature/xxx
+# また最初から...😭</code></pre>
+        </div>
+
+        <p style="font-size: 1.5rem; text-align: center; margin-top: 2rem">
+          これ、<span class="highlight">時間の無駄</span>ですよね。
+        </p>
+      </div>
+    </div>
+
+    <!-- スライド番号 -->
+    <div class="slide-number"></div>
+
+    <!-- ナビゲーション -->
+    <div class="navigation">
+      <button class="nav-button prev">← 前へ</button>
+      <button class="nav-button home">🏠 ホーム</button>
+      <button class="nav-button next">次へ →</button>
+    </div>
+
+    <script src="../assets/js/navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css"
+    />
+    <script>
+      hljs.highlightAll();
+    </script>
+  </body>
+</html>

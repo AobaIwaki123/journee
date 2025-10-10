@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>技術スタック | スライド 9</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <!-- プログレスバー -->
+    <div class="progress-bar">
+      <div class="progress-bar-fill"></div>
+    </div>
+
+    <!-- スライドコンテナ -->
+    <div class="slide-container">
+      <div class="slide-content">
+        <h2>🛠️ 使用する技術スタック</h2>
+
+        <div class="grid">
+          <div class="card">
+            <h3>Kubernetes</h3>
+            <div class="badge">Container Orchestration</div>
+            <p style="margin-top: 1rem">
+              コンテナのデプロイ、スケーリング、管理を自動化
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>ArgoCD</h3>
+            <div class="badge purple">GitOps</div>
+            <p style="margin-top: 1rem">
+              Gitリポジトリの変更を自動的にKubernetesに反映
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>Cloudflare Tunnel</h3>
+            <div class="badge green">Ingress Controller</div>
+            <p style="margin-top: 1rem">ドメイン自動発行・SSL自動設定</p>
+          </div>
+
+          <div class="card">
+            <h3>GCR</h3>
+            <div class="badge yellow">Container Registry</div>
+            <p style="margin-top: 1rem">Dockerイメージの保存と配信</p>
+          </div>
+
+          <div class="card">
+            <h3>GitHub Actions</h3>
+            <div class="badge red">CI/CD</div>
+            <p style="margin-top: 1rem">自動ビルド・テスト・デプロイ</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- スライド番号 -->
+    <div class="slide-number"></div>
+
+    <!-- ナビゲーション -->
+    <div class="navigation">
+      <button class="nav-button prev">← 前へ</button>
+      <button class="nav-button home">🏠 ホーム</button>
+      <button class="nav-button next">次へ →</button>
+    </div>
+
+    <script src="../assets/js/navigation.js"></script>
+  </body>
+</html>
