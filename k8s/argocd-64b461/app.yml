@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: journee-64b461
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/AobaIwaki123/journee'
+    targetRevision: cursor/implement-loading-ui-based-on-plan-6016
+    path: k8s/manifests-64b461
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: journee
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
