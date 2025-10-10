@@ -41,6 +41,9 @@ export const MessageList: React.FC = () => {
   const isStreaming = useStore((state: any) => state.isStreaming);
   const streamingMessage = useStore((state: any) => state.streamingMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
+
+  const isProcessing = isLoading || isStreaming || isAutoProgressing;
 
   // ストリーミング中のメッセージからJSONブロックを除去
   const cleanStreamingMessage = useMemo(() => {
@@ -341,7 +344,7 @@ export const MessageList: React.FC = () => {
           )}
 
           {/* ローディング中（ストリーミング開始前） */}
-          {isLoading && !isStreaming && !streamingMessage && <MessageSkeleton />}
+          {isProcessing && <MessageSkeleton />}
         </>
       )}
       <div ref={messagesEndRef} />
