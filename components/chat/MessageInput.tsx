@@ -198,22 +198,53 @@ export const MessageInput: React.FC = () => {
 
   const disabled = isLoading || isStreaming || isAutoProgressing;
 
+  /**
+   * キーボードイベントハンドラー
+   * - Enterキーのみ: メッセージ送信
+   * - Shift + Enterキー: 改行挿入
+   * - IME変換中のEnter: 無視（変換確定のみ）
+   */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // IME変換中のEnterキーは無視
+    if (e.nativeEvent.isComposing) {
+      return;
+    }
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      // Enterキーのみの場合: メッセージ送信
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
+    // Shift + Enterの場合: デフォルトの改行動作を許可（何もしない）
+  };
+
   return (
     <div className="relative">
       <form onSubmit={handleSubmit} className="flex space-x-2">
-        <input
-          type="text"
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="メッセージを入力..."
+          onKeyDown={handleKeyDown}
+          placeholder="メッセージを入力... (Shift + Enterで改行)"
           disabled={disabled}
-          className="flex-1 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all"
+          rows={1}
+          className="flex-1 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all resize-none overflow-hidden min-h-[42px] max-h-[200px]"
+          style={{
+            height: "auto",
+            minHeight: "42px",
+          }}
+          onInput={(e) => {
+            // 自動で高さを調整
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = "auto";
+            target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+          }}
         />
         <button
           type="submit"
           disabled={disabled}
           aria-label="メッセージを送信"
-          className="px-3 py-2 md:px-4 md:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center min-w-[44px]"
+          className="px-3 py-2 md:px-4 md:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center min-w-[44px] self-end"
         >
           {disabled ? (
             <Loader2 className="w-5 h-5 md:w-5 md:h-5 animate-spin" />
