@@ -1,37 +1,45 @@
+/**
+ * Phase 9.2: スポット追加フォーム（再構成版）
+ * 
+ * フォームフィールドを SpotFormFields に分離し、
+ * 共通コンポーネントを活用して簡素化
+ */
+
 "use client";
 
 import React, { useState } from "react";
 import { useStore } from "@/lib/store/useStore";
 import { useSpotEditor } from "@/lib/hooks/itinerary";
 import { TouristSpot } from "@/types/itinerary";
-import { CATEGORY_OPTIONS } from '@/lib/utils/category-utils';
+import { SpotFormFields } from "./spot-form";
+import { FormActions } from "@/components/ui";
 import { Plus, X } from "lucide-react";
 
 interface AddSpotFormProps {
   dayIndex: number;
 }
 
-/**
- * Phase 6.1: スポット追加フォームコンポーネント
- * useSpotEditor Hookを活用してロジックを分離
- */
+const initialFormValues = {
+  name: "",
+  description: "",
+  category: "sightseeing" as TouristSpot["category"],
+  scheduledTime: "",
+  duration: "",
+  estimatedCost: "",
+  notes: "",
+};
+
 export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [formValues, setFormValues] = useState({
-    name: "",
-    description: "",
-    category: "sightseeing" as TouristSpot["category"],
-    scheduledTime: "",
-    duration: "",
-    estimatedCost: "",
-    notes: "",
-  });
+  const [formValues, setFormValues] = useState(initialFormValues);
 
   const currentItinerary = useStore((state) => state.currentItinerary);
   const addToast = useStore((state) => state.addToast);
-
-  // useSpotEditor Hookを活用
   const { addSpot, validateSpot } = useSpotEditor();
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormValues((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,19 +71,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
 
     // スポットを追加
     try {
-      addSpot(dayIndex, spotData as Omit<TouristSpot, 'id'>);
+      addSpot(dayIndex, spotData as Omit<TouristSpot, "id">);
       addToast("スポットを追加しました", "success");
-
-      // Reset form
-      setFormValues({
-        name: "",
-        description: "",
-        category: "sightseeing",
-        scheduledTime: "",
-        duration: "",
-        estimatedCost: "",
-        notes: "",
-      });
+      setFormValues(initialFormValues);
       setIsOpen(false);
     } catch (error) {
       console.error("Failed to add spot:", error);
@@ -84,18 +82,11 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
   };
 
   const handleCancel = () => {
-    setFormValues({
-      name: "",
-      description: "",
-      category: "sightseeing",
-      scheduledTime: "",
-      duration: "",
-      estimatedCost: "",
-      notes: "",
-    });
+    setFormValues(initialFormValues);
     setIsOpen(false);
   };
 
+  // トリガーボタン
   if (!isOpen) {
     return (
       <button
@@ -108,6 +99,7 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
     );
   }
 
+  // フォーム表示
   return (
     <form
       onSubmit={handleSubmit}
@@ -124,141 +116,15 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
         </button>
       </div>
 
-      <div className="space-y-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            スポット名 <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={formValues.name}
-            onChange={(e) =>
-              setFormValues({ ...formValues, name: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            placeholder="例: 清水寺"
-            required
-          />
-        </div>
+      <SpotFormFields
+        values={formValues}
+        onChange={handleFieldChange}
+      />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            説明
-          </label>
-          <textarea
-            value={formValues.description}
-            onChange={(e) =>
-              setFormValues({ ...formValues, description: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
-            rows={2}
-            placeholder="スポットの概要を入力..."
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            カテゴリー
-          </label>
-          <select
-            value={formValues.category}
-            onChange={(e) =>
-              setFormValues({
-                ...formValues,
-                category: e.target.value as TouristSpot["category"],
-              })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            <option value="sightseeing">観光</option>
-            <option value="restaurant">レストラン</option>
-            <option value="hotel">宿泊</option>
-            <option value="shopping">ショッピング</option>
-            <option value="transport">移動</option>
-            <option value="activity">アクティビティ</option>
-            <option value="other">その他</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              予定時刻
-            </label>
-            <input
-              type="time"
-              value={formValues.scheduledTime}
-              onChange={(e) =>
-                setFormValues({ ...formValues, scheduledTime: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              滞在時間（分）
-            </label>
-            <input
-              type="number"
-              value={formValues.duration}
-              onChange={(e) =>
-                setFormValues({ ...formValues, duration: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              placeholder="60"
-              min="0"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            予算（円）
-          </label>
-          <input
-            type="number"
-            value={formValues.estimatedCost}
-            onChange={(e) =>
-              setFormValues({ ...formValues, estimatedCost: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            placeholder="1000"
-            min="0"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            メモ
-          </label>
-          <textarea
-            value={formValues.notes}
-            onChange={(e) =>
-              setFormValues({ ...formValues, notes: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
-            rows={2}
-            placeholder="個人的なメモを入力..."
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          キャンセル
-        </button>
-        <button
-          type="submit"
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          追加
-        </button>
-      </div>
+      <FormActions
+        onCancel={handleCancel}
+        submitLabel="追加"
+      />
     </form>
   );
 };
