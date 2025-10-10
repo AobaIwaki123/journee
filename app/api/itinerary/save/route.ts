@@ -9,7 +9,10 @@ import { itineraryRepository } from '@/lib/db/itinerary-repository';
  * POST /api/itinerary/save
  * 
  * Supabaseデータベースを使用した実装。
- * 既存のしおりは更新、新規のしおりは追加する。
+ * 
+ * 保存モード:
+ * - overwrite: 既存のしおりを更新（デフォルト）
+ * - new: 新規のしおりとして保存（既存のしおりがあっても新規作成）
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,9 +25,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // リクエストボディからしおりデータを取得
+    // リクエストボディからしおりデータと保存モードを取得
     const body = await request.json();
     const itinerary: ItineraryData = body.itinerary;
+    const saveMode: 'overwrite' | 'new' = body.saveMode || 'overwrite';
 
     if (!itinerary || !itinerary.id) {
       return NextResponse.json(
@@ -40,27 +44,36 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    // 既存のしおりかチェック
-    const existing = await itineraryRepository.getItinerary(itinerary.id, user.id);
-
     let savedItinerary: ItineraryData;
+    let message: string;
 
-    if (existing) {
-      // 既存のしおりを更新
-      savedItinerary = await itineraryRepository.updateItinerary(
-        itinerary.id,
-        user.id,
-        itineraryWithUser
-      );
-    } else {
-      // 新規しおりを追加
+    if (saveMode === 'new') {
+      // 新規保存モード: 常に新しいしおりとして作成
       savedItinerary = await itineraryRepository.createItinerary(user.id, itineraryWithUser);
+      message = '新規しおりとして保存しました';
+    } else {
+      // 上書き保存モード: 既存のしおりがあれば更新、なければ新規作成
+      const existing = await itineraryRepository.getItinerary(itinerary.id, user.id);
+
+      if (existing) {
+        // 既存のしおりを更新
+        savedItinerary = await itineraryRepository.updateItinerary(
+          itinerary.id,
+          user.id,
+          itineraryWithUser
+        );
+        message = 'しおりを更新しました';
+      } else {
+        // 新規しおりを追加
+        savedItinerary = await itineraryRepository.createItinerary(user.id, itineraryWithUser);
+        message = 'しおりを保存しました';
+      }
     }
 
     return NextResponse.json({
       success: true,
       itinerary: savedItinerary,
-      message: existing ? 'しおりを更新しました' : 'しおりを保存しました',
+      message,
     });
   } catch (error) {
     console.error('Failed to save itinerary:', error);
