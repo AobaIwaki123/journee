@@ -202,8 +202,14 @@ export const MessageInput: React.FC = () => {
    * キーボードイベントハンドラー
    * - Enterキーのみ: メッセージ送信
    * - Shift + Enterキー: 改行挿入
+   * - IME変換中のEnter: 無視（変換確定のみ）
    */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // IME変換中のEnterキーは無視
+    if (e.nativeEvent.isComposing) {
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       // Enterキーのみの場合: メッセージ送信
       e.preventDefault();
