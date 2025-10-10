@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Calendar, MessageCircle, Sparkles, ArrowRight } from 'lucide-react';
+import React from "react";
+import { Calendar, MessageCircle, Sparkles, ArrowRight } from "lucide-react";
 
 export const EmptyItinerary: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8 bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="max-w-md text-center">
         {/* Icon */}
-        <div className="relative mb-6">
+        <div className="relative mb-6 hidden md:block">
           <div className="w-32 h-32 mx-auto bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
             <Calendar className="w-16 h-16 text-white" />
           </div>
@@ -18,7 +18,7 @@ export const EmptyItinerary: React.FC = () => {
         </div>
 
         {/* Title */}
-        <h3 className="text-2xl font-bold text-gray-800 mb-3">
+        <h3 className="text-2xl font-bold text-gray-800 mb-3 hidden md:block">
           旅のしおりをプレビュー
         </h3>
 
@@ -36,7 +36,9 @@ export const EmptyItinerary: React.FC = () => {
               1
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-800 mb-1">行き先を伝える</h4>
+              <h4 className="font-semibold text-gray-800 mb-1">
+                行き先を伝える
+              </h4>
               <p className="text-sm text-gray-600">
                 「〇〇に旅行したい」とチャットで伝えましょう
               </p>
@@ -60,19 +62,14 @@ export const EmptyItinerary: React.FC = () => {
               3
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-800 mb-1">しおりが完成！</h4>
+              <h4 className="font-semibold text-gray-800 mb-1">
+                しおりが完成！
+              </h4>
               <p className="text-sm text-gray-600">
                 AIが自動で美しい旅のしおりを作成します
               </p>
             </div>
           </div>
-        </div>
-
-        {/* CTA */}
-        <div className="flex items-center justify-center gap-2 text-blue-600 font-medium">
-          <MessageCircle className="w-5 h-5" />
-          <span>左側のチャットボックスから始めましょう</span>
-          <ArrowRight className="w-5 h-5 animate-pulse" />
         </div>
       </div>
     </div>
