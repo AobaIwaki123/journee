@@ -3,6 +3,10 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { itineraryRepository } from '@/lib/db/itinerary-repository';
 import type { ItineraryFilters, SortBy, SortOrder } from '@/lib/db/itinerary-repository';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 /**
  * Phase 8.3: しおり一覧取得API（Database版）
  * 

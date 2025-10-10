@@ -16,8 +16,9 @@ import { SaveButton } from './SaveButton';
 import { ResetButton } from './ResetButton';
 import { PDFExportButton } from './PDFExportButton';
 import { ToastContainer } from '@/components/ui/Toast';
-import { Calendar, MapPin, List, Map as MapIcon } from 'lucide-react';
+import { List, Map as MapIcon } from 'lucide-react';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
+import { MobilePlannerControls } from './MobilePlannerControls';
 
 type ViewMode = 'schedule' | 'map';
 
@@ -40,14 +41,20 @@ export const ItineraryPreview: React.FC = () => {
   if (!currentItinerary) {
     return (
       <div className="h-full flex flex-col bg-gray-50">
-        {/* Phase 4: プランニング進捗（初期状態でも表示） */}
-        {planningPhase !== 'initial' && <PlanningProgress />}
+        <div className="hidden md:block">
+          {planningPhase !== 'initial' && <PlanningProgress />}
+        </div>
+        <MobilePlannerControls />
 
         {/* 空状態 */}
         <EmptyItinerary />
 
         {/* Phase 4: クイックアクション */}
-        {planningPhase !== 'initial' && <QuickActions />}
+        {planningPhase !== 'initial' && (
+          <div className="hidden md:block">
+            <QuickActions />
+          </div>
+        )}
       </div>
     );
   }
@@ -60,11 +67,19 @@ export const ItineraryPreview: React.FC = () => {
       <div className="h-full flex flex-col bg-gray-50 relative">
         {/* Phase 4.10.3: 自動進行中の進捗表示 */}
         {isAutoProgressing && autoProgressState && (
-          <PhaseStatusBar state={autoProgressState} />
+          <div className="hidden md:block">
+            <PhaseStatusBar state={autoProgressState} />
+          </div>
         )}
-        
+
         {/* Phase 4: プランニング進捗（自動進行中でない場合のみ表示） */}
-        {!isAutoProgressing && <PlanningProgress />}
+        {!isAutoProgressing && (
+          <div className="hidden md:block">
+            <PlanningProgress />
+          </div>
+        )}
+
+        <MobilePlannerControls />
         
         {/* メインコンテンツ（スクロール可能） */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -174,7 +189,11 @@ export const ItineraryPreview: React.FC = () => {
         </div>
 
         {/* Phase 4: クイックアクション（自動進行中でない場合のみ表示） */}
-        {!isAutoProgressing && <QuickActions />}
+        {!isAutoProgressing && (
+          <div className="hidden md:block">
+            <QuickActions />
+          </div>
+        )}
       </div>
     </>
   );
