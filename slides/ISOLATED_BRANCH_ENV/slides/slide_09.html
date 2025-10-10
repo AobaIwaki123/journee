@@ -205,24 +205,6 @@
         box-shadow: 0 4px 16px rgba(50, 108, 229, 0.3);
       }
 
-      .k8s-namespace::after {
-        content: "✓";
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        width: 24px;
-        height: 24px;
-        background: var(--accent-green);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
-        font-weight: 800;
-        color: white;
-        animation: checkPulse 2s ease-in-out infinite;
-      }
-
       .branch-column.main .k8s-namespace::after {
         animation-delay: 0s;
       }
@@ -250,6 +232,7 @@
         margin-bottom: 0.75rem;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
       }
 
@@ -399,17 +382,9 @@
     <!-- スライドコンテナ -->
     <div class="slide-container">
       <div class="slide-content">
-        <h2>🏗️ ブランチごとの環境分離アーキテクチャ</h2>
+        <h2>ブランチごとの環境分離アーキテクチャ</h2>
 
         <div class="architecture-diagram">
-          <!-- GitHub Repository Header -->
-          <div class="github-header">
-            <div class="github-title">
-              <span>🐙</span>
-              <span>GitHub Repository</span>
-            </div>
-          </div>
-
           <!-- Branch Environments Grid -->
           <div class="branch-environments">
             <!-- Main Branch Column -->
@@ -424,24 +399,13 @@
 
               <!-- CI/CD -->
               <div class="pipeline-stage">
-                <div class="stage-icon">🔨</div>
                 <div class="stage-title">Build & Deploy</div>
-                <div class="stage-subtitle">GitHub Actions</div>
               </div>
 
               <!-- Kubernetes Namespace -->
               <div class="k8s-namespace">
                 <div class="namespace-title">
-                  <span>☸️</span>
                   <span>Namespace: main</span>
-                </div>
-                <div class="pod-indicator">
-                  <span class="pod-dot"></span>
-                  <span>Pod: journee-main</span>
-                </div>
-                <div class="pod-indicator">
-                  <span class="pod-dot"></span>
-                  <span>Service: journee-main</span>
                 </div>
               </div>
 
@@ -455,7 +419,6 @@
 
               <!-- Public URL -->
               <div class="url-box">
-                <div class="url-icon">🌐</div>
                 <div class="url-text">main.journee.dev</div>
               </div>
             </div>
@@ -472,24 +435,13 @@
 
               <!-- CI/CD -->
               <div class="pipeline-stage">
-                <div class="stage-icon">🔨</div>
                 <div class="stage-title">Build & Deploy</div>
-                <div class="stage-subtitle">GitHub Actions</div>
               </div>
 
               <!-- Kubernetes Namespace -->
               <div class="k8s-namespace">
                 <div class="namespace-title">
-                  <span>☸️</span>
                   <span>Namespace: feature-A</span>
-                </div>
-                <div class="pod-indicator">
-                  <span class="pod-dot"></span>
-                  <span>Pod: journee-feat-a</span>
-                </div>
-                <div class="pod-indicator">
-                  <span class="pod-dot"></span>
-                  <span>Service: journee-feat-a</span>
                 </div>
               </div>
 
@@ -503,7 +455,6 @@
 
               <!-- Public URL -->
               <div class="url-box">
-                <div class="url-icon">🌐</div>
                 <div class="url-text">feature-a.journee.dev</div>
               </div>
             </div>
@@ -520,24 +471,13 @@
 
               <!-- CI/CD -->
               <div class="pipeline-stage">
-                <div class="stage-icon">🔨</div>
                 <div class="stage-title">Build & Deploy</div>
-                <div class="stage-subtitle">GitHub Actions</div>
               </div>
 
               <!-- Kubernetes Namespace -->
               <div class="k8s-namespace">
                 <div class="namespace-title">
-                  <span>☸️</span>
                   <span>Namespace: feature-B</span>
-                </div>
-                <div class="pod-indicator">
-                  <span class="pod-dot"></span>
-                  <span>Pod: journee-feat-b</span>
-                </div>
-                <div class="pod-indicator">
-                  <span class="pod-dot"></span>
-                  <span>Service: journee-feat-b</span>
                 </div>
               </div>
 
@@ -551,15 +491,9 @@
 
               <!-- Public URL -->
               <div class="url-box">
-                <div class="url-icon">🌐</div>
                 <div class="url-text">feature-b.journee.dev</div>
               </div>
             </div>
-          </div>
-
-          <!-- Legend -->
-          <div class="legend">
-            💡 各ブランチから独立した環境が自動生成される
           </div>
         </div>
       </div>
@@ -571,7 +505,7 @@
     <!-- ナビゲーション -->
     <div class="navigation">
       <button class="nav-button prev">← 前へ</button>
-      <button class="nav-button home">🏠 ホーム</button>
+      <button class="nav-button home">ホーム</button>
       <button class="nav-button next">次へ →</button>
     </div>
 

@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# スライドを入れ替えるスクリプト
+# 使い方: ./scripts/swap-slide <番号1> <番号2>
+
+set -e
+
+# 色定義
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# スライドディレクトリのパス
+SLIDES_DIR="$(cd "$(dirname "$0")/.." && pwd)/slides/ISOLATED_BRANCH_ENV/slides"
+
+# 引数チェック
+if [ $# -ne 2 ]; then
+    echo -e "${RED}エラー: 引数が不足しています${NC}"
+    echo "使い方: $0 <スライド番号1> <スライド番号2>"
+    echo "例: $0 1 2"
+    exit 1
+fi
+
+# 引数の取得
+SLIDE1=$1
+SLIDE2=$2
+
+# 数値チェック
+if ! [[ "$SLIDE1" =~ ^[0-9]+$ ]] || ! [[ "$SLIDE2" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}エラー: スライド番号は数値で指定してください${NC}"
+    exit 1
+fi
+
+# 同じ番号のチェック
+if [ "$SLIDE1" -eq "$SLIDE2" ]; then
+    echo -e "${YELLOW}警告: 同じスライド番号が指定されています${NC}"
+    exit 0
+fi
+
+# ファイル名の構築（ゼロパディング）
+FILE1=$(printf "slide_%02d.html" "$SLIDE1")
+FILE2=$(printf "slide_%02d.html" "$SLIDE2")
+
+# ファイルパス
+PATH1="${SLIDES_DIR}/${FILE1}"
+PATH2="${SLIDES_DIR}/${FILE2}"
+
+# ファイルの存在チェック
+if [ ! -f "$PATH1" ]; then
+    echo -e "${RED}エラー: ${FILE1} が見つかりません${NC}"
+    exit 1
+fi
+
+if [ ! -f "$PATH2" ]; then
+    echo -e "${RED}エラー: ${FILE2} が見つかりません${NC}"
+    exit 1
+fi
+
+# 確認メッセージ
+echo -e "${YELLOW}以下のファイルを入れ替えます:${NC}"
+echo "  ${FILE1} ←→ ${FILE2}"
+echo ""
+read -p "続行しますか？ (y/N): " -n 1 -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo -e "${YELLOW}キャンセルしました${NC}"
+    exit 0
+fi
+
+# 一時ファイルの作成
+TEMP_FILE="${SLIDES_DIR}/.temp_swap_$(date +%s).html"
+
+# ファイルの入れ替え
+echo -e "${GREEN}ファイルを入れ替えています...${NC}"
+mv "$PATH1" "$TEMP_FILE"
+mv "$PATH2" "$PATH1"
+mv "$TEMP_FILE" "$PATH2"
+
+echo -e "${GREEN}✓ 完了しました！${NC}"
+echo ""
+echo "入れ替え結果:"
+echo "  ${FILE1}: $(basename "$PATH2" .html) の内容"
+echo "  ${FILE2}: $(basename "$TEMP_FILE" .html | sed 's/\.temp_swap_[0-9]*//') の内容"
+
