@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { ItineraryData } from "@/types/itinerary";
 import { ItineraryCard } from "./ItineraryCard";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { useStore } from "@/lib/store/useStore";
 import {
   loadItinerariesFromStorage,
@@ -16,6 +17,7 @@ import { FileText, Loader2 } from "lucide-react";
  * 
  * ログイン時: データベースから取得
  * 未ログイン時: LocalStorageから取得（従来通り）
+ * プルトゥリフレッシュ機能付き
  */
 export const ItineraryList: React.FC = () => {
   const { data: session, status: sessionStatus } = useSession();
@@ -25,7 +27,7 @@ export const ItineraryList: React.FC = () => {
   const { itineraryFilter, itinerarySort } = useStore();
 
   // しおり一覧を読み込む
-  const loadItineraries = async () => {
+  const loadItineraries = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -65,14 +67,14 @@ export const ItineraryList: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [session]);
 
   // 初回読み込み
   useEffect(() => {
     if (sessionStatus !== 'loading') {
       loadItineraries();
     }
-  }, [session, sessionStatus]);
+  }, [session, sessionStatus, loadItineraries]);
 
   const handleDelete = () => {
     loadItineraries();
@@ -151,7 +153,7 @@ export const ItineraryList: React.FC = () => {
   }, [filteredItineraries, itinerarySort]);
 
   // ローディング状態
-  if (isLoading) {
+  if (isLoading && itineraries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
@@ -163,62 +165,68 @@ export const ItineraryList: React.FC = () => {
   // エラー状態
   if (error && itineraries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4">
-        <FileText className="w-16 h-16 text-red-300 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          エラーが発生しました
-        </h3>
-        <p className="text-sm text-gray-500 text-center mb-6">{error}</p>
-        <button
-          onClick={() => loadItineraries()}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          再読み込み
-        </button>
-      </div>
+      <PullToRefresh onRefresh={loadItineraries}>
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <FileText className="w-16 h-16 text-red-300 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            エラーが発生しました
+          </h3>
+          <p className="text-sm text-gray-500 text-center mb-6">{error}</p>
+          <button
+            onClick={() => loadItineraries()}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            再読み込み
+          </button>
+        </div>
+      </PullToRefresh>
     );
   }
 
   // 空状態
   if (sortedItineraries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4">
-        <FileText className="w-16 h-16 text-gray-300 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          しおりがありません
-        </h3>
-        <p className="text-sm text-gray-500 text-center mb-6">
-          {itineraryFilter.status !== "all" ||
-          itineraryFilter.destination ||
-          itineraryFilter.startDate ||
-          itineraryFilter.endDate
-            ? "フィルター条件に一致するしおりがありません。条件を変更してください。"
-            : "AIとチャットして、あなただけの旅のしおりを作成しましょう。"}
-        </p>
-        {itineraryFilter.status === "all" &&
-          !itineraryFilter.destination &&
-          !itineraryFilter.startDate &&
-          !itineraryFilter.endDate && (
-            <a
-              href="/"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              しおりを作成する
-            </a>
-          )}
-      </div>
+      <PullToRefresh onRefresh={loadItineraries}>
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <FileText className="w-16 h-16 text-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            しおりがありません
+          </h3>
+          <p className="text-sm text-gray-500 text-center mb-6">
+            {itineraryFilter.status !== "all" ||
+            itineraryFilter.destination ||
+            itineraryFilter.startDate ||
+            itineraryFilter.endDate
+              ? "フィルター条件に一致するしおりがありません。条件を変更してください。"
+              : "AIとチャットして、あなただけの旅のしおりを作成しましょう。"}
+          </p>
+          {itineraryFilter.status === "all" &&
+            !itineraryFilter.destination &&
+            !itineraryFilter.startDate &&
+            !itineraryFilter.endDate && (
+              <a
+                href="/"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                しおりを作成する
+              </a>
+            )}
+        </div>
+      </PullToRefresh>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {sortedItineraries.map((itinerary) => (
-        <ItineraryCard
-          key={itinerary.id}
-          itinerary={itinerary}
-          onDelete={handleDelete}
-        />
-      ))}
-    </div>
+    <PullToRefresh onRefresh={loadItineraries}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {sortedItineraries.map((itinerary) => (
+          <ItineraryCard
+            key={itinerary.id}
+            itinerary={itinerary}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
+    </PullToRefresh>
   );
 };
