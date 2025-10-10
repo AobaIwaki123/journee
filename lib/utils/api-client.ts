@@ -81,6 +81,7 @@ export class ChatAPIClient {
       planningPhase?: ItineraryPhase;
       currentDetailingDay?: number | null;
       currency?: string;
+      signal?: AbortSignal;
     }
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     const request: ChatAPIRequest = {
@@ -101,6 +102,7 @@ export class ChatAPIClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
+      signal: options?.signal,
     });
 
     if (!response.ok) {
@@ -191,7 +193,8 @@ export async function* sendChatMessageStream(
   claudeApiKey?: string,
   planningPhase?: ItineraryPhase,
   currentDetailingDay?: number | null,
-  currency?: string
+  currency?: string,
+  signal?: AbortSignal
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   yield* chatApiClient.sendMessageStream(message, {
     chatHistory,
@@ -201,5 +204,6 @@ export async function* sendChatMessageStream(
     planningPhase,
     currentDetailingDay,
     currency,
+    signal,
   });
 }

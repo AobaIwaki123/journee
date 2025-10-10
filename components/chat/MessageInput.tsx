@@ -10,8 +10,6 @@ import type { Message } from "@/types/chat";
 import { generateId } from "@/lib/utils/id-generator";
 
 export const MessageInput: React.FC = () => {
-  const [input, setInput] = useState("");
-
   // Store state
   const messages = useStore((state: any) => state.messages);
   const addMessage = useStore((state: any) => state.addMessage);
@@ -30,6 +28,15 @@ export const MessageInput: React.FC = () => {
   const selectedAI = useStore((state: any) => state.selectedAI);
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setError = useStore((state: any) => state.setError);
+  
+  // Message editing state
+  const messageDraft = useStore((state: any) => state.messageDraft);
+  const setMessageDraft = useStore((state: any) => state.setMessageDraft);
+  const editingMessageId = useStore((state: any) => state.editingMessageId);
+  const setAbortController = useStore((state: any) => state.setAbortController);
+  
+  // Local input state (uses messageDraft from store)
+  const [input, setInput] = useState("");
 
   // Phase 4.5: プランニングフェーズ状態を取得
   const planningPhase = useStore((state: any) => state.planningPhase);
@@ -50,10 +57,24 @@ export const MessageInput: React.FC = () => {
     (state: any) => state.setAutoProgressState
   );
   const currency = useStore((state: any) => state.settings.general.currency);
+  
+  // Initialize input from messageDraft on mount and when messageDraft changes
+  React.useEffect(() => {
+    if (messageDraft && !editingMessageId) {
+      setInput(messageDraft);
+    }
+  }, [messageDraft, editingMessageId]);
+  
+  // Save draft whenever input changes
+  React.useEffect(() => {
+    if (!editingMessageId) {
+      setMessageDraft(input);
+    }
+  }, [input, editingMessageId, setMessageDraft]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || isStreaming) return;
+    if (!input.trim() || isLoading || isStreaming || editingMessageId) return;
 
     const userMessage = {
       id: generateId(),
@@ -64,10 +85,15 @@ export const MessageInput: React.FC = () => {
 
     addMessage(userMessage);
     setInput("");
+    setMessageDraft(""); // ドラフトをクリア
     setLoading(true);
     setStreaming(true);
     setStreamingMessage("");
     setError(null);
+    
+    // AbortController を作成してストアに保存
+    const abortController = new AbortController();
+    setAbortController(abortController);
 
     try {
       // チャット履歴を準備（最新10件）
@@ -90,7 +116,8 @@ export const MessageInput: React.FC = () => {
         claudeApiKey || undefined,
         planningPhase,
         currentDetailingDay,
-        currency
+        currency,
+        abortController.signal
       )) {
         if (chunk.type === "message" && chunk.content) {
           // メッセージチャンクを追加
@@ -139,21 +166,35 @@ export const MessageInput: React.FC = () => {
         }, 500);
       }
     } catch (error: any) {
-      console.error("Chat error:", error);
+      // AbortErrorの場合は、エラーメッセージを表示しない（ユーザーが意図的にキャンセルした）
+      if (error.name === 'AbortError') {
+        console.log("AI応答がキャンセルされました");
+        const cancelMessage = {
+          id: generateId(),
+          role: "assistant" as const,
+          content: "メッセージの送信がキャンセルされました。",
+          timestamp: new Date(),
+        };
+        addMessage(cancelMessage);
+        setStreamingMessage("");
+      } else {
+        console.error("Chat error:", error);
 
-      // エラーメッセージを表示
-      const errorMessage = {
-        id: generateId(),
-        role: "assistant" as const,
-        content: `申し訳ございません。エラーが発生しました: ${error.message}`,
-        timestamp: new Date(),
-      };
-      addMessage(errorMessage);
-      setError(error.message);
-      setStreamingMessage("");
+        // エラーメッセージを表示
+        const errorMessage = {
+          id: generateId(),
+          role: "assistant" as const,
+          content: `申し訳ございません。エラーが発生しました: ${error.message}`,
+          timestamp: new Date(),
+        };
+        addMessage(errorMessage);
+        setError(error.message);
+        setStreamingMessage("");
+      }
     } finally {
       setLoading(false);
       setStreaming(false);
+      setAbortController(null); // AbortControllerをクリア
     }
   };
 
@@ -196,7 +237,7 @@ export const MessageInput: React.FC = () => {
     }
   };
 
-  const disabled = isLoading || isStreaming || isAutoProgressing;
+  const disabled = isLoading || isStreaming || isAutoProgressing || editingMessageId !== null;
 
   /**
    * キーボードイベントハンドラー
@@ -220,11 +261,20 @@ export const MessageInput: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="flex space-x-2">
+      {editingMessageId && (
+        <div className="absolute -top-8 left-0 right-0 bg-yellow-100 text-yellow-800 px-4 py-1 text-sm rounded-t-lg">
+          メッセージを編集中です。編集を完了してから新しいメッセージを送信してください。
+        </div>
+      )}
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="メッセージを入力... (Shift + Enterで改行)"
+        placeholder={
+          editingMessageId
+            ? "メッセージを編集中..."
+            : "メッセージを入力... (Shift + Enterで改行)"
+        }
         disabled={disabled}
         rows={1}
         className="flex-1 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all resize-none overflow-hidden min-h-[42px] max-h-[200px]"

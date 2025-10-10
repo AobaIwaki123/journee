@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useStore } from "@/lib/store/useStore";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Edit2, Trash2, Save, X } from "lucide-react";
 import { toSafeDate } from "@/lib/utils/time-utils";
 
 /**
@@ -39,7 +39,13 @@ export const MessageList: React.FC = () => {
   const isLoading = useStore((state: any) => state.isLoading);
   const isStreaming = useStore((state: any) => state.isStreaming);
   const streamingMessage = useStore((state: any) => state.streamingMessage);
+  const editingMessageId = useStore((state: any) => state.editingMessageId);
+  const startEditingMessage = useStore((state: any) => state.startEditingMessage);
+  const cancelEditingMessage = useStore((state: any) => state.cancelEditingMessage);
+  const saveEditedMessage = useStore((state: any) => state.saveEditedMessage);
+  const deleteMessage = useStore((state: any) => state.deleteMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [editContent, setEditContent] = useState("");
 
   // ストリーミング中のメッセージからJSONブロックを除去
   const cleanStreamingMessage = useMemo(() => {
@@ -51,6 +57,33 @@ export const MessageList: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingMessage]);
 
+  const handleStartEdit = (messageId: string, currentContent: string) => {
+    setEditContent(currentContent);
+    startEditingMessage(messageId);
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    if (editContent.trim()) {
+      // メッセージを保存（古いAI応答も削除される）
+      saveEditedMessage(messageId, editContent.trim());
+      setEditContent("");
+      
+      // 編集完了後、編集されたメッセージを再送信するか確認
+      // ここでは自動的に再送信しない（ユーザーが再度送信ボタンを押す必要がある）
+    }
+  };
+
+  const handleCancelEdit = () => {
+    cancelEditingMessage();
+    setEditContent("");
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (confirm("このメッセージを削除してもよろしいですか？")) {
+      deleteMessage(messageId);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {messages.length === 0 ? (
@@ -60,41 +93,99 @@ export const MessageList: React.FC = () => {
         </div>
       ) : (
         <>
-          {messages.map((message: any) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+          {messages.map((message: any) => {
+            const isEditing = editingMessageId === message.id;
+            const isDeleted = message.isDeleted;
+
+            return (
               <div
-                className={`flex max-w-[80%] ${
-                  message.role === "user" ? "flex-row-reverse" : "flex-row"
+                key={message.id}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.role === "user"
-                      ? "bg-blue-500 ml-3"
-                      : "bg-gray-200 mr-3"
+                  className={`flex max-w-[80%] ${
+                    message.role === "user" ? "flex-row-reverse" : "flex-row"
                   }`}
                 >
-                  {message.role === "user" ? (
-                    <User className="w-5 h-5 text-white" />
-                  ) : (
-                    <Bot className="w-5 h-5 text-gray-600" />
-                  )}
-                </div>
-                <div
-                  className={`rounded-lg p-3 ${
-                    message.role === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {message.role === "user" ? (
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  ) : (
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      message.role === "user"
+                        ? "bg-blue-500 ml-3"
+                        : "bg-gray-200 mr-3"
+                    }`}
+                  >
+                    {message.role === "user" ? (
+                      <User className="w-5 h-5 text-white" />
+                    ) : (
+                      <Bot className="w-5 h-5 text-gray-600" />
+                    )}
+                  </div>
+                  <div
+                    className={`rounded-lg p-3 ${
+                      isDeleted
+                        ? "bg-gray-100 text-gray-400 italic"
+                        : message.role === "user"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {isEditing ? (
+                      // 編集モード
+                      <div className="space-y-2">
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded focus:outline-none focus:border-blue-500 min-h-[60px]"
+                          autoFocus
+                        />
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleSaveEdit(message.id)}
+                            className="flex items-center px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            保存
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="flex items-center px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
+                    ) : message.role === "user" ? (
+                      // ユーザーメッセージ表示
+                      <>
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                        {!isDeleted && (
+                          <div className="flex space-x-2 mt-2">
+                            <button
+                              onClick={() =>
+                                handleStartEdit(message.id, message.content)
+                              }
+                              className="flex items-center text-xs text-blue-100 hover:text-white"
+                              title="編集"
+                            >
+                              <Edit2 className="w-3 h-3 mr-1" />
+                              編集
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMessage(message.id)}
+                              className="flex items-center text-xs text-blue-100 hover:text-white"
+                              title="削除"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" />
+                              削除
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      // AIメッセージ表示
                     <div className="markdown-content">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
@@ -201,25 +292,29 @@ export const MessageList: React.FC = () => {
                       </ReactMarkdown>
                     </div>
                   )}
-                  <p
-                    className={`text-xs mt-1 ${
-                      message.role === "user"
-                        ? "text-blue-100"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    {toSafeDate(message.timestamp)?.toLocaleTimeString(
-                      "ja-JP",
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    ) || ""}
-                  </p>
+                    <p
+                      className={`text-xs mt-1 ${
+                        isDeleted
+                          ? "text-gray-400"
+                          : message.role === "user"
+                          ? "text-blue-100"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {toSafeDate(message.timestamp)?.toLocaleTimeString(
+                        "ja-JP",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      ) || ""}
+                      {message.editedAt && !isDeleted && " (編集済み)"}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* ストリーミング中のメッセージ */}
           {isStreaming && cleanStreamingMessage && (

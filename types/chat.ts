@@ -30,6 +30,10 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  /** メッセージが削除されているか */
+  isDeleted?: boolean;
+  /** メッセージが編集された日時 */
+  editedAt?: Date;
 }
 
 /**
