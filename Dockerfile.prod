@@ -8,7 +8,9 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --prefer-offline --no-audit
+# --prefer-offline: キャッシュを優先的に使用
+# --no-audit: セキュリティ監査をスキップしてビルド時間を短縮
 
 # Rebuild the source code only when needed
 FROM base AS builder

@@ -51,3 +51,33 @@ coverage
 Dockerfile*
 docker-compose*
 .dockerignore
+
+# Documentation
+docs
+*.md
+README.md
+CHANGELOG.md
+
+# Tests
+e2e
+test-results
+playwright-report
+__tests__
+*.spec.ts
+*.test.ts
+*.test.tsx
+jest.config.js
+jest.setup.js
+playwright.config.ts
+
+# Development files
+scripts
+k8s
+blog
+slides
+images
+.cursor
+
+# CI/CD
+.github
+.git

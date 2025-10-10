@@ -76,6 +76,8 @@ jobs:
           file: ./Dockerfile.prod
           push: true
           tags: ${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH_HASH }}-${{ env.SHORT_SHA }}
+          cache-from: type=gha # 以前のビルドで作成したレイヤーをどこから取得するか
+          cache-to: type=gha,mode=max # すべてのビルドレイヤーをキャッシュに保存,mode=minは最終レイヤーのみ
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
