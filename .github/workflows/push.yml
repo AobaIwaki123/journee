@@ -5,21 +5,20 @@ on:
   push:
     branches-ignore:
       - main
-    # paths:
-    #   - "app/**"
-    #   - "components/**"
-    #   - "lib/**"
-    #   - "types/**"
-    #   - "public/**"
-    #   - "middleware.ts"
-    #   - "package.json"
-    #   - "package-lock.json"
-    #   - "next.config.js"
-    #   - "tailwind.config.ts"
-    #   - "tsconfig.json"
-    #   - "postcss.config.js"
-    #   - "Dockerfile.prod"
-    # テスト
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "types/**"
+      - "public/**"
+      - "middleware.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.js"
+      - "tailwind.config.ts"
+      - "tsconfig.json"
+      - "postcss.config.js"
+      - "Dockerfile.prod"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
