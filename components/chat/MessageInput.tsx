@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useStore } from "@/lib/store/useStore";
 import { Send } from "lucide-react";
 import { sendChatMessageStream } from "@/lib/utils/api-client";
@@ -11,6 +11,7 @@ import { generateId } from "@/lib/utils/id-generator";
 
 export const MessageInput: React.FC = () => {
   const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Store state
   const messages = useStore((state: any) => state.messages);
@@ -196,14 +197,26 @@ export const MessageInput: React.FC = () => {
     }
   };
 
+  /**
+   * フォーカス時にカーソルを末尾に移動
+   */
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const length = input.value.length;
+    // カーソルを末尾に移動
+    input.setSelectionRange(length, length);
+  };
+
   const disabled = isLoading || isStreaming || isAutoProgressing;
 
   return (
     <form onSubmit={handleSubmit} className="flex space-x-2">
       <input
+        ref={inputRef}
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        onFocus={handleFocus}
         placeholder="メッセージを入力..."
         disabled={disabled}
         className="flex-1 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all"
