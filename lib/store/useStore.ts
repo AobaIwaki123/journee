@@ -94,12 +94,14 @@ interface AppState {
   isLoading: boolean;
   isStreaming: boolean;
   streamingMessage: string;
+  hasReceivedResponse: boolean;
   addMessage: (message: Message) => void;
   setLoading: (loading: boolean) => void;
   setStreaming: (streaming: boolean) => void;
   setStreamingMessage: (message: string) => void;
   appendStreamingMessage: (chunk: string) => void;
   clearMessages: () => void;
+  setHasReceivedResponse: (value: boolean) => void;
 
   // Itinerary state
   currentItinerary: ItineraryData | null;
@@ -231,6 +233,7 @@ export const useStore = create<AppState>()((set, get) => ({
   isLoading: false,
   isStreaming: false,
   streamingMessage: "",
+  hasReceivedResponse: false,
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -239,6 +242,7 @@ export const useStore = create<AppState>()((set, get) => ({
   appendStreamingMessage: (chunk) =>
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
   clearMessages: () => set({ messages: [], streamingMessage: "" }),
+  setHasReceivedResponse: (value) => set({ hasReceivedResponse: value }),
 
   // Itinerary state
   currentItinerary: null,

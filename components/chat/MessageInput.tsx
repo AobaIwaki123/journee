@@ -30,6 +30,9 @@ export const MessageInput: React.FC = () => {
   const selectedAI = useStore((state: any) => state.selectedAI);
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setError = useStore((state: any) => state.setError);
+  const setHasReceivedResponse = useStore(
+    (state: any) => state.setHasReceivedResponse
+  );
 
   // Phase 4.5: プランニングフェーズ状態を取得
   const planningPhase = useStore((state: any) => state.planningPhase);
@@ -65,7 +68,7 @@ export const MessageInput: React.FC = () => {
     addMessage(userMessage);
     setInput("");
     setLoading(true);
-    setStreaming(true);
+    setHasReceivedResponse(false);
     setStreamingMessage("");
     setError(null);
 
@@ -80,6 +83,7 @@ export const MessageInput: React.FC = () => {
 
       let fullResponse = "";
       let receivedItinerary = false;
+      let firstChunk = true;
 
       // Phase 4.5: フェーズ情報を含めてストリーミングレスポンスを処理
       for await (const chunk of sendChatMessageStream(
@@ -93,6 +97,12 @@ export const MessageInput: React.FC = () => {
         currency
       )) {
         if (chunk.type === "message" && chunk.content) {
+          // 最初のチャンク受信時にストリーミング開始
+          if (firstChunk) {
+            setStreaming(true);
+            setHasReceivedResponse(true);
+            firstChunk = false;
+          }
           // メッセージチャンクを追加
           appendStreamingMessage(chunk.content);
           fullResponse += chunk.content;
