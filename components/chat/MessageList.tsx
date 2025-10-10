@@ -7,6 +7,7 @@ import rehypeRaw from "rehype-raw";
 import { useStore } from "@/lib/store/useStore";
 import { Bot, User, Edit2, Trash2, Save, X } from "lucide-react";
 import { toSafeDate } from "@/lib/utils/time-utils";
+import { MessageSkeleton } from "./MessageSkeleton";
 import { sendChatMessageStream } from "@/lib/utils/api-client";
 import { mergeItineraryData, parseAIResponse } from "@/lib/ai/prompts";
 import { generateId } from "@/lib/utils/id-generator";
@@ -44,33 +45,54 @@ export const MessageList: React.FC = () => {
   const isStreaming = useStore((state: any) => state.isStreaming);
   const streamingMessage = useStore((state: any) => state.streamingMessage);
   const editingMessageId = useStore((state: any) => state.editingMessageId);
-  const startEditingMessage = useStore((state: any) => state.startEditingMessage);
-  const cancelEditingMessage = useStore((state: any) => state.cancelEditingMessage);
+  const startEditingMessage = useStore(
+    (state: any) => state.startEditingMessage
+  );
+  const cancelEditingMessage = useStore(
+    (state: any) => state.cancelEditingMessage
+  );
   const saveEditedMessage = useStore((state: any) => state.saveEditedMessage);
   const deleteMessage = useStore((state: any) => state.deleteMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
+  const hasReceivedResponse = useStore(
+    (state: any) => state.hasReceivedResponse
+  );
   const [editContent, setEditContent] = useState("");
-  
+
   // 送信関連のストア
   const addMessage = useStore((state: any) => state.addMessage);
   const setLoading = useStore((state: any) => state.setLoading);
   const setStreaming = useStore((state: any) => state.setStreaming);
-  const setStreamingMessage = useStore((state: any) => state.setStreamingMessage);
-  const appendStreamingMessage = useStore((state: any) => state.appendStreamingMessage);
+  const setStreamingMessage = useStore(
+    (state: any) => state.setStreamingMessage
+  );
+  const appendStreamingMessage = useStore(
+    (state: any) => state.appendStreamingMessage
+  );
   const currentItinerary = useStore((state: any) => state.currentItinerary);
   const setItinerary = useStore((state: any) => state.setItinerary);
   const selectedAI = useStore((state: any) => state.selectedAI);
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setError = useStore((state: any) => state.setError);
   const planningPhase = useStore((state: any) => state.planningPhase);
-  const currentDetailingDay = useStore((state: any) => state.currentDetailingDay);
+  const currentDetailingDay = useStore(
+    (state: any) => state.currentDetailingDay
+  );
   const currency = useStore((state: any) => state.settings.general.currency);
   const setAbortController = useStore((state: any) => state.setAbortController);
   const updateChecklist = useStore((state: any) => state.updateChecklist);
-  const shouldTriggerAutoProgress = useStore((state: any) => state.shouldTriggerAutoProgress);
-  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
-  const setIsAutoProgressing = useStore((state: any) => state.setIsAutoProgressing);
-  const setAutoProgressState = useStore((state: any) => state.setAutoProgressState);
+  const shouldTriggerAutoProgress = useStore(
+    (state: any) => state.shouldTriggerAutoProgress
+  );
+  const setIsAutoProgressing = useStore(
+    (state: any) => state.setIsAutoProgressing
+  );
+  const setAutoProgressState = useStore(
+    (state: any) => state.setAutoProgressState
+  );
+
+  const isProcessing = (isLoading || isStreaming) && !hasReceivedResponse;
 
   // ストリーミング中のメッセージからJSONブロックを除去
   const cleanStreamingMessage = useMemo(() => {
@@ -91,7 +113,7 @@ export const MessageList: React.FC = () => {
     if (!editContent.trim()) return;
 
     const editedContent = editContent.trim();
-    
+
     // メッセージを保存（古いAI応答も削除される）
     saveEditedMessage(messageId, editedContent);
     setEditContent("");
@@ -178,7 +200,7 @@ export const MessageList: React.FC = () => {
       }
     } catch (error: any) {
       // AbortErrorの場合は、エラーメッセージを表示しない
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         console.log("AI応答がキャンセルされました");
         const cancelMessage: Message = {
           id: generateId(),
@@ -320,112 +342,112 @@ export const MessageList: React.FC = () => {
                       </>
                     ) : (
                       // AIメッセージ表示
-                    <div className="markdown-content">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeRaw]}
-                        components={{
-                          a: ({ node, ...props }) => (
-                            <a
-                              {...props}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            />
-                          ),
-                          h1: ({ node, ...props }) => (
-                            <h1
-                              {...props}
-                              className="text-2xl font-bold mt-4 mb-2"
-                            />
-                          ),
-                          h2: ({ node, ...props }) => (
-                            <h2
-                              {...props}
-                              className="text-xl font-bold mt-3 mb-2"
-                            />
-                          ),
-                          h3: ({ node, ...props }) => (
-                            <h3
-                              {...props}
-                              className="text-lg font-bold mt-2 mb-1"
-                            />
-                          ),
-                          ul: ({ node, ...props }) => (
-                            <ul
-                              {...props}
-                              className="list-disc list-inside ml-4 my-2"
-                            />
-                          ),
-                          ol: ({ node, ...props }) => (
-                            <ol
-                              {...props}
-                              className="list-decimal list-inside ml-4 my-2"
-                            />
-                          ),
-                          li: ({ node, ...props }) => (
-                            <li {...props} className="my-1" />
-                          ),
-                          p: ({ node, ...props }) => (
-                            <p {...props} className="my-2" />
-                          ),
-                          code: ({ node, inline, ...props }: any) =>
-                            inline ? (
-                              <code
+                      <div className="markdown-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw]}
+                          components={{
+                            a: ({ node, ...props }) => (
+                              <a
                                 {...props}
-                                className="bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-sm font-mono"
-                              />
-                            ) : (
-                              <code
-                                {...props}
-                                className="block bg-gray-800 text-gray-100 p-3 rounded my-2 overflow-x-auto text-sm font-mono"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
                               />
                             ),
-                          pre: ({ node, ...props }) => (
-                            <pre {...props} className="my-2" />
-                          ),
-                          blockquote: ({ node, ...props }) => (
-                            <blockquote
-                              {...props}
-                              className="border-l-4 border-gray-400 pl-4 my-2 italic text-gray-600"
-                            />
-                          ),
-                          table: ({ node, ...props }) => (
-                            <div className="overflow-x-auto my-2">
-                              <table
+                            h1: ({ node, ...props }) => (
+                              <h1
                                 {...props}
-                                className="min-w-full border-collapse border border-gray-300"
+                                className="text-2xl font-bold mt-4 mb-2"
                               />
-                            </div>
-                          ),
-                          thead: ({ node, ...props }) => (
-                            <thead {...props} className="bg-gray-200" />
-                          ),
-                          tbody: ({ node, ...props }) => <tbody {...props} />,
-                          tr: ({ node, ...props }) => (
-                            <tr
-                              {...props}
-                              className="border-b border-gray-300"
-                            />
-                          ),
-                          th: ({ node, ...props }) => (
-                            <th
-                              {...props}
-                              className="border border-gray-300 px-4 py-2 text-left font-semibold"
-                            />
-                          ),
-                          td: ({ node, ...props }) => (
-                            <td
-                              {...props}
-                              className="border border-gray-300 px-4 py-2"
-                            />
-                          ),
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-                  )}
+                            ),
+                            h2: ({ node, ...props }) => (
+                              <h2
+                                {...props}
+                                className="text-xl font-bold mt-3 mb-2"
+                              />
+                            ),
+                            h3: ({ node, ...props }) => (
+                              <h3
+                                {...props}
+                                className="text-lg font-bold mt-2 mb-1"
+                              />
+                            ),
+                            ul: ({ node, ...props }) => (
+                              <ul
+                                {...props}
+                                className="list-disc list-inside ml-4 my-2"
+                              />
+                            ),
+                            ol: ({ node, ...props }) => (
+                              <ol
+                                {...props}
+                                className="list-decimal list-inside ml-4 my-2"
+                              />
+                            ),
+                            li: ({ node, ...props }) => (
+                              <li {...props} className="my-1" />
+                            ),
+                            p: ({ node, ...props }) => (
+                              <p {...props} className="my-2" />
+                            ),
+                            code: ({ node, inline, ...props }: any) =>
+                              inline ? (
+                                <code
+                                  {...props}
+                                  className="bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-sm font-mono"
+                                />
+                              ) : (
+                                <code
+                                  {...props}
+                                  className="block bg-gray-800 text-gray-100 p-3 rounded my-2 overflow-x-auto text-sm font-mono"
+                                />
+                              ),
+                            pre: ({ node, ...props }) => (
+                              <pre {...props} className="my-2" />
+                            ),
+                            blockquote: ({ node, ...props }) => (
+                              <blockquote
+                                {...props}
+                                className="border-l-4 border-gray-400 pl-4 my-2 italic text-gray-600"
+                              />
+                            ),
+                            table: ({ node, ...props }) => (
+                              <div className="overflow-x-auto my-2">
+                                <table
+                                  {...props}
+                                  className="min-w-full border-collapse border border-gray-300"
+                                />
+                              </div>
+                            ),
+                            thead: ({ node, ...props }) => (
+                              <thead {...props} className="bg-gray-200" />
+                            ),
+                            tbody: ({ node, ...props }) => <tbody {...props} />,
+                            tr: ({ node, ...props }) => (
+                              <tr
+                                {...props}
+                                className="border-b border-gray-300"
+                              />
+                            ),
+                            th: ({ node, ...props }) => (
+                              <th
+                                {...props}
+                                className="border border-gray-300 px-4 py-2 text-left font-semibold"
+                              />
+                            ),
+                            td: ({ node, ...props }) => (
+                              <td
+                                {...props}
+                                className="border border-gray-300 px-4 py-2"
+                              />
+                            ),
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                     <p
                       className={`text-xs mt-1 ${
                         isDeleted
@@ -569,22 +591,7 @@ export const MessageList: React.FC = () => {
           )}
 
           {/* ローディング中（ストリーミング開始前） */}
-          {isLoading && !isStreaming && !streamingMessage && (
-            <div className="flex justify-start">
-              <div className="flex max-w-[80%]">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-gray-600 animate-pulse" />
-                </div>
-                <div className="rounded-lg p-3 bg-gray-100">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {isProcessing && <MessageSkeleton />}
         </>
       )}
       <div ref={messagesEndRef} />

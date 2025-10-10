@@ -94,13 +94,15 @@ interface AppState {
   isLoading: boolean;
   isStreaming: boolean;
   streamingMessage: string;
+  hasReceivedResponse: boolean;
   addMessage: (message: Message) => void;
   setLoading: (loading: boolean) => void;
   setStreaming: (streaming: boolean) => void;
   setStreamingMessage: (message: string) => void;
   appendStreamingMessage: (chunk: string) => void;
   clearMessages: () => void;
-  
+  setHasReceivedResponse: (value: boolean) => void;
+
   // Message editing state
   editingMessageId: string | null;
   messageDraft: string;
@@ -109,7 +111,7 @@ interface AppState {
   saveEditedMessage: (messageId: string, newContent: string) => void;
   deleteMessage: (messageId: string) => void;
   setMessageDraft: (draft: string) => void;
-  
+
   // AI response control
   abortAIResponse: () => void;
   setAbortController: (controller: AbortController | null) => void;
@@ -245,6 +247,7 @@ export const useStore = create<AppState>()((set, get) => ({
   isLoading: false,
   isStreaming: false,
   streamingMessage: "",
+  hasReceivedResponse: false,
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -253,45 +256,48 @@ export const useStore = create<AppState>()((set, get) => ({
   appendStreamingMessage: (chunk) =>
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
   clearMessages: () => set({ messages: [], streamingMessage: "" }),
-  
+  setHasReceivedResponse: (value) => set({ hasReceivedResponse: value }),
+
   // Message editing state
   editingMessageId: null,
   messageDraft: "",
-  
+
   startEditingMessage: (messageId) => {
     const state = get();
-    
+
     // 編集モード開始時に進行中のAI応答をキャンセル
     if (state.isStreaming || state.isLoading) {
       state.abortAIResponse();
     }
-    
+
     // 新規メッセージドラフトを一時保存
     const currentDraft = state.messageDraft;
-    
-    set({ 
+
+    set({
       editingMessageId: messageId,
       messageDraft: currentDraft, // ドラフトを保持
     });
   },
-  
+
   cancelEditingMessage: () => {
     set({ editingMessageId: null });
     // messageDraftは保持したまま（編集終了後に復元）
   },
-  
+
   saveEditedMessage: (messageId, newContent) => {
     set((state) => {
       // 編集対象のメッセージを見つける
       const editedMessage = state.messages.find((msg) => msg.id === messageId);
-      
+
       // 編集されたメッセージの直後のAI応答を削除
       let messagesToKeep = state.messages;
       if (editedMessage) {
-        const editedIndex = state.messages.findIndex((msg) => msg.id === messageId);
+        const editedIndex = state.messages.findIndex(
+          (msg) => msg.id === messageId
+        );
         // 編集されたメッセージの直後のメッセージがAI応答なら削除
         if (
-          editedIndex >= 0 && 
+          editedIndex >= 0 &&
           editedIndex < state.messages.length - 1 &&
           state.messages[editedIndex + 1].role === "assistant"
         ) {
@@ -301,7 +307,7 @@ export const useStore = create<AppState>()((set, get) => ({
           ];
         }
       }
-      
+
       return {
         messages: messagesToKeep.map((msg) =>
           msg.id === messageId
@@ -313,19 +319,23 @@ export const useStore = create<AppState>()((set, get) => ({
       };
     });
   },
-  
+
   deleteMessage: (messageId) => {
     set((state) => ({
       messages: state.messages.map((msg) =>
         msg.id === messageId
-          ? { ...msg, isDeleted: true, content: "このメッセージは削除されました" }
+          ? {
+              ...msg,
+              isDeleted: true,
+              content: "このメッセージは削除されました",
+            }
           : msg
       ),
     }));
   },
-  
+
   setMessageDraft: (draft) => set({ messageDraft: draft }),
-  
+
   // AI response control
   abortController: null,
   setAbortController: (controller) => set({ abortController: controller }),
@@ -333,7 +343,7 @@ export const useStore = create<AppState>()((set, get) => ({
     const state = get();
     if (state.abortController) {
       state.abortController.abort();
-      set({ 
+      set({
         abortController: null,
         isLoading: false,
         isStreaming: false,

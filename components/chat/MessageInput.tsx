@@ -28,13 +28,16 @@ export const MessageInput: React.FC = () => {
   const selectedAI = useStore((state: any) => state.selectedAI);
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setError = useStore((state: any) => state.setError);
-  
+  const setHasReceivedResponse = useStore(
+    (state: any) => state.setHasReceivedResponse
+  );
+
   // Message editing state
   const messageDraft = useStore((state: any) => state.messageDraft);
   const setMessageDraft = useStore((state: any) => state.setMessageDraft);
   const editingMessageId = useStore((state: any) => state.editingMessageId);
   const setAbortController = useStore((state: any) => state.setAbortController);
-  
+
   // Local input state (uses messageDraft from store)
   const [input, setInput] = useState("");
 
@@ -57,14 +60,14 @@ export const MessageInput: React.FC = () => {
     (state: any) => state.setAutoProgressState
   );
   const currency = useStore((state: any) => state.settings.general.currency);
-  
+
   // Initialize input from messageDraft on mount and when messageDraft changes
   React.useEffect(() => {
     if (messageDraft && !editingMessageId) {
       setInput(messageDraft);
     }
   }, [messageDraft, editingMessageId]);
-  
+
   // Save draft whenever input changes
   React.useEffect(() => {
     if (!editingMessageId) {
@@ -87,10 +90,10 @@ export const MessageInput: React.FC = () => {
     setInput("");
     setMessageDraft(""); // ドラフトをクリア
     setLoading(true);
-    setStreaming(true);
+    setHasReceivedResponse(false);
     setStreamingMessage("");
     setError(null);
-    
+
     // AbortController を作成してストアに保存
     const abortController = new AbortController();
     setAbortController(abortController);
@@ -106,6 +109,7 @@ export const MessageInput: React.FC = () => {
 
       let fullResponse = "";
       let receivedItinerary = false;
+      let firstChunk = true;
 
       // Phase 4.5: フェーズ情報を含めてストリーミングレスポンスを処理
       for await (const chunk of sendChatMessageStream(
@@ -120,6 +124,12 @@ export const MessageInput: React.FC = () => {
         abortController.signal
       )) {
         if (chunk.type === "message" && chunk.content) {
+          // 最初のチャンク受信時にストリーミング開始
+          if (firstChunk) {
+            setStreaming(true);
+            setHasReceivedResponse(true);
+            firstChunk = false;
+          }
           // メッセージチャンクを追加
           appendStreamingMessage(chunk.content);
           fullResponse += chunk.content;
@@ -167,7 +177,7 @@ export const MessageInput: React.FC = () => {
       }
     } catch (error: any) {
       // AbortErrorの場合は、エラーメッセージを表示しない（ユーザーが意図的にキャンセルした）
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         console.log("AI応答がキャンセルされました");
         const cancelMessage = {
           id: generateId(),
@@ -237,7 +247,8 @@ export const MessageInput: React.FC = () => {
     }
   };
 
-  const disabled = isLoading || isStreaming || isAutoProgressing || editingMessageId !== null;
+  const disabled =
+    isLoading || isStreaming || isAutoProgressing || editingMessageId !== null;
 
   /**
    * キーボードイベントハンドラー
