@@ -8,11 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useStore } from '@/lib/store/useStore';
 import type { ItineraryData } from '@/types/itinerary';
-import {
-  saveItinerary as saveToDatabase,
-  loadItinerary as loadFromDatabase,
-  deleteItinerary as deleteFromDatabase,
-} from '@/lib/db/itinerary-repository';
+import { itineraryRepository } from '@/lib/db/itinerary-repository';
 
 export interface UseItinerarySaveOptions {
   autoSave?: boolean;
@@ -129,7 +125,28 @@ export function useItinerarySave(
 
         if (storageType === 'database') {
           // データベースに保存
-          await saveToDatabase(itineraryToSave);
+          if (!session?.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          
+          // 既存のしおりかどうかで処理を分ける
+          const existingItinerary = await itineraryRepository.getItinerary(
+            itineraryToSave.id,
+            session.user.id
+          ).catch(() => null);
+          
+          if (existingItinerary && mode === 'overwrite') {
+            await itineraryRepository.updateItinerary(
+              itineraryToSave.id,
+              session.user.id,
+              itineraryToSave
+            );
+          } else {
+            await itineraryRepository.createItinerary(
+              session.user.id,
+              itineraryToSave
+            );
+          }
         } else {
           // LocalStorageに保存
           await saveToLocalStorage(itineraryToSave);
@@ -178,7 +195,15 @@ export function useItinerarySave(
 
         if (storageType === 'database') {
           // データベースから読み込み
-          itinerary = await loadFromDatabase(id);
+          if (!session?.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          
+          const dbItinerary = await itineraryRepository.getItinerary(id, session.user.id);
+          if (!dbItinerary) {
+            throw new Error('Itinerary not found');
+          }
+          itinerary = dbItinerary;
         } else {
           // LocalStorageから読み込み
           itinerary = await loadFromLocalStorage(id);
@@ -208,7 +233,11 @@ export function useItinerarySave(
 
         if (storageType === 'database') {
           // データベースから削除
-          await deleteFromDatabase(id);
+          if (!session?.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          
+          await itineraryRepository.deleteItinerary(id, session.user.id);
         } else {
           // LocalStorageから削除
           await deleteFromLocalStorage(id);
