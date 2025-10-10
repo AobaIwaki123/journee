@@ -45,6 +45,11 @@ export const SYSTEM_PROMPT = `あなたは旅行計画のエキスパートAIア
           "id": "spot-1",
           "name": "観光スポット名",
           "description": "詳細説明",
+          "location": {
+            "lat": 35.6762,
+            "lng": 139.6503,
+            "address": "東京都〇〇区〇〇"
+          },
           "scheduledTime": "10:00",
           "duration": 120,
           "category": "sightseeing",
@@ -61,6 +66,8 @@ export const SYSTEM_PROMPT = `あなたは旅行計画のエキスパートAIア
 
 【重要な注意事項】
 - 常に実在する観光スポットを提案してください
+- 実在するスポットには必ず位置情報（緯度・経度）を含めてください
+- 地図表示のために正確な座標が重要です
 - 移動時間と滞在時間を現実的に設定してください
 - 1日のスケジュールは詰め込みすぎないようにしてください
 - 食事の時間を適切に確保してください
@@ -152,6 +159,11 @@ export const INCREMENTAL_SYSTEM_PROMPT = `あなたは旅行計画のエキス�
           "id": "spot-1",
           "name": "浅草寺",
           "description": "東京最古の寺院",
+          "location": {
+            "lat": 35.7148,
+            "lng": 139.7967,
+            "address": "東京都台東区浅草2-3-1"
+          },
           "scheduledTime": "10:00",
           "duration": 90,
           "category": "sightseeing",
@@ -453,12 +465,13 @@ ${formatScheduleForPrompt(itinerary.schedule)}
 【タスク】
 ${targetDay}日目の具体的なスケジュールを作成してください：
 1. **実在する観光スポット**を提案
-2. **訪問時刻**（scheduledTime）を設定（HH:mm形式）
-3. **滞在時間**（duration、分単位）を現実的に設定
-4. **移動時間**を考慮
-5. **食事の時間**を適切に確保
-6. **カテゴリ**（sightseeing, dining, transportation等）を指定
-7. **概算費用**（estimatedCost、円）を設定
+2. **位置情報**（location）を設定（緯度・経度、住所）
+3. **訪問時刻**（scheduledTime）を設定（HH:mm形式）
+4. **滞在時間**（duration、分単位）を現実的に設定
+5. **移動時間**を考慮
+6. **食事の時間**を適切に確保
+7. **カテゴリ**（sightseeing, dining, transportation等）を指定
+8. **概算費用**（estimatedCost、円）を設定
 
 【出力形式】
 まず、${targetDay}日目のスケジュールを自然な会話形式で説明し、その後JSONで詳細データを出力してください。
