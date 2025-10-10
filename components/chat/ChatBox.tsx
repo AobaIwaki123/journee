@@ -41,26 +41,26 @@ export const ChatBox: React.FC = () => {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         <MessageList />
+        
+        {/* AIが返答中インジケーター（チャットボックス内） */}
+        {isProcessing && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 animate-slide-in-from-top">
+            <div className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-lg">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="font-medium text-sm">
+                {isAutoProgressing ? "しおりを自動作成中..." : isStreaming ? "AIが返答中..." : "メッセージを送信中..."}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input */}
       <div className="p-3 md:p-4 border-t border-gray-200">
         <MessageInput />
       </div>
-
-      {/* グローバルローディングインジケーター（ホバー表示） */}
-      {isProcessing && (
-        <div className="absolute top-20 left-1/2 z-20 animate-slide-in-from-top">
-          <div className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-lg">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="font-medium text-sm">
-              {isAutoProgressing ? "しおりを自動作成中..." : isStreaming ? "AIが返答中..." : "メッセージを送信中..."}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
