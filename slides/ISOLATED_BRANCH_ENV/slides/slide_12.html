@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>セットアップオプション | スライド 12</title>
+    <title>まとめ | スライド 12</title>
     <link rel="stylesheet" href="../assets/css/styles.css" />
   </head>
   <body>
@@ -15,64 +15,55 @@
     <!-- スライドコンテナ -->
     <div class="slide-container">
       <div class="slide-content">
-        <h2>⚙️ Kubernetesクラスタのセットアップオプション</h2>
+        <h2>🎉 まとめ</h2>
 
-        <div class="grid">
-          <div class="card">
-            <h3>🏠 オプションA: 自前クラスタ</h3>
-            <p style="margin-bottom: 1rem">ミニPCやRaspberry Piで構築</p>
-            <div style="margin-bottom: 1rem">
-              <span class="badge green">無料</span>
-              <span class="badge green">学習最適</span>
-            </div>
-            <div>
-              <span class="badge red">初期設定</span>
-              <span class="badge red">メンテナンス</span>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>☁️ オプションB: GKE</h3>
-            <p style="margin-bottom: 1rem">Google Kubernetes Engine</p>
-            <div style="margin-bottom: 1rem">
-              <span class="badge green">簡単セットアップ</span>
-              <span class="badge green">高可用性</span>
-            </div>
-            <div>
-              <span class="badge red">コストあり</span>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>☁️ オプションC: EKS</h3>
-            <p style="margin-bottom: 1rem">Amazon Elastic Kubernetes Service</p>
-            <div style="margin-bottom: 1rem">
-              <span class="badge green">AWS統合</span>
-              <span class="badge green">エンタープライズ</span>
-            </div>
-            <div>
-              <span class="badge red">コストあり</span>
-            </div>
-          </div>
+        <div class="card">
+          <h3>実現できたこと</h3>
+          <ul style="font-size: 1.3rem; line-height: 2">
+            <li>✅ ブランチプッシュだけで独立環境が自動構築</li>
+            <li>✅ 各ブランチが独自のURLを持つ</li>
+            <li>✅ ブランチ移動なしで複数PRを同時レビュー</li>
+            <li>✅ GitOpsによる宣言的で信頼性の高いデプロイ</li>
+            <li>✅ AI駆動開発との高い親和性</li>
+          </ul>
         </div>
 
         <div
           class="card"
-          style="margin-top: 2rem; border-color: var(--accent-blue)"
+          style="
+            background: linear-gradient(
+              135deg,
+              var(--accent-blue) 0%,
+              var(--accent-purple) 100%
+            );
+            border: none;
+            margin-top: 2rem;
+          "
         >
-          <p style="font-size: 1.2rem; text-align: center; margin: 0">
-            💡 参考リポジトリ:
+          <h3 style="color: white">📚 参考リポジトリ</h3>
+          <p style="font-size: 1.3rem; margin-top: 1rem">
             <a
               href="https://github.com/AobaIwaki123/k8s-cluster"
-              style="color: var(--accent-blue)"
-              >k8s-cluster</a
-            ><br />
-            <span style="font-size: 0.9rem; color: var(--text-muted)"
-              >クラスタ自動セットアップツール（ArgoCDとCloudflare Tunnel
-              Controllerを含む）</span
+              style="color: white; text-decoration: underline"
             >
+              k8s-cluster
+            </a>
+          </p>
+          <p style="font-size: 1rem; margin-top: 0.5rem">
+            Kubernetesクラスタ自動セットアップツール<br />
+            ArgoCDとCloudflare Tunnel Controllerを含む
+          </p>
+          <p style="font-size: 1.2rem; margin-top: 1.5rem">
+            ⭐ スターをいただけると嬉しいです！
           </p>
         </div>
+
+        <div style="text-align: center; margin-top: 3rem; font-size: 3rem">
+          ⚡
+        </div>
+        <p style="text-align: center; font-size: 1.5rem; margin-top: 1rem">
+          ご清聴ありがとうございました
+        </p>
       </div>
     </div>
 
@@ -83,7 +74,9 @@
     <div class="navigation">
       <button class="nav-button prev">← 前へ</button>
       <button class="nav-button home">🏠 ホーム</button>
-      <button class="nav-button next">次へ →</button>
+      <button class="nav-button next" style="opacity: 0.5; cursor: not-allowed">
+        次へ →
+      </button>
     </div>
 
     <script src="../assets/js/navigation.js"></script>
