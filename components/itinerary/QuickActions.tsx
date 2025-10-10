@@ -1,14 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useStore } from "@/lib/store/useStore";
-import { useItineraryProgressStore } from "@/lib/store/itinerary";
-import { useItineraryStore } from "@/lib/store/itinerary";
-import type { ItineraryPhase } from "@/types/itinerary";
+import { usePhaseTransition, useAIProgress } from "@/lib/hooks/itinerary";
 import { ArrowRight, RotateCcw, Check, AlertCircle } from "lucide-react";
-import { sendChatMessageStream } from "@/lib/utils/api-client";
-import { mergeItineraryData } from "@/lib/ai/prompts";
-import { generateId } from "@/lib/utils/id-generator";
 
 interface QuickActionsProps {
   className?: string;
@@ -16,258 +11,45 @@ interface QuickActionsProps {
 }
 
 /**
- * Phase 6.2: 段階的旅程構築のクイックアクション
- * useItineraryProgressStore と useItineraryStore に移行
+ * Phase 7.3: 段階的旅程構築のクイックアクション
+ * usePhaseTransition と useAIProgress に分割してUIに専念
  */
 export const QuickActions: React.FC<QuickActionsProps> = ({
   className = "",
   showBorder = true,
 }) => {
-  // ストアスライスから状態を取得
+  // フェーズ遷移管理
   const {
     planningPhase,
-    currentDetailingDay,
     buttonReadiness,
     checklistStatus,
-    updateChecklist,
-    proceedToNextStep,
+    getButtonLabel,
+    getTooltip,
+    getHelpText,
+    getButtonStyles,
+    canProceed,
+    showWarning,
+    setShowWarning,
     resetPlanning,
-  } = useItineraryProgressStore();
-
-  const { currentItinerary, setItinerary } = useItineraryStore();
-
-  // チャット系の状態は useStore から取得
+  } = usePhaseTransition();
+  
+  // AI進行管理
   const {
-    messages,
-    addMessage,
-    setStreamingMessage,
-    appendStreamingMessage,
-    setLoading,
-    setStreaming,
-    setError,
-    selectedAI,
-    claudeApiKey,
-  } = useStore();
+    isProcessing,
+    proceedAndSendMessage,
+  } = useAIProgress();
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
-
-  // メッセージやしおりが更新されたらチェックリストを更新
-  useEffect(() => {
-    updateChecklist(messages, currentItinerary);
-  }, [messages, currentItinerary, planningPhase, updateChecklist]);
-
-  // フェーズごとのボタンラベル
-  const getButtonLabel = (): string => {
-    switch (planningPhase) {
-      case "initial":
-        return "情報収集を開始";
-      case "collecting":
-        return "骨組みを作成";
-      case "skeleton":
-        return "日程の詳細化";
-      case "detailing":
-        if (!currentItinerary) return "次の日へ";
-        const currentDay = currentItinerary.currentDay || 1;
-        const totalDays =
-          currentItinerary.duration || currentItinerary.schedule.length;
-        return currentDay < totalDays ? "次の日へ" : "完成";
-      case "completed":
-        return "完成";
-      default:
-        return "次へ";
-    }
-  };
-
-  // ツールチップテキスト
-  const getTooltip = (): string => {
-    switch (planningPhase) {
-      case "collecting":
-        return "基本情報が揃ったら、骨組み作成フェーズへ進みます";
-      case "skeleton":
-        return "各日のテーマが決まったら、詳細化フェーズへ進みます";
-      case "detailing":
-        return "現在の日の詳細が完成したら、次の日へ進みます";
-      default:
-        return "次のフェーズへ進む";
-    }
-  };
-
-  // ヘルプテキスト
-  const getHelpText = (): string | null => {
-    switch (planningPhase) {
-      case "collecting":
-        return "AIに行き先、期間、興味を伝えてください";
-      case "skeleton":
-        return "各日の大まかなテーマが決まったら次へ進みましょう";
-      case "detailing":
-        if (!currentItinerary) return null;
-        const currentDay = currentItinerary.currentDay || 1;
-        return `${currentDay}日目の詳細を作成したら次へ進みましょう`;
-      case "completed":
-        return "旅のしおりが完成しました！";
-      default:
-        return null;
-    }
-  };
-
-  // ボタンが無効かどうか
-  const isDisabled = (): boolean => {
-    return false; // 常に進める（情報不足でも警告を出すのみ）
-  };
-
-  // 「次へ」ボタンでAIにメッセージ送信
+  // イベントハンドラ
   const handleNextStep = async () => {
     if (isProcessing || planningPhase === "completed") return;
 
     // 必須情報が不足している場合は警告を表示
-    if (
-      buttonReadiness &&
-      buttonReadiness.level === "not_ready" &&
-      checklistStatus
-    ) {
+    if (!canProceed()) {
       setShowWarning(true);
       return;
     }
 
     await proceedAndSendMessage();
-  };
-
-  // 実際にフェーズを進めてメッセージを送信
-  const proceedAndSendMessage = async () => {
-    setIsProcessing(true);
-    setLoading(true);
-    setStreaming(true);
-    setStreamingMessage("");
-    setError(null);
-
-    try {
-      // 現在のフェーズを保存
-      const currentPhase = planningPhase;
-
-      // まず、フェーズを進める
-      proceedToNextStep();
-
-      // フェーズを進めた後の状態を取得
-      const newPhase = useItineraryProgressStore.getState().planningPhase;
-      const newDetailingDay = useItineraryProgressStore.getState().currentDetailingDay;
-
-      // 「次へ」メッセージをAIに送信
-      const userMessage = {
-        id: generateId(),
-        role: "user" as const,
-        content: "次へ",
-        timestamp: new Date(),
-      };
-
-      addMessage(userMessage);
-
-      // チャット履歴を準備
-      const chatHistory = messages.slice(-10).map((msg: any) => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp,
-      }));
-
-      let fullResponse = "";
-
-      // skeleton → detailing への移行時は並列バッチ処理を使用
-      if (currentPhase === "skeleton" && newPhase === "detailing") {
-        console.log("🚀 並列バッチ処理開始: 全日程を並列で詳細化");
-
-        // 骨組みメッセージを送信して取得
-        for await (const chunk of sendChatMessageStream(
-          "骨組みが完成しました。これから各日の詳細を作成します。",
-          chatHistory,
-          useItineraryStore.getState().currentItinerary || undefined,
-          selectedAI,
-          claudeApiKey,
-          "skeleton",
-          null
-        )) {
-          if (chunk.type === "message" && chunk.content) {
-            appendStreamingMessage(chunk.content);
-            fullResponse += chunk.content;
-          } else if (chunk.type === "itinerary" && chunk.itinerary) {
-            const mergedItinerary = mergeItineraryData(
-              useItineraryStore.getState().currentItinerary || undefined,
-              chunk.itinerary
-            );
-            setItinerary(mergedItinerary);
-          }
-        }
-
-        for await (const chunk of sendChatMessageStream(
-          "次へ",
-          chatHistory,
-          useItineraryStore.getState().currentItinerary || undefined,
-          selectedAI,
-          claudeApiKey,
-          newPhase,
-          newDetailingDay
-        )) {
-          if (chunk.type === "message" && chunk.content) {
-            appendStreamingMessage(chunk.content);
-            fullResponse += chunk.content;
-          } else if (chunk.type === "itinerary" && chunk.itinerary) {
-            const mergedItinerary = mergeItineraryData(
-              useItineraryStore.getState().currentItinerary || undefined,
-              chunk.itinerary
-            );
-            setItinerary(mergedItinerary);
-          }
-        }
-      } else {
-        // 通常のストリーミング処理（skeleton作成など）
-        for await (const chunk of sendChatMessageStream(
-          "次へ",
-          chatHistory,
-          useItineraryStore.getState().currentItinerary || undefined,
-          selectedAI,
-          claudeApiKey,
-          newPhase,
-          newDetailingDay
-        )) {
-          if (chunk.type === "message" && chunk.content) {
-            appendStreamingMessage(chunk.content);
-            fullResponse += chunk.content;
-          } else if (chunk.type === "itinerary" && chunk.itinerary) {
-            const mergedItinerary = mergeItineraryData(
-              useItineraryStore.getState().currentItinerary || undefined,
-              chunk.itinerary
-            );
-            setItinerary(mergedItinerary);
-          } else if (chunk.type === "error") {
-            throw new Error(chunk.error || "Unknown error occurred");
-          } else if (chunk.type === "done") {
-            break;
-          }
-        }
-      }
-
-      // ストリーミング完了後、アシスタントメッセージを追加
-      if (fullResponse) {
-        const assistantMessage = {
-          id: generateId(),
-          role: "assistant" as const,
-          content: fullResponse,
-          timestamp: new Date(),
-        };
-        addMessage(assistantMessage);
-      }
-
-      setStreamingMessage("");
-      setStreaming(false);
-      setLoading(false);
-    } catch (error: any) {
-      console.error("Error in handleNextStep:", error);
-      setError(error.message || "次へ進む際にエラーが発生しました");
-      setStreaming(false);
-      setLoading(false);
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const handleReset = () => {
@@ -276,38 +58,9 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     }
   };
 
-  // 情報不足でも強制的に進む
   const handleForceNext = async () => {
     setShowWarning(false);
     await proceedAndSendMessage();
-  };
-
-  // ボタンのスタイルを取得
-  const getButtonStyles = () => {
-    if (planningPhase === "completed") {
-      return "bg-green-500 text-white cursor-default";
-    }
-
-    if (isProcessing) {
-      return "bg-gray-200 text-gray-400 cursor-not-allowed";
-    }
-
-    // 動的スタイリング
-    if (buttonReadiness) {
-      switch (buttonReadiness.level) {
-        case "ready":
-          return (
-            "bg-green-500 text-white hover:bg-green-600 active:scale-95 shadow-sm hover:shadow " +
-            (buttonReadiness.animate ? "animate-pulse" : "")
-          );
-        case "partial":
-          return "bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-sm hover:shadow";
-        case "not_ready":
-          return "bg-gray-400 text-white hover:bg-gray-500 active:scale-95 shadow-sm hover:shadow";
-      }
-    }
-
-    return "bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-sm hover:shadow";
   };
 
   const containerClassName = `bg-white p-4 ${

@@ -12,6 +12,7 @@ import {
   getCategoryIcon,
   getCategoryGradient,
 } from '@/lib/utils/category-utils';
+import { SpotEditForm } from './SpotEditForm';
 import { 
   Clock, 
   MapPin, 
@@ -19,8 +20,6 @@ import {
   Info, 
   Edit2,
   Trash2,
-  Check,
-  X,
   GripVertical
 } from 'lucide-react';
 
@@ -130,110 +129,13 @@ export const SpotCard: React.FC<SpotCardProps> = memo(({
   // 編集モード表示
   if (isEditing && editable) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border-2 border-blue-400 p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h4 className="font-bold text-gray-900">スポット編集</h4>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-              title="保存"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleCancel}
-              className="p-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors"
-              title="キャンセル"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              スポット名 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={editValues.name}
-              onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="例: 清水寺"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              説明
-            </label>
-            <textarea
-              value={editValues.description}
-              onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={3}
-              placeholder="スポットの説明を入力"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                予定時刻
-              </label>
-              <input
-                type="time"
-                value={editValues.scheduledTime}
-                onChange={(e) => setEditValues({ ...editValues, scheduledTime: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                所要時間（分）
-              </label>
-              <input
-                type="number"
-                value={editValues.duration}
-                onChange={(e) => setEditValues({ ...editValues, duration: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="60"
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              予算（円）
-            </label>
-            <input
-              type="number"
-              value={editValues.estimatedCost}
-              onChange={(e) => setEditValues({ ...editValues, estimatedCost: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="1000"
-              min="0"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              メモ
-            </label>
-            <textarea
-              value={editValues.notes}
-              onChange={(e) => setEditValues({ ...editValues, notes: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={2}
-              placeholder="注意事項やメモを入力"
-            />
-          </div>
-        </div>
-      </div>
+      <SpotEditForm
+        spot={spot}
+        editValues={editValues}
+        onEditValuesChange={setEditValues}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
     );
   }
 
