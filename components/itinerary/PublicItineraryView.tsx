@@ -1,25 +1,21 @@
+/**
+ * Phase 9.5: 公開しおり閲覧用コンポーネント（再構成版）
+ * 
+ * ヘッダー、スケジュール、コメントを分離
+ */
+
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { ItineraryData } from "@/types/itinerary";
 import { Comment } from "@/types/comment";
-import { ItineraryHeader } from "./ItineraryHeader";
-import { ItinerarySummary } from "./ItinerarySummary";
-import { DaySchedule } from "./DaySchedule";
 import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
 import { PDFPreviewModal } from "./PDFPreviewModal";
 import { useItineraryPDF } from "@/lib/hooks/itinerary";
-import {
-  Download,
-  Share2,
-  Copy,
-  Check,
-  Loader2,
-  Eye,
-  LogIn,
-} from "lucide-react";
+import { PublicItineraryHeader, PublicScheduleView } from "./public";
+import { LogIn } from "lucide-react";
 
 interface PublicItineraryViewProps {
   slug: string;
@@ -29,10 +25,6 @@ interface PublicItineraryViewProps {
   initialCommentCount?: number;
 }
 
-/**
- * Phase 6.1: 公開しおり閲覧用コンポーネント
- * useItineraryPDF Hookを活用してPDF生成ロジックを分離
- */
 export default function PublicItineraryView({
   slug,
   itinerary,
@@ -45,7 +37,6 @@ export default function PublicItineraryView({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
-  // useItineraryPDF Hookを活用
   const {
     isGenerating: isGeneratingPDF,
     progress: pdfProgress,
@@ -53,7 +44,7 @@ export default function PublicItineraryView({
     generatePDF,
   } = useItineraryPDF({ quality: 0.95, margin: 10 });
 
-  // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
+  // クライアントサイドで日付をフォーマット
   useEffect(() => {
     if (itinerary.publishedAt) {
       setPublishedDate(formatDate(itinerary.publishedAt, "short"));
@@ -62,9 +53,7 @@ export default function PublicItineraryView({
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
-    const shareText = itinerary
-      ? `${itinerary.destination}への旅行計画を見てください！`
-      : "旅のしおりを共有します";
+    const shareText = `${itinerary.destination}への旅行計画を見てください！`;
 
     if (navigator.share) {
       try {
@@ -74,13 +63,11 @@ export default function PublicItineraryView({
           url: shareUrl,
         });
       } catch (error) {
-        // ユーザーがキャンセルした場合は何もしない
         if ((error as Error).name !== "AbortError") {
           console.error("Error sharing:", error);
         }
       }
     } else {
-      // フォールバック: URLをコピー
       await handleCopyUrl();
     }
   };
@@ -99,198 +86,69 @@ export default function PublicItineraryView({
     await generatePDF(itinerary, "pdf-export-container-public");
   };
 
-  const handlePreviewPDF = () => {
-    setShowPreviewModal(true);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ヘッダー */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <div className="bg-blue-500 rounded-lg p-2">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Journee</h1>
-              <p className="text-sm text-gray-500">共有されたしおり</p>
-            </div>
-          </a>
-          <div className="flex gap-2 items-center">
-            {/* ログインボタン（ログインしていない場合のみ表示） */}
-            {!currentUserId && (
-              <a
-                href={`/login?callbackUrl=/share/${slug}`}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-sm"
-                title="ログイン"
-              >
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">ログイン</span>
-              </a>
-            )}
-            {/* 共有ボタン */}
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              title="共有"
-            >
-              <Share2 className="w-4 h-4" />
-              <span className="hidden sm:inline">共有</span>
-            </button>
+      {/* Header */}
+      <PublicItineraryHeader
+        itinerary={itinerary}
+        publishedDate={publishedDate}
+        onShare={handleShare}
+        onCopyUrl={handleCopyUrl}
+        onDownloadPDF={handleDownloadPDF}
+        copied={copied}
+        isGeneratingPDF={isGeneratingPDF}
+        pdfProgress={pdfProgress}
+      />
 
-            {/* URLコピーボタン */}
-            <button
-              onClick={handleCopyUrl}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-              title="URLをコピー"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4 text-green-600" />
-                  <span className="hidden sm:inline text-green-600">
-                    コピー済み
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  <span className="hidden sm:inline">URLコピー</span>
-                </>
-              )}
-            </button>
+      {/* Schedule View */}
+      <PublicScheduleView itinerary={itinerary} />
 
-            {/* PDFボタン */}
-            {itinerary.allowPdfDownload && (
-              <>
-                {/* プレビューボタン */}
-                <button
-                  onClick={handlePreviewPDF}
-                  disabled={isGeneratingPDF}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                  title="PDFプレビュー"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span className="hidden sm:inline">プレビュー</span>
-                </button>
-
-                {/* PDFダウンロードボタン */}
-                <button
-                  onClick={handleDownloadPDF}
-                  disabled={isGeneratingPDF}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                  title="PDFダウンロード"
-                >
-                  {isGeneratingPDF ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="hidden sm:inline">{pdfProgress}%</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      <span className="hidden sm:inline">PDF</span>
-                    </>
-                  )}
-                </button>
-              </>
-            )}
-          </div>
+      {/* PDF Export Container (hidden) */}
+      <div className="hidden">
+        <div id="pdf-export-container-public" ref={pdfContainerRef}>
+          <ItineraryPDFLayout itinerary={itinerary} />
         </div>
       </div>
 
-      {/* しおり本体 */}
-      <div className="max-w-4xl mx-auto p-6">
-        {/* カスタムメッセージ */}
-        {itinerary.customMessage && (
-          <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-            <p className="text-gray-700">{itinerary.customMessage}</p>
-          </div>
-        )}
-
-        {/* しおりヘッダー */}
-        <ItineraryHeader itinerary={itinerary} editable={false} />
-
-        {/* しおりサマリー */}
-        <ItinerarySummary itinerary={itinerary} />
-
-        {/* 日程表 */}
-        <div className="mt-8 space-y-6">
-          {itinerary.schedule.map((day, index) => (
-            <DaySchedule
-              key={day.date || `day-${index}`}
-              day={day}
-              dayIndex={index}
-              editable={false} // Read-onlyモード
-            />
-          ))}
-        </div>
-
-        {/* コメントセクション（Phase 11） */}
-        {itinerary.id ? (
-          <div className="mt-12">
+      {/* Comments Section */}
+      <div className="max-w-5xl mx-auto px-4 py-6 md:px-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            コメント ({initialCommentCount})
+          </h2>
+          
+          {currentUserId ? (
             <CommentList
-              itineraryId={itinerary.id}
-              initialComments={initialComments}
-              initialTotal={initialCommentCount}
+              itineraryId={itinerary.id || slug}
               currentUserId={currentUserId}
+              initialComments={initialComments}
             />
-          </div>
-        ) : (
-          <div className="mt-12 rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
-            <p className="text-sm text-gray-500">
-              コメント機能は現在利用できません
-            </p>
-          </div>
-        )}
-
-        {/* フッター */}
-        <div className="mt-12 pt-6 border-t text-center">
-          <p className="text-sm text-gray-500">
-            このしおりは{" "}
-            <a href="/" className="text-blue-600 hover:underline font-medium">
-              Journee
-            </a>{" "}
-            で作成されました
-          </p>
-          {itinerary.viewCount !== undefined && (
-            <p className="mt-2 text-sm text-gray-400">
-              閲覧数: {itinerary.viewCount.toLocaleString()}
-            </p>
-          )}
-          {publishedDate && (
-            <p className="mt-1 text-xs text-gray-400">
-              公開日: {publishedDate}
-            </p>
+          ) : (
+            <div className="text-center py-8">
+              <LogIn className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 mb-4">
+                コメントを投稿するにはログインが必要です
+              </p>
+              <a
+                href="/login"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                ログイン
+              </a>
+            </div>
           )}
         </div>
+      </div>
 
-        {/* PDFプレビューモーダル */}
+      {/* PDF Preview Modal */}
+      {showPreview && (
         <PDFPreviewModal
           itinerary={itinerary}
-          isOpen={showPreviewModal}
-          onClose={() => setShowPreviewModal(false)}
-          onExport={() => {
-            setShowPreviewModal(false);
-            handleDownloadPDF();
-          }}
+          isOpen={showPreview}
+          onClose={() => {}}
+          onExport={handleDownloadPDF}
         />
-
-        {/* PDF専用レイアウト（非表示） */}
-        {showPreview && (
-          <div
-            ref={pdfContainerRef}
-            className="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none"
-            aria-hidden="true"
-          >
-            <div id="pdf-export-container-public">
-              <ItineraryPDFLayout itinerary={itinerary} />
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
