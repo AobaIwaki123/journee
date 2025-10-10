@@ -17,26 +17,6 @@ type DbDaySchedule = Database["public"]["Tables"]["day_schedules"]["Row"];
 type DbTouristSpot = Database["public"]["Tables"]["tourist_spots"]["Row"];
 
 /**
- * UUID形式の文字列かどうかをチェック
- */
-function isValidUUID(str: string | undefined | null): boolean {
-  if (!str) return false;
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-}
-
-/**
- * 有効なUUIDを確保（無効な場合は新規生成）
- */
-function ensureValidUUID(id: string | undefined | null): string {
-  if (isValidUUID(id)) {
-    return id!;
-  }
-  return crypto.randomUUID();
-}
-
-/**
  * フィルター条件
  */
 export interface ItineraryFilters {
@@ -213,6 +193,15 @@ export class ItineraryRepository {
     // RLSをバイパスするためAdmin権限を使用
     const client = (supabaseAdmin || supabase) as typeof supabase;
 
+    // Date型または文字列をISO文字列に変換するヘルパー
+    const toISOString = (
+      date: Date | string | undefined
+    ): string | undefined => {
+      if (!date) return undefined;
+      if (typeof date === "string") return date;
+      return date.toISOString();
+    };
+
     // 1. しおり本体を作成
     // クライアント側で生成したUUIDをそのまま使用
     const { data: dbItinerary, error: itineraryError } = await client
@@ -231,7 +220,7 @@ export class ItineraryRepository {
         status: itinerary.status || "draft",
         is_public: itinerary.isPublic,
         public_slug: itinerary.publicSlug,
-        published_at: itinerary.publishedAt?.toISOString(),
+        published_at: toISOString(itinerary.publishedAt),
         view_count: itinerary.viewCount || 0,
         allow_pdf_download: itinerary.allowPdfDownload,
         custom_message: itinerary.customMessage,
@@ -250,13 +239,13 @@ export class ItineraryRepository {
     // 2. 日程詳細を作成
     if (itinerary.schedule && itinerary.schedule.length > 0) {
       for (const day of itinerary.schedule) {
-        // 有効なUUIDを確保
-        const dayId = ensureValidUUID(day.id);
+        // 常に新しいUUIDを生成（既存IDを再利用しない）
+        const dayId = crypto.randomUUID();
 
         const { data: dbDay, error: dayError } = await client
           .from("day_schedules")
           .insert({
-            id: dayId, // 確実にUUID形式のIDを設定
+            id: dayId,
             itinerary_id: typedItinerary.id,
             day: day.day,
             date: day.date,
@@ -273,8 +262,7 @@ export class ItineraryRepository {
           .single();
 
         if (dayError) {
-          console.error("Failed to create day schedule:", dayError);
-          continue;
+          throw new Error(`Failed to create day schedule: ${dayError.message}`);
         }
 
         const typedDay = dbDay as DbDaySchedule;
@@ -282,7 +270,7 @@ export class ItineraryRepository {
         // 3. 観光スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
-            id: ensureValidUUID(spot.id), // 確実にUUID形式のIDを設定
+            id: crypto.randomUUID(), // 常に新しいID
             day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,
@@ -304,7 +292,9 @@ export class ItineraryRepository {
             .insert(spotsToInsert as any);
 
           if (spotsError) {
-            console.error("Failed to create tourist spots:", spotsError);
+            throw new Error(
+              `Failed to create tourist spots: ${spotsError.message}`
+            );
           }
         }
       }
@@ -471,6 +461,15 @@ export class ItineraryRepository {
     // RLSをバイパスするためAdmin権限を使用
     const client = (supabaseAdmin || supabase) as typeof supabase;
 
+    // Date型または文字列をISO文字列に変換するヘルパー
+    const toISOString = (
+      date: Date | string | undefined
+    ): string | undefined => {
+      if (!date) return undefined;
+      if (typeof date === "string") return date;
+      return date.toISOString();
+    };
+
     // 1. しおり本体を更新
     const { data: dbItinerary, error: itineraryError } = await (client as any)
       .from("itineraries")
@@ -486,7 +485,7 @@ export class ItineraryRepository {
         status: updates.status,
         is_public: updates.isPublic,
         public_slug: updates.publicSlug,
-        published_at: updates.publishedAt?.toISOString(),
+        published_at: toISOString(updates.publishedAt),
         view_count: updates.viewCount,
         allow_pdf_download: updates.allowPdfDownload,
         custom_message: updates.customMessage,
@@ -504,21 +503,27 @@ export class ItineraryRepository {
 
     // 2. 日程詳細を更新（必要に応じて）
     if (updates.schedule) {
-      // 既存の日程を削除
-      await client
+      // 既存の日程を削除（エラーチェック追加）
+      const { error: deleteError } = await client
         .from("day_schedules")
         .delete()
         .eq("itinerary_id", itineraryId);
 
+      if (deleteError) {
+        throw new Error(
+          `Failed to delete day schedules: ${deleteError.message}`
+        );
+      }
+
       // 新しい日程を作成
       for (const day of updates.schedule) {
-        // 有効なUUIDを確保
-        const dayId = ensureValidUUID(day.id);
+        // 常に新しいUUIDを生成（既存IDを再利用しない）
+        const dayId = crypto.randomUUID();
 
         const { data: dbDay, error: dayError } = await client
           .from("day_schedules")
           .insert({
-            id: dayId, // 確実にUUID形式のIDを設定
+            id: dayId,
             itinerary_id: itineraryId,
             day: day.day,
             date: day.date,
@@ -535,8 +540,7 @@ export class ItineraryRepository {
           .single();
 
         if (dayError) {
-          console.error("Failed to update day schedule:", dayError);
-          continue;
+          throw new Error(`Failed to create day schedule: ${dayError.message}`);
         }
 
         const typedDay = dbDay as DbDaySchedule;
@@ -544,7 +548,7 @@ export class ItineraryRepository {
         // スポットを作成
         if (day.spots && day.spots.length > 0) {
           const spotsToInsert = day.spots.map((spot, index) => ({
-            id: ensureValidUUID(spot.id), // 確実にUUID形式のIDを設定
+            id: crypto.randomUUID(), // 常に新しいID
             day_schedule_id: typedDay.id,
             name: spot.name,
             description: spot.description,
@@ -561,7 +565,15 @@ export class ItineraryRepository {
             order_index: index,
           }));
 
-          await client.from("tourist_spots").insert(spotsToInsert as any);
+          const { error: spotsError } = await client
+            .from("tourist_spots")
+            .insert(spotsToInsert as any);
+
+          if (spotsError) {
+            throw new Error(
+              `Failed to create tourist spots: ${spotsError.message}`
+            );
+          }
         }
       }
     }
