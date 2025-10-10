@@ -10,7 +10,6 @@ import { PhaseStatusBar } from "./PhaseStatusBar";
 import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { EmptyItinerary } from "./EmptyItinerary";
-import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ShareButton } from "./ShareButton";
 import { SaveButton } from "./SaveButton";
 import { ResetButton } from "./ResetButton";
@@ -144,7 +143,6 @@ export const ItineraryPreview: React.FC = () => {
                           <ResetButton />
                         </>
                       )}
-                      <UndoRedoButtons />
                     </div>
                   </div>
                 </div>
