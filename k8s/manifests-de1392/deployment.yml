@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: journee-de1392
+  namespace: journee
+  labels:
+    app: journee-de1392
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: journee-de1392
+  template:
+    metadata:
+      labels:
+        app: journee-de1392
+    spec:
+      imagePullSecrets:
+        - name: gcr-pull-secret
+      containers:
+        - name: journee-de1392
+          image: gcr.io/my-docker-471807/journee:v5.5.0
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /app/secret/key.json
+            - name: NEXTAUTH_URL
+              value: https://journee-de1392.aooba.net
+            # ブランチモード設定（本番環境ではモック認証を無効化）
+            - name: ENABLE_MOCK_AUTH
+              value: "true"
+            # Secretから環境変数を注入
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: GEMINI_API_KEY
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: GOOGLE_CLIENT_SECRET
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: NEXTAUTH_SECRET
+            - name: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+            - name: NEXT_PUBLIC_SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: NEXT_PUBLIC_SUPABASE_URL
+            - name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+            - name: SUPABASE_SERVICE_ROLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: SUPABASE_SERVICE_ROLE_KEY
+            - name: NEXT_PUBLIC_BASE_URL
+              value: https://journee-de1392.aooba.net
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: GITHUB_TOKEN
+            - name: GITHUB_OWNER
+              value: AobaIwaki123
+            - name: GITHUB_REPO
+              value: journee
+          ports:
+            - containerPort: 3000
