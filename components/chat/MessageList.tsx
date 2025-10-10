@@ -582,8 +582,10 @@ export const MessageList: React.FC = () => {
                       {cleanStreamingMessage}
                     </ReactMarkdown>
                   </div>
-                  <div className="inline-flex mt-1">
-                    <span className="animate-pulse">▋</span>
+                  <div className="inline-flex items-center mt-1 gap-0.5">
+                    <span className="typing-dot"></span>
+                    <span className="typing-dot"></span>
+                    <span className="typing-dot"></span>
                   </div>
                 </div>
               </div>

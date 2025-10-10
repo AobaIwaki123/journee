@@ -19,13 +19,13 @@ export const MessageSkeleton: React.FC = () => {
         {/* スケルトンメッセージ */}
         <div className="rounded-lg p-3 bg-gray-100 space-y-2 min-w-[200px]">
           {/* 1行目 - 長いテキストのスケルトン */}
-          <div className="h-4 bg-gray-300 rounded animate-pulse w-full"></div>
+          <div className="h-4 rounded shimmer w-full"></div>
           
           {/* 2行目 - 中程度の長さのテキストのスケルトン */}
-          <div className="h-4 bg-gray-300 rounded animate-pulse w-5/6"></div>
+          <div className="h-4 rounded shimmer w-5/6"></div>
           
           {/* 3行目 - 短いテキストのスケルトン */}
-          <div className="h-4 bg-gray-300 rounded animate-pulse w-4/6"></div>
+          <div className="h-4 rounded shimmer w-4/6"></div>
         </div>
       </div>
     </div>
