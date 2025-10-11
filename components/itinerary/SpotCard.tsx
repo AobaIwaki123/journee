@@ -56,15 +56,6 @@ export const SpotCard: React.FC<SpotCardProps> = memo(({
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    // SpotEditForm内で更新済みなのでisEditingをfalseに
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
-
   const handleDelete = () => {
     if (dayIndex === undefined || spotIndex === undefined) {
       console.error('dayIndex or spotIndex is undefined');
@@ -77,11 +68,29 @@ export const SpotCard: React.FC<SpotCardProps> = memo(({
     }
   };
 
-  if (isEditing && editable) {
-    // 編集モード時は編集フォームを表示
-    // TODO: SpotEditFormの統合または別の編集UIの実装
-    setIsEditing(false);
-    return null;
+  // 編集モード時はEditableSpotCardを使用
+  if (isEditing && editable && dayIndex !== undefined && spotIndex !== undefined) {
+    return (
+      <div className="bg-white rounded-lg border-2 border-blue-400 p-4">
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={spot.name}
+            onChange={(e) => {
+              updateSpot(dayIndex, spot.id, { name: e.target.value });
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            placeholder="スポット名"
+          />
+          <button
+            onClick={() => setIsEditing(false)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            完了
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

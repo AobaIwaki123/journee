@@ -28,7 +28,7 @@ export function useItineraryPublish(): UseItineraryPublishReturn {
   
   const isPublic = currentItinerary?.isPublic || false;
   const publicUrl = currentItinerary?.publicSlug 
-    ? `${window.location.origin}/share/${currentItinerary.publicSlug}`
+    ? (typeof window !== 'undefined' ? `${window.location.origin}/share/${currentItinerary.publicSlug}` : null)
     : null;
 
   const publish = useCallback(

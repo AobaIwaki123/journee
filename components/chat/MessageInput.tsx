@@ -261,7 +261,7 @@ export const MessageInput: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex space-x-2">
+    <form onSubmit={handleSubmit} className="flex space-x-3">
       {editingMessageId && (
         <div className="absolute -top-8 left-0 right-0 bg-yellow-100 text-yellow-800 px-4 py-1 text-sm rounded-t-lg">
           メッセージを編集中です。編集を完了してから新しいメッセージを送信してください。
@@ -278,7 +278,7 @@ export const MessageInput: React.FC = () => {
         }
         disabled={disabled}
         rows={1}
-        className="flex-1 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all resize-none overflow-hidden min-h-[42px] max-h-[200px]"
+        className="flex-1 px-4 py-3 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all resize-none overflow-hidden min-h-[42px] max-h-[200px]"
         style={{
           height: "auto",
           minHeight: "42px",
@@ -294,7 +294,7 @@ export const MessageInput: React.FC = () => {
         type="submit"
         disabled={disabled}
         aria-label="メッセージを送信"
-        className="px-3 py-2 md:px-4 md:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
+        className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
       >
         <Send className="w-5 h-5 md:w-5 md:h-5" />
       </button>

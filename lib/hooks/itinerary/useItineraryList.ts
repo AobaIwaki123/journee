@@ -48,10 +48,10 @@ export function useItineraryList(): UseItineraryListReturn {
 
         const data = await response.json();
         setItineraries(data.itineraries || []);
-        } else {
-          const mockItineraries = loadItinerariesFromStorage();
-          setItineraries(mockItineraries as ItineraryListItem[]);
-        }
+      } else {
+        const mockItineraries = loadItinerariesFromStorage();
+        setItineraries(mockItineraries as ItineraryListItem[]);
+      }
     } catch (err: any) {
       console.error('Failed to fetch itineraries:', err);
       setError(err.message || 'しおりの取得に失敗しました');
