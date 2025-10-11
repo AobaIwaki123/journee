@@ -50,11 +50,11 @@ export const SaveButton: React.FC = () => {
       
       // 新しいIDで保存（次のレンダリングで反映されるため、少し待つ）
       setTimeout(async () => {
-        await save(mode);
+        await save(newItinerary);
       }, 100);
     } else {
       // 上書き保存の場合はそのまま保存
-      await save(mode);
+      await save(currentItinerary);
     }
   };
 

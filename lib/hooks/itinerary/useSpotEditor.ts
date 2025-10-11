@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useSpotStore, useItineraryStore } from '@/lib/store/itinerary';
 import type { TouristSpot } from '@/types/itinerary';
 import { generateId } from '@/lib/utils/id-generator';
 
@@ -36,13 +36,9 @@ export interface UseSpotEditorReturn {
  * スポット編集用カスタムHook
  */
 export function useSpotEditor(): UseSpotEditorReturn {
-  // Zustand storeから必要なアクションを取得
-  const addSpotAction = useStore((state) => state.addSpot);
-  const updateSpotAction = useStore((state) => state.updateSpot);
-  const deleteSpotAction = useStore((state) => state.deleteSpot);
-  const reorderSpotsAction = useStore((state) => state.reorderSpots);
-  const moveSpotAction = useStore((state) => state.moveSpot);
-  const currentItinerary = useStore((state) => state.currentItinerary);
+  // Phase 10: 分割されたStoreを使用
+  const { addSpot: addSpotAction, updateSpot: updateSpotAction, deleteSpot: deleteSpotAction, reorderSpots: reorderSpotsAction, moveSpot: moveSpotAction } = useSpotStore();
+  const { currentItinerary } = useItineraryStore();
 
   // スポット追加
   const addSpot = useCallback(

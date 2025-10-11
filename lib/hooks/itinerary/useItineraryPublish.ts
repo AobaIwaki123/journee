@@ -1,226 +1,201 @@
 /**
- * useItineraryPublish - 公開・共有ロジック
- * 
- * しおりの公開設定とURL生成をカプセル化するカスタムHook
+ * Phase 3: しおり公開用カスタムHook
+ * Phase 10: useItineraryStore, useUIStoreに移行
  */
 
-import { useCallback, useState, useEffect } from 'react';
-import { useStore } from '@/lib/store/useStore';
-import type { PublicItinerarySettings } from '@/types/itinerary';
-
-export interface PublishResult {
-  success: boolean;
-  publicUrl?: string;
-  slug?: string;
-  error?: string;
-}
+import { useState, useCallback } from 'react';
+import { useItineraryStore } from '@/lib/store/itinerary';
+import { useUIStore } from '@/lib/store/ui';
+import type { ItineraryData, PublicItinerarySettings } from '@/types/itinerary';
 
 export interface UseItineraryPublishReturn {
-  // State
   isPublic: boolean;
   publicUrl: string | null;
-  publicSlug: string | null;
   isPublishing: boolean;
-  
-  // Settings
-  allowPdfDownload: boolean;
-  customMessage: string;
-  
-  // Operations
-  publish: (settings: PublicItinerarySettings) => Promise<PublishResult>;
-  unpublish: () => Promise<void>;
-  updateSettings: (settings: Partial<PublicItinerarySettings>) => Promise<void>;
-  
-  // Sharing
-  copyPublicUrl: () => Promise<void>;
-  shareViaWebApi: () => Promise<void>;
-  
-  // Analytics
-  viewCount: number;
-  incrementViewCount: () => void;
+  publish: (settings: PublicItinerarySettings) => Promise<{ success: boolean; publicUrl?: string; error?: string }>;
+  unpublish: () => Promise<{ success: boolean; error?: string }>;
+  updateSettings: (settings: Partial<PublicItinerarySettings>) => void;
+  copyPublicUrl: () => Promise<boolean>;
+  shareViaWebApi: () => Promise<boolean>;
 }
 
-/**
- * しおり公開用カスタムHook
- */
-export function useItineraryPublish(
-  itineraryId: string
-): UseItineraryPublishReturn {
+export function useItineraryPublish(): UseItineraryPublishReturn {
   const [isPublishing, setIsPublishing] = useState(false);
-
-  // Zustand storeから必要な状態とアクションを取得
-  const currentItinerary = useStore((state) => state.currentItinerary);
-  const publishItineraryAction = useStore((state) => state.publishItinerary);
-  const unpublishItineraryAction = useStore((state) => state.unpublishItinerary);
-  const updatePublicSettingsAction = useStore((state) => state.updatePublicSettings);
-  const addToast = useStore((state) => state.addToast);
-
-  // 現在のしおりが指定されたIDと一致するか確認
-  const itinerary = currentItinerary?.id === itineraryId ? currentItinerary : null;
-
-  // 公開設定の取得
-  const isPublic = itinerary?.isPublic ?? false;
-  const publicSlug = itinerary?.publicSlug ?? null;
-  const allowPdfDownload = itinerary?.allowPdfDownload ?? true;
-  const customMessage = itinerary?.customMessage ?? '';
-  const viewCount = itinerary?.viewCount ?? 0;
-
-  // 公開URLの生成
-  const publicUrl = publicSlug
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${publicSlug}`
+  
+  // Phase 10: 分割されたStoreを使用
+  const { currentItinerary, updateItinerary } = useItineraryStore();
+  const { addToast } = useUIStore();
+  
+  const isPublic = currentItinerary?.isPublic || false;
+  const publicUrl = currentItinerary?.publicSlug 
+    ? `${window.location.origin}/share/${currentItinerary.publicSlug}`
     : null;
 
-  // 公開処理
   const publish = useCallback(
-    async (settings: PublicItinerarySettings): Promise<PublishResult> => {
-      if (!itinerary) {
-        return {
-          success: false,
-          error: 'Itinerary not found',
-        };
+    async (settings: PublicItinerarySettings): Promise<{ success: boolean; publicUrl?: string; error?: string }> => {
+      if (!currentItinerary) {
+        return { success: false, error: 'しおりが存在しません' };
       }
 
-      setIsPublishing(true);
-
       try {
-        const result = await publishItineraryAction(settings);
+        setIsPublishing(true);
+        
+        const response = await fetch('/api/itinerary/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itineraryId: currentItinerary.id,
+            settings,
+            itinerary: currentItinerary,
+          }),
+        });
 
-        if (result.success) {
-          addToast('しおりを公開しました', 'success');
-        } else {
-          addToast(result.error || '公開に失敗しました', 'error');
+        const data = await response.json();
+
+        if (!response.ok) {
+          return { success: false, error: data.error || '公開に失敗しました' };
         }
 
-        return result;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        addToast('公開に失敗しました', 'error');
+        const updatedItinerary: ItineraryData = {
+          ...currentItinerary,
+          id: data.itineraryId,
+          isPublic: settings.isPublic,
+          publicSlug: data.slug,
+          publishedAt: new Date(data.publishedAt),
+          allowPdfDownload: settings.allowPdfDownload,
+          customMessage: settings.customMessage,
+          viewCount: 0,
+          updatedAt: new Date(),
+        };
+
+        updateItinerary(updatedItinerary);
+        addToast('しおりを公開しました', 'success');
 
         return {
-          success: false,
-          error: errorMessage,
+          success: true,
+          publicUrl: data.publicUrl,
         };
+      } catch (error) {
+        console.error('Error publishing itinerary:', error);
+        const errorMessage = error instanceof Error ? error.message : '公開に失敗しました';
+        addToast(errorMessage, 'error');
+        return { success: false, error: errorMessage };
       } finally {
         setIsPublishing(false);
       }
     },
-    [itinerary, publishItineraryAction, addToast]
+    [currentItinerary, updateItinerary, addToast]
   );
 
-  // 非公開化
-  const unpublish = useCallback(async (): Promise<void> => {
-    if (!itinerary) {
-      throw new Error('Itinerary not found');
-    }
-
-    setIsPublishing(true);
-
-    try {
-      const result = await unpublishItineraryAction();
-
-      if (result.success) {
-        addToast('しおりを非公開にしました', 'success');
-      } else {
-        addToast(result.error || '非公開化に失敗しました', 'error');
-      }
-    } catch (error) {
-      addToast('非公開化に失敗しました', 'error');
-      throw error;
-    } finally {
-      setIsPublishing(false);
-    }
-  }, [itinerary, unpublishItineraryAction, addToast]);
-
-  // 公開設定の更新
-  const updateSettings = useCallback(
-    async (settings: Partial<PublicItinerarySettings>): Promise<void> => {
-      if (!itinerary || !isPublic) {
-        throw new Error('Itinerary is not published');
+  const unpublish = useCallback(
+    async (): Promise<{ success: boolean; error?: string }> => {
+      if (!currentItinerary) {
+        return { success: false, error: 'しおりが存在しません' };
       }
 
       try {
-        updatePublicSettingsAction(settings);
-        addToast('公開設定を更新しました', 'success');
+        setIsPublishing(true);
+
+        const response = await fetch('/api/itinerary/unpublish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itineraryId: currentItinerary.id,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          return { success: false, error: data.error || '非公開化に失敗しました' };
+        }
+
+        const updatedItinerary: ItineraryData = {
+          ...currentItinerary,
+          isPublic: false,
+          publicSlug: undefined,
+          publishedAt: undefined,
+          allowPdfDownload: undefined,
+          customMessage: undefined,
+          viewCount: undefined,
+          updatedAt: new Date(),
+        };
+
+        updateItinerary(updatedItinerary);
+        addToast('しおりを非公開にしました', 'info');
+
+        return { success: true };
       } catch (error) {
-        addToast('設定の更新に失敗しました', 'error');
-        throw error;
+        console.error('Error unpublishing itinerary:', error);
+        const errorMessage = error instanceof Error ? error.message : '非公開化に失敗しました';
+        addToast(errorMessage, 'error');
+        return { success: false, error: errorMessage };
+      } finally {
+        setIsPublishing(false);
       }
     },
-    [itinerary, isPublic, updatePublicSettingsAction, addToast]
+    [currentItinerary, updateItinerary, addToast]
   );
 
-  // 公開URLをクリップボードにコピー
-  const copyPublicUrl = useCallback(async (): Promise<void> => {
-    if (!publicUrl) {
-      addToast('公開URLがありません', 'error');
-      return;
-    }
+  const updateSettings = useCallback(
+    (settings: Partial<PublicItinerarySettings>) => {
+      if (!currentItinerary) return;
+
+      updateItinerary({
+        allowPdfDownload: settings.allowPdfDownload ?? currentItinerary.allowPdfDownload,
+        customMessage: settings.customMessage ?? currentItinerary.customMessage,
+        updatedAt: new Date(),
+      });
+    },
+    [currentItinerary, updateItinerary]
+  );
+
+  const copyPublicUrl = useCallback(async (): Promise<boolean> => {
+    if (!publicUrl) return false;
 
     try {
       await navigator.clipboard.writeText(publicUrl);
       addToast('URLをコピーしました', 'success');
+      return true;
     } catch (error) {
-      addToast('コピーに失敗しました', 'error');
-      throw error;
+      console.error('Failed to copy URL:', error);
+      addToast('URLのコピーに失敗しました', 'error');
+      return false;
     }
   }, [publicUrl, addToast]);
 
-  // Web Share APIで共有
-  const shareViaWebApi = useCallback(async (): Promise<void> => {
-    if (!publicUrl || !itinerary) {
-      addToast('共有できるURLがありません', 'error');
-      return;
-    }
-
-    // Web Share APIが利用可能かチェック
-    if (typeof navigator === 'undefined' || !navigator.share) {
-      addToast('この機能はお使いのブラウザではサポートされていません', 'error');
-      return;
-    }
+  const shareViaWebApi = useCallback(async (): Promise<boolean> => {
+    if (!publicUrl || !currentItinerary) return false;
 
     try {
-      await navigator.share({
-        title: itinerary.title,
-        text: `${itinerary.destination}の旅のしおり - ${itinerary.title}`,
-        url: publicUrl,
-      });
-      addToast('共有しました', 'success');
-    } catch (error) {
-      // ユーザーがキャンセルした場合はエラーを表示しない
-      if (error instanceof Error && error.name !== 'AbortError') {
+      if (navigator.share) {
+        await navigator.share({
+          title: currentItinerary.title || '旅のしおり',
+          text: `${currentItinerary.destination}への旅行計画を見てください！`,
+          url: publicUrl,
+        });
+        return true;
+      } else {
+        await copyPublicUrl();
+        return true;
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error sharing:', error);
         addToast('共有に失敗しました', 'error');
       }
+      return false;
     }
-  }, [publicUrl, itinerary, addToast]);
-
-  // 閲覧数のインクリメント（将来の拡張用）
-  const incrementViewCount = useCallback(() => {
-    // TODO: APIを呼び出して閲覧数を更新
-    console.log('Increment view count for itinerary:', itineraryId);
-  }, [itineraryId]);
+  }, [publicUrl, currentItinerary, copyPublicUrl, addToast]);
 
   return {
-    // State
     isPublic,
     publicUrl,
-    publicSlug,
     isPublishing,
-
-    // Settings
-    allowPdfDownload,
-    customMessage,
-
-    // Operations
     publish,
     unpublish,
     updateSettings,
-
-    // Sharing
     copyPublicUrl,
     shareViaWebApi,
-
-    // Analytics
-    viewCount,
-    incrementViewCount,
   };
 }

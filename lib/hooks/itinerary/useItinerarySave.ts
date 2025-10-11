@@ -1,55 +1,56 @@
 /**
- * useItinerarySave - 保存ロジック
- * 
- * DB/LocalStorageへの保存処理をカプセル化するカスタムHook
+ * Phase 2: しおり保存用カスタムHook
+ * Phase 10: useItineraryStore, useUIStoreに移行
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import type { ItineraryData } from '@/types/itinerary';
-import { itineraryRepository } from '@/lib/db/itinerary-repository';
+import {
+  saveCurrentItinerary,
+  loadCurrentItinerary,
+  clearCurrentItinerary,
+} from '@/lib/utils/storage';
+import {
+  updateItinerary as updateItineraryInList,
+  deleteItinerary as deleteItineraryFromList,
+} from '@/lib/mock-data/itineraries';
 
 export interface UseItinerarySaveOptions {
+  /**
+   * 保存先: 'auto' (ログイン状態により自動選択) | 'database' | 'localStorage'
+   */
+  storage?: 'auto' | 'database' | 'localStorage';
+  
+  /**
+   * 自動保存を有効にする
+   */
   autoSave?: boolean;
+  
+  /**
+   * 自動保存間隔（ミリ秒）
+   */
   autoSaveInterval?: number;
-  storage?: 'database' | 'localStorage' | 'auto'; // auto = DB if logged in
-}
-
-export interface SaveResult {
-  success: boolean;
-  itineraryId: string;
-  message?: string;
-  error?: string;
 }
 
 export interface UseItinerarySaveReturn {
-  // State
+  save: (itinerary?: ItineraryData | null, mode?: 'overwrite' | 'new') => Promise<{ success: boolean; id?: string; error?: string }>;
+  load: (id: string) => Promise<ItineraryData | null>;
+  deleteItinerary: (id: string) => Promise<boolean>;
   isSaving: boolean;
   lastSaveTime: Date | null;
   saveError: Error | null;
-  
-  // Operations
-  save: (mode?: 'overwrite' | 'new') => Promise<SaveResult>;
-  load: (id: string) => Promise<ItineraryData>;
-  delete: (id: string) => Promise<void>;
-  
-  // Auto-save control
-  enableAutoSave: () => void;
-  disableAutoSave: () => void;
-  triggerAutoSave: () => Promise<void>;
 }
 
-/**
- * しおり保存用カスタムHook
- */
 export function useItinerarySave(
   options: UseItinerarySaveOptions = {}
 ): UseItinerarySaveReturn {
   const {
-    autoSave: initialAutoSave = false,
-    autoSaveInterval = 30000, // デフォルト30秒
     storage = 'auto',
+    autoSave: initialAutoSave = false,
+    autoSaveInterval = 30000,
   } = options;
 
   const { data: session } = useSession();
@@ -57,16 +58,10 @@ export function useItinerarySave(
   const [saveError, setSaveError] = useState<Error | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Zustand storeから必要な状態とアクションを取得
-  const currentItinerary = useStore((state) => state.currentItinerary);
-  const setItinerary = useStore((state) => state.setItinerary);
-  const isSaving = useStore((state) => state.isSaving);
-  const setSaving = useStore((state) => state.setSaving);
-  const lastSaveTime = useStore((state) => state.lastSaveTime);
-  const setLastSaveTime = useStore((state) => state.setLastSaveTime);
-  const addToast = useStore((state) => state.addToast);
+  // Phase 10: 分割されたStoreを使用
+  const { currentItinerary, setItinerary } = useItineraryStore();
+  const { isSaving, lastSaveTime, setSaving, setLastSaveTime, addToast } = useUIStore();
 
-  // ストレージタイプを決定
   const getStorageType = useCallback((): 'database' | 'localStorage' => {
     if (storage === 'auto') {
       return session ? 'database' : 'localStorage';
@@ -74,247 +69,176 @@ export function useItinerarySave(
     return storage;
   }, [storage, session]);
 
-  // LocalStorageへの保存
-  const saveToLocalStorage = useCallback(
-    async (itinerary: ItineraryData): Promise<void> => {
-      const storageKey = `itinerary_${itinerary.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(itinerary));
-    },
-    []
-  );
-
-  // LocalStorageからの読み込み
-  const loadFromLocalStorage = useCallback(
-    async (id: string): Promise<ItineraryData> => {
-      const storageKey = `itinerary_${id}`;
-      const data = localStorage.getItem(storageKey);
-      if (!data) {
-        throw new Error('Itinerary not found in localStorage');
-      }
-      return JSON.parse(data);
-    },
-    []
-  );
-
-  // LocalStorageからの削除
-  const deleteFromLocalStorage = useCallback(async (id: string): Promise<void> => {
-    const storageKey = `itinerary_${id}`;
-    localStorage.removeItem(storageKey);
-  }, []);
-
-  // 保存処理
   const save = useCallback(
-    async (mode: 'overwrite' | 'new' = 'overwrite'): Promise<SaveResult> => {
-      if (!currentItinerary) {
-        return {
-          success: false,
-          itineraryId: '',
-          error: 'No itinerary to save',
-        };
+    async (
+      itinerary?: ItineraryData | null,
+      mode: 'overwrite' | 'new' = 'overwrite'
+    ): Promise<{ success: boolean; id?: string; error?: string }> => {
+      const targetItinerary = itinerary ?? currentItinerary;
+      
+      if (!targetItinerary) {
+        return { success: false, error: 'しおりが存在しません' };
       }
-
-      setSaving(true);
-      setSaveError(null);
 
       try {
+        setSaving(true);
+        setSaveError(null);
+
         const storageType = getStorageType();
-        const itineraryToSave = {
-          ...currentItinerary,
-          updatedAt: new Date(),
-        };
 
-        if (storageType === 'database') {
-          // データベースに保存
-          if (!session?.user?.id) {
-            throw new Error('User not authenticated');
+        if (storageType === 'database' && session?.user?.id) {
+          const response = await fetch('/api/itinerary/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: session.user.id,
+              itinerary: targetItinerary,
+              mode,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || '保存に失敗しました');
           }
-          
-          // 既存のしおりかどうかで処理を分ける
-          const existingItinerary = await itineraryRepository.getItinerary(
-            itineraryToSave.id,
-            session.user.id
-          ).catch(() => null);
-          
-          if (existingItinerary && mode === 'overwrite') {
-            await itineraryRepository.updateItinerary(
-              itineraryToSave.id,
-              session.user.id,
-              itineraryToSave
-            );
-          } else {
-            await itineraryRepository.createItinerary(
-              session.user.id,
-              itineraryToSave
-            );
+
+          if (data.itinerary) {
+            setItinerary(data.itinerary);
           }
+
+          setLastSaveTime(new Date());
+          addToast('しおりを保存しました', 'success');
+
+          return { success: true, id: data.itinerary.id };
         } else {
-          // LocalStorageに保存
-          await saveToLocalStorage(itineraryToSave);
+          const success = saveCurrentItinerary(targetItinerary);
+          
+          if (success && targetItinerary.id) {
+            updateItineraryInList(targetItinerary.id, targetItinerary);
+          }
+
+          if (success) {
+            setLastSaveTime(new Date());
+            addToast('しおりを保存しました', 'success');
+            return { success: true, id: targetItinerary.id };
+          }
+
+          return { success: false, error: 'LocalStorageへの保存に失敗しました' };
         }
-
-        setLastSaveTime(new Date());
-        addToast('しおりを保存しました', 'success');
-
-        return {
-          success: true,
-          itineraryId: currentItinerary.id,
-          message: 'Successfully saved',
-        };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Failed to save itinerary:', error);
+        const errorMessage = error instanceof Error ? error.message : '保存に失敗しました';
         setSaveError(error instanceof Error ? error : new Error(errorMessage));
-        addToast('保存に失敗しました', 'error');
-
-        return {
-          success: false,
-          itineraryId: currentItinerary.id,
-          error: errorMessage,
-        };
+        addToast(errorMessage, 'error');
+        return { success: false, error: errorMessage };
       } finally {
         setSaving(false);
       }
     },
-    [
-      currentItinerary,
-      setSaving,
-      getStorageType,
-      saveToLocalStorage,
-      setLastSaveTime,
-      addToast,
-    ]
+    [currentItinerary, session, getStorageType, setItinerary, setSaving, setLastSaveTime, addToast]
   );
 
-  // 読み込み処理
   const load = useCallback(
-    async (id: string): Promise<ItineraryData> => {
-      setSaveError(null);
-
+    async (id: string): Promise<ItineraryData | null> => {
       try {
         const storageType = getStorageType();
-        let itinerary: ItineraryData;
 
         if (storageType === 'database') {
-          // データベースから読み込み
-          if (!session?.user?.id) {
-            throw new Error('User not authenticated');
-          }
+          const response = await fetch(`/api/itinerary/load?id=${id}`);
           
-          const dbItinerary = await itineraryRepository.getItinerary(id, session.user.id);
-          if (!dbItinerary) {
-            throw new Error('Itinerary not found');
+          if (!response.ok) {
+            throw new Error('読み込みに失敗しました');
           }
-          itinerary = dbItinerary;
+
+          const data = await response.json();
+          
+          if (data.itinerary) {
+            setItinerary(data.itinerary);
+            return data.itinerary;
+          }
+
+          return null;
         } else {
-          // LocalStorageから読み込み
-          itinerary = await loadFromLocalStorage(id);
+          const loaded = loadCurrentItinerary();
+          if (loaded) {
+            setItinerary(loaded);
+          }
+          return loaded;
         }
-
-        setItinerary(itinerary);
-        addToast('しおりを読み込みました', 'success');
-
-        return itinerary;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        setSaveError(error instanceof Error ? error : new Error(errorMessage));
+        console.error('Failed to load itinerary:', error);
         addToast('読み込みに失敗しました', 'error');
-        throw error;
+        return null;
       }
     },
-    [getStorageType, loadFromLocalStorage, setItinerary, addToast]
+    [getStorageType, setItinerary, addToast]
   );
 
-  // 削除処理
   const deleteItinerary = useCallback(
-    async (id: string): Promise<void> => {
-      setSaveError(null);
-
+    async (id: string): Promise<boolean> => {
       try {
         const storageType = getStorageType();
 
-        if (storageType === 'database') {
-          // データベースから削除
-          if (!session?.user?.id) {
-            throw new Error('User not authenticated');
+        if (storageType === 'database' && session) {
+          const response = await fetch(`/api/itinerary/delete?id=${id}`, {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) {
+            throw new Error('削除に失敗しました');
           }
-          
-          await itineraryRepository.deleteItinerary(id, session.user.id);
+
+          if (currentItinerary?.id === id) {
+            setItinerary(null);
+          }
+
+          addToast('しおりを削除しました', 'success');
+          return true;
         } else {
-          // LocalStorageから削除
-          await deleteFromLocalStorage(id);
-        }
+          deleteItineraryFromList(id);
+          
+          if (currentItinerary?.id === id) {
+            clearCurrentItinerary();
+            setItinerary(null);
+          }
 
-        // 現在のしおりが削除されたものと同じ場合はクリア
-        if (currentItinerary?.id === id) {
-          setItinerary(null);
+          addToast('しおりを削除しました', 'success');
+          return true;
         }
-
-        addToast('しおりを削除しました', 'success');
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        setSaveError(error instanceof Error ? error : new Error(errorMessage));
+        console.error('Failed to delete itinerary:', error);
         addToast('削除に失敗しました', 'error');
-        throw error;
+        return false;
       }
     },
-    [getStorageType, deleteFromLocalStorage, currentItinerary, setItinerary, addToast]
+    [currentItinerary, session, getStorageType, setItinerary, addToast]
   );
 
-  // 自動保存を有効化
-  const enableAutoSave = useCallback(() => {
-    setAutoSaveEnabled(true);
-  }, []);
-
-  // 自動保存を無効化
-  const disableAutoSave = useCallback(() => {
-    setAutoSaveEnabled(false);
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-      autoSaveTimerRef.current = null;
-    }
-  }, []);
-
-  // 自動保存をトリガー
-  const triggerAutoSave = useCallback(async (): Promise<void> => {
-    await save('overwrite');
-  }, [save]);
-
-  // 自動保存タイマー
   useEffect(() => {
-    if (!autoSaveEnabled || !currentItinerary) {
-      return;
-    }
+    if (!autoSaveEnabled || !currentItinerary) return;
 
-    // 既存のタイマーをクリア
     if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
+      clearInterval(autoSaveTimerRef.current);
     }
 
-    // 新しいタイマーを設定
-    autoSaveTimerRef.current = setTimeout(() => {
-      triggerAutoSave();
+    autoSaveTimerRef.current = setInterval(() => {
+      save();
     }, autoSaveInterval);
 
     return () => {
       if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
+        clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [autoSaveEnabled, currentItinerary, autoSaveInterval, triggerAutoSave]);
+  }, [autoSaveEnabled, autoSaveInterval, currentItinerary, save]);
 
   return {
-    // State
+    save,
+    load,
+    deleteItinerary,
     isSaving,
     lastSaveTime,
     saveError,
-
-    // Operations
-    save,
-    load,
-    delete: deleteItinerary,
-
-    // Auto-save control
-    enableAutoSave,
-    disableAutoSave,
-    triggerAutoSave,
   };
 }

@@ -40,7 +40,7 @@ export const ItineraryList: React.FC = () => {
             エラーが発生しました
           </h3>
           <p className="text-sm text-gray-500 text-center mb-6">
-            {error.message}
+            {error}
           </p>
           <button
             onClick={() => refresh()}
