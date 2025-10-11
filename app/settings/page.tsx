@@ -15,17 +15,15 @@ import { useLayoutStore } from '@/lib/store/layout';
 import type { SettingsSection } from '@/types/settings';
 
 /**
- * Phase 10: 設定ページ（全Store統合）
+ * Phase 10: 設定ページ（分割されたStore使用）
  */
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [selectedSection, setSelectedSection] = useState<SettingsSection>('general');
-  
-  // Phase 10: 各Storeの初期化
   const initializeAI = useAIStore((state) => state.initializeFromStorage);
   const initializeSettings = useSettingsStore((state) => state.initializeFromStorage);
   const initializeLayout = useLayoutStore((state) => state.initializeFromStorage);
+  const [selectedSection, setSelectedSection] = useState<SettingsSection>('general');
 
   // 認証チェック
   useEffect(() => {
@@ -132,9 +130,7 @@ export default function SettingsPage() {
                     key={section.id}
                     onClick={() => setSelectedSection(section.id)}
                     className={`w-full flex items-center space-x-3 px-4 py-4 transition-colors text-left border-b border-gray-100 last:border-b-0 ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
@@ -164,9 +160,7 @@ export default function SettingsPage() {
                       key={section.id}
                       onClick={() => setSelectedSection(section.id)}
                       className={`flex flex-col items-center justify-center py-4 transition-colors ${
-                        isActive
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                        isActive ? 'bg-blue-50 text-blue-700' : 'bg-white text-gray-700 hover:bg-gray-50'
                       }`}
                     >
                       <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
