@@ -1,32 +1,41 @@
+/**
+ * Phase 10.1: MessageSkeleton
+ * 
+ * ローディング時のスケルトンUI（useChatStore使用）
+ */
+
 "use client";
 
 import React from "react";
-import { Bot } from "lucide-react";
+import { useChatStore } from "@/lib/store/chat";
+import { Bot, Loader2 } from "lucide-react";
 
-/**
- * メッセージスケルトンコンポーネント
- * AIの応答待ち中に表示されるローディングUI
- */
 export const MessageSkeleton: React.FC = () => {
-  return (
-    <div className="flex justify-start">
-      <div className="flex max-w-[80%]">
-        {/* AIアイコン */}
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
-          <Bot className="w-5 h-5 text-gray-600 animate-pulse" />
-        </div>
+  const { streamingMessage } = useChatStore();
 
-        {/* スケルトンメッセージ */}
-        <div className="rounded-lg p-3 bg-gray-100 space-y-2 min-w-[200px]">
-          {/* 1行目 - 長いテキストのスケルトン */}
-          <div className="h-4 rounded shimmer w-full"></div>
-          
-          {/* 2行目 - 中程度の長さのテキストのスケルトン */}
-          <div className="h-4 rounded shimmer w-5/6"></div>
-          
-          {/* 3行目 - 短いテキストのスケルトン */}
-          <div className="h-4 rounded shimmer w-4/6"></div>
+  return (
+    <div className="flex gap-3 p-4 bg-blue-50 animate-pulse">
+      <div className="flex-shrink-0">
+        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+          {streamingMessage ? (
+            <Bot className="w-5 h-5 text-white" />
+          ) : (
+            <Loader2 className="w-5 h-5 text-white animate-spin" />
+          )}
         </div>
+      </div>
+      <div className="flex-1 space-y-2">
+        {streamingMessage ? (
+          <div className="text-gray-700 whitespace-pre-wrap">
+            {streamingMessage}
+            <span className="inline-block w-2 h-4 ml-1 bg-blue-600 animate-pulse" />
+          </div>
+        ) : (
+          <>
+            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+          </>
+        )}
       </div>
     </div>
   );
