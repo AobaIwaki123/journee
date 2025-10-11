@@ -33,8 +33,6 @@ export function useChatMessage(): UseChatMessageReturn {
   const {
     messages,
     isLoading,
-    isStreaming,
-    streamingMessage,
     addMessage,
     setLoading,
     setStreaming,
@@ -43,6 +41,7 @@ export function useChatMessage(): UseChatMessageReturn {
     setAbortController,
     deleteMessage: deleteChatMessage,
     saveEditedMessage,
+    setHasReceivedResponse,
   } = useChatStore();
   
   // AI Store
@@ -68,35 +67,52 @@ export function useChatMessage(): UseChatMessageReturn {
       };
       addMessage(userMessage);
       
-      // AI応答を取得
+      // AI応答を取得（ストリーミング）
       setStreaming(true);
       setStreamingMessage('');
+      setHasReceivedResponse(true);
       
       const abortController = new AbortController();
       setAbortController(abortController);
       
-      const response = await sendChatMessageStream(
-        [...messages, userMessage],
+      let fullResponse = '';
+      let receivedItinerary = false;
+      let firstChunk = true;
+      
+      // sendChatMessageStreamはasync generatorを返す
+      for await (const chunk of sendChatMessageStream(
+        content.trim(),
+        messages,
+        currentItinerary || undefined,
         selectedModel,
         claudeApiKey || undefined,
         planningPhase,
         currentDetailingDay,
-        (chunk) => {
-          appendStreamingMessage(chunk);
-        },
+        currentItinerary?.currency,
         abortController.signal
-      );
-      
-      if (response.itinerary) {
-        const mergedItinerary = mergeItineraryData(currentItinerary, response.itinerary);
-        setItinerary(mergedItinerary);
+      )) {
+        if (chunk.type === 'message' && chunk.content) {
+          if (firstChunk) {
+            firstChunk = false;
+          }
+          appendStreamingMessage(chunk.content);
+          fullResponse += chunk.content;
+        } else if (chunk.type === 'itinerary' && chunk.itinerary) {
+          receivedItinerary = true;
+          const mergedItinerary = mergeItineraryData(currentItinerary || undefined, chunk.itinerary);
+          setItinerary(mergedItinerary);
+        } else if (chunk.type === 'error') {
+          throw new Error(chunk.error || 'Unknown error occurred');
+        } else if (chunk.type === 'done') {
+          break;
+        }
       }
       
-      // ストリーミングメッセージをメッセージリストに追加
+      // ストリーミング完了後、AIメッセージを追加
       const assistantMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: streamingMessage || response.text,
+        content: fullResponse,
         timestamp: new Date(),
       };
       addMessage(assistantMessage);
@@ -119,7 +135,6 @@ export function useChatMessage(): UseChatMessageReturn {
     planningPhase,
     currentDetailingDay,
     currentItinerary,
-    streamingMessage,
     addMessage,
     setLoading,
     setStreaming,
@@ -127,6 +142,7 @@ export function useChatMessage(): UseChatMessageReturn {
     appendStreamingMessage,
     setAbortController,
     setItinerary,
+    setHasReceivedResponse,
   ]);
   
   const resendMessage = useCallback(async (messageId: string) => {
