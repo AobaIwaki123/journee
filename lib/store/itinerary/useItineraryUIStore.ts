@@ -5,7 +5,7 @@
  */
 
 import { create } from 'zustand';
-import type { ItineraryFilter, ItinerarySort } from '@/lib/store/useStore';
+import type { ItineraryFilter, ItinerarySort } from '@/types/filters';
 
 interface ItineraryUIStore {
   // State

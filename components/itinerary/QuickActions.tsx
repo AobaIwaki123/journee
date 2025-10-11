@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useStore } from "@/lib/store/useStore";
 import { usePhaseTransition, useAIProgress } from "@/lib/hooks/itinerary";
 import { ArrowRight, RotateCcw, Check, AlertCircle } from "lucide-react";
 

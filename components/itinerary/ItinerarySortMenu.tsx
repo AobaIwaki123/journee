@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ArrowUpDown, Check } from 'lucide-react';
 import { useItineraryUIStore } from '@/lib/store/itinerary';
-import type { ItinerarySortField, ItinerarySortOrder } from '@/lib/store/useStore';
+import type { ItinerarySortField, ItinerarySortOrder } from '@/types/filters';
 
 /**
  * Phase 6.2: しおりソートメニュー

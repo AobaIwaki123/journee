@@ -9,18 +9,23 @@ import { AISettings } from '@/components/settings/AISettings';
 import { SoundSettings } from '@/components/settings/SoundSettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useStore } from '@/lib/store/useStore';
+import { useAIStore } from '@/lib/store/ai';
+import { useSettingsStore } from '@/lib/store/settings';
+import { useLayoutStore } from '@/lib/store/layout';
 import type { SettingsSection } from '@/types/settings';
 
 /**
- * 設定ページ
- * Phase 5.4.3 - 設定ページ実装
+ * Phase 10: 設定ページ（全Store統合）
  */
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const initializeFromStorage = useStore((state: any) => state.initializeFromStorage);
   const [selectedSection, setSelectedSection] = useState<SettingsSection>('general');
+  
+  // Phase 10: 各Storeの初期化
+  const initializeAI = useAIStore((state) => state.initializeFromStorage);
+  const initializeSettings = useSettingsStore((state) => state.initializeFromStorage);
+  const initializeLayout = useLayoutStore((state) => state.initializeFromStorage);
 
   // 認証チェック
   useEffect(() => {
@@ -31,8 +36,10 @@ export default function SettingsPage() {
 
   // LocalStorageから設定を読み込み
   useEffect(() => {
-    initializeFromStorage();
-  }, [initializeFromStorage]);
+    initializeAI();
+    initializeSettings();
+    initializeLayout();
+  }, [initializeAI, initializeSettings, initializeLayout]);
 
   if (status === 'loading') {
     return (
@@ -90,7 +97,6 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ヘッダー */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
@@ -114,10 +120,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* コンテンツエリア */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* サイドバー（デスクトップ） */}
           <aside className="hidden lg:block lg:w-64 flex-shrink-0">
             <nav className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {sections.map((section) => {
@@ -149,7 +153,6 @@ export default function SettingsPage() {
             </nav>
           </aside>
 
-          {/* タブ切り替え（モバイル） */}
           <div className="lg:hidden">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="grid grid-cols-2 gap-px bg-gray-200">
@@ -177,7 +180,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* メインコンテンツ */}
           <main className="flex-1">
             <div className="bg-white rounded-lg border border-gray-200 p-6 lg:p-8">
               {renderContent()}
