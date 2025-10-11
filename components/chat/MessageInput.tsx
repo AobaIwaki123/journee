@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { useStore } from "@/lib/store/useStore";
+import { useChatStore } from '@/lib/store/chat';
+import { useAIStore } from '@/lib/store/ai';
+import { useUIStore } from '@/lib/store/ui';
+import { useSettingsStore } from '@/lib/store/settings';
 import { useItineraryStore, useItineraryProgressStore } from "@/lib/store/itinerary";
 import { Send } from "lucide-react";
 import { sendChatMessageStream } from "@/lib/utils/api-client";
@@ -11,53 +14,42 @@ import type { Message } from "@/types/chat";
 import { generateId } from "@/lib/utils/id-generator";
 
 export const MessageInput: React.FC = () => {
-  // Store state
-  const messages = useStore((state: any) => state.messages);
-  const addMessage = useStore((state: any) => state.addMessage);
-  const isLoading = useStore((state: any) => state.isLoading);
-  const isStreaming = useStore((state: any) => state.isStreaming);
-  const setLoading = useStore((state: any) => state.setLoading);
-  const setStreaming = useStore((state: any) => state.setStreaming);
-  const setStreamingMessage = useStore(
-    (state: any) => state.setStreamingMessage
-  );
-  const appendStreamingMessage = useStore(
-    (state: any) => state.appendStreamingMessage
-  );
-  const selectedAI = useStore((state: any) => state.selectedAI);
-  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
-  const setError = useStore((state: any) => state.setError);
+  // Phase 10: 分割されたStoreを使用
+  const {
+    messages,
+    isLoading,
+    isStreaming,
+    messageDraft,
+    editingMessageId,
+    addMessage,
+    setLoading,
+    setStreaming,
+    setStreamingMessage,
+    appendStreamingMessage,
+    setMessageDraft,
+    setAbortController,
+    setHasReceivedResponse,
+  } = useChatStore();
   
-  // Phase 9 Bug Fix: useItineraryStoreとuseItineraryProgressStoreを使用
+  const { selectedModel: selectedAI, claudeApiKey } = useAIStore();
+  const { setError } = useUIStore();
+  const { settings } = useSettingsStore();
   const { currentItinerary, setItinerary } = useItineraryStore();
-  const { planningPhase, currentDetailingDay } = useItineraryProgressStore();
-  const setHasReceivedResponse = useStore(
-    (state: any) => state.setHasReceivedResponse
-  );
-
-  // Message editing state
-  const messageDraft = useStore((state: any) => state.messageDraft);
-  const setMessageDraft = useStore((state: any) => state.setMessageDraft);
-  const editingMessageId = useStore((state: any) => state.editingMessageId);
-  const setAbortController = useStore((state: any) => state.setAbortController);
+  const {
+    planningPhase,
+    currentDetailingDay,
+    updateChecklist,
+    shouldTriggerAutoProgress,
+    isAutoProgressing,
+    setIsAutoProgressing,
+    setAutoProgressState,
+  } = useItineraryProgressStore();
 
   // Local input state (uses messageDraft from store)
   const [input, setInput] = useState("");
 
 
-  // Phase 4.10: 自動進行機能
-  const updateChecklist = useStore((state: any) => state.updateChecklist);
-  const shouldTriggerAutoProgress = useStore(
-    (state: any) => state.shouldTriggerAutoProgress
-  );
-  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
-  const setIsAutoProgressing = useStore(
-    (state: any) => state.setIsAutoProgressing
-  );
-  const setAutoProgressState = useStore(
-    (state: any) => state.setAutoProgressState
-  );
-  const currency = useStore((state: any) => state.settings.general.currency);
+  const currency = settings.general.currency;
 
   // Initialize input from messageDraft on mount and when messageDraft changes
   React.useEffect(() => {
@@ -161,7 +153,7 @@ export const MessageInput: React.FC = () => {
       setStreamingMessage("");
 
       // Phase 4.10.2: 自動進行トリガーチェック
-      updateChecklist();
+      updateChecklist(messages, currentItinerary || null);
 
       // 自動進行モードが有効で、トリガー条件を満たしている場合
       if (shouldTriggerAutoProgress() && !isAutoProgressing) {

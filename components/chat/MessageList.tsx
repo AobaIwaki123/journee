@@ -4,7 +4,10 @@ import React, { useEffect, useRef, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { useStore } from "@/lib/store/useStore";
+import { useChatStore } from '@/lib/store/chat';
+import { useAIStore } from '@/lib/store/ai';
+import { useUIStore } from '@/lib/store/ui';
+import { useSettingsStore } from '@/lib/store/settings';
 import { useItineraryStore, useItineraryProgressStore } from "@/lib/store/itinerary";
 import { Bot, User, Edit2, Trash2, Save, X } from "lucide-react";
 import { toSafeDate } from "@/lib/utils/time-utils";
@@ -41,55 +44,43 @@ function removeJsonBlocks(text: string): string {
 }
 
 export const MessageList: React.FC = () => {
-  const messages = useStore((state: any) => state.messages);
-  const isLoading = useStore((state: any) => state.isLoading);
-  const isStreaming = useStore((state: any) => state.isStreaming);
-  const streamingMessage = useStore((state: any) => state.streamingMessage);
-  const editingMessageId = useStore((state: any) => state.editingMessageId);
-  const startEditingMessage = useStore(
-    (state: any) => state.startEditingMessage
-  );
-  const cancelEditingMessage = useStore(
-    (state: any) => state.cancelEditingMessage
-  );
-  const saveEditedMessage = useStore((state: any) => state.saveEditedMessage);
-  const deleteMessage = useStore((state: any) => state.deleteMessage);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
-  const hasReceivedResponse = useStore(
-    (state: any) => state.hasReceivedResponse
-  );
-  const [editContent, setEditContent] = useState("");
-
-  // 送信関連のストア
-  const addMessage = useStore((state: any) => state.addMessage);
-  const setLoading = useStore((state: any) => state.setLoading);
-  const setStreaming = useStore((state: any) => state.setStreaming);
-  const setStreamingMessage = useStore(
-    (state: any) => state.setStreamingMessage
-  );
-  const appendStreamingMessage = useStore(
-    (state: any) => state.appendStreamingMessage
-  );
-  const selectedAI = useStore((state: any) => state.selectedAI);
-  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
-  const setError = useStore((state: any) => state.setError);
+  // Phase 10: 分割されたStoreを使用
+  const {
+    messages,
+    streamingMessage,
+    isLoading,
+    isStreaming,
+    hasReceivedResponse,
+    editingMessageId,
+    addMessage,
+    setLoading,
+    setStreaming,
+    setStreamingMessage,
+    appendStreamingMessage,
+    setAbortController,
+    startEditingMessage,
+    cancelEditingMessage,
+    saveEditedMessage,
+    deleteMessage,
+  } = useChatStore();
   
-  // Phase 9 Bug Fix: useItineraryStoreとuseItineraryProgressStoreを使用
+  const { selectedModel: selectedAI, claudeApiKey } = useAIStore();
+  const { setError } = useUIStore();
+  const { settings } = useSettingsStore();
   const { currentItinerary, setItinerary } = useItineraryStore();
-  const { planningPhase, currentDetailingDay } = useItineraryProgressStore();
-  const currency = useStore((state: any) => state.settings.general.currency);
-  const setAbortController = useStore((state: any) => state.setAbortController);
-  const updateChecklist = useStore((state: any) => state.updateChecklist);
-  const shouldTriggerAutoProgress = useStore(
-    (state: any) => state.shouldTriggerAutoProgress
-  );
-  const setIsAutoProgressing = useStore(
-    (state: any) => state.setIsAutoProgressing
-  );
-  const setAutoProgressState = useStore(
-    (state: any) => state.setAutoProgressState
-  );
+  const {
+    planningPhase,
+    currentDetailingDay,
+    isAutoProgressing,
+    updateChecklist,
+    shouldTriggerAutoProgress,
+    setIsAutoProgressing,
+    setAutoProgressState,
+  } = useItineraryProgressStore();
+  
+  const currency = settings.general.currency;
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [editContent, setEditContent] = useState("");
 
   const isProcessing = (isLoading || isStreaming) && !hasReceivedResponse;
 
@@ -188,7 +179,7 @@ export const MessageList: React.FC = () => {
       setStreamingMessage("");
 
       // チェックリスト更新と自動進行チェック
-      updateChecklist();
+      updateChecklist(messages, currentItinerary || null);
 
       if (shouldTriggerAutoProgress() && !isAutoProgressing) {
         console.log("🚀 Auto progress triggered");
