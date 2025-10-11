@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Map, Eye } from 'lucide-react';
 import { useMapInstance } from '@/lib/hooks/useMapInstance';
 import { useMapMarkers } from '@/lib/hooks/useMapMarkers';
@@ -26,7 +26,6 @@ export const MapView = React.memo<MapViewProps>(({
   showDaySelector = true,
   numberingMode = 'global'
 }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
   const [selectedDay, setSelectedDay] = useState(initialSelectedDay || 1);
   const { isLoaded, error } = useGoogleMapsLoader();
 
@@ -45,9 +44,9 @@ export const MapView = React.memo<MapViewProps>(({
     return { lat: 35.6762, lng: 139.6503 };
   }, [spots]);
 
-  const map = useMapInstance(mapRef, isLoaded, center, 13);
-  useMapMarkers({ map, markerData: spots.map((spot, index) => ({ spot, index })), numberingMode, showDay: false });
-  useMapRoute(map, spots, true);
+  const { mapRef } = useMapInstance({ center, zoom: 13 });
+  useMapMarkers(mapRef, spots, numberingMode, selectedDay);
+  useMapRoute(mapRef, spots);
 
   const availableDays = days.filter(day => 
     day.spots.some(spot => spot.location?.lat && spot.location?.lng)
