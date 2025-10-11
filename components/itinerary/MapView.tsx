@@ -135,4 +135,6 @@ export const MapView = React.memo<MapViewProps>(({
       </div>
     </div>
   );
-};
+});
+
+MapView.displayName = 'MapView';

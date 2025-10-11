@@ -117,4 +117,6 @@ export const PDFExportButton = React.memo<PDFExportButtonProps>(({
       )}
     </>
   );
-};
+});
+
+PDFExportButton.displayName = 'PDFExportButton';
