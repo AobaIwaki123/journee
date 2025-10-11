@@ -14,7 +14,7 @@ import {
   updateDayBudget,
   updateItineraryBudget,
 } from '@/lib/utils/budget-utils';
-import { createHistoryUpdate } from '@/lib/store/useStore-helper';
+import { createHistoryUpdate } from '@/lib/store/helpers/history-helper';
 
 interface SpotStore {
   // State - useItineraryStoreから参照
