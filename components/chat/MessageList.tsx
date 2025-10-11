@@ -43,7 +43,10 @@ function removeJsonBlocks(text: string): string {
   return cleaned;
 }
 
-export const MessageList: React.FC = () => {
+/**
+ * Phase 12.1: MessageList（メモ化版）
+ */
+export const MessageList = React.memo(() => {
   // Phase 10: 分割されたStoreを使用
   const {
     messages,
@@ -589,4 +592,6 @@ export const MessageList: React.FC = () => {
       <div ref={messagesEndRef} />
     </div>
   );
-};
+});
+
+MessageList.displayName = 'MessageList';
