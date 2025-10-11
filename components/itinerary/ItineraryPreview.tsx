@@ -16,7 +16,10 @@ import { ItineraryContentArea } from "./preview";
 
 type ViewMode = "schedule" | "map";
 
-export const ItineraryPreview: React.FC = () => {
+/**
+ * Phase 12.1: ItineraryPreview（メモ化版）
+ */
+export const ItineraryPreview = React.memo(() => {
   const { currentItinerary } = useItineraryStore();
   const { isAutoProgressing, autoProgressState } = useItineraryProgressStore();
   const [viewMode, setViewMode] = useState<ViewMode>("schedule");
@@ -58,4 +61,6 @@ export const ItineraryPreview: React.FC = () => {
       </div>
     </>
   );
-};
+});
+
+ItineraryPreview.displayName = 'ItineraryPreview';

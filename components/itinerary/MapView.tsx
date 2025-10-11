@@ -29,7 +29,10 @@ interface MapViewProps {
   numberingMode?: "global" | "perDay"; // 番号付けモード
 }
 
-export const MapView: React.FC<MapViewProps> = ({
+/**
+ * Phase 12.1: MapView（メモ化版）
+ */
+export const MapView = React.memo<MapViewProps>(({
   days,
   selectedDay: initialSelectedDay,
   height = "400px",

@@ -19,7 +19,10 @@ interface PDFExportButtonProps {
   showPreviewButton?: boolean;
 }
 
-export const PDFExportButton: React.FC<PDFExportButtonProps> = ({ 
+/**
+ * Phase 12.1: PDFExportButton（メモ化版）
+ */
+export const PDFExportButton = React.memo<PDFExportButtonProps>(({ 
   itinerary,
   className = '',
   showPreviewButton = true
