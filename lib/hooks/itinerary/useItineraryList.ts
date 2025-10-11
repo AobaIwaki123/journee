@@ -1,16 +1,16 @@
 /**
- * Phase 3: しおり一覧管理用カスタムHook
- * Phase 10: Store分割対応
+ * Phase 4: しおり一覧管理用カスタムHook
+ * Phase 10: useItineraryUIStore, useUIStoreに移行
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useUIStore } from '@/lib/store/ui';
 import { useItineraryUIStore } from '@/lib/store/itinerary';
+import { useUIStore } from '@/lib/store/ui';
 import type { ItineraryData, ItineraryListItem } from '@/types/itinerary';
-import { loadItineraryList } from '@/lib/mock-data/itineraries';
+import { getAllItineraries } from '@/lib/mock-data/itineraries';
 
-export interface ItineraryListReturn {
+export interface UseItineraryListReturn {
   itineraries: ItineraryListItem[];
   isLoading: boolean;
   error: string | null;
@@ -18,68 +18,74 @@ export interface ItineraryListReturn {
   sort: any;
   setFilter: (filter: any) => void;
   setSort: (sort: any) => void;
+  resetFilters: () => void;
   refresh: () => Promise<void>;
   deleteItinerary: (id: string) => Promise<void>;
 }
 
-export function useItineraryList(): ItineraryListReturn {
-  const { data: session } = useSession();
+export function useItineraryList(): UseItineraryListReturn {
   const [itineraries, setItineraries] = useState<ItineraryListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
+  const { data: session } = useSession();
+  
   // Phase 10: 分割されたStoreを使用
+  const { filter, sort, setFilter, setSort, resetFilters } = useItineraryUIStore();
   const { addToast } = useUIStore();
-  const { filter, sort, setFilter, setSort } = useItineraryUIStore();
 
-  const loadItineraries = useCallback(async () => {
+  const fetchItineraries = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      if (session?.user) {
+      if (session?.user?.id) {
         const response = await fetch('/api/itinerary/list');
+        
         if (!response.ok) {
-          throw new Error('Failed to load itineraries');
+          throw new Error('しおりの取得に失敗しました');
         }
+
         const data = await response.json();
         setItineraries(data.itineraries || []);
       } else {
-        const localItineraries = loadItineraryList();
-        setItineraries(localItineraries);
+        const mockItineraries = getAllItineraries();
+        setItineraries(mockItineraries);
       }
     } catch (err: any) {
-      console.error('Failed to load itineraries:', err);
-      setError(err.message);
+      console.error('Failed to fetch itineraries:', err);
+      setError(err.message || 'しおりの取得に失敗しました');
     } finally {
       setIsLoading(false);
     }
   }, [session]);
 
-  useEffect(() => {
-    loadItineraries();
-  }, [loadItineraries]);
-
   const deleteItinerary = useCallback(
     async (id: string) => {
       try {
-        if (session?.user) {
+        if (session?.user?.id) {
           const response = await fetch(`/api/itinerary/delete?id=${id}`, {
             method: 'DELETE',
           });
+
           if (!response.ok) {
-            throw new Error('Failed to delete itinerary');
+            throw new Error('削除に失敗しました');
           }
         }
 
-        await loadItineraries();
-        addToast('しおりを削除しました', 'info');
+        setItineraries((prev) => prev.filter((item) => item.id !== id));
+        addToast('しおりを削除しました', 'success');
       } catch (err: any) {
+        console.error('Failed to delete itinerary:', err);
         addToast(err.message || '削除に失敗しました', 'error');
       }
     },
-    [session, loadItineraries, addToast]
+    [session, addToast]
   );
+
+  useEffect(() => {
+    fetchItineraries();
+  }, [fetchItineraries]);
 
   return {
     itineraries,
@@ -89,7 +95,8 @@ export function useItineraryList(): ItineraryListReturn {
     sort,
     setFilter,
     setSort,
-    refresh: loadItineraries,
+    resetFilters,
+    refresh: fetchItineraries,
     deleteItinerary,
   };
 }
