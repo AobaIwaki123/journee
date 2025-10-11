@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import { useItineraryUIStore } from '@/lib/store/itinerary';
 import { useUIStore } from '@/lib/store/ui';
 import type { ItineraryData, ItineraryListItem } from '@/types/itinerary';
-import { getAllItineraries } from '@/lib/mock-data/itineraries';
+import { loadItineraryList } from '@/lib/mock-data/recent-itineraries';
 
 export interface UseItineraryListReturn {
   itineraries: ItineraryListItem[];
@@ -48,10 +48,10 @@ export function useItineraryList(): UseItineraryListReturn {
 
         const data = await response.json();
         setItineraries(data.itineraries || []);
-      } else {
-        const mockItineraries = getAllItineraries();
-        setItineraries(mockItineraries);
-      }
+        } else {
+          const mockItineraries = loadItinerariesFromStorage();
+          setItineraries(mockItineraries as ItineraryListItem[]);
+        }
     } catch (err: any) {
       console.error('Failed to fetch itineraries:', err);
       setError(err.message || 'しおりの取得に失敗しました');
