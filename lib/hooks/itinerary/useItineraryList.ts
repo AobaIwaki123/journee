@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import { useItineraryUIStore } from '@/lib/store/itinerary';
 import { useUIStore } from '@/lib/store/ui';
 import type { ItineraryData, ItineraryListItem } from '@/types/itinerary';
-import { loadItineraryList } from '@/lib/mock-data/recent-itineraries';
+import { loadItinerariesFromStorage } from '@/lib/mock-data/itineraries';
 
 export interface UseItineraryListReturn {
   itineraries: ItineraryListItem[];
