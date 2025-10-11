@@ -1,655 +1,505 @@
-# Journee アーキテクチャガイド
+# アーキテクチャガイド
 
-**最終更新**: 2025-01-10 (Phase 10-13完了後)  
-**対象**: 開発者・コントリビューター
+**作成日**: 2025-01-10  
+**最終更新**: Phase 1-12完了後  
+**対象**: 開発者・メンテナー
 
 ---
 
 ## 概要
 
-Journeeは、AIとともに旅のしおりを作成するWebアプリケーションです。
-Phase 1-13の大規模リファクタリングを経て、クリーンで保守性の高いアーキテクチャに到達しました。
+Journeeは、**クリーンアーキテクチャ**に基づいたReact/Next.jsアプリケーションです。
+Phase 1-12のリファクタリングにより、以下の原則を達成しました：
+
+1. **単一責任の原則** - 1モジュール = 1責務
+2. **関心の分離** - Store (状態) / Hooks (ロジック) / Components (UI)
+3. **依存性の逆転** - 上位レイヤーは下位レイヤーに依存しない
+4. **テスタビリティ** - 各レイヤーを独立してテスト可能
 
 ---
 
-## アーキテクチャ原則
+## レイヤー構造
 
-### 1. ドメイン駆動設計 (DDD)
-各ドメイン（チャット、AI、設定、UI、レイアウト、しおり）が独立したStoreとHooksを持つ
-
-### 2. 単一責任の原則 (SRP)
-- 1 Store = 1 ドメイン
-- 1 Hook = 1 ビジネスロジック
-- 1 Component = 1 UI責務
-
-### 3. 関心の分離 (SoC)
 ```
-Store (状態)
-  ↓
-Hooks (ロジック)
-  ↓
-Components (UI)
+┌─────────────────────────────────────────┐
+│         Presentation Layer              │
+│  (Components - UI表示のみ)              │
+│                                         │
+│  - chat/, itinerary/, layout/,          │
+│    settings/, ui/                       │
+└─────────────────────────────────────────┘
+             ↓ 依存
+┌─────────────────────────────────────────┐
+│        Application Layer                │
+│  (Custom Hooks - ビジネスロジック)      │
+│                                         │
+│  - lib/hooks/chat/                      │
+│  - lib/hooks/itinerary/                 │
+│  - lib/hooks/settings/                  │
+│  - lib/hooks/ai/                        │
+└─────────────────────────────────────────┘
+             ↓ 依存
+┌─────────────────────────────────────────┐
+│         Domain Layer                    │
+│  (Store Slices - 状態管理)              │
+│                                         │
+│  - lib/store/chat/                      │
+│  - lib/store/ai/                        │
+│  - lib/store/settings/                  │
+│  - lib/store/ui/                        │
+│  - lib/store/layout/                    │
+│  - lib/store/itinerary/ (5 slices)      │
+└─────────────────────────────────────────┘
+             ↓ 依存
+┌─────────────────────────────────────────┐
+│      Infrastructure Layer               │
+│  (Utils, API, DB - 外部サービス)        │
+│                                         │
+│  - lib/utils/                           │
+│  - lib/ai/                              │
+│  - lib/db/                              │
+└─────────────────────────────────────────┘
 ```
-
-### 4. テスト駆動
-各レイヤーを独立してテスト可能
 
 ---
 
-## Store構造 (9個のスライス)
+## Store構造（9個のスライス）
 
-### チャット・AI系 (2個)
-
-#### useChatStore (178行)
+### 1. Chat Store (`useChatStore`)
 **責務**: チャット機能の状態管理
 
-**State**:
-- `messages: Message[]` - メッセージ履歴
-- `isLoading: boolean` - ローディング状態
-- `isStreaming: boolean` - ストリーミング中
-- `streamingMessage: string` - ストリーミングメッセージ
-- `editingMessageId: string | null` - 編集中メッセージID
-- `abortController: AbortController | null` - AI応答キャンセル用
+```typescript
+interface ChatStore {
+  messages: Message[];
+  isLoading: boolean;
+  isStreaming: boolean;
+  streamingMessage: string;
+  editingMessageId: string | null;
+  messageDraft: string;
+  abortController: AbortController | null;
+  
+  // Actions
+  addMessage, clearMessages, deleteMessage
+  startEditingMessage, saveEditedMessage, cancelEditingMessage
+  setLoading, setStreaming, setStreamingMessage
+  setAbortController, abortAIResponse
+}
+```
 
-**Actions**:
-- `addMessage`, `clearMessages`, `deleteMessage`
-- `startEditingMessage`, `saveEditedMessage`, `cancelEditingMessage`
-- `setLoading`, `setStreaming`, `appendStreamingMessage`
-- `abortAIResponse`
-
----
-
-#### useAIStore (72行)
-**責務**: AI設定の状態管理
-
-**State**:
-- `selectedModel: AIModelId` - 選択中のAIモデル
-- `claudeApiKey: string` - Claude APIキー
-- `geminiApiKey: string` - Gemini APIキー（将来用）
-
-**Actions**:
-- `setSelectedModel`, `setClaudeApiKey`, `removeClaudeApiKey`
-- `initializeFromStorage` - LocalStorage同期
+**使用箇所**: MessageInput, MessageList, ChatBox, ResetButton
 
 ---
 
-### 設定系 (1個)
+### 2. AI Store (`useAIStore`)
+**責務**: AI設定の管理
 
-#### useSettingsStore (88行)
-**責務**: アプリケーション設定の管理
+```typescript
+interface AIStore {
+  selectedModel: AIModelId;
+  claudeApiKey: string;
+  geminiApiKey: string;
+  
+  // Actions
+  setSelectedModel, setClaudeApiKey, removeClaudeApiKey
+  initializeFromStorage
+}
+```
 
-**State**:
-- `settings: AppSettings` - 全設定
-  - `general: { currency }` - 通貨設定
-  - `sound: { enabled, volume }` - サウンド設定
-
-**Actions**:
-- `updateSettings`, `updateGeneralSettings`, `updateSoundSettings`
-- `resetToDefaults`, `initializeFromStorage`
-
----
-
-### UI系 (1個)
-
-#### useUIStore (82行)
-**責務**: UI状態・通知・エラーの管理
-
-**State**:
-- `toasts: ToastMessage[]` - トースト通知
-- `isSaving: boolean` - 保存中フラグ
-- `lastSaveTime: Date | null` - 最終保存時刻
-- `storageInitialized: boolean` - 初期化完了
-- `error: string | null` - エラーメッセージ
-
-**Actions**:
-- `addToast`, `removeToast`, `clearToasts`
-- `setSaving`, `setLastSaveTime`
-- `setError`, `clearError`
-- `setStorageInitialized`
+**使用箇所**: AISelector, AISettings, APIKeyModal, MessageInput, MessageList
 
 ---
 
-### レイアウト系 (1個)
+### 3. Settings Store (`useSettingsStore`)
+**責務**: アプリケーション設定
 
-#### useLayoutStore (65行)
-**責務**: レイアウト状態の管理
+```typescript
+interface SettingsStore {
+  settings: AppSettings;
+  
+  // Actions
+  updateSettings, updateGeneralSettings, updateSoundSettings
+  resetToDefaults, initializeFromStorage
+}
+```
 
-**State**:
-- `chatPanelWidth: number` - チャットパネル幅（30-70%）
-- `mobileActiveTab: 'chat' | 'itinerary'` - モバイルタブ
-- `isMobileMenuOpen: boolean` - モバイルメニュー状態
-
-**Actions**:
-- `setChatPanelWidth`, `setMobileActiveTab`
-- `setMobileMenuOpen`, `toggleMobileMenu`
-- `initializeFromStorage`
-
----
-
-### しおり系 (5個)
-
-#### useItineraryStore (103行)
-**責務**: しおり基本情報の管理
-
-**State**:
-- `currentItinerary: ItineraryData | null` - 現在のしおり
-
-**Actions**:
-- `setItinerary`, `updateItinerary`
+**使用箇所**: GeneralSettings, SoundSettings, MessageInput, MessageList
 
 ---
 
-#### useSpotStore (195行)
+### 4. UI Store (`useUIStore`)
+**責務**: UI状態（トースト、保存状態、エラー）
+
+```typescript
+interface UIStore {
+  toasts: ToastMessage[];
+  isSaving: boolean;
+  lastSaveTime: Date | null;
+  storageInitialized: boolean;
+  error: string | null;
+  
+  // Actions
+  addToast, removeToast, clearToasts
+  setSaving, setLastSaveTime
+  setError, clearError
+  setStorageInitialized
+}
+```
+
+**使用箇所**: 全コンポーネント（toastは20箇所以上で使用）
+
+---
+
+### 5. Layout Store (`useLayoutStore`)
+**責務**: レイアウト状態
+
+```typescript
+interface LayoutStore {
+  chatPanelWidth: number;
+  mobileActiveTab: 'chat' | 'itinerary';
+  isMobileMenuOpen: boolean;
+  
+  // Actions
+  setChatPanelWidth, setMobileActiveTab
+  setMobileMenuOpen, toggleMobileMenu
+  initializeFromStorage
+}
+```
+
+**使用箇所**: ResizableLayout, ResizablePanel, MobileLayout
+
+---
+
+### 6-10. Itinerary Stores（5個のスライス）
+
+#### 6. `useItineraryStore`
+**責務**: しおり基本情報
+
+```typescript
+interface ItineraryStore {
+  currentItinerary: ItineraryData | null;
+  setItinerary, updateItinerary
+}
+```
+
+#### 7. `useSpotStore`
 **責務**: スポット操作
 
-**Actions**:
-- `addSpot`, `updateSpot`, `deleteSpot`
-- `reorderSpots`, `moveSpot`
-
----
-
-#### useItineraryUIStore (71行)
-**責務**: しおりUIの状態管理
-
-**State**:
-- `filter: ItineraryFilter` - フィルター条件
-- `sort: ItinerarySort` - ソート条件
-
-**Actions**:
-- `setFilter`, `setSort`, `resetFilters`
-
----
-
-#### useItineraryProgressStore (218行)
-**責務**: プランニング進捗の管理
-
-**State**:
-- `planningPhase: ItineraryPhase` - 現在のフェーズ
-- `currentDetailingDay: number | null` - 詳細化中の日
-- `requirementsChecklist: RequirementChecklistItem[]` - チェックリスト
-- `autoProgressMode: boolean` - 自動進行モード
-- `isAutoProgressing: boolean` - 自動進行中
-
-**Actions**:
-- `setPlanningPhase`, `setCurrentDetailingDay`
-- `proceedToNextStep`, `resetPlanning`
-- `updateChecklist`, `shouldTriggerAutoProgress`
-
----
-
-#### useItineraryHistoryStore (85行)
-**責務**: 履歴管理（Undo/Redo）
-
-**State**:
-- `history: HistoryState` - 履歴スタック
-  - `past: ItineraryData[]`
-  - `present: ItineraryData | null`
-  - `future: ItineraryData[]`
-
-**Actions**:
-- `undo`, `redo`, `canUndo`, `canRedo`
-- `clearHistory`, `addToHistory`
-
----
-
-## カスタムHooks構造 (15個)
-
-### チャット系 (2個)
-
-#### useChatMessage (180行)
-**責務**: メッセージ送受信ロジック
-
-**機能**:
-- `sendMessage` - AIへメッセージ送信
-- `resendMessage` - メッセージ再送
-- `deleteMessage` - メッセージ削除
-- `editMessage` - メッセージ編集
-- ストリーミング処理
-- エラーハンドリング
-
-**依存Store**: useChatStore, useAIStore, useUIStore, useItineraryStore, useItineraryProgressStore
-
----
-
-#### useChatHistory (61行)
-**責務**: メッセージ履歴管理
-
-**機能**:
-- `searchMessages` - メッセージ検索
-- `filterByType` - タイプ別フィルタ
-- `clearHistory` - 履歴クリア
-- `exportHistory` - エクスポート
-- `importHistory` - インポート
-
-**依存Store**: useChatStore
-
----
-
-### 設定系 (1個)
-
-#### useAppSettings (56行)
-**責務**: 設定管理
-
-**機能**:
-- `updateSettings` - 設定更新
-- `updateGeneralSettings` - 一般設定更新
-- `updateSoundSettings` - サウンド設定更新
-- `resetToDefaults` - デフォルトに戻す
-- `exportSettings` - エクスポート
-- `importSettings` - インポート
-
-**依存Store**: useSettingsStore
-
----
-
-### しおり系 (9個)
-
-#### useItineraryEditor (100行)
-**責務**: しおり編集
-
-**機能**:
-- `updateTitle`, `updateDestination` - 基本情報更新
-- `update` - 任意のフィールド更新
-- `reset` - リセット
-- `undo`, `redo` - 履歴操作
-
-**依存Store**: useItineraryStore, useItineraryHistoryStore, useUIStore
-
----
-
-#### useSpotEditor (183行)
-**責務**: スポット編集
-
-**機能**:
-- `addSpot`, `updateSpot`, `deleteSpot` - CRUD操作
-- `reorderSpots` - 並び替え
-- `moveSpot` - 日間移動
-- `validateSpot` - バリデーション
-
-**依存Store**: useSpotStore, useItineraryStore
-
----
-
-#### useItinerarySave (321行)
-**責務**: 保存・読み込み・削除
-
-**機能**:
-- `save` - しおり保存（DB / LocalStorage自動選択）
-- `load` - しおり読み込み
-- `deleteItinerary` - しおり削除
-- 自動保存機能
-
-**依存Store**: useItineraryStore, useUIStore
-
----
-
-#### useItineraryPublish (226行)
-**責務**: 公開・共有
-
-**機能**:
-- `publish` - しおり公開
-- `unpublish` - 非公開化
-- `updateSettings` - 公開設定更新
-- `copyPublicUrl` - URL コピー
-- `shareViaWebApi` - Web Share API共有
-
-**依存Store**: useItineraryStore, useUIStore
-
----
-
-#### useItineraryPDF (115行)
-**責務**: PDF出力
-
-**機能**:
-- `generatePDF` - PDF生成
-- `showPreview` - プレビュー表示
-- プログレス表示
-
-**依存**: jsPDF, html2canvas
-
----
-
-#### useItineraryList (105行)
-**責務**: しおり一覧管理
-
-**機能**:
-- `refresh` - 一覧取得
-- `deleteItinerary` - しおり削除
-- フィルター・ソート連携
-
-**依存Store**: useItineraryUIStore, useUIStore
-
----
-
-#### useItineraryHistory (42行)
-**責務**: 履歴操作
-
-**機能**:
-- `undo`, `redo` - 元に戻す/やり直す
-- `canUndo`, `canRedo` - 可否チェック
-- `clearHistory` - 履歴クリア
-
-**依存Store**: useItineraryHistoryStore
-
----
-
-#### usePhaseTransition (158行)
-**責務**: フェーズ遷移管理
-
-**機能**:
-- フェーズ遷移ロジック
-- ボタン表示制御
-- チェックリスト管理
-
-**依存Store**: useItineraryProgressStore
-
----
-
-#### useAIProgress (195行)
-**責務**: AI進行管理
-
-**機能**:
-- `proceedAndSendMessage` - フェーズ進行 + AI呼び出し
-- 自動進行フロー
-- ストリーミング処理
-
-**依存Store**: 全Store
-
----
-
-### AI系 (1個)
-
-#### useAIRequest (191行)
-**責務**: AI呼び出し統一化
-
-**機能**:
-- 統一されたAI呼び出しインターフェース
-- 自動リトライ
-- プログレス表示
-- エラーハンドリング
-
-**依存Store**: useAIStore, useChatStore, useUIStore
-
----
-
-## コンポーネント構造 (50個)
-
-### 階層
+```typescript
+interface SpotStore {
+  addSpot, updateSpot, deleteSpot
+  reorderSpots, moveSpot
+}
 ```
-app/
-├─ page.tsx (メインページ)
-├─ login/
-├─ mypage/
-├─ settings/
-└─ share/[slug]/
 
-components/
-├─ auth/ (3個) - 認証
-├─ chat/ (5個) - チャット
-├─ itinerary/ (28個) - しおり
-│  ├─ preview/ (6個) - プレビュー
-│  ├─ day-schedule/ (3個) - 日程
-│  ├─ spot-form/ (1個) - スポットフォーム
-│  ├─ public/ (2個) - 公開ビュー
-│  ├─ card/ (3個) - カード
-│  └─ pdf/ (0個) - PDF用
-├─ layout/ (6個) - レイアウト
-├─ settings/ (4個) - 設定
-├─ ui/ (8個) - 共通UI
-└─ comments/ (3個) - コメント
+#### 8. `useItineraryUIStore`
+**責務**: UI状態（フィルタ・ソート）
+
+```typescript
+interface ItineraryUIStore {
+  filter: ItineraryFilter;
+  sort: ItinerarySort;
+  setFilter, setSort, resetFilters
+}
 ```
+
+#### 9. `useItineraryProgressStore`
+**責務**: 進捗管理
+
+```typescript
+interface ItineraryProgressStore {
+  planningPhase: ItineraryPhase;
+  currentDetailingDay: number | null;
+  requirementsChecklist: RequirementChecklistItem[];
+  isAutoProgressing: boolean;
+  
+  setPlanningPhase, setCurrentDetailingDay
+  proceedToNextStep, resetPlanning
+  updateChecklist, shouldTriggerAutoProgress
+}
+```
+
+#### 10. `useItineraryHistoryStore`
+**責務**: 履歴管理
+
+```typescript
+interface ItineraryHistoryStore {
+  history: HistoryState;
+  undo, redo, canUndo, canRedo
+  clearHistory, addToHistory
+}
+```
+
+---
+
+## Custom Hooks（15個）
+
+### Chat Hooks (2個)
+- `useChatMessage` - メッセージ送信・編集・削除
+- `useChatHistory` - 履歴管理・検索
+
+### AI Hooks (1個)
+- `useAIRequest` - 統一されたAI呼び出し
+
+### Settings Hooks (1個)
+- `useAppSettings` - 設定管理・エクスポート
+
+### Itinerary Hooks (9個)
+- `useItineraryEditor` - しおり編集
+- `useSpotEditor` - スポット編集
+- `useItinerarySave` - 保存・読み込み
+- `useItineraryPublish` - 公開・共有
+- `useItineraryPDF` - PDF生成
+- `useItineraryList` - 一覧管理
+- `useItineraryHistory` - 履歴操作
+- `usePhaseTransition` - フェーズ遷移
+- `useAIProgress` - AI進行管理
+
+### Map Hooks (5個)
+- `useGoogleMapsLoader` - Google Maps API読み込み
+- `useMapInstance` - 地図インスタンス
+- `useMapMarkers` - マーカー表示
+- `useMapRoute` - ルート描画
+- `usePullToRefresh` - Pull-to-Refresh
 
 ---
 
 ## データフロー
 
-### メッセージ送信フロー
+### 1. ユーザー入力 → AI応答
+
 ```
 User Input (MessageInput)
   ↓
 useChatMessage.sendMessage()
   ↓
-useChatStore (messages, streaming)
+sendChatMessageStream (API Client)
   ↓
-sendChatMessageStream() (API)
+/api/chat (Route Handler)
   ↓
-AI Response (streaming)
+Gemini/Claude API
   ↓
-useChatStore.appendStreamingMessage()
+Streaming Response
   ↓
-MessageList (リアルタイム表示)
+useChatStore (messages更新)
+useItineraryStore (itinerary更新)
   ↓
-useItineraryStore.setItinerary() (しおり更新)
-  ↓
-ItineraryPreview (しおり表示)
+MessageList (表示)
+ItineraryPreview (表示)
 ```
 
-### しおり保存フロー
+### 2. しおり保存
+
 ```
-User Action (SaveButton)
+User Click (SaveButton)
   ↓
 useItinerarySave.save()
   ↓
-  ├─ ログイン時: API → Database
-  └─ 未ログイン時: LocalStorage
+ログイン状態チェック
+  ├─ ログイン → /api/itinerary/save (DB)
+  └─ 未ログイン → LocalStorage
   ↓
-useItineraryStore.setItinerary()
+useItineraryStore (itinerary更新)
+useUIStore (lastSaveTime更新)
   ↓
-useUIStore (toast, saveStatus)
+SaveStatus (表示更新)
+```
+
+### 3. しおり公開
+
+```
+User Click (ShareButton)
+  ↓
+useItineraryPublish.publish()
+  ↓
+/api/itinerary/publish (Route Handler)
+  ↓
+Supabase (DB保存)
+  ↓
+useItineraryStore (publicSlug更新)
+  ↓
+ShareButton (URL表示)
 ```
 
 ---
 
-## 状態管理戦略
+## コンポーネント構成
 
-### Store分割の基準
-1. **ドメインの独立性**: チャット ≠ しおり
-2. **変更頻度**: UI状態 vs しおりデータ
-3. **依存関係**: 循環参照を避ける
+### Chat機能
+```
+ChatBox
+├── MessageList (メモ化)
+│   ├── MessageSkeleton
+│   └── Message items (ReactMarkdown)
+└── MessageInput
+    └── AISelector
+```
 
-### LocalStorage同期
-各Storeが独立して同期:
-- useAIStore → AIキー・モデル選択
-- useSettingsStore → アプリ設定
-- useLayoutStore → レイアウト設定
-- useItineraryStore → しおりデータ
-
-### パフォーマンス最適化
-- **セレクター関数**: 必要な状態のみ購読
-- **React.memo**: 高頻度レンダリングコンポーネント
-- **useMemo**: 重い計算処理
-- **useCallback**: イベントハンドラ
+### Itinerary機能
+```
+ItineraryPreview (メモ化)
+├── PhaseStatusBar
+├── ItineraryContentArea
+│   ├── ViewModeSwitcher
+│   ├── ItineraryToolbar
+│   │   ├── SaveButton
+│   │   ├── ShareButton
+│   │   ├── ResetButton
+│   │   └── PDFExportButton
+│   ├── ItineraryHeader
+│   │   └── EditableTitle
+│   ├── ItinerarySummary (メモ化)
+│   ├── ScheduleListView
+│   │   └── DaySchedule (メモ化)
+│   │       ├── DayScheduleHeader
+│   │       ├── SpotList
+│   │       │   └── SpotCard (メモ化)
+│   │       ├── EmptyDayMessage
+│   │       └── AddSpotForm
+│   │           └── SpotFormFields
+│   └── MapView (メモ化)
+└── EmptyItinerary
+```
 
 ---
 
-## API設計
+## パフォーマンス最適化
 
-### エンドポイント構造
-```
-/api/
-├─ auth/ - 認証
-├─ chat/ - AI チャット
-├─ itinerary/
-│  ├─ save/ - 保存
-│  ├─ load/ - 読み込み
-│  ├─ list/ - 一覧
-│  ├─ delete/ - 削除
-│  ├─ publish/ - 公開
-│  └─ unpublish/ - 非公開化
-├─ user/me/ - ユーザー情報
-└─ health/ - ヘルスチェック
-```
+### メモ化戦略
 
-### ストリーミングAPI
-Server-Sent Events (SSE) による双方向通信:
-```typescript
-for await (const chunk of sendChatMessageStream(...)) {
-  if (chunk.type === 'message') {
-    // メッセージチャンク
-  } else if (chunk.type === 'itinerary') {
-    // しおりデータ
-  } else if (chunk.type === 'error') {
-    // エラー
-  }
+#### React.memo適用済み (10個)
+- MessageList
+- ItinerarySummary
+- ItineraryPreview
+- DaySchedule
+- SpotCard
+- MapView
+- PDFExportButton
+- PublicItineraryView
+- ItineraryCard
+- ShareButton（一部）
+
+#### useMemo適用
+- メッセージフィルタリング（MessageList）
+- しおり統計計算（ItinerarySummary）
+- スポット位置計算（MapView）
+- マーカーデータ準備（MapView）
+
+#### useCallback適用
+- イベントハンドラー（全Hook）
+- API呼び出し（全Hook）
+- ストア更新（全Hook）
+
+---
+
+## 状態の永続化
+
+### LocalStorage管理
+
+**保存されるデータ**:
+```json
+{
+  "journee-storage": {
+    "state": {
+      "currentItinerary": {...}
+    },
+    "version": 0
+  },
+  "journee-chat-panel-width": 50,
+  "journee-claude-api-key": "encrypted_key",
+  "journee-selected-ai": "gemini",
+  "journee-settings": {...}
 }
+```
+
+**初期化フロー**:
+```
+StorageInitializer
+  ↓
+useAIStore.initializeFromStorage()
+useSettingsStore.initializeFromStorage()
+useLayoutStore.initializeFromStorage()
+  ↓
+各Storeが個別に初期化
 ```
 
 ---
 
 ## テスト戦略
 
-### ユニットテスト
-- **Hooks**: 各カスタムHook（90%カバレッジ目標）
-- **Stores**: 各Store（80%カバレッジ目標）
-- **Utils**: ユーティリティ関数（95%カバレッジ目標）
+### Unit Tests
+- **Hooks**: 90%カバレッジ目標
+  - useItineraryEditor.test.ts ✅
+  - useSpotEditor.test.ts ✅
+  - その他Hooks（Phase 13.1で追加）
 
-### E2Eテスト (Playwright)
-- フルフロー: test入力 → しおり作成 → 保存 → 公開
-- エラーリカバリー
-- パフォーマンス
-- レスポンシブ
+- **Stores**: 80%カバレッジ目標
+  - useItineraryStore.test.ts ✅
+  - その他Stores（Phase 13.1で追加）
 
----
-
-## ディレクトリ構造（詳細）
-
-```
-/workspace/
-├─ app/ - Next.js App Router
-│  ├─ page.tsx
-│  ├─ layout.tsx
-│  ├─ api/
-│  ├─ login/
-│  ├─ mypage/
-│  ├─ settings/
-│  └─ share/[slug]/
-│
-├─ components/
-│  ├─ auth/ (3個)
-│  ├─ chat/ (5個)
-│  ├─ itinerary/ (28個)
-│  ├─ layout/ (6個)
-│  ├─ settings/ (4個)
-│  ├─ ui/ (8個)
-│  └─ comments/ (3個)
-│
-├─ lib/
-│  ├─ store/
-│  │  ├─ chat/ - useChatStore
-│  │  ├─ ai/ - useAIStore
-│  │  ├─ settings/ - useSettingsStore
-│  │  ├─ ui/ - useUIStore
-│  │  ├─ layout/ - useLayoutStore
-│  │  └─ itinerary/ - 5 stores
-│  │
-│  ├─ hooks/
-│  │  ├─ chat/ (2個)
-│  │  ├─ settings/ (1個)
-│  │  ├─ ai/ (1個)
-│  │  └─ itinerary/ (9個)
-│  │
-│  ├─ ai/
-│  │  ├─ gemini.ts
-│  │  ├─ claude.ts
-│  │  ├─ prompts.ts
-│  │  └─ prompt-templates/ (4個)
-│  │
-│  ├─ db/ - Supabase統合
-│  ├─ utils/ - ユーティリティ
-│  └─ execution/ - 実行ロジック
-│
-├─ types/ - TypeScript型定義
-├─ docs/ - ドキュメント
-├─ e2e/ - E2Eテスト
-└─ k8s/ - Kubernetes設定
-```
-
----
-
-## 開発ワークフロー
-
-### 1. 新機能追加
-1. **ドメイン特定**: どのドメインに属するか
-2. **Store拡張**: 必要に応じてStateとActionsを追加
-3. **Hook作成**: ビジネスロジックをカプセル化
-4. **Component作成**: UIに専念
-5. **テスト作成**: Hook・Storeのテスト
-
-### 2. バグ修正
-1. **再現**: E2Eテストで再現
-2. **原因特定**: どのレイヤーの問題か
-3. **修正**: 該当レイヤーのみ修正
-4. **テスト追加**: 再発防止
-
-### 3. パフォーマンス改善
-1. **計測**: React DevToolsでプロファイリング
-2. **特定**: ボトルネックの特定
-3. **最適化**: memo, useMemo, useCallback
-4. **検証**: 再計測
+### E2E Tests
+- full-itinerary-creation.spec.ts
+- comment-feature.spec.ts
+- map-toggle.spec.ts
+- public-pdf-export.spec.ts
 
 ---
 
 ## セキュリティ
 
-### 認証
-- NextAuth.js + Google OAuth
-- JWT戦略
-- HTTPOnly Cookie
-
 ### APIキー管理
 - LocalStorageに暗号化保存
-- 環境変数での管理
-- クライアント側での暗号化
+- useAIStoreで集中管理
+- 削除機能の提供
 
-### CORS・CSP
-- 適切なヘッダー設定
-- XSS対策
+### 認証
+- NextAuth.js (Google OAuth)
+- middleware.tsで保護されたルート
+- セッションベース認証
 
----
-
-## デプロイ戦略
-
-### 環境
-- **開発**: Docker Compose
-- **本番**: Google Cloud Run / Kubernetes
-
-### CI/CD
-- GitHub Actions
-- ArgoCD (Kubernetes)
-- ブランチ環境分離
+### データ保護
+- クライアントサイド検証
+- サーバーサイド検証
+- XSS対策（ReactMarkdown sanitize）
 
 ---
 
-## パフォーマンス指標
+## パフォーマンス
 
-### 目標
-- **初期ロード**: <2秒 (LCP)
-- **チャット応答**: <100ms
-- **PDF生成**: <5秒（10ページ）
-- **メモリ使用**: <100MB
+### 初期ロード
+- コード分割: 自動（Next.js App Router）
+- 遅延読み込み: 重いコンポーネント
+- 画像最適化: Next.js Image
 
-### 最適化手法
-- React.memo
-- useMemo
-- useCallback
-- コード分割 (dynamic import)
-- 画像最適化 (Next.js Image)
+### ランタイム
+- React.memo: 10コンポーネント
+- useMemo: 計算結果キャッシュ
+- useCallback: 関数安定化
 
----
-
-## トラブルシューティング
-
-### Q: しおりが表示されない
-**A**: useItineraryStoreとuseStoreの同期問題の可能性（Phase 9で解決済み）
-
-### Q: ビルドエラー
-**A**: `rm -rf .next && npm run build` でクリーンビルド
-
-### Q: TypeScript エラー
-**A**: 型定義を確認、Store・Hooksのインターフェース確認
+### バンドルサイズ
+- Tree Shaking: 有効
+- Dynamic Import: PDF, Map
+- 依存関係最小化
 
 ---
 
-**作成日**: 2025-01-10  
-**最終更新**: 2025-01-10  
-**メンテナ**: 開発チーム
+## 今後の拡張
+
+### 短期
+1. テストカバレッジ90%達成
+2. E2Eテストシナリオ拡充
+3. パフォーマンス計測
+
+### 中期
+1. オフライン対応（PWA）
+2. リアルタイム同期
+3. マルチユーザー対応
+
+### 長期
+1. AI機能拡張
+2. 地図機能強化
+3. 多言語対応
+
+---
+
+**メンテナンス**: このドキュメントは定期的に更新してください  
+**質問・提案**: GitHub Issuesまで
