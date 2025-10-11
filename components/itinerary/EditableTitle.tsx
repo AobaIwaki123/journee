@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
 import { useItineraryEditor } from '@/lib/hooks/itinerary';
 import { Edit2, Check, X } from 'lucide-react';
 
@@ -11,8 +11,7 @@ interface EditableTitleProps {
 }
 
 /**
- * Phase 6.2: インライン編集可能タイトルコンポーネント
- * useItineraryEditor Hookを活用
+ * Phase 10.3: インライン編集可能タイトル（useUIStore使用）
  */
 export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className = '' }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -20,9 +19,8 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
   const inputRef = useRef<HTMLInputElement>(null);
   
   const { updateTitle } = useItineraryEditor();
-  const addToast = useStore((state) => state.addToast);
+  const { addToast } = useUIStore();
 
-  // 編集モードに入ったときにフォーカス
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -30,25 +28,17 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
     }
   }, [isEditing]);
 
-  // propsのvalueが変更されたらeditValueを更新
   useEffect(() => {
     setEditValue(value);
   }, [value]);
 
   const handleSave = () => {
-    const trimmedValue = editValue.trim();
-    
-    if (!trimmedValue) {
+    if (!editValue.trim()) {
       addToast('タイトルを入力してください', 'error');
       return;
     }
 
-    if (trimmedValue.length > 100) {
-      addToast('タイトルは100文字以内で入力してください', 'error');
-      return;
-    }
-
-    updateTitle(trimmedValue);
+    updateTitle(editValue.trim());
     setIsEditing(false);
     addToast('タイトルを更新しました', 'success');
   };
@@ -60,7 +50,6 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
       handleSave();
     } else if (e.key === 'Escape') {
       handleCancel();
@@ -76,36 +65,38 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({ value, className =
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          className={`${className} bg-white/20 backdrop-blur-sm border-2 border-white/50 rounded-lg px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:border-white transition-colors`}
-          placeholder="旅のタイトルを入力"
+          onBlur={handleSave}
+          className="flex-1 px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none text-lg md:text-2xl font-bold"
         />
         <button
           onClick={handleSave}
-          className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
           title="保存"
         >
-          <Check className="w-5 h-5 text-white" />
+          <Check className="w-5 h-5" />
         </button>
         <button
           onClick={handleCancel}
-          className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           title="キャンセル"
         >
-          <X className="w-5 h-5 text-white" />
+          <X className="w-5 h-5" />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="group flex items-center gap-3">
-      <h1 className={className}>{value}</h1>
+    <div className="group flex items-center gap-2">
+      <h1 className={className}>
+        {value || '無題のしおり'}
+      </h1>
       <button
         onClick={() => setIsEditing(true)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-white/10 hover:bg-white/20 rounded-lg"
+        className="opacity-0 group-hover:opacity-100 p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
         title="タイトルを編集"
       >
-        <Edit2 className="w-5 h-5 text-white" />
+        <Edit2 className="w-4 h-4 md:w-5 md:h-5" />
       </button>
     </div>
   );

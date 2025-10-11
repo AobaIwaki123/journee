@@ -8,7 +8,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useStore } from "@/lib/store/useStore";
+import { useUIStore } from '@/lib/store/ui';
 import { useItineraryStore } from "@/lib/store/itinerary";
 import { useSpotEditor } from "@/lib/hooks/itinerary";
 import { TouristSpot } from "@/types/itinerary";
@@ -34,9 +34,9 @@ export const AddSpotForm: React.FC<AddSpotFormProps> = ({ dayIndex }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState(initialFormValues);
 
-  // Phase 9 Bug Fix: useItineraryStoreからcurrentItineraryを取得
+  // Phase 10.3: useUIStoreとuseItineraryStore使用
   const { currentItinerary } = useItineraryStore();
-  const addToast = useStore((state) => state.addToast);
+  const { addToast } = useUIStore();
   const { addSpot, validateSpot } = useSpotEditor();
 
   const handleFieldChange = (field: string, value: string) => {

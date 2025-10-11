@@ -2,39 +2,33 @@
 
 import React, { useState } from 'react';
 import { RotateCcw, AlertCircle } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
-import { useItineraryStore } from '@/lib/store/itinerary';
-import { useItineraryProgressStore } from '@/lib/store/itinerary';
+import { useUIStore } from '@/lib/store/ui';
+import { useChatStore } from '@/lib/store/chat';
+import { useItineraryStore, useItineraryProgressStore } from '@/lib/store/itinerary';
 import { clearCurrentItinerary } from '@/lib/utils/storage';
 
 /**
- * Phase 6.2: しおりリセットボタン
- * useItineraryStoreとuseItineraryProgressStoreに移行
+ * Phase 10.3: しおりリセットボタン（useUIStore, useChatStore使用）
  */
 export const ResetButton: React.FC = () => {
   const { currentItinerary, setItinerary } = useItineraryStore();
   const { resetPlanning } = useItineraryProgressStore();
-  const clearMessages = useStore((state) => state.clearMessages);
-  const addToast = useStore((state) => state.addToast);
+  const { clearMessages } = useChatStore();
+  const { addToast } = useUIStore();
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleReset = () => {
-    // 確認ダイアログを表示
     setShowConfirm(true);
   };
 
-  const confirmReset = () => {
+  const handleConfirmReset = () => {
     try {
-      // しおりをクリア
       setItinerary(null);
-      
-      // プランニング状態をリセット
       resetPlanning();
       
       // チャット履歴もクリア（オプション）
       // clearMessages();
       
-      // LocalStorageからも削除
       clearCurrentItinerary();
       
       addToast('しおりをリセットしました', 'info');
@@ -45,46 +39,43 @@ export const ResetButton: React.FC = () => {
     }
   };
 
-  const cancelReset = () => {
-    setShowConfirm(false);
-  };
-
   if (!currentItinerary) return null;
 
   return (
     <>
       <button
         onClick={handleReset}
-        className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         title="しおりをリセット"
       >
-        <RotateCcw size={20} />
-        <span>リセット</span>
+        <RotateCcw className="w-4 h-4" />
+        <span className="hidden md:inline">リセット</span>
       </button>
 
-      {/* 確認ダイアログ */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md mx-4 p-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="text-yellow-500 flex-shrink-0" size={24} />
+              <div className="flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   しおりをリセットしますか？
                 </h3>
-                <p className="text-gray-600 mb-4">
-                  現在のしおりがクリアされ、新規作成モードに戻ります。この操作は取り消せません。
+                <p className="text-sm text-gray-600 mb-4">
+                  現在のしおりとチャット履歴がすべて削除されます。この操作は元に戻せません。
                 </p>
-                <div className="flex gap-3 justify-end">
+                <div className="flex items-center justify-end gap-3">
                   <button
-                    onClick={cancelReset}
-                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={() => setShowConfirm(false)}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     キャンセル
                   </button>
                   <button
-                    onClick={confirmReset}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    onClick={handleConfirmReset}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
                     リセット
                   </button>

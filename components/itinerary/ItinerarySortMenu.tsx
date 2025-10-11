@@ -1,82 +1,74 @@
 'use client';
 
-import React from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowUpDown, Check } from 'lucide-react';
 import { useItineraryUIStore } from '@/lib/store/itinerary';
-import type { ItinerarySortField } from '@/lib/store/useStore';
+import type { ItinerarySortField, ItinerarySortOrder } from '@/lib/store/useStore';
 
 /**
- * Phase 6.2: しおりソートメニューコンポーネント
- * useItineraryUIStoreを活用してストアスライスに移行
- * - ソートフィールド選択（更新日、作成日、タイトル、旅行開始日）
- * - 昇順/降順切り替え
+ * Phase 6.2: しおりソートメニュー
+ * useItineraryUIStoreに移行済み
  */
 export const ItinerarySortMenu: React.FC = () => {
   const { sort, setSort } = useItineraryUIStore();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const sortOptions: { value: ItinerarySortField; label: string }[] = [
-    { value: 'updatedAt', label: '更新日' },
-    { value: 'createdAt', label: '作成日' },
-    { value: 'title', label: 'タイトル' },
-    { value: 'startDate', label: '旅行開始日' },
+  const sortOptions: { field: ItinerarySortField; label: string }[] = [
+    { field: 'updatedAt', label: '更新日時' },
+    { field: 'createdAt', label: '作成日時' },
+    { field: 'title', label: 'タイトル' },
+    { field: 'startDate', label: '開始日' },
   ];
 
-  const handleFieldChange = (field: ItinerarySortField) => {
-    setSort({
-      ...sort,
-      field,
-    });
-  };
-
-  const handleOrderToggle = () => {
-    setSort({
-      ...sort,
-      order: sort.order === 'asc' ? 'desc' : 'asc',
-    });
+  const handleSort = (field: ItinerarySortField) => {
+    const newOrder: ItinerarySortOrder = 
+      sort.field === field && sort.order === 'desc' ? 'asc' : 'desc';
+    
+    setSort({ field, order: newOrder });
+    setIsOpen(false);
   };
 
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <div className="flex items-center gap-2">
-        <ArrowUpDown className="w-5 h-5 text-gray-500" />
-        <span className="text-sm font-medium text-gray-700">並び替え:</span>
-      </div>
-
-      {/* ソートフィールド選択 */}
-      <div className="flex gap-2">
-        {sortOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => handleFieldChange(option.value)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              sort.field === option.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      {/* 昇順/降順切り替え */}
+    <div className="relative">
       <button
-        onClick={handleOrderToggle}
-        className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-        title={sort.order === 'asc' ? '昇順' : '降順'}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
       >
-        {sort.order === 'asc' ? (
-          <>
-            <ArrowUp className="w-4 h-4 mr-1" />
-            昇順
-          </>
-        ) : (
-          <>
-            <ArrowDown className="w-4 h-4 mr-1" />
-            降順
-          </>
-        )}
+        <ArrowUpDown className="w-4 h-4" />
+        <span className="text-sm">並び替え</span>
       </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+            <div className="p-2 space-y-1">
+              {sortOptions.map(({ field, label }) => (
+                <button
+                  key={field}
+                  onClick={() => handleSort(field)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-left"
+                >
+                  <span className="text-sm text-gray-700">{label}</span>
+                  <div className="flex items-center gap-1">
+                    {sort.field === field && (
+                      <Check className="w-4 h-4 text-blue-600" />
+                    )}
+                    {sort.field === field && (
+                      <span className="text-xs text-gray-500">
+                        {sort.order === 'desc' ? '↓' : '↑'}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

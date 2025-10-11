@@ -2,15 +2,13 @@
 
 import React, { useState } from 'react';
 import { Volume2, VolumeX, Play, Save, CheckCircle } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { useSettingsStore } from '@/lib/store/settings';
 
 /**
- * 効果音設定コンポーネント
- * Phase 3.6で実装される効果音システムとの連携を想定
+ * Phase 10.2: 効果音設定（useSettingsStore使用）
  */
 export const SoundSettings: React.FC = () => {
-  const settings = useStore((state: any) => state.settings);
-  const updateSoundSettings = useStore((state: any) => state.updateSoundSettings);
+  const { settings, updateSoundSettings } = useSettingsStore();
   
   const [localEnabled, setLocalEnabled] = useState(settings.sound.enabled);
   const [localVolume, setLocalVolume] = useState(settings.sound.volume);
@@ -27,14 +25,11 @@ export const SoundSettings: React.FC = () => {
   };
 
   const handlePreview = () => {
-    // Phase 3.6で効果音再生機能を実装
-    // 現在はアラートで代用
     alert(`効果音プレビュー（音量: ${Math.round(localVolume * 100)}%）\nPhase 3.6で実装予定です。`);
   };
 
   return (
     <div className="space-y-6">
-      {/* ヘッダー */}
       <div>
         <h2 className="text-xl font-semibold text-gray-800">効果音設定</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -42,7 +37,6 @@ export const SoundSettings: React.FC = () => {
         </p>
       </div>
 
-      {/* 効果音ON/OFF */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -73,7 +67,6 @@ export const SoundSettings: React.FC = () => {
         </div>
       </div>
 
-      {/* 音量調整 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -88,7 +81,6 @@ export const SoundSettings: React.FC = () => {
             </span>
           </div>
           
-          {/* スライダー */}
           <div className="space-y-2">
             <input
               type="range"
@@ -97,12 +89,9 @@ export const SoundSettings: React.FC = () => {
               value={localVolume * 100}
               onChange={(e) => setLocalVolume(Number(e.target.value) / 100)}
               disabled={!localEnabled}
-              className={`w-full h-2 rounded-lg appearance-none cursor-pointer
-                ${localEnabled 
-                  ? 'bg-gray-200' 
-                  : 'bg-gray-100 cursor-not-allowed'
-                }
-              `}
+              className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                localEnabled ? 'bg-gray-200' : 'bg-gray-100 cursor-not-allowed'
+              }`}
               style={{
                 background: localEnabled
                   ? `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${localVolume * 100}%, #e5e7eb ${localVolume * 100}%, #e5e7eb 100%)`
@@ -115,7 +104,6 @@ export const SoundSettings: React.FC = () => {
             </div>
           </div>
 
-          {/* プレビューボタン */}
           <button
             onClick={handlePreview}
             disabled={!localEnabled}
@@ -131,50 +119,6 @@ export const SoundSettings: React.FC = () => {
         </div>
       </div>
 
-      {/* 効果音の種類説明 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="font-medium text-gray-800 mb-4">効果音の種類</h3>
-        <div className="space-y-3">
-          <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">メッセージ送信音</span>
-                <span className="text-gray-600"> - ユーザーがメッセージを送信した時</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">AI返信通知音</span>
-                <span className="text-gray-600"> - AIからの返信が完了した時</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 rounded-full bg-purple-500 mt-1.5" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">しおり更新音</span>
-                <span className="text-gray-600"> - しおりが更新された時</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">エラー通知音</span>
-                <span className="text-gray-600"> - エラーが発生した時</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 適用ボタン */}
       <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center space-x-2">
           {saved && (
@@ -196,13 +140,6 @@ export const SoundSettings: React.FC = () => {
           <Save className="w-4 h-4" />
           <span>適用</span>
         </button>
-      </div>
-
-      {/* Phase 3.6について */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
-          💡 効果音機能はPhase 3.6で実装予定です。現在は設定の保存のみが行われます。
-        </p>
       </div>
     </div>
   );

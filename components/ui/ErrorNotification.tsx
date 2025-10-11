@@ -1,23 +1,25 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
 import { AlertCircle, X } from 'lucide-react';
 
+/**
+ * Phase 10.3: エラー通知（useUIStore使用）
+ */
 export const ErrorNotification: React.FC = () => {
-  const error = useStore((state: any) => state.error);
-  const setError = useStore((state: any) => state.setError);
+  const { error, setError, clearError } = useUIStore();
 
   useEffect(() => {
     if (error) {
       // 5秒後に自動的にエラーをクリア
       const timer = setTimeout(() => {
-        setError(null);
+        clearError();
       }, 5000);
 
       return () => clearTimeout(timer);
     }
-  }, [error, setError]);
+  }, [error, clearError]);
 
   if (!error) return null;
 
@@ -33,7 +35,7 @@ export const ErrorNotification: React.FC = () => {
             <p className="mt-1 text-sm text-red-700">{error}</p>
           </div>
           <button
-            onClick={() => setError(null)}
+            onClick={() => clearError()}
             className="ml-3 flex-shrink-0 text-red-400 hover:text-red-600 focus:outline-none"
           >
             <X className="w-5 h-5" />

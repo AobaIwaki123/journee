@@ -3,8 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
 import { useItineraryStore } from '@/lib/store/itinerary';
+import { useAIStore } from '@/lib/store/ai';
+import { useSettingsStore } from '@/lib/store/settings';
+import { useLayoutStore } from '@/lib/store/layout';
 import { getItineraryById } from '@/lib/mock-data/itineraries';
 import { loadCurrentItinerary, getLastSaveTime } from '@/lib/utils/storage';
 
@@ -19,12 +22,12 @@ import { loadCurrentItinerary, getLastSaveTime } from '@/lib/utils/storage';
 export const StorageInitializer: React.FC = () => {
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
-  const initializeFromStorage = useStore((state) => state.initializeFromStorage);
-  const setLastSaveTime = useStore((state) => state.setLastSaveTime);
-  const setStorageInitialized = useStore((state) => state.setStorageInitialized);
-  
-  // Phase 9 Bug Fix: useItineraryStoreのsetItineraryを使用
+  // Phase 10: 分割されたStoreを使用
   const { setItinerary } = useItineraryStore();
+  const { setLastSaveTime, setStorageInitialized } = useUIStore();
+  const initializeAI = useAIStore((state) => state.initializeFromStorage);
+  const initializeSettings = useSettingsStore((state) => state.initializeFromStorage);
+  const initializeLayout = useLayoutStore((state) => state.initializeFromStorage);
   
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -40,8 +43,10 @@ export const StorageInitializer: React.FC = () => {
     }
 
     const initialize = async () => {
-      // LocalStorageからAPIキーと選択AIを復元
-      initializeFromStorage();
+      // LocalStorageから各Storeを初期化
+      initializeAI();
+      initializeSettings();
+      initializeLayout();
 
       // URLパラメータからしおりIDを取得
       const itineraryId = searchParams.get('itineraryId');
@@ -118,7 +123,9 @@ export const StorageInitializer: React.FC = () => {
     session,
     sessionStatus,
     isInitialized,
-    initializeFromStorage,
+    initializeAI,
+    initializeSettings,
+    initializeLayout,
     setItinerary,
     setLastSaveTime,
     setStorageInitialized,

@@ -1,28 +1,16 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useLayoutStore } from '@/lib/store/layout';
 
 /**
- * ResizablePanel コンポーネント
- * 
- * ドラッグ可能なリサイザーバーを提供し、チャットとしおりのパネル幅を調整可能にします。
- * 
- * 機能:
- * - マウスドラッグによる幅調整
- * - タッチ操作対応（モバイル互換性）
- * - 最小幅・最大幅の制限（30-70%）
- * - ホバー・ドラッグ時のビジュアルフィードバック
- * - LocalStorageへの幅の永続化
+ * Phase 10.4: ResizablePanel（useLayoutStore使用）
  */
 export const ResizablePanel: React.FC = () => {
-  const { setChatPanelWidth } = useStore();
+  const { setChatPanelWidth } = useLayoutStore();
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  /**
-   * 幅を計算してストアに保存
-   */
   const handleResize = useCallback(
     (clientX: number) => {
       if (!containerRef.current) return;
@@ -40,25 +28,16 @@ export const ResizablePanel: React.FC = () => {
     [setChatPanelWidth]
   );
 
-  /**
-   * マウスダウン: ドラッグ開始
-   */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
   }, []);
 
-  /**
-   * タッチスタート: ドラッグ開始（モバイル対応）
-   */
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     setIsDragging(true);
   }, []);
 
-  /**
-   * グローバルマウスムーブ: ドラッグ中の処理
-   */
   useEffect(() => {
     if (!isDragging) return;
 
@@ -82,17 +61,14 @@ export const ResizablePanel: React.FC = () => {
       setIsDragging(false);
     };
 
-    // イベントリスナーを追加
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('touchmove', handleTouchMove);
     document.addEventListener('touchend', handleTouchEnd);
 
-    // カーソルをドラッグ中に固定
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
 
-    // クリーンアップ
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -122,7 +98,6 @@ export const ResizablePanel: React.FC = () => {
       aria-orientation="vertical"
       tabIndex={0}
     >
-      {/* ホバー時のヒント（オプション） */}
       <div
         className={`
           absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2

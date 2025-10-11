@@ -1,19 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
+import { useItineraryStore } from '@/lib/store/itinerary';
 import { Check, Save, AlertCircle } from 'lucide-react';
 
 /**
- * Phase 5.2: 保存状態表示コンポーネント
- * 
- * しおりの自動保存状態を視覚的にフィードバック
+ * Phase 10.3: 保存状態表示（useUIStore使用）
  */
 export const SaveStatus: React.FC = () => {
-  const isSaving = useStore((state) => state.isSaving);
-  const lastSaveTime = useStore((state) => state.lastSaveTime);
-  const currentItinerary = useStore((state) => state.currentItinerary);
-  const isStorageInitialized = useStore((state) => state.isStorageInitialized);
+  const { isSaving, lastSaveTime, storageInitialized } = useUIStore();
+  const { currentItinerary } = useItineraryStore();
   const [timeAgo, setTimeAgo] = useState<string>('');
 
   // 最後の保存からの経過時間を更新
@@ -48,7 +45,7 @@ export const SaveStatus: React.FC = () => {
   }, [lastSaveTime]);
 
   // しおりがない場合、または初期化前は表示しない
-  if (!currentItinerary || !isStorageInitialized) {
+  if (!currentItinerary || !storageInitialized) {
     return null;
   }
 

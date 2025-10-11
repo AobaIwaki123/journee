@@ -1,24 +1,16 @@
 'use client';
 
 import React from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useLayoutStore } from '@/lib/store/layout';
 import { ChatBox } from '@/components/chat/ChatBox';
 import { ItineraryPreview } from '@/components/itinerary/ItineraryPreview';
 import { ResizablePanel } from '@/components/layout/ResizablePanel';
 
 /**
- * ResizableLayout コンポーネント
- * 
- * チャットボックスとしおりプレビューを動的にリサイズ可能なレイアウトで配置します。
- * ユーザーは中央のリサイザーバーをドラッグして、レイアウトを自由に調整できます。
- * 
- * 機能:
- * - 動的な幅調整（Zustand状態管理）
- * - LocalStorageによる幅の永続化
- * - レスポンシブデザイン対応
+ * Phase 10.4: ResizableLayout（useLayoutStore使用）
  */
 export const ResizableLayout: React.FC = () => {
-  const { chatPanelWidth } = useStore();
+  const { chatPanelWidth } = useLayoutStore();
 
   // しおりパネルの幅は残りのパーセンテージ
   const itineraryPanelWidth = 100 - chatPanelWidth;

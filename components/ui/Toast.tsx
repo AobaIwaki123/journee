@@ -1,24 +1,24 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
 /**
- * Toast通知を表示するヘルパー関数
+ * Phase 10.3: Toast通知（useUIStore使用）
  */
 export const showToast = (options: {
   type: 'success' | 'error' | 'info';
   message: string;
   duration?: number;
 }) => {
-  const { addToast } = useStore.getState();
+  const { addToast } = useUIStore.getState();
   addToast(options.message, options.type);
 };
 
 export const ToastContainer: React.FC = () => {
-  const toasts = useStore((state: any) => state.toasts);
-  const removeToast = useStore((state: any) => state.removeToast);
+  const toasts = useUIStore((state) => state.toasts);
+  const removeToast = useUIStore((state) => state.removeToast);
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">

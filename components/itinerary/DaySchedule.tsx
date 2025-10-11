@@ -10,7 +10,7 @@ import React, { useState, memo } from 'react';
 import { DropResult } from '@hello-pangea/dnd';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { AddSpotForm } from './AddSpotForm';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
 import { useSpotStore, useItineraryStore } from '@/lib/store/itinerary';
 import { DayScheduleHeader, SpotList, EmptyDayMessage } from './day-schedule';
 import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
@@ -45,7 +45,7 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({
   
   const { reorderSpots } = useSpotStore();
   const { currentItinerary } = useItineraryStore();
-  const addToast = useStore((state: any) => state.addToast);
+  const { addToast } = useUIStore();
 
   const dayOfWeek = getDayOfWeek(day.date);
   const currency = currentItinerary?.currency;

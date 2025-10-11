@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useStore } from '@/lib/store/useStore';
+import { useUIStore } from '@/lib/store/ui';
 import { useItineraryStore } from '@/lib/store/itinerary';
 import { saveCurrentItinerary } from '@/lib/utils/storage';
 import { updateItinerary } from '@/lib/mock-data/itineraries';
@@ -16,10 +16,9 @@ import { updateItinerary } from '@/lib/mock-data/itineraries';
  * Phase 9 Bug Fix: useItineraryStoreのcurrentItineraryを使用するように修正
  */
 export const AutoSave: React.FC = () => {
-  // Phase 9 Bug Fix: useItineraryStoreからcurrentItineraryを取得
+  // Phase 10.3: useUIStoreとuseItineraryStore使用
   const { currentItinerary } = useItineraryStore();
-  const setSaving = useStore((state) => state.setSaving);
-  const setLastSaveTime = useStore((state) => state.setLastSaveTime);
+  const { setSaving, setLastSaveTime } = useUIStore();
   const isInitialMount = useRef(true);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const periodicTimer = useRef<NodeJS.Timeout | null>(null);

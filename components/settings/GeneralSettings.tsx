@@ -2,16 +2,14 @@
 
 import React, { useState } from 'react';
 import { DollarSign, Save, CheckCircle } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { useSettingsStore } from '@/lib/store/settings';
 import type { Currency } from '@/types/settings';
 
 /**
- * 一般設定コンポーネント
- * 通貨設定のみ
+ * Phase 10.2: 一般設定（useSettingsStore使用）
  */
 export const GeneralSettings: React.FC = () => {
-  const settings = useStore((state: any) => state.settings);
-  const updateGeneralSettings = useStore((state: any) => state.updateGeneralSettings);
+  const { settings, updateGeneralSettings } = useSettingsStore();
   const [localCurrency, setLocalCurrency] = useState<Currency>(settings.general.currency);
   const [saved, setSaved] = useState(false);
 
@@ -25,7 +23,6 @@ export const GeneralSettings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* ヘッダー */}
       <div>
         <h2 className="text-xl font-semibold text-gray-800">一般設定</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -33,7 +30,6 @@ export const GeneralSettings: React.FC = () => {
         </p>
       </div>
 
-      {/* 通貨設定 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-start space-x-3">
           <DollarSign className="w-5 h-5 text-blue-500 mt-0.5" />
@@ -56,7 +52,6 @@ export const GeneralSettings: React.FC = () => {
         </div>
       </div>
 
-      {/* 適用ボタン */}
       <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center space-x-2">
           {saved && (

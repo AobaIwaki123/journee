@@ -2,34 +2,29 @@
 
 import React, { useState } from 'react';
 import { Brain, Key, CheckCircle, AlertCircle } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { useAIStore } from '@/lib/store/ai';
 import { APIKeyModal } from './APIKeyModal';
 import { AI_MODELS } from '@/lib/ai/models';
 import { maskApiKey } from '@/lib/utils/encryption';
 import type { AIModelId } from '@/types/ai';
 
 /**
- * AI設定コンポーネント
- * AIモデル選択とAPIキー管理
+ * Phase 10.1 & 10.2: AI設定（useAIStore使用）
  */
 export const AISettings: React.FC = () => {
-  const selectedAI = useStore((state: any) => state.selectedAI);
-  const claudeApiKey = useStore((state: any) => state.claudeApiKey);
-  const setSelectedAI = useStore((state: any) => state.setSelectedAI);
+  const { selectedModel, claudeApiKey, setSelectedModel } = useAIStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleAIChange = (ai: AIModelId) => {
-    // Claudeを選択する際にAPIキーがない場合はモーダルを開く
     if (ai === 'claude' && !claudeApiKey) {
       setIsModalOpen(true);
       return;
     }
-    setSelectedAI(ai);
+    setSelectedModel(ai);
   };
 
   return (
     <div className="space-y-6">
-      {/* ヘッダー */}
       <div>
         <h2 className="text-xl font-semibold text-gray-800">AI設定</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -37,7 +32,6 @@ export const AISettings: React.FC = () => {
         </p>
       </div>
 
-      {/* AIモデル選択 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-start space-x-3">
           <Brain className="w-5 h-5 text-blue-500 mt-0.5" />
@@ -50,15 +44,15 @@ export const AISettings: React.FC = () => {
               {/* Gemini */}
               <label className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
                 style={{
-                  borderColor: selectedAI === 'gemini' ? '#3b82f6' : '#e5e7eb',
-                  backgroundColor: selectedAI === 'gemini' ? '#eff6ff' : 'white',
+                  borderColor: selectedModel === 'gemini' ? '#3b82f6' : '#e5e7eb',
+                  backgroundColor: selectedModel === 'gemini' ? '#eff6ff' : 'white',
                 }}
               >
                 <input
                   type="radio"
                   name="aiModel"
                   value="gemini"
-                  checked={selectedAI === 'gemini'}
+                  checked={selectedModel === 'gemini'}
                   onChange={() => handleAIChange('gemini')}
                   className="mt-1 w-4 h-4 text-blue-500 focus:ring-blue-500"
                 />
@@ -84,15 +78,15 @@ export const AISettings: React.FC = () => {
               {/* Claude */}
               <label className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
                 style={{
-                  borderColor: selectedAI === 'claude' ? '#3b82f6' : '#e5e7eb',
-                  backgroundColor: selectedAI === 'claude' ? '#eff6ff' : 'white',
+                  borderColor: selectedModel === 'claude' ? '#3b82f6' : '#e5e7eb',
+                  backgroundColor: selectedModel === 'claude' ? '#eff6ff' : 'white',
                 }}
               >
                 <input
                   type="radio"
                   name="aiModel"
                   value="claude"
-                  checked={selectedAI === 'claude'}
+                  checked={selectedModel === 'claude'}
                   onChange={() => handleAIChange('claude')}
                   className="mt-1 w-4 h-4 text-blue-500 focus:ring-blue-500"
                   disabled={!claudeApiKey}
@@ -185,7 +179,6 @@ export const AISettings: React.FC = () => {
         </div>
       </div>
 
-      {/* セキュリティに関する注意 */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start space-x-2">
           <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
@@ -199,7 +192,6 @@ export const AISettings: React.FC = () => {
         </div>
       </div>
 
-      {/* APIキー設定モーダル */}
       <APIKeyModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
