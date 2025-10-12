@@ -49,8 +49,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const admin = supabaseAdmin;
-
     // 環境変数から暗号化キーを取得
     const encryptionKey = process.env.ENCRYPTION_KEY;
     if (!encryptionKey) {
@@ -62,11 +60,11 @@ export async function POST(request: NextRequest) {
     }
 
     // APIキーを暗号化してSupabaseに保存
-    const { data, error } = await (admin as any).rpc('save_encrypted_api_key', {
+    const { data, error } = await supabaseAdmin.rpc('save_encrypted_api_key' as any, {
       p_user_id: session.user.id,
       p_api_key: apiKey,
       p_encryption_key: encryptionKey,
-    });
+    } as any);
 
     if (error) {
       console.error('Failed to save API key:', error);
@@ -110,8 +108,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const admin = supabaseAdmin;
-
     // 環境変数から暗号化キーを取得
     const encryptionKey = process.env.ENCRYPTION_KEY;
     if (!encryptionKey) {
@@ -123,10 +119,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Supabaseから暗号化されたAPIキーを取得して復号化
-    const { data, error } = await (admin as any).rpc('get_decrypted_api_key', {
+    const { data, error } = await supabaseAdmin.rpc('get_decrypted_api_key' as any, {
       p_user_id: session.user.id,
       p_encryption_key: encryptionKey,
-    });
+    } as any);
 
     if (error) {
       console.error('Failed to load API key:', error);
@@ -170,10 +166,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const admin = supabaseAdmin;
-
     // SupabaseからAPIキーを削除
-    const { error } = await (admin as any)
+    const { error } = await supabaseAdmin
       .from('user_settings')
       .update({ encrypted_claude_api_key: null })
       .eq('user_id', session.user.id);
