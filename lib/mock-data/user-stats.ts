@@ -2,13 +2,7 @@
  * ユーザー統計のモックデータ
  */
 
-export interface UserStats {
-  totalItineraries: number;
-  totalCountries: number;
-  totalDays: number;
-  monthlyStats: MonthlyStats[];
-  countryDistribution: CountryDistribution[];
-}
+import type { UserStats } from "@/types/itinerary";
 
 export interface MonthlyStats {
   month: string; // YYYY-MM形式
@@ -30,22 +24,22 @@ export function getMockUserStats(): UserStats {
     totalCountries: 8,
     totalDays: 87,
     monthlyStats: [
-      { month: '2025-04', count: 1 },
-      { month: '2025-05', count: 2 },
-      { month: '2025-06', count: 3 },
-      { month: '2025-07', count: 2 },
-      { month: '2025-08', count: 1 },
-      { month: '2025-09', count: 2 },
-      { month: '2025-10', count: 1 },
+      { month: "2025-04", count: 1 },
+      { month: "2025-05", count: 2 },
+      { month: "2025-06", count: 3 },
+      { month: "2025-07", count: 2 },
+      { month: "2025-08", count: 1 },
+      { month: "2025-09", count: 2 },
+      { month: "2025-10", count: 1 },
     ],
     countryDistribution: [
-      { country: '日本', count: 4 },
-      { country: 'フランス', count: 2 },
-      { country: 'イタリア', count: 2 },
-      { country: 'タイ', count: 1 },
-      { country: 'アメリカ', count: 1 },
-      { country: 'スペイン', count: 1 },
-      { country: '韓国', count: 1 },
+      { country: "日本", count: 4 },
+      { country: "フランス", count: 2 },
+      { country: "イタリア", count: 2 },
+      { country: "タイ", count: 1 },
+      { country: "アメリカ", count: 1 },
+      { country: "スペイン", count: 1 },
+      { country: "韓国", count: 1 },
     ],
   };
 }
