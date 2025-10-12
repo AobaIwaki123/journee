@@ -4,6 +4,7 @@ import React from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { AISelector } from './AISelector';
+import { GeminiFlashBanner } from './GeminiFlashBanner'; // 追加
 import { useStore } from '@/lib/store/useStore'; // 追加
 
 export const ChatBox: React.FC = () => {
@@ -16,7 +17,10 @@ export const ChatBox: React.FC = () => {
     <div className="flex flex-col h-full bg-white border-r border-gray-200 relative"> {/* relativeを追加 */}
       {/* Header */}
       <div className="p-3 md:p-4 border-b border-gray-200">
-        <h2 className="text-base md:text-lg font-semibold text-gray-800">AIチャット</h2>
+        <div className="flex items-center"> {/* Flex container for title and banner */}
+          <h2 className="text-base md:text-lg font-semibold text-gray-800">AIチャット</h2>
+          <GeminiFlashBanner /> {/* Gemini Flashバナーを配置 */}
+        </div>
         <p className="text-xs md:text-sm text-gray-500 mt-1">
           旅行の希望を伝えてください
         </p>

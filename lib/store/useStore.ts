@@ -96,7 +96,7 @@ export interface ItinerarySort {
   order: ItinerarySortOrder;
 }
 
-interface AppState {
+export interface AppState {
   // Chat state
   messages: Message[];
   isLoading: boolean;
