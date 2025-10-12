@@ -242,11 +242,19 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     );
+
+    // キャッシュ設定（1日間、stale-while-revalidateで7日間）
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800'
+    );
+
+    return response;
   } catch (error) {
     console.error('Failed to generate OG image:', error);
     
     // エラー時はデフォルトのOGP画像を返す
-    return new ImageResponse(
+    const fallbackResponse = new ImageResponse(
       (
         <div
           style={{
@@ -297,5 +305,13 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     );
+
+    // エラー時もキャッシュを設定（短時間）
+    fallbackResponse.headers.set(
+      'Cache-Control',
+      'public, max-age=300, s-maxage=300'
+    );
+
+    return fallbackResponse;
   }
 }

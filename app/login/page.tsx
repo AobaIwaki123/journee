@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
@@ -5,6 +6,30 @@ import { getSession } from "@/lib/auth/session";
 // ログインページは常に動的にレンダリングして、認証状態のキャッシュによる
 // 不正なリダイレクト（例: ログアウト直後にホームへ戻される）を防ぐ
 export const dynamic = "force-dynamic";
+
+/**
+ * Phase 10.1: ログインページOGPメタデータ
+ */
+export const metadata: Metadata = {
+  title: 'ログイン | Journee',
+  description: 'Googleアカウントでログインして、AI旅のしおり作成を始めましょう。',
+  openGraph: {
+    title: 'ログイン | Journee',
+    description: 'Googleアカウントでログインして、旅のしおり作成を始めましょう',
+    type: 'website',
+    images: ['/api/og/default'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ログイン | Journee',
+    description: 'Googleアカウントでログイン',
+    images: ['/api/og/default'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 interface LoginPageProps {
   searchParams: { callbackUrl?: string };

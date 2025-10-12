@@ -1,4 +1,29 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+/**
+ * Phase 10.1: 利用規約ページOGPメタデータ
+ */
+export const metadata: Metadata = {
+  title: '利用規約 | Journee',
+  description: 'Journeeの利用規約。サービスの利用条件について説明します。',
+  openGraph: {
+    title: '利用規約 | Journee',
+    description: 'Journeeの利用規約',
+    type: 'website',
+    images: ['/api/og/default'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '利用規約 | Journee',
+    description: 'Journeeの利用規約',
+    images: ['/api/og/default'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 /**
  * 利用規約ページ

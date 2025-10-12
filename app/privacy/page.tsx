@@ -1,4 +1,29 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+/**
+ * Phase 10.1: プライバシーポリシーページOGPメタデータ
+ */
+export const metadata: Metadata = {
+  title: 'プライバシーポリシー | Journee',
+  description: 'Journeeのプライバシーポリシー。個人情報の取り扱いについて説明します。',
+  openGraph: {
+    title: 'プライバシーポリシー | Journee',
+    description: 'Journeeのプライバシーポリシー',
+    type: 'website',
+    images: ['/api/og/default'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'プライバシーポリシー | Journee',
+    description: 'Journeeのプライバシーポリシー',
+    images: ['/api/og/default'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 /**
  * プライバシーポリシーページ
