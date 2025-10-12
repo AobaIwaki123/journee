@@ -4,7 +4,7 @@
 
 import type { ChatMessage } from "./chat";
 import type { AIModelId } from "./ai";
-import type { ItineraryData, ItineraryPhase } from "./itinerary";
+import type { ItineraryData } from "./itinerary";
 
 /**
  * チャットAPIリクエスト
@@ -22,10 +22,6 @@ export interface ChatAPIRequest {
   claudeApiKey?: string;
   /** ストリーミングレスポンスを使用するか */
   stream?: boolean;
-  /** Phase 4: 現在のプランニングフェーズ */
-  planningPhase?: ItineraryPhase;
-  /** Phase 4: 現在詳細化中の日 */
-  currentDetailingDay?: number | null;
   /** 通貨設定 */
   currency?: string;
 }
