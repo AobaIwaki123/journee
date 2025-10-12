@@ -40,6 +40,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Supabase Admin接続チェック
+    if (!supabaseAdmin) {
+      console.error('Supabase Admin is not available');
+      return NextResponse.json(
+        { success: false, error: 'Database not configured' },
+        { status: 503 }
+      );
+    }
+
+    const admin = supabaseAdmin;
+
     // 環境変数から暗号化キーを取得
     const encryptionKey = process.env.ENCRYPTION_KEY;
     if (!encryptionKey) {
@@ -51,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // APIキーを暗号化してSupabaseに保存
-    const { data, error } = await supabaseAdmin.rpc('save_encrypted_api_key', {
+    const { data, error } = await (admin as any).rpc('save_encrypted_api_key', {
       p_user_id: session.user.id,
       p_api_key: apiKey,
       p_encryption_key: encryptionKey,
@@ -90,6 +101,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Supabase Admin接続チェック
+    if (!supabaseAdmin) {
+      console.error('Supabase Admin is not available');
+      return NextResponse.json(
+        { apiKey: null, error: 'Database not configured' },
+        { status: 503 }
+      );
+    }
+
+    const admin = supabaseAdmin;
+
     // 環境変数から暗号化キーを取得
     const encryptionKey = process.env.ENCRYPTION_KEY;
     if (!encryptionKey) {
@@ -101,7 +123,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Supabaseから暗号化されたAPIキーを取得して復号化
-    const { data, error } = await supabaseAdmin.rpc('get_decrypted_api_key', {
+    const { data, error } = await (admin as any).rpc('get_decrypted_api_key', {
       p_user_id: session.user.id,
       p_encryption_key: encryptionKey,
     });
@@ -139,8 +161,19 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Supabase Admin接続チェック
+    if (!supabaseAdmin) {
+      console.error('Supabase Admin is not available');
+      return NextResponse.json(
+        { success: false, error: 'Database not configured' },
+        { status: 503 }
+      );
+    }
+
+    const admin = supabaseAdmin;
+
     // SupabaseからAPIキーを削除
-    const { error } = await supabaseAdmin
+    const { error } = await (admin as any)
       .from('user_settings')
       .update({ encrypted_claude_api_key: null })
       .eq('user_id', session.user.id);

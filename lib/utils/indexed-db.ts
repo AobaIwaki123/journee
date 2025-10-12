@@ -114,13 +114,13 @@ class JourneeDB {
    * 値を保存
    */
   async set(
-    store: keyof JourneeDBSchema,
+    store: 'ui_state' | 'settings' | 'cache' | 'store_state',
     key: string,
     value: any
   ): Promise<void> {
     this.ensureInitialized();
     try {
-      await this.db!.put(store, value, key);
+      await this.db!.put(store as any, value, key);
     } catch (error) {
       console.error(`Failed to set value in ${store}:`, error);
       throw error;
@@ -130,10 +130,10 @@ class JourneeDB {
   /**
    * 値を取得
    */
-  async get<T>(store: keyof JourneeDBSchema, key: string): Promise<T | null> {
+  async get<T>(store: 'ui_state' | 'settings' | 'cache' | 'store_state', key: string): Promise<T | null> {
     this.ensureInitialized();
     try {
-      const value = await this.db!.get(store, key);
+      const value = await this.db!.get(store as any, key);
       return value !== undefined ? (value as T) : null;
     } catch (error) {
       console.error(`Failed to get value from ${store}:`, error);
@@ -144,10 +144,10 @@ class JourneeDB {
   /**
    * 値を削除
    */
-  async delete(store: keyof JourneeDBSchema, key: string): Promise<void> {
+  async delete(store: 'ui_state' | 'settings' | 'cache' | 'store_state', key: string): Promise<void> {
     this.ensureInitialized();
     try {
-      await this.db!.delete(store, key);
+      await this.db!.delete(store as any, key);
     } catch (error) {
       console.error(`Failed to delete value from ${store}:`, error);
       throw error;
@@ -157,10 +157,10 @@ class JourneeDB {
   /**
    * ストアをクリア
    */
-  async clear(store: keyof JourneeDBSchema): Promise<void> {
+  async clear(store: 'ui_state' | 'settings' | 'cache' | 'store_state'): Promise<void> {
     this.ensureInitialized();
     try {
-      await this.db!.clear(store);
+      await this.db!.clear(store as any);
     } catch (error) {
       console.error(`Failed to clear ${store}:`, error);
       throw error;
@@ -170,10 +170,10 @@ class JourneeDB {
   /**
    * ストア内のすべてのキーを取得
    */
-  async getAllKeys(store: keyof JourneeDBSchema): Promise<string[]> {
+  async getAllKeys(store: 'ui_state' | 'settings' | 'cache' | 'store_state'): Promise<string[]> {
     this.ensureInitialized();
     try {
-      const keys = await this.db!.getAllKeys(store);
+      const keys = await this.db!.getAllKeys(store as any);
       return keys as string[];
     } catch (error) {
       console.error(`Failed to get all keys from ${store}:`, error);
@@ -184,10 +184,10 @@ class JourneeDB {
   /**
    * ストア内のすべての値を取得
    */
-  async getAll<T>(store: keyof JourneeDBSchema): Promise<T[]> {
+  async getAll<T>(store: 'ui_state' | 'settings' | 'cache' | 'store_state'): Promise<T[]> {
     this.ensureInitialized();
     try {
-      const values = await this.db!.getAll(store);
+      const values = await this.db!.getAll(store as any);
       return values as T[];
     } catch (error) {
       console.error(`Failed to get all values from ${store}:`, error);
@@ -198,10 +198,10 @@ class JourneeDB {
   /**
    * キーの存在確認
    */
-  async has(store: keyof JourneeDBSchema, key: string): Promise<boolean> {
+  async has(store: 'ui_state' | 'settings' | 'cache' | 'store_state', key: string): Promise<boolean> {
     this.ensureInitialized();
     try {
-      const value = await this.db!.get(store, key);
+      const value = await this.db!.get(store as any, key);
       return value !== undefined;
     } catch (error) {
       console.error(`Failed to check key existence in ${store}:`, error);
