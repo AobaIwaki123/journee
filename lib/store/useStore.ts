@@ -136,12 +136,6 @@ export interface AppState {
   updateItinerary: (updates: Partial<ItineraryData>) => void;
 
   // Phase 4: Planning phase state
-  planningPhase: ItineraryPhase;
-  currentDetailingDay: number | null;
-  setPlanningPhase: (phase: ItineraryPhase) => void;
-  setCurrentDetailingDay: (day: number | null) => void;
-  proceedToNextStep: () => void;
-  resetPlanning: () => void;
 
   // Phase 4.8: Requirements checklist state
   requirementsChecklist: RequirementChecklistItem[];
@@ -463,81 +457,6 @@ export const useStore = create<AppState>()(
     }),
 
   // Phase 4: Planning phase state
-  planningPhase: "initial",
-  currentDetailingDay: null,
-  setPlanningPhase: (phase) => set({ planningPhase: phase }),
-  setCurrentDetailingDay: (day) => set({ currentDetailingDay: day }),
-
-  // フェーズを次に進める
-  proceedToNextStep: () =>
-    set((state) => {
-      const { planningPhase, currentItinerary, currentDetailingDay } = state;
-      let newPhase: ItineraryPhase = planningPhase;
-      let newDetailingDay: number | null = currentDetailingDay;
-      let updates: Partial<ItineraryData> = {};
-
-      switch (planningPhase) {
-        case "initial":
-          // 初期状態 → 情報収集フェーズへ
-          newPhase = "collecting";
-          break;
-
-        case "collecting":
-          // 情報収集完了 → 骨組み作成フェーズへ
-          newPhase = "skeleton";
-          break;
-
-        case "skeleton":
-          // 骨組み完了 → 詳細化フェーズへ（1日目から開始）
-          newPhase = "detailing";
-          newDetailingDay = 1;
-          updates.phase = "detailing";
-          updates.currentDay = 1;
-          break;
-
-        case "detailing":
-          // 詳細化中 → 次の日へ、または完成へ
-          if (currentItinerary && currentDetailingDay !== null) {
-            const totalDays =
-              currentItinerary.duration || currentItinerary.schedule.length;
-            if (currentDetailingDay < totalDays) {
-              // 次の日へ
-              newDetailingDay = currentDetailingDay + 1;
-              updates.currentDay = newDetailingDay;
-            } else {
-              // 全ての日が完了 → 完成フェーズへ
-              newPhase = "completed";
-              newDetailingDay = null;
-              updates.phase = "completed";
-              updates.currentDay = undefined;
-              updates.status = "completed";
-            }
-          }
-          break;
-
-        case "completed":
-          // 完成済み → 何もしない
-          break;
-      }
-
-      return {
-        planningPhase: newPhase,
-        currentDetailingDay: newDetailingDay,
-        currentItinerary: state.currentItinerary
-          ? { ...state.currentItinerary, ...updates }
-          : null,
-      };
-    }),
-
-  // プランニング状態をリセット
-  resetPlanning: () =>
-    set({
-      planningPhase: "initial",
-      currentDetailingDay: null,
-      requirementsChecklist: [],
-      checklistStatus: null,
-      buttonReadiness: null,
-    }),
 
   // Phase 4.8: Requirements checklist state
   requirementsChecklist: [],
@@ -556,10 +475,12 @@ export const useStore = create<AppState>()(
 
   // Phase 4.8: Update requirements checklist
   updateChecklist: () => {
-    const { messages, currentItinerary, planningPhase } = get();
+    const { messages, currentItinerary } = get();
 
     // 現在のフェーズの要件を取得
-    const requirements = getRequirementsForPhase(planningPhase);
+    // planningPhaseが削除されたため、getRequirementsForPhaseの引数を調整する必要がある
+    // 一旦、引数なしで呼び出すが、後でchecklist-config.tsを確認して修正する
+    const requirements = getRequirementsForPhase();
 
     // 各項目を評価
     const updatedItems = requirements.items.map((item) => {
@@ -588,11 +509,6 @@ export const useStore = create<AppState>()(
     });
   },
 
-  // Get checklist for specific phase
-  getChecklistForPhase: (phase: ItineraryPhase) => {
-    const requirements = getRequirementsForPhase(phase);
-    return requirements.items;
-  },
 
   // Phase 4.10: Auto progress actions
   enableAutoProgress: () => {
@@ -627,9 +543,6 @@ export const useStore = create<AppState>()(
     }
 
     // collecting フェーズでのみトリガー
-    if (state.planningPhase !== "collecting") {
-      return false;
-    }
 
     // 必須情報が揃っているかチェック
     if (!state.checklistStatus?.allRequiredFilled) {
@@ -1295,7 +1208,7 @@ export const useStore = create<AppState>()(
         autoProgressMode: state.autoProgressMode,
         autoProgressSettings: state.autoProgressSettings,
         chatPanelWidth: state.chatPanelWidth,
-        isItineraryUnsaved: state.isItineraryUnsaved, // 追加
+        isItineraryUnsaved: state.isItineraryUnsaved,
       }),
       // ハイドレーション完了時のコールバック
       onRehydrateStorage: () => (state, error) => {
