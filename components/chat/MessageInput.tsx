@@ -43,11 +43,6 @@ export const MessageInput: React.FC = () => {
   // Local input state (uses messageDraft from store)
   const [input, setInput] = useState("");
 
-  // Phase 4.5: プランニングフェーズ状態を取得
-  const planningPhase = useStore((state: any) => state.planningPhase);
-  const currentDetailingDay = useStore(
-    (state: any) => state.currentDetailingDay
-  );
 
   // Phase 4.10: 自動進行機能
   const updateChecklist = useStore((state: any) => state.updateChecklist);
@@ -125,8 +120,6 @@ export const MessageInput: React.FC = () => {
         currentItinerary || undefined,
         selectedAI,
         claudeApiKey || undefined,
-        planningPhase,
-        currentDetailingDay,
         currency,
         abortController.signal
       )) {
