@@ -1,90 +1,70 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { RefreshCw, Trash2 } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import React, { useState } from "react";
+import { RefreshCw, Trash2 } from "lucide-react";
+import { useStore } from "@/lib/store/useStore";
 
 /**
  * Phase 7追加: チャット履歴のコントロールボタン
  *
- * - リフレッシュボタン: DBから最新の履歴を取得
- * - リセットボタン: チャット履歴を完全にクリア（確認ダイアログあり）
+ * - リフレッシュボタン: DBから最新の履歴を再読み込み（同期）
+ * - クリアボタン: 表示中のチャット履歴をクリア（新しい会話を開始）
+ *   ※ DBに保存された履歴は削除されません
  */
 export const ChatHistoryControls: React.FC = () => {
-  const currentItinerary = useStore((state) => state.currentItinerary);
-  const loadChatHistory = useStore((state) => state.loadChatHistory);
+  // Refresh logic removed
   const clearMessages = useStore((state) => state.clearMessages);
   const addToast = useStore((state) => state.addToast);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  // Refresh state removed
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const handleRefresh = async () => {
-    if (!currentItinerary?.id) {
-      addToast('しおりが保存されていません', 'error');
-      return;
-    }
+  // Refresh handler removed
 
-    setIsRefreshing(true);
-    try {
-      await loadChatHistory(currentItinerary.id);
-      addToast('チャット履歴を更新しました', 'success');
-    } catch (error) {
-      console.error('Failed to refresh chat history:', error);
-      addToast('履歴の更新に失敗しました', 'error');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleReset = () => {
+  const handleClear = () => {
     clearMessages();
-    setShowResetConfirm(false);
-    addToast('チャット履歴をリセットしました', 'success');
+    setShowClearConfirm(false);
+    addToast(
+      "チャット履歴をクリアしました（新しい会話を開始できます）",
+      "success"
+    );
   };
 
   return (
     <div className="flex items-center gap-2">
-      {/* リフレッシュボタン */}
+      {/* クリアボタン */}
       <button
-        onClick={handleRefresh}
-        disabled={!currentItinerary?.id || isRefreshing}
-        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        title="チャット履歴を更新"
-      >
-        <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
-      </button>
-
-      {/* リセットボタン */}
-      <button
-        onClick={() => setShowResetConfirm(true)}
+        onClick={() => setShowClearConfirm(true)}
         className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-        title="チャット履歴をリセット"
+        title="表示中のチャット履歴をクリア（新しい会話を開始）"
       >
         <Trash2 size={18} />
       </button>
 
       {/* 確認ダイアログ */}
-      {showResetConfirm && (
+      {showClearConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              チャット履歴をリセット
+              チャット履歴をクリア
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              すべてのチャット履歴が削除されます。この操作は取り消せません。
+            <p className="text-sm text-gray-600 mb-1">
+              表示中のチャット履歴をクリアして、新しい会話を開始します。
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              ※ データベースに保存された履歴は削除されません。
             </p>
             <div className="flex items-center gap-3 justify-end">
               <button
-                onClick={() => setShowResetConfirm(false)}
+                onClick={() => setShowClearConfirm(false)}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 キャンセル
               </button>
               <button
-                onClick={handleReset}
+                onClick={handleClear}
                 className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors"
               >
-                リセット
+                クリア
               </button>
             </div>
           </div>
