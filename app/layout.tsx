@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { StorageMigration } from '@/components/migration/StorageMigration';
 
 export const metadata: Metadata = {
   title: 'Journee - AI旅のしおり作成アプリ',
@@ -61,7 +62,10 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className="font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <StorageMigration />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

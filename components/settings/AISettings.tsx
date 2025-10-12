@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Brain, Key, CheckCircle, AlertCircle } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
-import { APIKeyModal } from './APIKeyModal';
-import { AI_MODELS } from '@/lib/ai/models';
-import { maskApiKey } from '@/lib/utils/encryption';
-import type { AIModelId } from '@/types/ai';
+import React, { useState } from "react";
+import { Brain, Key, CheckCircle, AlertCircle } from "lucide-react";
+import { useStore } from "@/lib/store/useStore";
+import { APIKeyModal } from "./APIKeyModal";
+import { AI_MODELS } from "@/lib/ai/models";
+import { maskApiKey } from "@/lib/utils/api-key-utils";
+import type { AIModelId } from "@/types/ai";
 
 /**
  * AI設定コンポーネント
@@ -20,7 +20,7 @@ export const AISettings: React.FC = () => {
 
   const handleAIChange = (ai: AIModelId) => {
     // Claudeを選択する際にAPIキーがない場合はモーダルを開く
-    if (ai === 'claude' && !claudeApiKey) {
+    if (ai === "claude" && !claudeApiKey) {
       setIsModalOpen(true);
       return;
     }
@@ -48,18 +48,20 @@ export const AISettings: React.FC = () => {
             </p>
             <div className="mt-4 space-y-3">
               {/* Gemini */}
-              <label className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
+              <label
+                className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
                 style={{
-                  borderColor: selectedAI === 'gemini' ? '#3b82f6' : '#e5e7eb',
-                  backgroundColor: selectedAI === 'gemini' ? '#eff6ff' : 'white',
+                  borderColor: selectedAI === "gemini" ? "#3b82f6" : "#e5e7eb",
+                  backgroundColor:
+                    selectedAI === "gemini" ? "#eff6ff" : "white",
                 }}
               >
                 <input
                   type="radio"
                   name="aiModel"
                   value="gemini"
-                  checked={selectedAI === 'gemini'}
-                  onChange={() => handleAIChange('gemini')}
+                  checked={selectedAI === "gemini"}
+                  onChange={() => handleAIChange("gemini")}
                   className="mt-1 w-4 h-4 text-blue-500 focus:ring-blue-500"
                 />
                 <div className="flex-1">
@@ -76,24 +78,28 @@ export const AISettings: React.FC = () => {
                   </p>
                   <div className="flex items-center space-x-2 mt-2">
                     <CheckCircle className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs text-blue-700">APIキー設定不要</span>
+                    <span className="text-xs text-blue-700">
+                      APIキー設定不要
+                    </span>
                   </div>
                 </div>
               </label>
 
               {/* Claude */}
-              <label className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
+              <label
+                className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
                 style={{
-                  borderColor: selectedAI === 'claude' ? '#3b82f6' : '#e5e7eb',
-                  backgroundColor: selectedAI === 'claude' ? '#eff6ff' : 'white',
+                  borderColor: selectedAI === "claude" ? "#3b82f6" : "#e5e7eb",
+                  backgroundColor:
+                    selectedAI === "claude" ? "#eff6ff" : "white",
                 }}
               >
                 <input
                   type="radio"
                   name="aiModel"
                   value="claude"
-                  checked={selectedAI === 'claude'}
-                  onChange={() => handleAIChange('claude')}
+                  checked={selectedAI === "claude"}
+                  onChange={() => handleAIChange("claude")}
                   className="mt-1 w-4 h-4 text-blue-500 focus:ring-blue-500"
                   disabled={!claudeApiKey}
                 />
@@ -120,7 +126,9 @@ export const AISettings: React.FC = () => {
                     ) : (
                       <>
                         <AlertCircle className="w-4 h-4 text-orange-500" />
-                        <span className="text-xs text-orange-700">APIキーが必要です</span>
+                        <span className="text-xs text-orange-700">
+                          APIキーが必要です
+                        </span>
                       </>
                     )}
                   </div>
@@ -190,9 +198,11 @@ export const AISettings: React.FC = () => {
         <div className="flex items-start space-x-2">
           <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
           <div className="flex-1">
-            <h4 className="font-medium text-yellow-800">セキュリティに関する注意</h4>
+            <h4 className="font-medium text-yellow-800">
+              セキュリティに関する注意
+            </h4>
             <p className="text-sm text-yellow-700 mt-1">
-              APIキーはブラウザのLocalStorageに暗号化して保存されます。
+              APIキーはサーバーサイドで暗号化して保存されます。
               共有PCを使用している場合は、使用後に必ずAPIキーを削除してください。
             </p>
           </div>

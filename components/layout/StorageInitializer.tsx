@@ -1,30 +1,34 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { useStore } from '@/lib/store/useStore';
-import { getItineraryById } from '@/lib/mock-data/itineraries';
-import { loadCurrentItinerary, getLastSaveTime } from '@/lib/utils/storage';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useStore } from "@/lib/store/useStore";
+import { getItineraryById } from "@/lib/mock-data/itineraries";
+import { loadCurrentItinerary, getLastSaveTime } from "@/lib/utils/storage";
 
 /**
  * Phase 10.4: ストレージ初期化コンポーネント（DB統合版）
- * 
+ *
  * ログイン時: データベースから最新のしおりを読み込む
  * 未ログイン時: LocalStorageから読み込む（従来通り）
  */
 export const StorageInitializer: React.FC = () => {
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
-  const initializeFromStorage = useStore((state) => state.initializeFromStorage);
+  const initializeFromStorage = useStore(
+    (state) => state.initializeFromStorage
+  );
   const setItinerary = useStore((state) => state.setItinerary);
   const setLastSaveTime = useStore((state) => state.setLastSaveTime);
-  const setStorageInitialized = useStore((state) => state.setStorageInitialized);
+  const setStorageInitialized = useStore(
+    (state) => state.setStorageInitialized
+  );
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // セッション読み込み中は待機
-    if (sessionStatus === 'loading') {
+    if (sessionStatus === "loading") {
       return;
     }
 
@@ -35,17 +39,19 @@ export const StorageInitializer: React.FC = () => {
 
     const initialize = async () => {
       // LocalStorageからAPIキーと選択AIを復元
-      initializeFromStorage();
+      await initializeFromStorage();
 
       // URLパラメータからしおりIDを取得
-      const itineraryId = searchParams.get('itineraryId');
-      
+      const itineraryId = searchParams.get("itineraryId");
+
       if (itineraryId) {
         // URLパラメータで指定されたしおりを読み込む
         if (session?.user) {
           // ログイン時: データベースから読み込む
           try {
-            const response = await fetch(`/api/itinerary/load?id=${itineraryId}`);
+            const response = await fetch(
+              `/api/itinerary/load?id=${itineraryId}`
+            );
             if (response.ok) {
               const data = await response.json();
               if (data.itinerary) {
@@ -59,7 +65,7 @@ export const StorageInitializer: React.FC = () => {
               }
             }
           } catch (error) {
-            console.error('Failed to load itinerary from database:', error);
+            console.error("Failed to load itinerary from database:", error);
             // エラー時はLocalStorageにフォールバック
             const itinerary = getItineraryById(itineraryId);
             if (itinerary) {
@@ -82,7 +88,7 @@ export const StorageInitializer: React.FC = () => {
           const savedItinerary = loadCurrentItinerary();
           if (savedItinerary) {
             setItinerary(savedItinerary);
-            
+
             const lastSaveTime = getLastSaveTime();
             if (lastSaveTime) {
               setLastSaveTime(lastSaveTime);
@@ -93,7 +99,7 @@ export const StorageInitializer: React.FC = () => {
           const savedItinerary = loadCurrentItinerary();
           if (savedItinerary) {
             setItinerary(savedItinerary);
-            
+
             const lastSaveTime = getLastSaveTime();
             if (lastSaveTime) {
               setLastSaveTime(lastSaveTime);
@@ -101,7 +107,7 @@ export const StorageInitializer: React.FC = () => {
           }
         }
       }
-      
+
       // 初期化完了を通知
       setStorageInitialized(true);
       setIsInitialized(true);

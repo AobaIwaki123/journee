@@ -4,7 +4,7 @@ import React from 'react';
 import { User, Mail, Calendar, LogOut, Trash2, AlertCircle } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { clearAllAppData } from '@/lib/utils/storage';
+import { clearAllAppData } from '@/lib/utils/ui-storage';
 import { formatDate as formatDateUtil } from '@/lib/utils/date-utils';
 
 /**
@@ -21,9 +21,9 @@ export const AccountSettings: React.FC = () => {
     }
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     if (confirm('すべてのアプリケーションデータを削除しますか？\n\n削除されるデータ:\n- AIモデル設定\n- Claude APIキー\n- アプリケーション設定\n\nこの操作は取り消せません。')) {
-      const success = clearAllAppData();
+      const success = await clearAllAppData();
       if (success) {
         alert('すべてのデータを削除しました。ページをリロードします。');
         window.location.reload();

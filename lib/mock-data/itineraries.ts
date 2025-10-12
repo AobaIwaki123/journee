@@ -9,7 +9,7 @@ import { ItineraryData } from "@/types/itinerary";
  */
 export const mockItineraries: ItineraryData[] = [
   {
-    id: "mock-001",
+    id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     userId: "user-001",
     title: "東京3日間の旅",
     destination: "東京",
@@ -24,7 +24,7 @@ export const mockItineraries: ItineraryData[] = [
         title: "浅草・スカイツリーエリア",
         spots: [
           {
-            id: "spot-001-1",
+            id: "f1e2d3c4-b5a6-4798-8c9d-0e1f2a3b4c5d",
             name: "浅草寺",
             description: "東京の代表的な観光地",
             location: {
@@ -38,7 +38,7 @@ export const mockItineraries: ItineraryData[] = [
             estimatedCost: 0,
           },
           {
-            id: "spot-001-2",
+            id: "f2e3d4c5-b6a7-4899-8d0e-1f2a3b4c5d6e",
             name: "東京スカイツリー",
             description: "東京のランドマークタワー",
             location: {
@@ -61,7 +61,7 @@ export const mockItineraries: ItineraryData[] = [
         title: "渋谷・原宿エリア",
         spots: [
           {
-            id: "spot-001-3",
+            id: "f3e4d5c6-b7a8-499a-8e0f-2a3b4c5d6e7f",
             name: "明治神宮",
             description: "東京を代表する神社",
             location: {
@@ -75,7 +75,7 @@ export const mockItineraries: ItineraryData[] = [
             estimatedCost: 0,
           },
           {
-            id: "spot-001-4",
+            id: "f4e5d6c7-b8a9-49ab-8f0a-3b4c5d6e7f8a",
             name: "竹下通り",
             description: "原宿のメインストリート",
             location: {
@@ -98,7 +98,7 @@ export const mockItineraries: ItineraryData[] = [
         title: "銀座・築地エリア",
         spots: [
           {
-            id: "spot-001-5",
+            id: "f5e6d7c8-b9aa-4abc-9012-4c5d6e7f8a9b",
             name: "築地場外市場",
             description: "新鮮な海鮮が楽しめる市場",
             location: {
@@ -112,7 +112,7 @@ export const mockItineraries: ItineraryData[] = [
             estimatedCost: 5000,
           },
           {
-            id: "spot-001-6",
+            id: "f6e7d8c9-baab-4bcd-9123-5d6e7f8a9bac",
             name: "銀座ショッピング",
             description: "高級ショッピングエリア",
             location: {
@@ -137,7 +137,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-002",
+    id: "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
     userId: "user-001",
     title: "京都紅葉巡り5日間",
     destination: "京都",
@@ -152,7 +152,7 @@ export const mockItineraries: ItineraryData[] = [
         title: "嵐山エリア",
         spots: [
           {
-            id: "spot-002-1",
+            id: "f7e8d9ca-bbac-4cde-9234-6e7f8a9bacbd",
             name: "渡月橋",
             description: "嵐山のシンボル",
             location: {
@@ -177,7 +177,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-003",
+    id: "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
     userId: "user-001",
     title: "北海道グルメツアー4日間",
     destination: "札幌",
@@ -192,7 +192,7 @@ export const mockItineraries: ItineraryData[] = [
         title: "札幌市内観光",
         spots: [
           {
-            id: "spot-003-1",
+            id: "f8e9dabc-bcad-4def-9345-7f8a9bacbdce",
             name: "時計台",
             description: "札幌のシンボル",
             location: {
@@ -206,7 +206,7 @@ export const mockItineraries: ItineraryData[] = [
             estimatedCost: 200,
           },
           {
-            id: "spot-003-2",
+            id: "f9eadbcd-bdae-4ef0-9456-8a9bacbdcedf",
             name: "すすきのラーメン横丁",
             description: "札幌ラーメンの名店が集まるエリア",
             location: {
@@ -231,7 +231,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-004",
+    id: "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
     userId: "user-001",
     title: "沖縄ビーチリゾート6日間",
     destination: "沖縄",
@@ -247,7 +247,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: true,
   },
   {
-    id: "mock-005",
+    id: "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
     userId: "user-001",
     title: "大阪食い倒れツアー3日間",
     destination: "大阪",
@@ -262,7 +262,7 @@ export const mockItineraries: ItineraryData[] = [
         title: "道頓堀・心斎橋",
         spots: [
           {
-            id: "spot-005-1",
+            id: "fabcdcde-beaf-4f01-9567-9bacbdcedfea",
             name: "道頓堀",
             description: "大阪を代表する繁華街",
             location: {
@@ -287,7 +287,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-006",
+    id: "f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9bac",
     userId: "user-001",
     title: "金沢歴史探訪2日間",
     destination: "金沢",
@@ -303,7 +303,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-007",
+    id: "a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9bacbd",
     userId: "user-001",
     title: "広島平和記念ツアー2日間",
     destination: "広島",
@@ -319,7 +319,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-008",
+    id: "b8c9d0e1-f2a3-4b4c-5d6e-7f8a9bacbdce",
     userId: "user-001",
     title: "福岡博多グルメ旅3日間",
     destination: "福岡",
@@ -335,7 +335,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-009",
+    id: "c9d0e1f2-a3b4-4c5d-6e7f-8a9bacbdcedf",
     userId: "user-001",
     title: "名古屋城と熱田神宮巡り",
     destination: "名古屋",
@@ -351,7 +351,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-010",
+    id: "d0e1f2a3-b4c5-4d6e-7f8a-9bacbdcedfea",
     userId: "user-001",
     title: "仙台牛タンと温泉の旅",
     destination: "仙台",
@@ -367,7 +367,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-011",
+    id: "e1f2a3b4-c5d6-4e7f-8a9b-acbdcedfeafb",
     userId: "user-001",
     title: "長野スキー＆温泉4日間",
     destination: "長野",
@@ -383,7 +383,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-012",
+    id: "f2a3b4c5-d6e7-4f8a-9bac-bdcedfedafbc",
     userId: "user-001",
     title: "神戸夜景とスイーツ巡り",
     destination: "神戸",
@@ -399,7 +399,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-013",
+    id: "a3b4c5d6-e7f8-4a9b-acbd-cedfedafbced",
     userId: "user-001",
     title: "鎌倉寺院巡り1日プラン",
     destination: "鎌倉",
@@ -415,7 +415,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-014",
+    id: "b4c5d6e7-f8a9-4bac-bdce-dfedafbcedfe",
     userId: "user-001",
     title: "奈良の大仏と鹿公園",
     destination: "奈良",
@@ -431,7 +431,7 @@ export const mockItineraries: ItineraryData[] = [
     isPublic: false,
   },
   {
-    id: "mock-015",
+    id: "c5d6e7f8-a9ba-4cbd-cedf-edafbcedfedf",
     userId: "user-001",
     title: "箱根温泉リラックス旅",
     destination: "箱根",

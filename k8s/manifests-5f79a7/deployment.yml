@@ -1,31 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: journee
+  name: journee-5f79a7
   namespace: journee
+  labels:
+    app: journee-5f79a7
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: journee
+      app: journee-5f79a7
   template:
     metadata:
       labels:
-        app: journee
+        app: journee-5f79a7
     spec:
       imagePullSecrets:
         - name: gcr-pull-secret
       containers:
-        - name: journee
-          image: gcr.io/my-docker-471807/journee:v6.4.0
+        - name: journee-5f79a7
+          image: gcr.io/my-docker-471807/journee:5f79a7-3a0ad0
           env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /app/secret/key.json
             - name: NEXTAUTH_URL
-              value: https://journee.aooba.net
+              value: https://journee-5f79a7.aooba.net
             # ブランチモード設定（本番環境ではモック認証を無効化）
             - name: ENABLE_MOCK_AUTH
-              value: "false"
+              value: "true"
             # Secretから環境変数を注入
             - name: GEMINI_API_KEY
               valueFrom:
@@ -68,7 +70,7 @@ spec:
                   name: journee-env
                   key: SUPABASE_SERVICE_ROLE_KEY
             - name: NEXT_PUBLIC_BASE_URL
-              value: https://journee.aooba.net
+              value: https://journee-5f79a7.aooba.net
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:

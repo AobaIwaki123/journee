@@ -170,6 +170,58 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 5. APIキーの暗号化保存
+CREATE OR REPLACE FUNCTION save_encrypted_api_key(
+  p_user_id UUID,
+  p_api_key TEXT,
+  p_encryption_key TEXT
+)
+RETURNS VOID AS $$
+BEGIN
+  -- user_settingsレコードがなければ作成
+  INSERT INTO user_settings (user_id, encrypted_claude_api_key)
+  VALUES (
+    p_user_id,
+    encode(pgp_sym_encrypt(p_api_key, p_encryption_key), 'base64')
+  )
+  ON CONFLICT (user_id) DO UPDATE
+  SET encrypted_claude_api_key = encode(pgp_sym_encrypt(p_api_key, p_encryption_key), 'base64'),
+      updated_at = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. APIキーの復号化取得
+CREATE OR REPLACE FUNCTION get_decrypted_api_key(
+  p_user_id UUID,
+  p_encryption_key TEXT
+)
+RETURNS TEXT AS $$
+DECLARE
+  encrypted_key TEXT;
+  decrypted_key TEXT;
+BEGIN
+  -- 暗号化されたAPIキーを取得
+  SELECT encrypted_claude_api_key INTO encrypted_key
+  FROM user_settings
+  WHERE user_id = p_user_id;
+  
+  -- レコードがない、またはAPIキーが設定されていない場合
+  IF encrypted_key IS NULL THEN
+    RETURN NULL;
+  END IF;
+  
+  -- 復号化
+  BEGIN
+    decrypted_key := pgp_sym_decrypt(decode(encrypted_key, 'base64')::bytea, p_encryption_key);
+    RETURN decrypted_key;
+  EXCEPTION WHEN OTHERS THEN
+    -- 復号化に失敗した場合（キーが間違っている、データが破損している等）
+    RAISE WARNING 'Failed to decrypt API key for user %: %', p_user_id, SQLERRM;
+    RETURN NULL;
+  END;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 完了メッセージ
 DO $$
 BEGIN

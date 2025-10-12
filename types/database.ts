@@ -316,7 +316,60 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      save_encrypted_api_key: {
+        Args: {
+          p_user_id: string;
+          p_api_key: string;
+          p_encryption_key: string;
+        };
+        Returns: void;
+      };
+      get_decrypted_api_key: {
+        Args: {
+          p_user_id: string;
+          p_encryption_key: string;
+        };
+        Returns: string | null;
+      };
+      increment_view_count: {
+        Args: {
+          slug: string;
+        };
+        Returns: void;
+      };
+      search_itineraries: {
+        Args: {
+          user_id_param: string;
+          search_query: string;
+          limit_param?: number;
+          offset_param?: number;
+        };
+        Returns: {
+          id: string;
+          title: string;
+          destination: string;
+          start_date: string;
+          end_date: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          rank: number;
+        }[];
+      };
+      get_user_stats: {
+        Args: {
+          user_id_param: string;
+        };
+        Returns: Json;
+      };
+      clone_itinerary: {
+        Args: {
+          itinerary_id_param: string;
+          user_id_param: string;
+          new_title?: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

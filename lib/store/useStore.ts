@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { Message } from "@/types/chat";
 import {
   ItineraryData,
@@ -25,20 +26,26 @@ import {
   saveClaudeApiKey,
   loadClaudeApiKey,
   removeClaudeApiKey,
+  hasClaudeApiKey,
+} from "@/lib/utils/api-key-manager";
+import {
+  type AutoProgressSettings,
+  savePublicItinerary,
+  removePublicItinerary,
+} from "@/lib/utils/storage";
+import {
   saveSelectedAI,
   loadSelectedAI,
   saveAutoProgressMode,
   loadAutoProgressMode,
   saveAutoProgressSettings,
   loadAutoProgressSettings,
-  type AutoProgressSettings,
   saveAppSettings,
   loadAppSettings,
-  savePublicItinerary,
-  removePublicItinerary,
   saveChatPanelWidth,
   loadChatPanelWidth,
-} from "@/lib/utils/storage";
+} from "@/lib/utils/ui-storage";
+import { journeeDB, isIndexedDBAvailable } from "@/lib/utils/indexed-db";
 import { DEFAULT_AI_MODEL } from "@/lib/ai/models";
 import { createHistoryUpdate } from "./useStore-helper";
 import {
@@ -185,9 +192,9 @@ interface AppState {
   selectedAI: AIModelId;
   claudeApiKey: string;
   setSelectedAI: (ai: AIModelId) => void;
-  setClaudeApiKey: (key: string) => void;
-  removeClaudeApiKey: () => void;
-  initializeFromStorage: () => void;
+  setClaudeApiKey: (key: string) => Promise<boolean>;
+  removeClaudeApiKey: () => Promise<boolean>;
+  initializeFromStorage: () => Promise<void>;
 
   // Mobile UI state (Phase 7.2)
   mobileActiveTab: "chat" | "itinerary";
@@ -246,7 +253,51 @@ interface AppState {
   setChatPanelWidth: (width: number) => void;
 }
 
-export const useStore = create<AppState>()((set, get) => ({
+/**
+ * IndexedDB用のストレージアダプター
+ * Zustand persistミドルウェアで使用
+ */
+const indexedDBStorage = createJSONStorage(() => ({
+  getItem: async (name: string) => {
+    if (!isIndexedDBAvailable()) {
+      return null;
+    }
+    try {
+      await journeeDB.init();
+      const value = await journeeDB.get('store_state', name);
+      return value ? JSON.stringify(value) : null;
+    } catch (error) {
+      console.error('Failed to get item from IndexedDB:', error);
+      return null;
+    }
+  },
+  setItem: async (name: string, value: string) => {
+    if (!isIndexedDBAvailable()) {
+      return;
+    }
+    try {
+      await journeeDB.init();
+      await journeeDB.set('store_state', name, JSON.parse(value));
+    } catch (error) {
+      console.error('Failed to set item to IndexedDB:', error);
+    }
+  },
+  removeItem: async (name: string) => {
+    if (!isIndexedDBAvailable()) {
+      return;
+    }
+    try {
+      await journeeDB.init();
+      await journeeDB.delete('store_state', name);
+    } catch (error) {
+      console.error('Failed to remove item from IndexedDB:', error);
+    }
+  },
+}));
+
+export const useStore = create<AppState>()(
+  persist(
+    (set, get) => ({
   // Chat state
   messages: [],
   isLoading: false,
@@ -360,25 +411,7 @@ export const useStore = create<AppState>()((set, get) => ({
   // Itinerary state
   currentItinerary: null,
   setItinerary: (itinerary) => {
-    // LocalStorageに保存
-    if (typeof window !== "undefined") {
-      try {
-        const currentStorage = localStorage.getItem("journee-storage");
-        const parsed = currentStorage ? JSON.parse(currentStorage) : {};
-        const newStorage = {
-          ...parsed,
-          state: {
-            ...(parsed.state || {}),
-            currentItinerary: itinerary,
-          },
-          version: 0,
-        };
-        localStorage.setItem("journee-storage", JSON.stringify(newStorage));
-      } catch (e) {
-        console.error("Failed to save itinerary to localStorage:", e);
-      }
-    }
-
+    // Zustand persistが自動的にIndexedDBに保存
     set((state) => ({
       currentItinerary: itinerary,
       history: {
@@ -402,25 +435,7 @@ export const useStore = create<AppState>()((set, get) => ({
           }
         : null;
 
-      // LocalStorageに保存
-      if (typeof window !== "undefined" && newItinerary) {
-        try {
-          const currentStorage = localStorage.getItem("journee-storage");
-          const parsed = currentStorage ? JSON.parse(currentStorage) : {};
-          const newStorage = {
-            ...parsed,
-            state: {
-              ...(parsed.state || {}),
-              currentItinerary: newItinerary,
-            },
-            version: 0,
-          };
-          localStorage.setItem("journee-storage", JSON.stringify(newStorage));
-        } catch (e) {
-          console.error("Failed to save itinerary to localStorage:", e);
-        }
-      }
-
+      // Zustand persistが自動的にIndexedDBに保存
       return {
         currentItinerary: newItinerary,
         history: {
@@ -851,49 +866,48 @@ export const useStore = create<AppState>()((set, get) => ({
     saveSelectedAI(ai);
     set({ selectedAI: ai });
   },
-  setClaudeApiKey: (key) => {
+  setClaudeApiKey: async (key) => {
     if (key) {
-      saveClaudeApiKey(key);
-    }
-    set({ claudeApiKey: key });
-  },
-  removeClaudeApiKey: () => {
-    removeClaudeApiKey();
-    set({ claudeApiKey: "", selectedAI: DEFAULT_AI_MODEL });
-  },
-  initializeFromStorage: () => {
-    const savedApiKey = loadClaudeApiKey();
-    const savedAI = loadSelectedAI();
-    const autoProgressMode = loadAutoProgressMode();
-    const autoProgressSettings = loadAutoProgressSettings();
-    const savedSettings = loadAppSettings();
-    const savedPanelWidth = loadChatPanelWidth();
-
-    // currentItineraryも復元する
-    let savedItinerary = null;
-    if (typeof window !== "undefined") {
-      const journeeStorage = localStorage.getItem("journee-storage");
-      if (journeeStorage) {
-        try {
-          const parsed = JSON.parse(journeeStorage);
-          savedItinerary = parsed?.state?.currentItinerary || null;
-        } catch (e) {
-          console.error("Failed to parse journee-storage:", e);
-        }
+      const success = await saveClaudeApiKey(key);
+      if (!success) {
+        console.error("Failed to save API key");
+        return false;
       }
     }
+    set({ claudeApiKey: key });
+    return true;
+  },
+  removeClaudeApiKey: async () => {
+    const success = await removeClaudeApiKey();
+    if (!success) {
+      console.error("Failed to remove API key");
+      return false;
+    }
+    set({ claudeApiKey: "", selectedAI: DEFAULT_AI_MODEL });
+    return true;
+  },
+  initializeFromStorage: async () => {
+    // Zustand persistで自動的に復元されるため、ここではAPIキーのみロード
+    const savedApiKey = await loadClaudeApiKey();
 
-    set({
+    // UI設定もIndexedDBから非同期ロード（Zustand persist対象外の設定）
+    const savedAI = await loadSelectedAI();
+    const autoProgressMode = await loadAutoProgressMode();
+    const autoProgressSettings = await loadAutoProgressSettings();
+    const savedSettings = await loadAppSettings();
+    const savedPanelWidth = await loadChatPanelWidth();
+
+    set((state) => ({
       claudeApiKey: savedApiKey,
-      selectedAI: savedAI,
-      autoProgressMode,
-      autoProgressSettings,
-      settings: savedSettings
+      // persistで復元されない場合のフォールバック
+      selectedAI: state.selectedAI || savedAI,
+      autoProgressMode: state.autoProgressMode ?? autoProgressMode,
+      autoProgressSettings: state.autoProgressSettings || autoProgressSettings,
+      settings: state.settings || (savedSettings
         ? { ...DEFAULT_SETTINGS, ...savedSettings }
-        : DEFAULT_SETTINGS,
-      chatPanelWidth: savedPanelWidth,
-      currentItinerary: savedItinerary,
-    });
+        : DEFAULT_SETTINGS),
+      chatPanelWidth: state.chatPanelWidth || savedPanelWidth,
+    }));
   },
 
   // Mobile UI state (Phase 7.2)
@@ -1159,12 +1173,40 @@ export const useStore = create<AppState>()((set, get) => ({
     }),
 
   // Phase 7.1: Panel resizer
-  chatPanelWidth: loadChatPanelWidth(),
+  chatPanelWidth: 40, // デフォルト値、initializeFromStorageで非同期ロード
   setChatPanelWidth: (width) => {
     // 範囲チェック（30-70%）
     const clampedWidth = Math.max(30, Math.min(70, width));
     set({ chatPanelWidth: clampedWidth });
-    // LocalStorageに保存
+    // IndexedDBに保存
     saveChatPanelWidth(clampedWidth);
   },
-}));
+    }),
+    {
+      name: 'journee-storage',
+      storage: indexedDBStorage,
+      // 永続化する状態を選択（重要な状態のみ）
+      partialize: (state) => ({
+        currentItinerary: state.currentItinerary,
+        messages: state.messages,
+        settings: state.settings,
+        selectedAI: state.selectedAI,
+        autoProgressMode: state.autoProgressMode,
+        autoProgressSettings: state.autoProgressSettings,
+        chatPanelWidth: state.chatPanelWidth,
+      }),
+      // ハイドレーション完了時のコールバック
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('Failed to rehydrate storage:', error);
+        } else {
+          console.log('Storage rehydration complete');
+          // ストレージ初期化フラグを立てる
+          if (state) {
+            state.setStorageInitialized(true);
+          }
+        }
+      },
+    }
+  )
+);
