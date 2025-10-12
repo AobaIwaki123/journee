@@ -6,6 +6,16 @@ topics: ["個人開発", "AI", "Next.js", "旅行", "Webアプリ"]
 published: false
 ---
 
+## Cursor向け参考資料
+
+以下のような個人開発ブログの内容を参考にしてブログを書いてほしい
+
+- [【Flutter】個人開発でゲームレビューアプリをリリースした話](https://zenn.dev/canisterism/articles/clip-games-release)
+- [自宅で集中できない人のためのオンライン・コワーキングスペースを作った話](https://zenn.dev/imaginelab/articles/eb5b19db6f9b0b)
+- [マッチングアプリ個人開発したら逮捕されかけた話](https://zenn.dev/shoheiweb/articles/448e7b7c73356f)
+- [【夫婦で開発】1年かけて1週間を振り返えるアプリを本気で開発してみた](https://zenn.dev/wheatandcat/articles/20220503-memoir)
+
+
 ## 旅行は計画している時間が、一番楽しい
 
 次の旅行先はどこにしよう。
