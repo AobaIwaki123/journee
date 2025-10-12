@@ -1,4 +1,26 @@
-import Link from 'next/link';
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "利用規約 | Journee",
+  description: "Journeeの利用規約。サービスの利用条件を定めます。",
+  openGraph: {
+    title: "利用規約 | Journee",
+    description: "Journeeの利用規約",
+    type: "website",
+    images: ["/api/og/default"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "利用規約 | Journee",
+    description: "Journeeの利用規約",
+    images: ["/api/og/default"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 /**
  * 利用規約ページ
@@ -8,14 +30,16 @@ export default function TermsPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">利用規約</h1>
-        
+
         <div className="text-sm text-gray-600 mb-8">
           最終更新日: 2025年10月7日
         </div>
 
         <div className="space-y-6 text-gray-700">
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第1条（適用）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第1条（適用）
+            </h2>
             <p className="mb-2">
               本利用規約（以下「本規約」といいます）は、Journee（以下「本サービス」といいます）の利用条件を定めるものです。
             </p>
@@ -25,7 +49,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第2条（サービス内容）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第2条（サービス内容）
+            </h2>
             <p className="mb-2">
               本サービスは、AI技術を活用した旅行計画作成支援サービスです。
             </p>
@@ -38,7 +64,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第3条（アカウント登録）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第3条（アカウント登録）
+            </h2>
             <p className="mb-2">
               本サービスの利用には、Googleアカウントによる認証が必要です。
             </p>
@@ -51,23 +79,33 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第4条（禁止事項）</h2>
-            <p className="mb-2">ユーザーは、本サービスの利用にあたり、以下の行為をしてはなりません。</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第4条（禁止事項）
+            </h2>
+            <p className="mb-2">
+              ユーザーは、本サービスの利用にあたり、以下の行為をしてはなりません。
+            </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>法令または公序良俗に違反する行為</li>
               <li>犯罪行為に関連する行為</li>
-              <li>本サービスのサーバーやネットワークの機能を破壊したり、妨害したりする行為</li>
+              <li>
+                本サービスのサーバーやネットワークの機能を破壊したり、妨害したりする行為
+              </li>
               <li>本サービスの運営を妨害するおそれのある行為</li>
               <li>他のユーザーに関する個人情報等を収集または蓄積する行為</li>
               <li>不正アクセスをし、またはこれを試みる行為</li>
               <li>他のユーザーに成りすます行為</li>
-              <li>本サービスが意図しない方法で自動化ツール等を用いてアクセスする行為</li>
+              <li>
+                本サービスが意図しない方法で自動化ツール等を用いてアクセスする行為
+              </li>
               <li>その他、当サービスが不適切と判断する行為</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第5条（コンテンツの権利）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第5条（コンテンツの権利）
+            </h2>
             <p className="mb-2">
               ユーザーが本サービスで作成した旅行計画やしおり等のコンテンツの著作権は、ユーザーに帰属します。
             </p>
@@ -77,7 +115,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第6条（AIによる生成コンテンツ）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第6条（AIによる生成コンテンツ）
+            </h2>
             <p className="mb-2">
               本サービスが提供するAIによる旅行計画は、参考情報として提供されるものです。
             </p>
@@ -90,7 +130,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第7条（免責事項）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第7条（免責事項）
+            </h2>
             <p className="mb-2">
               当サービスは、本サービスに関して、以下の事項について一切の責任を負いません。
             </p>
@@ -104,7 +146,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第8条（サービスの変更・終了）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第8条（サービスの変更・終了）
+            </h2>
             <p className="mb-2">
               当サービスは、ユーザーへの事前通知なく、本サービスの内容を変更し、または提供を終了することができます。
             </p>
@@ -114,7 +158,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第9条（利用規約の変更）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第9条（利用規約の変更）
+            </h2>
             <p className="mb-2">
               当サービスは、必要と判断した場合には、ユーザーに通知することなく本規約を変更できるものとします。
             </p>
@@ -124,16 +170,22 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第10条（個人情報の取扱い）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第10条（個人情報の取扱い）
+            </h2>
             <p>
               本サービスにおける個人情報の取扱いについては、別途定める
-              <Link href="/privacy" className="text-blue-600 hover:underline">プライバシーポリシー</Link>
+              <Link href="/privacy" className="text-blue-600 hover:underline">
+                プライバシーポリシー
+              </Link>
               に従うものとします。
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第11条（準拠法・管轄裁判所）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第11条（準拠法・管轄裁判所）
+            </h2>
             <p className="mb-2">
               本規約の解釈にあたっては、日本法を準拠法とします。
             </p>
@@ -143,7 +195,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">第12条（お問い合わせ）</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+              第12条（お問い合わせ）
+            </h2>
             <p>
               本規約に関するお問い合わせは、本サービス内のお問い合わせフォームからご連絡ください。
             </p>

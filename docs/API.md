@@ -668,6 +668,100 @@ export async function GET() {
 
 ---
 
+## 🖼️ OG画像生成API
+
+Open Graph Protocol（OGP）画像を動的に生成するAPI。SNS共有時のプレビュー画像として使用されます。
+
+### しおり共有OGP画像生成
+
+```http
+GET /api/og
+```
+
+**認証**: 不要
+
+**クエリパラメータ**:
+- `slug` (必須): しおりのスラッグ
+
+**レスポンス**:
+- Content-Type: `image/png`
+- サイズ: 1200x630px（OGP標準サイズ）
+
+**キャッシュ設定**:
+```
+Cache-Control: public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800
+```
+- 1日間キャッシュ（86400秒）
+- Stale-while-revalidate: 7日間（604800秒）
+
+**使用例**:
+```html
+<!-- しおり共有ページのメタタグ -->
+<meta property="og:image" content="https://journee.app/api/og?slug=tokyo-trip-2024" />
+```
+
+**生成される画像の内容**:
+- しおりのタイトル
+- 目的地（📍アイコン付き）
+- 旅行日数（📅アイコン付き）
+- 概要（もしあれば）
+- Journeeブランドロゴ
+- 美しいグラデーション背景
+
+**エラー時の動作**:
+- データベース接続エラーやしおりが見つからない場合でも、フォールバック画像を返す
+- エラーログは `[OGP Image Generation Error]` として記録される
+
+### デフォルトOGP画像生成
+
+```http
+GET /api/og/default
+```
+
+**認証**: 不要
+
+**レスポンス**:
+- Content-Type: `image/png`
+- サイズ: 1200x630px
+
+**キャッシュ設定**:
+```
+Cache-Control: public, max-age=604800, s-maxage=604800, immutable
+```
+- 7日間キャッシュ（604800秒）
+- `immutable`: 変更されないことを明示
+
+**使用例**:
+```html
+<!-- トップページやその他ページのメタタグ -->
+<meta property="og:image" content="https://journee.app/api/og/default" />
+```
+
+**生成される画像の内容**:
+- Journeeブランドロゴ（✈️アイコン付き）
+- キャッチコピー: "AI旅のしおり作成アプリ"
+- サブテキスト: "AIとともに、旅の計画を楽しく"
+- 美しいグラデーション背景
+
+**技術仕様**:
+- Edge Runtime使用（高速レスポンス）
+- Next.js `ImageResponse` API使用
+- インラインCSS（外部フォント不使用）
+
+**対応ページ**:
+- トップページ (`/`)
+- ログインページ (`/login`)
+- プライバシーポリシー (`/privacy`)
+- 利用規約 (`/terms`)
+- 設定ページ (`/settings`)
+
+**パフォーマンス**:
+- 目標レスポンスタイム: 500ms以下
+- CDNによる自動キャッシュ
+- Vercel Edge Networkで配信
+
+---
+
 ## 🔗 関連リンク
 
 ### プロジェクトドキュメント
@@ -679,9 +773,11 @@ export async function GET() {
 ### 公式ドキュメント
 - [NextAuth.js](https://next-auth.js.org/)
 - [Next.js API Routes](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
+- [Next.js OG Image Generation](https://nextjs.org/docs/app/api-reference/functions/image-response)
 - [Supabase](https://supabase.com/docs)
 - [Google Gemini API](https://ai.google.dev/docs)
 - [Anthropic Claude API](https://docs.anthropic.com/)
+- [Open Graph Protocol](https://ogp.me/)
 
 ---
 
