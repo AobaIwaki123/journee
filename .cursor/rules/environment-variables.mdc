@@ -1,0 +1,474 @@
+---
+globs: "**/*.ts,**/*.tsx,.env*,next.config.js"
+description: 環境変数の管理パターンとセキュリティベストプラクティス
+---
+
+# 環境変数管理
+
+## 概要
+環境変数の適切な管理により、セキュリティを確保し、環境ごとの設定を柔軟に管理します。
+
+## 環境変数ファイル
+
+### ファイル構成
+```
+プロジェクトルート/
+├── .env.local          # ローカル開発用（Gitに含めない）
+├── .env.example        # テンプレート（Gitに含める）
+├── .env.production     # 本番環境用（Gitに含めない、CI/CDで設定）
+└── .env.test           # テスト環境用（Gitに含めない）
+```
+
+### .env.example（テンプレート）
+
+```bash
+# .env.example - 環境変数テンプレート
+# このファイルをコピーして .env.local を作成してください
+
+# =========================================
+# 認証（NextAuth.js）
+# =========================================
+
+# NextAuth Secret（ランダムな文字列を生成: openssl rand -base64 32）
+NEXTAUTH_SECRET=your-nextauth-secret-here
+
+# NextAuth URL（開発環境）
+NEXTAUTH_URL=http://localhost:3000
+
+# Google OAuth認証
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# =========================================
+# AI API
+# =========================================
+
+# Google Gemini API Key
+GEMINI_API_KEY=your-gemini-api-key
+
+# Anthropic Claude API Key（オプション）
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# =========================================
+# データベース（Supabase）
+# =========================================
+
+# Supabase プロジェクトURL
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+
+# Supabase 匿名キー（公開可能）
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# Supabase サービスロールキー（サーバーサイドのみ、機密情報）
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# =========================================
+# アプリケーション設定
+# =========================================
+
+# Node環境
+NODE_ENV=development
+
+# ログレベル
+LOG_LEVEL=debug
+```
+
+## 環境変数の命名規則
+
+### Next.js のルール
+
+#### サーバーサイドのみ（機密情報）
+```bash
+# プレフィックスなし
+GEMINI_API_KEY=xxx
+ANTHROPIC_API_KEY=xxx
+NEXTAUTH_SECRET=xxx
+GOOGLE_CLIENT_SECRET=xxx
+SUPABASE_SERVICE_ROLE_KEY=xxx
+```
+
+#### クライアントサイドで使用可能
+```bash
+# NEXT_PUBLIC_ プレフィックス必須
+NEXT_PUBLIC_SUPABASE_URL=xxx
+NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
+NEXT_PUBLIC_APP_NAME=Journee
+```
+
+### 命名パターン
+
+```bash
+# ✅ Good - 大文字スネークケース
+DATABASE_URL=xxx
+API_BASE_URL=xxx
+NEXT_PUBLIC_API_URL=xxx
+
+# ❌ Bad - キャメルケース
+databaseUrl=xxx
+apiBaseUrl=xxx
+```
+
+## TypeScript型定義
+
+### 環境変数の型安全化
+
+```typescript
+// types/env.d.ts
+declare namespace NodeJS {
+  interface ProcessEnv {
+    // 認証
+    NEXTAUTH_SECRET: string;
+    NEXTAUTH_URL: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
+
+    // AI API
+    GEMINI_API_KEY: string;
+    ANTHROPIC_API_KEY?: string;
+
+    // データベース
+    NEXT_PUBLIC_SUPABASE_URL: string;
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+    SUPABASE_SERVICE_ROLE_KEY: string;
+
+    // アプリケーション
+    NODE_ENV: 'development' | 'production' | 'test';
+    LOG_LEVEL?: 'error' | 'warn' | 'info' | 'debug';
+  }
+}
+```
+
+### 環境変数バリデーション
+
+```typescript
+// lib/config/env.ts
+import { z } from 'zod';
+
+// スキーマ定義
+const envSchema = z.object({
+  // 認証
+  NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRETは32文字以上必要です'),
+  NEXTAUTH_URL: z.string().url('NEXTAUTH_URLは有効なURLである必要があります'),
+  GOOGLE_CLIENT_ID: z.string().min(1, 'GOOGLE_CLIENT_IDは必須です'),
+  GOOGLE_CLIENT_SECRET: z.string().min(1, 'GOOGLE_CLIENT_SECRETは必須です'),
+
+  // AI API
+  GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEYは必須です'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+
+  // データベース
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url('Supabase URLは有効なURLである必要があります'),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase匿名キーは必須です'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabaseサービスロールキーは必須です'),
+
+  // アプリケーション
+  NODE_ENV: z.enum(['development', 'production', 'test']),
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).optional(),
+});
+
+// バリデーション実行
+export function validateEnv() {
+  try {
+    envSchema.parse(process.env);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('❌ 環境変数の設定が不正です:');
+      error.errors.forEach((err) => {
+        console.error(`  - ${err.path.join('.')}: ${err.message}`);
+      });
+      process.exit(1);
+    }
+    throw error;
+  }
+}
+
+// アプリ起動時に実行
+// next.config.js または app/layout.tsx で呼び出す
+```
+
+## 環境変数の使用パターン
+
+### サーバーサイド（API Route、Server Component）
+
+```typescript
+// app/api/example/route.ts
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  // ✅ Good - サーバーサイドで直接アクセス
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'API Key not configured' },
+      { status: 500 }
+    );
+  }
+
+  // API呼び出し
+  const result = await callExternalAPI(apiKey);
+  return NextResponse.json({ data: result });
+}
+```
+
+### クライアントサイド（Client Component）
+
+```typescript
+// components/Example.tsx
+'use client';
+
+export const Example: React.FC = () => {
+  // ✅ Good - NEXT_PUBLIC_ プレフィックス付き
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  // ❌ Bad - NEXT_PUBLIC_ なしの変数はクライアントで undefined
+  const apiKey = process.env.GEMINI_API_KEY; // undefined!
+
+  return <div>{supabaseUrl}</div>;
+};
+```
+
+### Next.js Config
+
+```javascript
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  env: {
+    // カスタム環境変数の公開（非推奨: NEXT_PUBLIC_ を使用推奨）
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+
+  // 環境変数の検証
+  async headers() {
+    // 必須環境変数チェック
+    if (!process.env.NEXTAUTH_SECRET) {
+      throw new Error('NEXTAUTH_SECRET is not defined');
+    }
+
+    return [];
+  },
+};
+
+module.exports = nextConfig;
+```
+
+## セキュリティベストプラクティス
+
+### DO（推奨）
+
+#### 1. 機密情報は決してクライアントに公開しない
+```bash
+# ✅ Good - サーバーサイドのみ
+GEMINI_API_KEY=xxx
+NEXTAUTH_SECRET=xxx
+
+# ❌ Bad - クライアントに公開される
+NEXT_PUBLIC_GEMINI_API_KEY=xxx  # 絶対にしない！
+```
+
+#### 2. .env.local をGitignoreに追加
+```bash
+# .gitignore
+.env*.local
+.env.production
+.env.test
+```
+
+#### 3. .env.example を最新に保つ
+```bash
+# 新しい環境変数を追加したら .env.example も更新
+GEMINI_API_KEY=your-gemini-api-key
+```
+
+#### 4. デフォルト値の提供
+```typescript
+// ✅ Good - デフォルト値を提供
+const logLevel = process.env.LOG_LEVEL || 'info';
+const maxRetries = parseInt(process.env.MAX_RETRIES || '3');
+```
+
+#### 5. 本番環境で環境変数を検証
+```typescript
+// lib/config/env.ts
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('NEXTAUTH_SECRET is required in production');
+  }
+}
+```
+
+### DON'T（非推奨）
+
+#### 1. ❌ 環境変数をハードコードしない
+```typescript
+// ❌ Bad
+const apiKey = 'AIzaSyC...';
+
+// ✅ Good
+const apiKey = process.env.GEMINI_API_KEY;
+```
+
+#### 2. ❌ console.logで環境変数を出力しない
+```typescript
+// ❌ Bad
+console.log('API Key:', process.env.GEMINI_API_KEY);
+
+// ✅ Good
+console.log('API Key configured:', !!process.env.GEMINI_API_KEY);
+```
+
+#### 3. ❌ クライアントコードで機密情報にアクセスしない
+```typescript
+// ❌ Bad - Client Component
+'use client';
+const secret = process.env.NEXTAUTH_SECRET; // undefined!
+
+// ✅ Good - API Route
+const secret = process.env.NEXTAUTH_SECRET; // 正しく取得
+```
+
+#### 4. ❌ 環境変数を型チェックなしで使用しない
+```typescript
+// ❌ Bad
+const port = process.env.PORT; // string | undefined
+
+// ✅ Good
+const port = parseInt(process.env.PORT || '3000');
+```
+
+## Docker環境での環境変数
+
+### Dockerfile
+```dockerfile
+# Dockerfile.prod
+
+# ビルド時の環境変数
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# 環境変数を設定
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# ビルド
+RUN npm run build
+```
+
+### docker-compose.yml
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    env_file:
+      - .env.production
+```
+
+## CI/CD環境での環境変数
+
+### GitHub Actions
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build
+        env:
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        run: npm run build
+```
+
+### Kubernetes Secret
+```yaml
+# k8s/secret.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: journee-secrets
+type: Opaque
+stringData:
+  NEXTAUTH_SECRET: "your-secret"
+  GEMINI_API_KEY: "your-api-key"
+  GOOGLE_CLIENT_SECRET: "your-client-secret"
+```
+
+## トラブルシューティング
+
+### よくある問題
+
+#### 1. 環境変数がundefined
+```typescript
+// 問題
+const apiKey = process.env.GEMINI_API_KEY; // undefined
+
+// 解決策
+// 1. .env.local を確認
+// 2. 開発サーバーを再起動
+// 3. NEXT_PUBLIC_ プレフィックスが必要か確認
+```
+
+#### 2. クライアントで環境変数が取得できない
+```typescript
+// 問題: Client Componentで undefined
+'use client';
+const url = process.env.SUPABASE_URL; // undefined
+
+// 解決策: NEXT_PUBLIC_ プレフィックスを追加
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+```
+
+#### 3. ビルド時に環境変数が見つからない
+```bash
+# 問題
+npm run build  # エラー: NEXTAUTH_SECRET is not defined
+
+# 解決策
+# .env.production を作成
+# または環境変数を直接指定
+NEXTAUTH_SECRET=xxx npm run build
+```
+
+## チェックリスト
+
+### 環境変数追加時
+- [ ] `.env.example` に追加
+- [ ] `types/env.d.ts` に型定義追加
+- [ ] サーバー/クライアントどちらで使用するか確認
+- [ ] 必要に応じて `NEXT_PUBLIC_` プレフィックス追加
+- [ ] バリデーションロジックに追加
+- [ ] READMEやドキュメントに記載
+- [ ] CI/CDの設定を更新
+
+### デプロイ前
+- [ ] すべての必須環境変数が設定されている
+- [ ] `.env.local` を `.gitignore` に追加済み
+- [ ] 本番環境の環境変数を確認
+- [ ] 環境変数のバリデーションが動作する
+- [ ] 機密情報がクライアントに公開されていない
+
+## 参考リンク
+
+- [Next.js Environment Variables](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables)
+- [lib/auth/auth-options.ts](mdc:lib/auth/auth-options.ts) - 認証設定例
+- [lib/ai/gemini.ts](mdc:lib/ai/gemini.ts) - API Key使用例
+- [Dockerfile.prod](mdc:Dockerfile.prod) - Docker環境変数設定
+- [k8s/secret.yml](mdc:k8s/secret.yml) - Kubernetes Secret設定

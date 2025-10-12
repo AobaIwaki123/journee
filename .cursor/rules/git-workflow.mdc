@@ -1,0 +1,561 @@
+---
+globs: ".git/**/*,.github/**/*"
+description: Gitワークフローとコミット規約のベストプラクティス
+---
+
+# Gitワークフロー
+
+## 概要
+一貫したGitワークフローにより、コード品質を維持し、チーム開発を円滑にします。
+
+## ブランチ戦略
+
+### ブランチ構成
+```
+main (保護ブランチ)
+├── develop (開発ブランチ)
+│   ├── feature/xxx (機能開発)
+│   ├── bugfix/xxx (バグ修正)
+│   └── refactor/xxx (リファクタリング)
+└── hotfix/xxx (緊急修正)
+```
+
+### ブランチ命名規則
+
+#### feature/ - 新機能開発
+```bash
+feature/add-comment-system
+feature/pdf-export
+feature/user-profile
+```
+
+#### bugfix/ - バグ修正
+```bash
+bugfix/fix-auth-redirect
+bugfix/resolve-memory-leak
+```
+
+#### refactor/ - リファクタリング
+```bash
+refactor/optimize-db-queries
+refactor/simplify-error-handling
+```
+
+#### hotfix/ - 緊急修正（本番環境のバグ）
+```bash
+hotfix/security-patch
+hotfix/critical-crash-fix
+```
+
+#### chore/ - 雑務（依存関係更新など）
+```bash
+chore/update-dependencies
+chore/add-eslint-rule
+```
+
+### ブランチ作成
+
+```bash
+# 最新のmainから新ブランチを作成
+git checkout main
+git pull origin main
+git checkout -b feature/new-feature
+
+# 作業後にpush
+git push -u origin feature/new-feature
+```
+
+## コミット規約（Conventional Commits）
+
+### コミットメッセージフォーマット
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Type（必須）
+
+| Type | 説明 | 例 |
+|------|------|-----|
+| `feat` | 新機能 | `feat(chat): add streaming response` |
+| `fix` | バグ修正 | `fix(auth): resolve session expiry issue` |
+| `docs` | ドキュメント | `docs(readme): update setup instructions` |
+| `style` | コードスタイル（機能に影響しない） | `style(button): fix button alignment` |
+| `refactor` | リファクタリング | `refactor(api): simplify error handling` |
+| `perf` | パフォーマンス改善 | `perf(db): optimize query performance` |
+| `test` | テスト追加・修正 | `test(chat): add e2e tests` |
+| `chore` | ビルド・設定変更 | `chore(deps): update dependencies` |
+| `ci` | CI設定変更 | `ci(github): add deploy workflow` |
+| `revert` | 変更の取り消し | `revert: revert "feat: add feature"` |
+
+### Scope（オプション）
+
+コミットの影響範囲を示す：
+
+```bash
+feat(chat): add streaming response
+fix(auth): resolve Google OAuth callback
+docs(api): update API documentation
+refactor(itinerary): simplify data structure
+```
+
+### Subject（必須）
+
+- 50文字以内
+- 命令形（"add", "fix", "update"）
+- 小文字で開始
+- 末尾にピリオド不要
+
+```bash
+# ✅ Good
+feat(chat): add streaming response support
+
+# ❌ Bad
+feat(chat): Added streaming response support.  # 過去形、ピリオド
+Feat(chat): Add streaming response support  # 大文字開始
+```
+
+### Body（オプション）
+
+詳細な説明。何を変更したか、なぜ変更したかを記載。
+
+```bash
+feat(chat): add streaming response support
+
+Implement real-time AI response streaming using Server-Sent Events.
+This improves UX by showing responses as they are generated.
+
+- Add ReadableStream support in API route
+- Update MessageList to handle streaming chunks
+- Add streaming state management in Zustand store
+```
+
+### Footer（オプション）
+
+Issue番号、破壊的変更の記載。
+
+```bash
+# Issue自動クローズ
+Closes #123
+Fixes #456
+
+# 破壊的変更
+BREAKING CHANGE: API response format has changed
+```
+
+## コミット例
+
+### 新機能追加
+```bash
+git commit -m "feat(itinerary): add PDF export functionality
+
+Implement PDF generation using jsPDF library.
+Users can now export their itineraries as PDF files.
+
+- Add PDFExportButton component
+- Implement PDF layout with itinerary details
+- Add download functionality
+
+Closes #42"
+```
+
+### バグ修正
+```bash
+git commit -m "fix(auth): resolve session expiry issue
+
+Fix bug where users were logged out unexpectedly.
+Increase JWT maxAge to 30 days.
+
+Fixes #78"
+```
+
+### リファクタリング
+```bash
+git commit -m "refactor(api): simplify error handling
+
+Consolidate error handling logic into a single function.
+Improve error messages and status codes.
+
+- Create ApiError class
+- Update all API routes to use new error handler
+- Add comprehensive error logging"
+```
+
+### ドキュメント更新
+```bash
+git commit -m "docs(readme): update environment variables section
+
+Add missing SUPABASE_SERVICE_ROLE_KEY to .env.example.
+Clarify the difference between anon key and service role key."
+```
+
+## Pull Request（PR）
+
+### PR作成前のチェックリスト
+
+- [ ] ブランチが最新のmainから分岐している
+- [ ] コミットメッセージが規約に従っている
+- [ ] [pre-build-check](mdc:.cursor/rules/pre-build-check.mdc)を実行
+  - [ ] `npm run type-check` 成功
+  - [ ] `npm run lint` 成功
+  - [ ] `npm run build` 成功
+- [ ] テストが追加・更新されている（必要な場合）
+- [ ] console.logなどのデバッグコードを削除
+- [ ] ドキュメントを更新（必要な場合）
+
+### PRタイトル
+
+コミットメッセージと同じ形式：
+
+```
+feat(chat): add streaming response support
+fix(auth): resolve session expiry issue
+docs(api): update API documentation
+```
+
+### PR説明
+
+[PR作成ガイドライン](mdc:.cursor/rules/pr-from-issue.mdc)を参照。
+
+```markdown
+Closes #42
+
+## 概要
+チャット機能にストリーミングレスポンス対応を追加しました。
+
+## 背景
+現状、AI応答を全て受け取るまでユーザーは待つ必要があり、UXが悪いとの報告がありました。
+
+## 実装内容
+- `app/api/chat/route.ts`: ストリーミングレスポンス対応
+- `components/chat/MessageList.tsx`: ストリーミング中の表示UI
+- `lib/store/useStore.ts`: ストリーミング状態管理
+
+## テスト方法
+1. チャットで「東京の観光スポットを教えて」と送信
+2. AIアイコンが表示され、文字が徐々に表示される
+3. 完全に受信後、メッセージリストに追加される
+
+## ビルド確認
+- [x] `npm run type-check` 成功
+- [x] `npm run lint` 成功
+- [x] `npm run build` 成功
+```
+
+### PRレビュー
+
+#### レビュアー
+- コードレビューの観点
+  - ロジックは正しいか
+  - エッジケースを考慮しているか
+  - テストは十分か
+  - セキュリティ上の問題はないか
+  - パフォーマンスへの影響は？
+
+#### レビュイー
+- フィードバックに対して丁寧に対応
+- 質問や提案に感謝の意を示す
+- 変更を加えたら再度レビュー依頼
+
+## マージ戦略
+
+### Squash and Merge（推奨）
+
+複数のコミットを1つにまとめてマージ。履歴がクリーンになる。
+
+```bash
+# GitHub上で "Squash and Merge" を選択
+# コミットメッセージを整理してマージ
+```
+
+### Rebase and Merge
+
+履歴を線形に保つ。コミットメッセージが綺麗な場合に使用。
+
+```bash
+# ローカルでrebase
+git checkout feature/new-feature
+git rebase main
+
+# コンフリクト解決後
+git rebase --continue
+
+# Force push
+git push --force-with-lease origin feature/new-feature
+```
+
+### Merge Commit
+
+通常のマージ。履歴が複雑になるため非推奨。
+
+## Git操作のベストプラクティス
+
+### DO（推奨）
+
+#### 1. 小さく頻繁にコミット
+```bash
+# ✅ Good - 機能ごとにコミット
+git add components/chat/MessageInput.tsx
+git commit -m "feat(chat): add message input validation"
+
+git add components/chat/MessageList.tsx
+git commit -m "feat(chat): add message list scrolling"
+```
+
+#### 2. コミット前に差分を確認
+```bash
+# ✅ Good
+git diff
+git add -p  # 対話的にステージング
+git commit -m "feat: add feature"
+```
+
+#### 3. コミットメッセージを丁寧に書く
+```bash
+# ✅ Good - 詳細な説明
+git commit -m "feat(chat): add streaming response
+
+Implement real-time AI response streaming.
+Improves UX by showing responses as they are generated."
+
+# ❌ Bad - 説明不足
+git commit -m "update"
+```
+
+#### 4. ブランチを最新に保つ
+```bash
+# ✅ Good - 定期的にmainを取り込む
+git checkout main
+git pull origin main
+git checkout feature/new-feature
+git rebase main
+```
+
+#### 5. Force push with lease
+```bash
+# ✅ Good - 安全なforce push
+git push --force-with-lease origin feature/new-feature
+
+# ❌ Bad - 他人の変更を上書きする可能性
+git push --force origin feature/new-feature
+```
+
+### DON'T（非推奨）
+
+#### 1. ❌ mainブランチに直接push
+```bash
+# ❌ Bad
+git checkout main
+git commit -m "fix: quick fix"
+git push origin main
+
+# ✅ Good - ブランチを切る
+git checkout -b hotfix/quick-fix
+git commit -m "fix: quick fix"
+git push origin hotfix/quick-fix
+# PR作成
+```
+
+#### 2. ❌ 大量の変更を1コミットにまとめる
+```bash
+# ❌ Bad - 1コミットで10ファイル変更
+git add .
+git commit -m "feat: add many features"
+
+# ✅ Good - 機能ごとに分割
+git add file1.ts file2.ts
+git commit -m "feat(auth): add login"
+
+git add file3.ts file4.ts
+git commit -m "feat(chat): add messaging"
+```
+
+#### 3. ❌ 曖昧なコミットメッセージ
+```bash
+# ❌ Bad
+git commit -m "update"
+git commit -m "fix bug"
+git commit -m "wip"
+
+# ✅ Good
+git commit -m "feat(chat): add streaming response support"
+git commit -m "fix(auth): resolve session expiry issue"
+git commit -m "refactor(api): simplify error handling"
+```
+
+#### 4. ❌ 機密情報をコミット
+```bash
+# ❌ Bad - .env.local をコミット
+git add .env.local
+git commit -m "add env"
+
+# ✅ Good - .gitignore で除外
+echo ".env*.local" >> .gitignore
+```
+
+#### 5. ❌ マージコミットを含むPR
+```bash
+# ❌ Bad - merge commit が含まれる
+git checkout feature/new-feature
+git merge main  # マージコミットが作られる
+
+# ✅ Good - rebase を使用
+git checkout feature/new-feature
+git rebase main  # 履歴が線形になる
+```
+
+## よく使うGitコマンド
+
+### ブランチ操作
+```bash
+# ブランチ一覧
+git branch -a
+
+# ブランチ作成・切り替え
+git checkout -b feature/new-feature
+
+# ブランチ削除
+git branch -d feature/old-feature
+
+# リモートブランチ削除
+git push origin --delete feature/old-feature
+```
+
+### コミット修正
+```bash
+# 直前のコミットを修正
+git commit --amend
+
+# コミットメッセージのみ修正
+git commit --amend -m "new message"
+
+# コミットを取り消す（変更は保持）
+git reset --soft HEAD~1
+
+# コミットを取り消す（変更も破棄）
+git reset --hard HEAD~1
+```
+
+### 変更の一時保存
+```bash
+# 変更を一時保存
+git stash
+
+# 保存した変更を確認
+git stash list
+
+# 変更を復元
+git stash pop
+
+# 特定のstashを復元
+git stash apply stash@{0}
+
+# stashを削除
+git stash drop
+```
+
+### リベース
+```bash
+# mainの最新を取り込む
+git checkout feature/new-feature
+git rebase main
+
+# インタラクティブリベース（コミットをまとめる）
+git rebase -i HEAD~3
+
+# リベース中止
+git rebase --abort
+
+# リベース続行
+git rebase --continue
+```
+
+### コンフリクト解決
+```bash
+# コンフリクトファイルを確認
+git status
+
+# コンフリクト解決後
+git add <resolved-file>
+git rebase --continue
+# または
+git merge --continue
+```
+
+## Git Hooks
+
+### pre-commit（コミット前チェック）
+
+```bash
+# .husky/pre-commit
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Pre-commit チェック..."
+
+# Lint
+npm run lint || exit 1
+
+# 型チェック
+npm run type-check || exit 1
+
+echo "✅ Pre-commit チェック完了"
+```
+
+### commit-msg（コミットメッセージ検証）
+
+```bash
+# .husky/commit-msg
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Conventional Commits形式チェック
+npx --no -- commitlint --edit "$1"
+```
+
+## トラブルシューティング
+
+### よくある問題
+
+#### 1. コンフリクトが発生した
+```bash
+# コンフリクトファイルを手動編集
+# <<<<<<< HEAD と >>>>>>> の部分を修正
+
+# 解決後
+git add <resolved-file>
+git rebase --continue
+```
+
+#### 2. 誤ってmainにpushしてしまった
+```bash
+# ⚠️ 危険：他の人がpull済みでない場合のみ
+git reset --hard HEAD~1
+git push --force origin main
+
+# ✅ 安全：revertコミットを作成
+git revert HEAD
+git push origin main
+```
+
+#### 3. コミットを間違えた
+```bash
+# コミット取り消し（変更は保持）
+git reset --soft HEAD~1
+
+# 修正後、再コミット
+git add .
+git commit -m "correct message"
+```
+
+## 参考リンク
+
+- [Conventional Commits](https://www.conventionalcommits.org/)
+- [GitHub Flow](https://guides.github.com/introduction/flow/)
+- [docs/GUIDELINE.md](mdc:docs/GUIDELINE.md) - 開発ガイドライン
+- [.cursor/rules/pr-from-issue.mdc](mdc:.cursor/rules/pr-from-issue.mdc) - PR作成ガイドライン
+- [.cursor/rules/pre-build-check.mdc](mdc:.cursor/rules/pre-build-check.mdc) - Push前チェック

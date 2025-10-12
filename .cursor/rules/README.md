@@ -13,6 +13,9 @@
 | **プロジェクト構造** | プロジェクト全体の構造とアーキテクチャ定義 | [project_structure.mdc](project_structure.mdc) |
 | **状態管理** | Zustandを使用した状態管理パターン | [state_management.mdc](state_management.mdc) |
 | **セキュリティ & パフォーマンス** | セキュリティとパフォーマンスの実装ルール | [security_and_performance.mdc](security_and_performance.mdc) |
+| **Context7 MCP** | Context7 MCP Serverの使用ガイド | [context7-mcp.mdc](context7-mcp.mdc) |
+| **Serena MCP** | Serena MCP Serverの使用ガイド | [serena-mcp.mdc](serena-mcp.mdc) |
+| **PR作成ガイドライン** | IssueからPRを作成する際のガイドライン | [pr-from-issue.mdc](pr-from-issue.mdc) |
 
 ### ファイルパターンで適用されるRules（globs）
 
@@ -23,6 +26,8 @@
 | **TypeScript & React規約** | `*.ts`, `*.tsx`, `app/**/*`, `components/**/*` | TypeScriptとReactのコーディング規約 | [typescript-react-rules.mdc](typescript-react-rules.mdc) |
 | **スタイリング規約** | `*.tsx`, `components/**/*`, `app/**/*` | Tailwind CSSのスタイリングルール | [styling-rules.mdc](styling-rules.mdc) |
 | **API開発パターン** | `app/api/**/*` | Next.js Route Handlersの実装パターン | [api-patterns.mdc](api-patterns.mdc) |
+| **エラーハンドリング** | `**/*.ts`, `**/*.tsx`, `app/api/**/*`, `lib/**/*` | エラーハンドリングの標準パターン | [error-handling.mdc](error-handling.mdc) |
+| **環境変数管理** | `**/*.ts`, `**/*.tsx`, `.env*`, `next.config.js` | 環境変数の管理パターンとセキュリティ | [environment-variables.mdc](environment-variables.mdc) |
 | **AI統合** | `lib/ai/**/*`, `app/api/chat/**/*` | Gemini API統合パターン | [ai-integration.mdc](ai-integration.mdc) |
 | **認証機能** | `lib/auth/**/*`, `app/api/auth/**/*`, `components/auth/**/*`, `middleware.ts` | NextAuth.js認証実装パターン | [authentication.mdc](authentication.mdc) |
 | **データベース統合** | `lib/db/**/*`, `app/api/itinerary/**/*` | Supabase統合パターン | [database-integration.mdc](database-integration.mdc) |
@@ -30,7 +35,10 @@
 | **テスト戦略** | `e2e/**/*`, `**/*.test.ts`, `**/*.test.tsx`, `playwright.config.ts` | Playwright E2Eテストパターン | [testing-strategy.mdc](testing-strategy.mdc) |
 | **コメント機能** | `components/comments/**/*`, `app/api/itinerary/**/comments/**/*` | コメント機能実装パターン | [comment-feature.mdc](comment-feature.mdc) |
 | **フィードバック機能** | `components/feedback/**/*`, `app/api/feedback/**/*` | フィードバック機能実装パターン | [feedback-feature.mdc](feedback-feature.mdc) |
+| **OGP画像生成** | `app/api/og/**/*`, `app/share/[slug]/layout.tsx` | 動的OGP画像生成の実装パターン | [ogp-image-generation.mdc](ogp-image-generation.mdc) |
+| **ブランチ環境分離** | `k8s/manifests-*/**/*`, `k8s/argocd-*/**/*`, `scripts/create-branch-infra.sh` | ブランチごとの独立環境構築パターン | [branch-isolation.mdc](branch-isolation.mdc) |
 | **Cursorコマンド** | `.cursor/commands/**/*` | Cursorカスタムコマンドの作成パターン | [cursor-commands.mdc](cursor-commands.mdc) |
+| **Gitワークフロー** | `.git/**/*`, `.github/**/*` | Gitワークフローとコミット規約 | [git-workflow.mdc](git-workflow.mdc) |
 
 ### 手動で参照するRules（description）
 
@@ -39,8 +47,19 @@ Cursor AIが必要に応じて参照します。ユーザーが明示的に指�
 | Rule | 説明 | ファイル |
 |------|------|----------|
 | **Pre-buildチェック** | Push前の必須チェック項目（型・Lint・ビルド） | [pre-build-check.mdc](pre-build-check.mdc) |
-| **ブランチ環境分離** | ブランチごとの独立環境構築パターン | [branch-isolation.mdc](branch-isolation.mdc) |
+| **Context7 MCP** | Context7 MCP Serverの使用ガイド | [context7-mcp.mdc](context7-mcp.mdc) |
+| **Serena MCP** | Serena MCP Serverの使用ガイド | [serena-mcp.mdc](serena-mcp.mdc) |
+| **エラーハンドリング** | エラーハンドリングの標準パターン | [error-handling.mdc](error-handling.mdc) |
+| **環境変数管理** | 環境変数の管理パターンとセキュリティ | [environment-variables.mdc](environment-variables.mdc) |
+| **データベース統合** | Supabase統合パターン | [database-integration.mdc](database-integration.mdc) |
+| **テスト戦略** | Playwright E2Eテストパターン | [testing-strategy.mdc](testing-strategy.mdc) |
+| **レスポンシブレイアウト** | リサイズ可能パネルとレスポンシブUI | [responsive-layout.mdc](responsive-layout.mdc) |
+| **コメント機能** | コメント機能実装パターン | [comment-feature.mdc](comment-feature.mdc) |
+| **フィードバック機能** | フィードバック機能実装パターン | [feedback-feature.mdc](feedback-feature.mdc) |
 | **OGP画像生成** | 動的OGP画像生成の実装パターン | [ogp-image-generation.mdc](ogp-image-generation.mdc) |
+| **ブランチ環境分離** | ブランチごとの独立環境構築パターン | [branch-isolation.mdc](branch-isolation.mdc) |
+| **Cursorコマンド** | Cursorカスタムコマンドの作成パターン | [cursor-commands.mdc](cursor-commands.mdc) |
+| **Gitワークフロー** | Gitワークフローとコミット規約 | [git-workflow.mdc](git-workflow.mdc) |
 
 ## Rules使用方法
 
@@ -105,17 +124,22 @@ npm run build
 
 ## 最近の変更
 
-### 2025-10-12
+### 2025-10-12 (最新)
+- ✅ **error-handling.mdc** を新規作成（エラーハンドリング標準パターン）
+- ✅ **environment-variables.mdc** を新規作成（環境変数管理とセキュリティ）
+- ✅ **git-workflow.mdc** を新規作成（Gitワークフローとコミット規約）
+- ✅ **README.md** を更新（最新のルール一覧を反映）
+
+### 2025-10-12 (以前)
 - ✅ **pre-build-check.mdc** を新規作成（Push前チェック）
 - ✅ **state_management.mdc** を更新（Zustandパターンを統合）
 - ✅ **zustand-patterns.mdc** を削除（state_management.mdcに統合）
 - ✅ **cursor-commands.mdc** を更新（pre-build-checkへの参照追加）
 
-### 統合前のRules数
-17個のrules（重複あり）
-
-### 統合後のRules数
-16個のrules（重複なし、より明確）
+### Rules数の推移
+- **統合前**: 17個のrules（重複あり）
+- **統合後**: 16個のrules（重複削除）
+- **現在**: 23個のrules（新規3つ追加、より体系的に整理）
 
 ## 参考リンク
 
@@ -132,6 +156,15 @@ Cursor Rulesを活用することで：
 - ✅ 実装パターンの共有
 - ✅ コードレビューの効率化
 - ✅ 新メンバーのオンボーディング支援
+- ✅ エラーハンドリングの標準化
+- ✅ セキュアな環境変数管理
+- ✅ 効率的なGitワークフロー
+
+### カテゴリ別ルール数
+- **コア（常に適用）**: 6個
+- **コーディング規約**: 4個（TypeScript, React, スタイリング, API）
+- **機能別パターン**: 10個（認証, DB, AI, テストなど）
+- **開発プロセス**: 3個（エラーハンドリング, 環境変数, Git）
 
 **適切なrulesを設定して、開発効率を最大化しましょう！** 🚀
 
