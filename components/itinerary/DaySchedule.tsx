@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { DaySchedule as DayScheduleType } from '@/types/itinerary';
 import { SpotCard } from './SpotCard';
@@ -8,6 +8,7 @@ import { EditableSpotCard } from './EditableSpotCard';
 import { AddSpotForm } from './AddSpotForm';
 import { useStore } from '@/lib/store/useStore';
 import { formatCurrency } from '@/lib/utils/currency';
+import { sortSpotsByTime } from '@/lib/utils/map-utils';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -49,6 +50,21 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
 
   const dayOfWeek = getDayOfWeek(day.date);
   const currency = currentItinerary?.currency;
+
+  // マーカー番号のマッピングを作成（位置情報があるスポットのみ）
+  const spotMarkerNumbers = useMemo(() => {
+    const sortedSpots = sortSpotsByTime(day.spots);
+    const spotsWithLocation = sortedSpots.filter(
+      (spot) => spot.location?.lat && spot.location?.lng
+    );
+    
+    const numberMap: Record<string, number> = {};
+    spotsWithLocation.forEach((spot, index) => {
+      numberMap[spot.id] = index + 1;
+    });
+    
+    return numberMap;
+  }, [day.spots]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -240,7 +256,9 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
                                   <EditableSpotCard 
                                     spot={spot} 
                                     dayIndex={dayIndex} 
-                                    spotIndex={index} 
+                                    spotIndex={index}
+                                    markerNumber={spotMarkerNumbers[spot.id]}
+                                    dayNumber={day.day}
                                   />
                                 </div>
                               </div>
@@ -262,7 +280,11 @@ export const DaySchedule: React.FC<DayScheduleProps> = memo(({ day, dayIndex, ed
                       </div>
 
                       {/* Spot Card */}
-                      <SpotCard spot={spot} />
+                      <SpotCard 
+                        spot={spot}
+                        markerNumber={spotMarkerNumbers[spot.id]}
+                        dayNumber={day.day}
+                      />
                     </div>
                   ))}
                 </div>
