@@ -4,9 +4,6 @@ import React, { useState } from "react";
 import { useStore } from "@/lib/store/useStore";
 import { DaySchedule } from "./DaySchedule";
 import { MapView } from "./MapView";
-import { PlanningProgress } from "./PlanningProgress";
-import { QuickActions } from "./QuickActions";
-import { PhaseStatusBar } from "./PhaseStatusBar";
 import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { EmptyItinerary } from "./EmptyItinerary";
@@ -25,7 +22,6 @@ type ViewMode = "schedule" | "map";
 export const ItineraryPreview: React.FC = () => {
   const {
     currentItinerary,
-    planningPhase,
     isAutoProgressing,
     autoProgressState,
   } = useStore();
@@ -42,22 +38,12 @@ export const ItineraryPreview: React.FC = () => {
   if (!currentItinerary) {
     return (
       <div className="h-full flex flex-col bg-gray-50">
-        {/* PC向け進捗表示を非表示 */}
-        {/* <div className="hidden md:block">
-          {planningPhase !== 'initial' && <PlanningProgress />}
-        </div> */}
         {/* モバイル向け進捗表示を非表示 */}
         {/* <MobilePlannerControls /> */}
 
         {/* 空状態 */}
         <EmptyItinerary />
 
-        {/* PC向けクイックアクション（情報収集を開始ボタン）を非表示 */}
-        {/* {planningPhase !== 'initial' && (
-          <div className="hidden md:block">
-            <QuickActions />
-          </div>
-        )} */}
       </div>
     );
   }
@@ -68,19 +54,7 @@ export const ItineraryPreview: React.FC = () => {
       <ToastContainer />
 
       <div className="h-full flex flex-col bg-gray-50 relative">
-        {/* Phase 4.10.3: 自動進行中の進捗表示 */}
-        {isAutoProgressing && autoProgressState && (
-          <div className="hidden md:block">
-            <PhaseStatusBar state={autoProgressState} />
-          </div>
-        )}
 
-        {/* PC向け進捗表示を非表示 */}
-        {/* {!isAutoProgressing && (
-          <div className="hidden md:block">
-            <PlanningProgress />
-          </div>
-        )} */}
 
         {/* モバイル向け進捗表示を非表示 */}
         {/* <MobilePlannerControls /> */}
@@ -208,12 +182,6 @@ export const ItineraryPreview: React.FC = () => {
           </div>
         </div>
 
-        {/* PC向けクイックアクション（情報収集を開始ボタン）を非表示 */}
-        {/* {!isAutoProgressing && (
-          <div className="hidden md:block">
-            <QuickActions />
-          </div>
-        )} */}
       </div>
     </>
   );
