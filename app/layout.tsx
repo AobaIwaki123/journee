@@ -3,15 +3,25 @@ import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { StorageMigration } from '@/components/migration/StorageMigration';
 
+// metadataBaseの設定: 優先順位
+// 1. NEXT_PUBLIC_BASE_URL (環境変数で明示的に指定)
+// 2. VERCEL_URL (Vercelの自動デプロイ時)
+// 3. http://localhost:3000 (ローカル開発環境)
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return 'http://localhost:3000';
+};
+
 export const metadata: Metadata = {
   title: 'Journee - AI旅のしおり作成アプリ',
   description: 'AIとともに旅のしおりを作成するアプリケーション。チャット形式で簡単に旅行計画を立て、美しいしおりを自動生成。',
   manifest: '/manifest.json',
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || 
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-    'http://localhost:3000'
-  ),
+  metadataBase: new URL(getBaseUrl()),
   openGraph: {
     title: 'Journee - AI旅のしおり作成アプリ',
     description: 'AIとともに旅のしおりを作成するアプリケーション。チャット形式で簡単に旅行計画を立て、美しいしおりを自動生成。',
