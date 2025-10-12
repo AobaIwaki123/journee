@@ -1,0 +1,310 @@
+---
+description: Push前の必須チェック項目とビルド確認
+---
+
+# Pre-Build Check - Push前チェック
+
+## 概要
+コミット・Push前に必ず実行すべきチェック項目。ビルドエラーや型エラーを未然に防ぎ、CI/CDでのエラーを削減します。
+
+## 必須チェック項目
+
+### 1. 型チェック (Type Check)
+```bash
+npm run type-check
+```
+
+**チェック内容：**
+- TypeScriptの型エラー検出
+- すべてのファイルの型整合性確認
+- Null/undefined安全性チェック
+- 存在しないプロパティアクセスの検出
+
+**よくあるエラー：**
+- 型の不一致（`Type 'string' is not assignable to type 'number'`）
+- 存在しないプロパティへのアクセス（`Property 'xxx' does not exist`）
+- Null/undefined安全性違反（`Object is possibly 'null'`）
+
+**修正方法：**
+```typescript
+// ❌ Bad
+const value: number = "123";
+
+// ✅ Good
+const value: number = parseInt("123");
+
+// ❌ Bad
+user.name // userがnullable
+
+// ✅ Good
+user?.name || "Unknown"
+```
+
+### 2. Lintチェック (Lint Check)
+```bash
+npm run lint
+```
+
+**チェック内容：**
+- ESLintルール違反の検出
+- コードスタイルの問題
+- 未使用の変数・インポート
+- React Hooksのルール違反
+
+**自動修正：**
+```bash
+npm run lint -- --fix
+```
+
+**よくある警告：**
+- 未使用の変数（`'xxx' is defined but never used`）
+- console.logの残留（`Unexpected console statement`）
+- React Hooksのルール違反（`React Hook useEffect has missing dependencies`）
+
+**修正方法：**
+```typescript
+// ❌ Bad - 未使用の変数
+const unusedVar = 123;
+
+// ✅ Good - 削除
+// 変数削除
+
+// ❌ Bad - console.log残留
+console.log('Debug:', data);
+
+// ✅ Good - 削除または条件付き
+if (process.env.NODE_ENV === 'development') {
+  console.log('Debug:', data);
+}
+
+// ❌ Bad - 依存配列不足
+useEffect(() => {
+  fetchData(userId);
+}, []);
+
+// ✅ Good - 依存配列追加
+useEffect(() => {
+  fetchData(userId);
+}, [userId]);
+```
+
+### 3. ビルド確認 (Build Check)
+```bash
+npm run build
+```
+
+**チェック内容：**
+- プロダクションビルドの実行
+- すべてのページ・コンポーネントのビルド確認
+- 依存関係の問題検出
+- 環境変数の不足チェック
+
+**よくあるエラー：**
+- 環境変数不足（`.env.local`を確認）
+- 依存関係の問題（`npm install`を実行）
+- キャッシュの問題（`.next`フォルダを削除）
+
+**トラブルシューティング：**
+```bash
+# キャッシュクリア
+rm -rf .next
+
+# 依存関係の再インストール
+rm -rf node_modules package-lock.json
+npm install
+
+# 再ビルド
+npm run build
+```
+
+## 実行手順
+
+### 基本フロー
+```bash
+# 1. 型チェック
+npm run type-check
+
+# 2. Lintチェック（自動修正付き）
+npm run lint -- --fix
+
+# 3. ビルド確認
+npm run build
+```
+
+### ワンライナー
+```bash
+npm run type-check && npm run lint && npm run build
+```
+
+### エラー発生時の対処
+
+#### 型エラーが出た場合
+1. エラーメッセージを確認
+2. [docs/LINT.md](mdc:docs/LINT.md)の「TypeScript型エラー」セクションを参照
+3. 型定義を修正
+4. 再度 `npm run type-check` を実行
+
+#### Lintエラーが出た場合
+1. `npm run lint -- --fix` で自動修正を試みる
+2. 手動修正が必要なエラーを確認
+3. [docs/LINT.md](mdc:docs/LINT.md)の「ESLintエラー」セクションを参照
+4. 修正後、再度 `npm run lint` を実行
+
+#### ビルドエラーが出た場合
+1. エラーメッセージを確認
+2. よくある原因：
+   - 環境変数の不足 → `.env.local` を確認
+   - 依存関係の問題 → `npm install` を実行
+   - キャッシュの問題 → `.next` フォルダを削除して再ビルド
+
+## Git Hook統合（推奨）
+
+### Huskyの設定
+`.husky/pre-commit` に以下を追加：
+
+```bash
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Pre-build チェックを実行中..."
+
+# 型チェック
+echo "⚙️  型チェック..."
+npm run type-check || exit 1
+
+# Lint
+echo "🔍 Lintチェック..."
+npm run lint || exit 1
+
+# ビルド（オプション：時間がかかる場合はコメントアウト）
+# echo "🏗️  ビルド..."
+# npm run build || exit 1
+
+echo "✅ すべてのチェックが成功しました！"
+```
+
+### CI/CD統合
+
+GitHub Actionsの例：
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Type check
+        run: npm run type-check
+      
+      - name: Lint
+        run: npm run lint
+      
+      - name: Build
+        run: npm run build
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ コミット前に必ず実行
+- ✅ 大きな変更後は必ずチェック
+- ✅ エラーは早期発見・早期修正
+- ✅ CI/CDと同じチェックをローカルで実行
+- ✅ 自動修正（`--fix`）を積極的に活用
+
+### DON'T（非推奨）
+- ❌ チェックをスキップしてコミット
+- ❌ エラーを無視してPush
+- ❌ CI/CDでのエラーを後で修正する習慣
+- ❌ console.logを残したままコミット
+- ❌ 型エラーを `any` で回避
+
+## チェックリスト
+
+Push前に以下を確認：
+
+- [ ] `npm run type-check` が成功
+- [ ] `npm run lint` が警告なしで成功
+- [ ] `npm run build` が成功
+- [ ] console.logやデバッグコードを削除
+- [ ] 未使用のインポートを削除
+- [ ] コミットメッセージが明確
+- [ ] 変更内容が意図通り
+
+## パフォーマンス最適化
+
+### チェックが遅い場合
+
+```bash
+# 型チェックのみ（最速）
+npm run type-check
+
+# Lintのみ
+npm run lint
+
+# ビルドはPR前のみに制限
+# （毎回のコミットでは実行しない）
+```
+
+### メモリ不足エラー
+
+```bash
+# Node.jsのメモリを増やす
+NODE_OPTIONS="--max-old-space-size=4096" npm run build
+```
+
+## トラブルシューティング
+
+### よくある問題と解決方法
+
+#### "Cannot find module"
+```bash
+npm install
+```
+
+#### "Out of memory"
+```bash
+NODE_OPTIONS="--max-old-space-size=4096" npm run build
+```
+
+#### "Permission denied"
+```bash
+chmod +x scripts/*.sh
+```
+
+#### ".next already exists"
+```bash
+rm -rf .next
+npm run build
+```
+
+## 関連ドキュメント
+
+- [docs/LINT.md](mdc:docs/LINT.md) - 詳細なLintルールとエラー例
+- [docs/GUIDELINE.md](mdc:docs/GUIDELINE.md) - 開発ガイドライン
+- [docs/TESTING.md](mdc:docs/TESTING.md) - テスト戦略
+- [package.json](mdc:package.json) - npmスクリプト定義
+
+## まとめ
+
+このチェックを習慣にすることで：
+
+- ✅ ビルドエラーを未然に防げる
+- ✅ コードの品質が向上する
+- ✅ CI/CDでのエラーが減る
+- ✅ レビューが早くなる
+- ✅ 開発効率が上がる
+- ✅ チーム全体の生産性が向上する
+
+**Push前の習慣にしましょう！** 🚀

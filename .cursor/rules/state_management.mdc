@@ -1,66 +1,314 @@
 ---
 alwaysApply: true
-description: 状態管理（Zustand）の設計と実装ルール
+description: Zustand状態管理の設計・実装パターンとベストプラクティス
 ---
 
-# 状態管理（Zustand）
+# Zustand 状態管理パターン
 
-## 主要な状態
+## 概要
 
-### チャット状態
+すべての状態管理は [useStore.ts](mdc:lib/store/useStore.ts) に集約。Zustandを使用したグローバル状態管理の実装パターンとベストプラクティス。
+
+## ストア構造
+
+### グローバルストア
+[useStore.ts](mdc:lib/store/useStore.ts) - 単一のグローバルストアですべての状態を管理
+
+### 主要な状態
+
+#### チャット状態
 - `messages`: チャットメッセージ履歴
 - `isLoading`: ローディング状態
 - `isStreaming`: ストリーミング中の状態
 - `streamingMessage`: 現在のストリーミングメッセージ
 
-### しおり状態
+#### しおり状態
 - `currentItinerary`: 現在のしおりデータ（`ItineraryData`型）
 - `planningPhase`: 現在の計画フェーズ
 - `currentDetailingDay`: 詳細化中の日程
 
-### UI状態
+#### UI状態
 - `selectedAI`: 選択中のAIモデル（gemini / claude）
 - `error`: エラー状態
-- `soundEnabled`: 効果音ON/OFF（Phase 3.6用）
-- `soundVolume`: 音量設定（0.0 - 1.0）（Phase 3.6用）
+- `soundEnabled`: 効果音ON/OFF
+- `soundVolume`: 音量設定（0.0 - 1.0）
 
-### APIキー管理
-- `claudeApiKey`: Claude APIキー（Phase 6用）
+#### APIキー管理
+- `claudeApiKey`: Claude APIキー
 
-## 主要な操作
+## ストア定義パターン
 
-### メッセージ管理
+### インターフェース定義
 ```typescript
-addMessage(message: Message): void
-appendStreamingMessage(chunk: string): void
-setStreaming(streaming: boolean): void
+interface AppState {
+  // ステート
+  messages: Message[];
+  isLoading: boolean;
+  currentItinerary: ItineraryData | null;
+  
+  // アクション（メソッド）
+  addMessage: (message: Message) => void;
+  setLoading: (loading: boolean) => void;
+  setItinerary: (itinerary: ItineraryData | null) => void;
+}
 ```
 
-### しおり管理
+### ストア作成
 ```typescript
-setItinerary(itinerary: ItineraryData): void
-updateItinerary(update: Partial<ItineraryData>): void
-setPlanningPhase(phase: ItineraryPhase): void
-setCurrentDetailingDay(day: number | null): void
-proceedToNextStep(): void
+export const useStore = create<AppState>((set) => ({
+  // 初期値
+  messages: [],
+  isLoading: false,
+  currentItinerary: null,
+  
+  // アクション実装
+  addMessage: (message) =>
+    set((state) => ({ messages: [...state.messages, message] })),
+  
+  setLoading: (loading) => 
+    set({ isLoading: loading }),
+  
+  setItinerary: (itinerary) => 
+    set({ currentItinerary: itinerary }),
+}));
 ```
 
-### エラー管理
+## コンポーネントでの使用
+
+### ステート取得パターン
+
 ```typescript
-setError(error: string | null): void
-clearError(): void
+// ✅ Good - 必要な部分のみ取得
+const { messages, isLoading } = useStore();
+
+// ✅ Good - アクションのみ取得
+const addMessage = useStore((state) => state.addMessage);
+
+// ✅ Good - セレクタで必要な値のみ
+const messageCount = useStore((state) => state.messages.length);
+
+// ❌ Bad - 全体を取得
+const store = useStore();
 ```
 
-### 効果音設定（Phase 3.6用）
+### パフォーマンス最適化
+
 ```typescript
-setSoundEnabled(enabled: boolean): void
-setSoundVolume(volume: number): void
+// ✅ Good - セレクタ使用（再レンダリング最小化）
+const messageCount = useStore((state) => state.messages.length);
+
+// ❌ Bad - 全体取得（messagesが変わるたびに再レンダリング）
+const { messages } = useStore();
+const messageCount = messages.length;
 ```
 
-### APIキー管理（Phase 6用）
+### 複数状態の購読
+
 ```typescript
-setClaudeApiKey(key: string): void
-clearClaudeApiKey(): void
+// ✅ Good - 必要な状態のみをオブジェクトで取得
+const {
+  planningPhase,
+  currentDetailingDay,
+  proceedToNextStep
+} = useStore(state => ({
+  planningPhase: state.planningPhase,
+  currentDetailingDay: state.currentDetailingDay,
+  proceedToNextStep: state.proceedToNextStep
+}));
+```
+
+## アクションパターン
+
+### 単純な更新
+```typescript
+setLoading: (loading) => set({ isLoading: loading })
+```
+
+### 配列への追加
+```typescript
+addMessage: (message) =>
+  set((state) => ({ 
+    messages: [...state.messages, message] 
+  }))
+```
+
+### 配列の更新
+```typescript
+updateMessage: (id, updates) =>
+  set((state) => ({
+    messages: state.messages.map(msg =>
+      msg.id === id ? { ...msg, ...updates } : msg
+    )
+  }))
+```
+
+### オブジェクト更新
+```typescript
+updateItinerary: (updates) =>
+  set((state) => ({
+    currentItinerary: state.currentItinerary
+      ? { ...state.currentItinerary, ...updates }
+      : null,
+  }))
+```
+
+### クリア・リセット
+```typescript
+clearMessages: () => set({ messages: [] })
+
+resetChat: () => set({ 
+  messages: [], 
+  isLoading: false,
+  isStreaming: false,
+})
+```
+
+### 複数ステート同時更新
+```typescript
+resetState: () => set({
+  messages: [],
+  currentItinerary: null,
+  isLoading: false,
+  error: null,
+})
+```
+
+## 非同期処理パターン
+
+### パターン1: コンポーネント内でasync/await
+```typescript
+// コンポーネント内
+const { addMessage, setLoading } = useStore();
+
+const handleSend = async (content: string) => {
+  setLoading(true);
+  
+  // ユーザーメッセージ追加
+  addMessage({
+    id: generateId(),
+    role: 'user',
+    content,
+    timestamp: new Date(),
+  });
+  
+  try {
+    // API呼び出し
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+    const data = await response.json();
+    
+    // AI応答追加
+    addMessage({
+      id: generateId(),
+      role: 'assistant',
+      content: data.message,
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+### パターン2: ストアにasyncアクション
+```typescript
+// useStore.ts
+interface AppState {
+  // ...
+  sendMessage: (content: string) => Promise<void>;
+}
+
+export const useStore = create<AppState>((set, get) => ({
+  // ...
+  sendMessage: async (content) => {
+    set({ isLoading: true });
+    
+    try {
+      // API呼び出し
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+      const data = await response.json();
+      
+      // ステート更新
+      set((state) => ({
+        messages: [
+          ...state.messages,
+          { id: generateId(), role: 'user', content, timestamp: new Date() },
+          { id: generateId(), role: 'assistant', content: data.message, timestamp: new Date() },
+        ],
+      }));
+    } catch (error) {
+      console.error('Error:', error);
+      set({ error: 'メッセージ送信に失敗しました' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+}));
+```
+
+## 永続化（LocalStorage連携）
+
+### persist ミドルウェア
+```typescript
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+export const useStore = create<AppState>()(
+  persist(
+    (set) => ({
+      // ストア定義
+      selectedAI: 'gemini',
+      soundEnabled: true,
+      // ...
+    }),
+    {
+      name: 'journee-storage',
+      // 永続化したいキーを指定
+      partialize: (state) => ({
+        selectedAI: state.selectedAI,
+        soundEnabled: state.soundEnabled,
+        soundVolume: state.soundVolume,
+      }),
+    }
+  )
+);
+```
+
+## デバッグ
+
+### Redux DevTools統合
+```typescript
+import { devtools } from 'zustand/middleware';
+
+export const useStore = create<AppState>()(
+  devtools(
+    (set) => ({
+      // ストア定義
+    }),
+    { name: 'JourneeStore' }
+  )
+);
+```
+
+### 開発環境でのロギング
+```typescript
+export const useStore = create<AppState>((set) => ({
+  addMessage: (message) =>
+    set((state) => {
+      const newMessages = [...state.messages, message];
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Messages updated:', newMessages.length);
+      }
+      return { messages: newMessages };
+    }),
+}));
 ```
 
 ## 実装ルール
@@ -74,57 +322,104 @@ clearClaudeApiKey(): void
 - すべての状態に明示的な型定義
 - Union型を活用したフェーズ管理
 - 型ガードによる安全な状態チェック
+- `any`型の使用禁止
 
 ### 3. パフォーマンス
 - 必要な状態のみを購読
-- メモ化による再レンダリング最適化
+- セレクタ関数で再レンダリング最適化
+- メモ化（React.memo, useMemo）の活用
 - バッチ更新の活用
 
 ### 4. 永続化
 - LocalStorageによる状態の永続化
-- 必要な状態のみを永続化
+- 必要な状態のみを永続化（`partialize`使用）
 - マイグレーション戦略の実装
 
-## 使用例
+## ベストプラクティス
 
-```typescript
-// コンポーネントでの使用
-const {
-  messages,
-  isStreaming,
-  addMessage,
-  appendStreamingMessage
-} = useStore();
+### DO（推奨）
+- ✅ イミュータブルな更新（スプレッド構文使用）
+- ✅ 型定義を常に明示
+- ✅ アクション名は動詞で始める（add, set, update, clear, reset）
+- ✅ 必要な部分のみをコンポーネントで取得
+- ✅ セレクタ関数で再レンダリング最適化
+- ✅ 単一のグローバルストアを維持
 
-// 選択的な状態購読
-const selectedAI = useStore(state => state.selectedAI);
-const setSelectedAI = useStore(state => state.setSelectedAI);
-
-// 複数の状態を一度に購読
-const {
-  planningPhase,
-  currentDetailingDay,
-  proceedToNextStep
-} = useStore(state => ({
-  planningPhase: state.planningPhase,
-  currentDetailingDay: state.currentDetailingDay,
-  proceedToNextStep: state.proceedToNextStep
-}));
-```
+### DON'T（非推奨）
+- ❌ 直接ステートを変更（`state.messages.push()`）
+- ❌ 複数のストアに分割
+- ❌ useEffect内での無限ループ（依存配列に注意）
+- ❌ 不必要な全体取得
+- ❌ any型の使用
 
 ## 注意事項
 
-1. **状態の正規化**
-   - 重複を避ける
-   - 単一の信頼できる情報源を維持
-   - 状態間の整合性を保つ
+### 1. 状態の正規化
+- 重複を避ける
+- 単一の信頼できる情報源（Single Source of Truth）を維持
+- 状態間の整合性を保つ
 
-2. **副作用の管理**
-   - 副作用はアクション内で処理
-   - useEffectの適切な使用
-   - クリーンアップ関数の実装
+### 2. 副作用の管理
+- 副作用はアクション内で処理
+- useEffectの適切な使用
+- クリーンアップ関数の実装
 
-3. **デバッグ対応**
-   - 開発環境でのロギング
-   - DevToolsとの統合
-   - エラー追跡の容易さ
+### 3. デバッグ対応
+- 開発環境でのロギング
+- DevToolsとの統合
+- エラー追跡の容易さ
+
+## 実装例
+
+### 基本的な使用
+```typescript
+'use client';
+
+import { useStore } from '@/lib/store/useStore';
+
+export const ChatBox: React.FC = () => {
+  // 必要な状態とアクションを取得
+  const {
+    messages,
+    isStreaming,
+    addMessage,
+    appendStreamingMessage
+  } = useStore();
+  
+  return (
+    <div>
+      {messages.map(msg => (
+        <div key={msg.id}>{msg.content}</div>
+      ))}
+      {isStreaming && <div>入力中...</div>}
+    </div>
+  );
+};
+```
+
+### 選択的購読
+```typescript
+// アクションのみ
+const addMessage = useStore((state) => state.addMessage);
+
+// 単一の値
+const selectedAI = useStore((state) => state.selectedAI);
+
+// 計算された値
+const hasMessages = useStore((state) => state.messages.length > 0);
+```
+
+## 現在の実装状態
+
+- ✅ 基本ストア構造
+- ✅ チャット状態管理
+- ✅ しおり状態管理
+- ✅ UI状態管理
+- ✅ 永続化（LocalStorage）
+- 📋 DevTools統合（開発時のみ、必要に応じて）
+
+## 参考リンク
+
+- [Zustand公式ドキュメント](https://github.com/pmndrs/zustand)
+- [lib/store/useStore.ts](mdc:lib/store/useStore.ts) - ストア実装
+- [lib/store/useStore-helper.ts](mdc:lib/store/useStore-helper.ts) - ヘルパー関数

@@ -21,7 +21,32 @@ Cursor IDEのカスタムコマンド機能を使用して、頻繁に行うド�
 
 ## 既存のカスタムコマンド
 
-### 1. [update-readme.md](mdc:.cursor/commands/update-readme.md)
+### 1. [pre-build-check.md](mdc:.cursor/commands/pre-build-check.md)
+**目的**: Push前の必須チェック（型チェック・Lint・ビルド確認）
+
+**実行タイミング**:
+- コミット前
+- Push前
+- 大きな変更後
+
+**コマンド内容**:
+```markdown
+型チェック・Lint・ビルド確認を順番に実行
+```
+
+**期待される動作**:
+1. `npm run type-check` を実行
+2. `npm run lint` を実行
+3. `npm run build` を実行
+4. すべて成功したらコミット可能と通知
+
+**チェック項目**:
+- TypeScript型エラー
+- ESLintルール違反
+- ビルドエラー
+- 環境変数の不足
+
+### 2. [update-readme.md](mdc:.cursor/commands/update-readme.md)
 **目的**: プロジェクトのメインREADME.mdを最新の状態に更新
 
 **実行タイミング**:
@@ -40,7 +65,7 @@ Cursor IDEのカスタムコマンド機能を使用して、頻繁に行うド�
 3. docsディレクトリから主要情報を集約
 4. README.mdを最新情報で更新
 
-### 2. [compress-docs.md](mdc:.cursor/commands/compress-docs.md)
+### 3. [compress-docs.md](mdc:.cursor/commands/compress-docs.md)
 **目的**: ドキュメントの整理と圧縮、重複削除
 
 **実行タイミング**:
@@ -61,7 +86,7 @@ docs/配下を確認し、削除できるものは削除。
 4. 不要ファイルの削除提案
 5. 内容の統合・圧縮
 
-### 3. [generate-schema.md](mdc:.cursor/commands/generate-schema.md)
+### 4. [generate-schema.md](mdc:.cursor/commands/generate-schema.md)
 **目的**: データベーススキーマドキュメントの自動生成
 
 **実行タイミング**:
@@ -86,7 +111,7 @@ docs/配下を確認し、削除できるものは削除。
 - [lib/db/functions.sql](mdc:lib/db/functions.sql)
 - [docs/SCHEMA.md](mdc:docs/SCHEMA.md)
 
-### 4. [generate-api.md](mdc:.cursor/commands/generate-api.md)
+### 5. [generate-api.md](mdc:.cursor/commands/generate-api.md)
 **目的**: API仕様書の自動生成
 
 **実行タイミング**:
@@ -111,7 +136,7 @@ docs/配下を確認し、削除できるものは削除。
 - [types/api.ts](mdc:types/api.ts) - API型定義
 - [docs/API.md](mdc:docs/API.md)
 
-### 5. [generate-plan.md](mdc:.cursor/commands/generate-plan.md)
+### 6. [generate-plan.md](mdc:.cursor/commands/generate-plan.md)
 **目的**: 開発計画とバグトラッキングの詳細化
 
 **実行タイミング**:
@@ -209,6 +234,13 @@ READMEを見て、何か古い情報があったら更新して
 4. AIが自動的にタスクを実行
 
 ### コマンドの実行順序（推奨）
+
+#### Push前（必須）
+```
+1. pre-build-check.md   # 型・Lint・ビルドチェック
+```
+
+#### ドキュメント更新
 ```
 1. generate-schema.md   # スキーマ更新
 2. generate-api.md      # API仕様書更新
