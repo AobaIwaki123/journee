@@ -6,7 +6,7 @@ import { UserProfile } from '@/components/mypage/UserProfile';
 import { UserStats } from '@/components/mypage/UserStats';
 import { ItineraryCard } from '@/components/mypage/ItineraryCard';
 import { PullToRefresh } from '@/components/ui/PullToRefresh';
-import { getMockUserStats } from '@/lib/mock-data/user-stats';
+import { getMockUserStats, type UserStats as UserStatsType } from '@/lib/mock-data/user-stats';
 import { getMockRecentItineraries } from '@/lib/mock-data/recent-itineraries';
 import { itineraryRepository } from '@/lib/db/itinerary-repository';
 import type { ItineraryListItem } from '@/types/itinerary';
@@ -15,12 +15,15 @@ import { Loader2 } from 'lucide-react';
 /**
  * マイページのメインコンテンツ（クライアントコンポーネント）
  * プルトゥリフレッシュ機能を含む
+ * Phase 10.4: モックデータから実際のAPIに置き換え
  */
 export const MyPageContent: React.FC = () => {
   const { data: session, status } = useSession();
   const [recentItineraries, setRecentItineraries] = useState<ItineraryListItem[]>([]);
+  const [userStats, setUserStats] = useState<UserStatsType | null>(null);
+  const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userStats, setUserStats] = useState(getMockUserStats());
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // データを読み込む関数
   const loadData = async () => {
@@ -29,27 +32,48 @@ export const MyPageContent: React.FC = () => {
       setRecentItineraries(getMockRecentItineraries());
       setUserStats(getMockUserStats());
       setIsLoading(false);
+      setIsLoadingStats(false);
       return;
     }
 
     try {
-      const result = await itineraryRepository.listItineraries(
-        session.user.id,
-        {},
-        'updated_at',
-        'desc',
-        { page: 1, pageSize: 6 }
-      );
-      setRecentItineraries(result.data);
-      
-      // TODO: 将来的にDBから統計情報を計算する
-      setUserStats(getMockUserStats());
+      // 並列で実行
+      const [itinerariesResult, statsResponse, userResponse] = await Promise.all([
+        itineraryRepository.listItineraries(
+          session.user.id,
+          {},
+          'updated_at',
+          'desc',
+          { page: 1, pageSize: 6 }
+        ),
+        fetch('/api/user/stats'),
+        fetch('/api/user/me'),
+      ]);
+
+      // しおり一覧
+      setRecentItineraries(itinerariesResult.data);
+
+      // ユーザー統計
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        setUserStats(stats);
+      } else {
+        console.error('Failed to fetch user stats');
+        setUserStats(getMockUserStats()); // フォールバック
+      }
+
+      // ユーザー情報（登録日）
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        setUserCreatedAt(userData.createdAt);
+      }
     } catch (error) {
-      console.error('Failed to load recent itineraries:', error);
-      // エラー時はモックデータにフォールバック
+      console.error('Failed to load data:', error);
       setRecentItineraries(getMockRecentItineraries());
+      setUserStats(getMockUserStats());
     } finally {
       setIsLoading(false);
+      setIsLoadingStats(false);
     }
   };
 
@@ -79,10 +103,25 @@ export const MyPageContent: React.FC = () => {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-8">
         {/* プロフィールセクション */}
-        {session && <UserProfile session={session} />}
+        {session && (
+          <UserProfile session={session} createdAt={userCreatedAt} />
+        )}
 
         {/* 統計セクション */}
-        <UserStats stats={userStats} />
+        {isLoadingStats ? (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              <span className="ml-2 text-gray-600">統計情報を読み込み中...</span>
+            </div>
+          </div>
+        ) : userStats ? (
+          <UserStats stats={userStats} />
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <p className="text-center text-gray-500">統計情報の取得に失敗しました</p>
+          </div>
+        )}
 
         {/* 最近のしおりセクション */}
         <div className="bg-white rounded-lg shadow-md p-6">
