@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Brain, Key, CheckCircle, AlertCircle } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { APIKeyModal } from "./APIKeyModal";
-import { AI_MODELS } from "@/lib/ai/models";
+import { AI_MODELS, getEnabledModels } from "@/lib/ai/models";
 import { maskApiKey } from "@/lib/utils/api-key-utils";
 import type { AIModelId } from "@/types/ai";
 
@@ -27,6 +27,8 @@ export const AISettings: React.FC = () => {
     setSelectedAI(ai);
   };
 
+  const enabledModels = getEnabledModels();
+
   return (
     <div className="space-y-6">
       {/* ヘッダー */}
@@ -47,93 +49,71 @@ export const AISettings: React.FC = () => {
               チャットで使用するAIモデルを選択してください
             </p>
             <div className="mt-4 space-y-3">
-              {/* Gemini */}
-              <label
-                className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
-                style={{
-                  borderColor: selectedAI === "gemini" ? "#3b82f6" : "#e5e7eb",
-                  backgroundColor:
-                    selectedAI === "gemini" ? "#eff6ff" : "white",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="aiModel"
-                  value="gemini"
-                  checked={selectedAI === "gemini"}
-                  onChange={() => handleAIChange("gemini")}
-                  className="mt-1 w-4 h-4 text-blue-500 focus:ring-blue-500"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-800">
-                      {AI_MODELS.gemini.displayName}
-                    </span>
-                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">
-                      無料
-                    </span>
+              {enabledModels.map((model) => (
+                <label
+                  key={model.id}
+                  className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
+                  style={{
+                    borderColor: selectedAI === model.id ? "#3b82f6" : "#e5e7eb",
+                    backgroundColor:
+                      selectedAI === model.id ? "#eff6ff" : "white",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="aiModel"
+                    value={model.id}
+                    checked={selectedAI === model.id}
+                    onChange={() => handleAIChange(model.id)}
+                    className="mt-1 w-4 h-4 text-blue-500 focus:ring-blue-500"
+                    disabled={model.requiresApiKey && model.id === "claude" && !claudeApiKey}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      {model.icon && <span>{model.icon}</span>}
+                      <span className="font-medium text-gray-800">
+                        {model.displayName}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                        model.requiresApiKey 
+                          ? 'bg-purple-100 text-purple-700' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {model.requiresApiKey ? '有料' : '無料'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {model.description}
+                    </p>
+                    <div className="flex items-center space-x-2 mt-2">
+                      {model.requiresApiKey ? (
+                        model.id === "claude" && claudeApiKey ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span className="text-xs text-green-700">
+                              APIキー設定済み: {maskApiKey(claudeApiKey)}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs text-orange-700">
+                              APIキーが必要です
+                            </span>
+                          </>
+                        )
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-blue-500" />
+                          <span className="text-xs text-blue-700">
+                            APIキー設定不要
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {AI_MODELS.gemini.description}
-                  </p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <CheckCircle className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs text-blue-700">
-                      APIキー設定不要
-                    </span>
-                  </div>
-                </div>
-              </label>
-
-              {/* Claude */}
-              <label
-                className="flex items-start space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50"
-                style={{
-                  borderColor: selectedAI === "claude" ? "#3b82f6" : "#e5e7eb",
-                  backgroundColor:
-                    selectedAI === "claude" ? "#eff6ff" : "white",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="aiModel"
-                  value="claude"
-                  checked={selectedAI === "claude"}
-                  onChange={() => handleAIChange("claude")}
-                  className="mt-1 w-4 h-4 text-blue-500 focus:ring-blue-500"
-                  disabled={!claudeApiKey}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-800">
-                      {AI_MODELS.claude.displayName}
-                    </span>
-                    <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded">
-                      有料
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {AI_MODELS.claude.description}
-                  </p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    {claudeApiKey ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-xs text-green-700">
-                          APIキー設定済み: {maskApiKey(claudeApiKey)}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="w-4 h-4 text-orange-500" />
-                        <span className="text-xs text-orange-700">
-                          APIキーが必要です
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </label>
+                </label>
+              ))}
             </div>
           </div>
         </div>

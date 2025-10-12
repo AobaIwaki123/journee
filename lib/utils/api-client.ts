@@ -44,7 +44,7 @@ export class ChatAPIClient {
       message,
       chatHistory: options?.chatHistory,
       currentItinerary: options?.currentItinerary,
-      model: options?.model || 'gemini',
+      model: options?.model || 'gemini-flash',
       claudeApiKey: options?.claudeApiKey,
       stream: false,
       planningPhase: options?.planningPhase,

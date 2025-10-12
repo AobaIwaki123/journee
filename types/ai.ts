@@ -5,7 +5,7 @@
 /**
  * サポートされているAIモデルのID
  */
-export type AIModelId = 'gemini' | 'claude';
+export type AIModelId = 'gemini-pro' | 'gemini-flash' | 'claude';
 
 /**
  * AIモデルプロバイダー

@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const selectedModel: AIModelId = model || "gemini";
+    const selectedModel: AIModelId = model || "gemini-flash";
 
     // バリデーション
     if (
@@ -206,7 +206,8 @@ export async function POST(request: NextRequest) {
         chatHistory,
         currentItinerary,
         planningPhase,
-        currentDetailingDay
+        currentDetailingDay,
+        selectedModel
       );
     }
 
@@ -216,7 +217,8 @@ export async function POST(request: NextRequest) {
       chatHistory,
       currentItinerary,
       planningPhase,
-      currentDetailingDay
+      currentDetailingDay,
+      selectedModel
     );
   } catch (error: any) {
     console.error("Chat API Error:", error);
@@ -241,7 +243,8 @@ async function handleGeminiNonStreamingResponse(
   chatHistory: any[],
   currentItinerary: any,
   planningPhase: any,
-  currentDetailingDay: any
+  currentDetailingDay: any,
+  modelId: AIModelId
 ) {
   try {
     // Gemini APIにメッセージを送信
@@ -251,7 +254,8 @@ async function handleGeminiNonStreamingResponse(
       currentItinerary,
       undefined,
       planningPhase,
-      currentDetailingDay
+      currentDetailingDay,
+      modelId
     );
 
     // しおりデータをマージ
@@ -263,7 +267,7 @@ async function handleGeminiNonStreamingResponse(
     const response: ChatAPIResponse = {
       message: result.message,
       itinerary: updatedItinerary,
-      model: "gemini",
+      model: modelId,
     };
 
     return NextResponse.json(response);
@@ -316,7 +320,8 @@ async function handleGeminiStreamingResponse(
   chatHistory: any[],
   currentItinerary: any,
   planningPhase: any,
-  currentDetailingDay: any
+  currentDetailingDay: any,
+  modelId: AIModelId
 ) {
   const encoder = new TextEncoder();
 
@@ -333,7 +338,8 @@ async function handleGeminiStreamingResponse(
           currentItinerary,
           undefined,
           planningPhase,
-          currentDetailingDay
+          currentDetailingDay,
+          modelId
         )) {
           fullResponse += chunk;
 

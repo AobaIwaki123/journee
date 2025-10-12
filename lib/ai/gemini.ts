@@ -6,6 +6,7 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import type { ChatMessage } from "@/types/chat";
 import type { ItineraryData, ItineraryPhase } from "@/types/itinerary";
+import type { AIModelId } from "@/types/ai";
 import { getModelName } from "./models";
 import {
   SYSTEM_PROMPT,
@@ -24,16 +25,19 @@ import {
 export class GeminiClient {
   private client: GoogleGenerativeAI;
   private model: GenerativeModel;
+  private modelId: AIModelId;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, modelId: AIModelId = 'gemini-flash') {
     const key = apiKey || process.env.GEMINI_API_KEY;
     if (!key) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
     this.client = new GoogleGenerativeAI(key);
-    // モデル設定から取得
-    const modelName = getModelName('gemini');
+    this.modelId = modelId;
+    
+    // モデルIDからモデル名を取得
+    const modelName = getModelName(modelId);
     this.model = this.client.getGenerativeModel({ model: modelName });
   }
 
@@ -192,18 +196,22 @@ export class GeminiClient {
 }
 
 /**
- * Geminiクライアントのシングルトンインスタンス
+ * モデルIDごとのGeminiクライアントインスタンスを管理
  */
-let geminiClientInstance: GeminiClient | null = null;
+const geminiClientInstances: Map<AIModelId, GeminiClient> = new Map();
 
 /**
  * Geminiクライアントを取得
  */
-export function getGeminiClient(apiKey?: string): GeminiClient {
-  if (!geminiClientInstance) {
-    geminiClientInstance = new GeminiClient(apiKey);
+export function getGeminiClient(apiKey?: string, modelId: AIModelId = 'gemini-flash'): GeminiClient {
+  // Geminiモデル以外が渡された場合はデフォルトにフォールバック
+  const targetModelId = modelId === 'claude' ? 'gemini-flash' : modelId;
+  
+  // モデルIDごとにインスタンスを管理
+  if (!geminiClientInstances.has(targetModelId)) {
+    geminiClientInstances.set(targetModelId, new GeminiClient(apiKey, targetModelId));
   }
-  return geminiClientInstance;
+  return geminiClientInstances.get(targetModelId)!;
 }
 
 /**
@@ -216,12 +224,13 @@ export async function sendGeminiMessage(
   currentItinerary?: ItineraryData,
   apiKey?: string,
   planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null
+  currentDetailingDay?: number | null,
+  modelId?: AIModelId
 ): Promise<{
   message: string;
   itinerary?: ItineraryData;
 }> {
-  const client = getGeminiClient(apiKey);
+  const client = getGeminiClient(apiKey, modelId);
   return client.chat(message, chatHistory, currentItinerary, planningPhase, currentDetailingDay);
 }
 
@@ -235,8 +244,9 @@ export async function* streamGeminiMessage(
   currentItinerary?: ItineraryData,
   apiKey?: string,
   planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null
+  currentDetailingDay?: number | null,
+  modelId?: AIModelId
 ): AsyncGenerator<string, void, unknown> {
-  const client = getGeminiClient(apiKey);
+  const client = getGeminiClient(apiKey, modelId);
   yield* client.chatStream(message, chatHistory, currentItinerary, planningPhase, currentDetailingDay);
 }

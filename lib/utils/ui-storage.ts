@@ -183,16 +183,29 @@ export async function saveSelectedAI(ai: AIModelId): Promise<boolean> {
 
 /**
  * 選択されたAIモデルを取得
+ * 旧'gemini'を'gemini-flash'に自動マイグレーション
  */
 export async function loadSelectedAI(): Promise<AIModelId> {
   if (!isIndexedDBAvailable()) {
     const cached = memoryCache.get('selected_ai');
+    // 旧'gemini'を新デフォルトにマイグレーション
+    if (cached === 'gemini') {
+      return DEFAULT_AI_MODEL;
+    }
     return cached && isValidModelId(cached) ? cached : DEFAULT_AI_MODEL;
   }
 
   try {
     await journeeDB.init();
     const ai = await journeeDB.get<string>('ui_state', 'selected_ai');
+    
+    // 旧'gemini'を'gemini-flash'にマイグレーション
+    if (ai === 'gemini') {
+      const migratedModel = DEFAULT_AI_MODEL;
+      // マイグレーション後の値を保存
+      await journeeDB.set('ui_state', 'selected_ai', migratedModel);
+      return migratedModel;
+    }
     
     if (ai && isValidModelId(ai)) {
       return ai as AIModelId;
@@ -202,6 +215,10 @@ export async function loadSelectedAI(): Promise<AIModelId> {
   } catch (error) {
     console.error('Failed to load selected AI:', error);
     const cached = memoryCache.get('selected_ai');
+    // 旧'gemini'を新デフォルトにマイグレーション
+    if (cached === 'gemini') {
+      return DEFAULT_AI_MODEL;
+    }
     return cached && isValidModelId(cached) ? cached : DEFAULT_AI_MODEL;
   }
 }

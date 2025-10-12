@@ -11,16 +11,27 @@ import type { AIModelId, AIModelConfig } from "@/types/ai";
  * AIモデル設定マップ
  */
 export const AI_MODELS: Record<AIModelId, AIModelConfig> = {
-  gemini: {
-    id: "gemini",
+  'gemini-pro': {
+    id: "gemini-pro",
     displayName: "Gemini 2.5 Pro",
-    modelName: "gemini-2.5-pro",
+    modelName: "gemini-2.0-pro-exp-0205",
     provider: "google",
-    description: "Googleの最新AI。高速で安価、環境変数で設定済み",
+    description: "Googleの高性能AI。精度重視、環境変数で設定済み",
     requiresApiKey: false,
     maxTokens: 1048576,
     enabled: true,
     icon: "🤖",
+  },
+  'gemini-flash': {
+    id: "gemini-flash",
+    displayName: "Gemini 2.5 Flash",
+    modelName: "gemini-2.5-flash",
+    provider: "google",
+    description: "Googleの高速AI。速度重視、環境変数で設定済み",
+    requiresApiKey: false,
+    maxTokens: 1048576,
+    enabled: true,
+    icon: "⚡",
   },
   claude: {
     id: "claude",
@@ -39,7 +50,7 @@ export const AI_MODELS: Record<AIModelId, AIModelConfig> = {
 /**
  * デフォルトのAIモデル
  */
-export const DEFAULT_AI_MODEL: AIModelId = "gemini";
+export const DEFAULT_AI_MODEL: AIModelId = "gemini-flash";
 
 /**
  * サポートされているAIモデルのIDリスト
