@@ -6,22 +6,24 @@ import type { Session } from 'next-auth';
 
 interface UserProfileProps {
   session: Session;
+  createdAt?: string;
 }
 
 /**
  * ユーザープロフィールコンポーネント
  * プロフィール画像、ユーザー名、メールアドレス、登録日を表示
  */
-export const UserProfile: React.FC<UserProfileProps> = ({ session }) => {
+export const UserProfile: React.FC<UserProfileProps> = ({ session, createdAt }) => {
   const { user } = session;
   
-  // モックの登録日（実際はDBから取得）
-  const registeredDate = new Date('2025-03-15');
-  const formattedDate = registeredDate.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  // 登録日をフォーマット
+  const formattedDate = createdAt
+    ? new Date(createdAt).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : '登録日不明';
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">

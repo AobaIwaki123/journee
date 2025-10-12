@@ -114,6 +114,7 @@ types/                 # TypeScript type definitions
 - Single global store: `lib/store/useStore.ts`
 - Slices: Chat, Itinerary, Settings, UI state
 - LocalStorage persistence via `persist` middleware
+- IndexedDB persistence via `persist` middleware
 - **Always use selective subscriptions** for performance:
   ```typescript
   // Good - only subscribes to messages
@@ -122,6 +123,15 @@ types/                 # TypeScript type definitions
   // Bad - subscribes to entire store
   const { messages } = useStore();
   ```
+
+#### Chat History Database Integration (Phase 5 & 7)
+- Chat messages are automatically saved to Supabase `chat_history` table
+- Server-side encryption using pgcrypto (`NEXTAUTH_SECRET` or `CHAT_ENCRYPTION_KEY`)
+- Automatic save when itinerary has an ID
+- Bulk save on first itinerary save using `saveItineraryWithChatHistory()` helper
+- Automatic restore when loading itinerary via `ChatHistoryInitializer` component
+- Repository: `lib/db/chat-repository.ts`
+- API: `/api/chat/history` (GET for loading, POST for saving)
 
 ## Critical Implementation Patterns
 
@@ -403,6 +413,7 @@ See `.cursor/rules/README.md` for full list.
    - `users` - User profiles
    - `itineraries` - Trip itineraries with JSON data column
    - `comments` - Comments on public itineraries
+   - `chat_history` - Encrypted chat messages linked to itineraries (Phase 5 implemented)
 
 4. **Mobile Support**: PWA-enabled with `public/manifest.json`. Responsive design with mobile-specific layouts in `components/layout/MobileLayout.tsx`.
 
@@ -450,11 +461,64 @@ See `.cursor/rules/README.md` for full list.
 4. Add types in `types/database.ts`
 5. Test with Supabase Studio
 
+### Saving itinerary with chat history
+Use the `saveItineraryWithChatHistory()` helper instead of direct API calls:
+```typescript
+import { saveItineraryWithChatHistory } from '@/lib/utils/api-client';
+
+const savedItinerary = await saveItineraryWithChatHistory(
+  currentItinerary,
+  messages
+);
+```
+This ensures chat history is saved atomically with the itinerary.
+
+## Cursor Commands
+
+Slash commands are defined in `.cursor/commands/`:
+
+### Pre-Commit Check
+Always run before committing:
+```
+@pre-build-check
+```
+or just say "コミット前チェックを実行してください"
+
+This runs:
+1. `npm run type-check` - TypeScript type checking
+2. `npm run lint` - ESLint validation
+3. `npm run build` - Production build test
+
+See `.cursor/commands/pre-build-check.md` for detailed usage.
+
+### Other Commands
+- `@generate-api` - Generate API documentation
+- `@generate-schema` - Generate database schema documentation
+- `@compress-docs` - Compress documentation for AI context
+- `@update-readme` - Update README with latest info
+
 ## Resources
 
 - **Project Docs**: `/docs` directory (API.md, SCHEMA.md, TESTING.md, etc.)
 - **Cursor Rules**: `.cursor/rules/` for detailed patterns
+- **Cursor Commands**: `.cursor/commands/` for automation
 - **Memory Files**: Serena MCP maintains architecture knowledge
 - **Next.js Docs**: https://nextjs.org/docs
 - **Zustand Docs**: https://github.com/pmndrs/zustand
 - **Supabase Docs**: https://supabase.com/docs
+
+## Recent Updates
+
+### Phase 5 & 7: Chat History Database Integration (2025-10-12)
+- ✅ Implemented automatic chat history saving to Supabase
+- ✅ Server-side encryption with pgcrypto
+- ✅ Bulk save on first itinerary save
+- ✅ Automatic restore on itinerary load
+- ✅ Error logging and handling improvements
+- Files modified:
+  - `app/api/chat/route.ts` - Error logging, auto-save
+  - `lib/store/useStore.ts` - Chat history actions
+  - `lib/utils/api-client.ts` - `saveItineraryWithChatHistory()` helper
+  - `components/itinerary/SaveButton.tsx` - Integrated bulk save
+  - `app/api/itinerary/load/route.ts` - Return chat history
+  - `components/layout/ChatHistoryInitializer.tsx` - Auto-restore component
