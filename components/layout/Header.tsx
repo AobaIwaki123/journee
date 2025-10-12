@@ -6,7 +6,6 @@ import { Plane, Settings, BookOpen, MessageSquare } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { UserMenu } from '@/components/auth/UserMenu';
-import { LoginButton } from '@/components/auth/LoginButton';
 import { SaveStatus } from '@/components/ui/SaveStatus';
 import { MobileMenu } from './MobileMenu';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
@@ -40,19 +39,17 @@ export const Header: React.FC = () => {
         {/* デスクトップメニュー (≥768px) */}
         <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
           {/* 保存状態表示 */}
-          {session && <SaveStatus />}
+          <SaveStatus />
 
           {/* しおり一覧ボタン */}
-          {session && (
-            <Link
-              href="/itineraries"
-              className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="しおり一覧"
-            >
-              <BookOpen className="w-5 h-5" />
-              <span>しおり一覧</span>
-            </Link>
-          )}
+          <Link
+            href="/itineraries"
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="しおり一覧"
+          >
+            <BookOpen className="w-5 h-5" />
+            <span>しおり一覧</span>
+          </Link>
 
           {/* フィードバックボタン */}
           <button
@@ -65,48 +62,40 @@ export const Header: React.FC = () => {
           </button>
 
           {/* 設定ボタン */}
-          {session && (
-            <button
-              onClick={() => router.push('/settings')}
-              className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="設定ページ"
-            >
-              <Settings className="w-5 h-5" />
-              <span>設定</span>
-            </button>
-          )}
+          <button
+            onClick={() => router.push('/settings')}
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="設定ページ"
+          >
+            <Settings className="w-5 h-5" />
+            <span>設定</span>
+          </button>
 
-          {/* 認証ボタン */}
+          {/* ユーザーメニュー */}
           {status === 'loading' ? (
             <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
-          ) : session ? (
-            <UserMenu />
           ) : (
-            <LoginButton />
+            <UserMenu />
           )}
         </div>
 
         {/* モバイルメニュー (<768px) */}
         <div className="flex items-center space-x-2 md:hidden">
           {/* 保存状態表示（モバイル用コンパクト版） */}
-          {session && (
-            <div className="mr-1">
-              <SaveStatus />
-            </div>
-          )}
+          <div className="mr-1">
+            <SaveStatus />
+          </div>
 
           {/* ハンバーガーメニュー */}
           {status === 'loading' ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-          ) : session ? (
+          ) : (
             <MobileMenu
-              userName={session.user?.name}
-              userEmail={session.user?.email}
-              userImage={session.user?.image}
+              userName={session?.user?.name}
+              userEmail={session?.user?.email}
+              userImage={session?.user?.image}
               onFeedbackClick={() => setIsFeedbackModalOpen(true)}
             />
-          ) : (
-            <LoginButton />
           )}
         </div>
       </div>

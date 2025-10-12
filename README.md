@@ -21,3 +21,26 @@ Journeeは、まるで旅行好きの友人と話すように、AIアシスタ�
 ## モバイル対応 (PWA)
 
 ![](./images/2025-10-10-18-26-56.png)
+
+## 認証要件
+
+Journeeのメインアプリケーション（`/`）は**認証必須**です。
+
+- **ログインページ**: `/login`（Google OAuth）
+- **認証保護**: Next.js middlewareで実装
+- **未ログイン時**: 自動的に`/login`にリダイレクト
+
+### E2Eテスト時の認証バイパス
+
+E2Eテストでは、HTTPヘッダー`x-test-mode: 'true'`を送信することで認証をバイパスできます。
+
+```typescript
+// playwright.config.ts
+use: {
+  extraHTTPHeaders: {
+    'x-test-mode': 'true',
+  },
+},
+```
+
+詳細は[docs/TESTING.md](docs/TESTING.md)を参照してください。

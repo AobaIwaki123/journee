@@ -4,36 +4,33 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useStore } from "@/lib/store/useStore";
-import { getItineraryById } from "@/lib/mock-data/itineraries";
-import { loadCurrentItinerary, getLastSaveTime } from "@/lib/utils/storage";
 
 /**
- * Phase 10.4: ストレージ初期化コンポーネント（DB統合版）
+ * ストレージ初期化コンポーネント（認証必須版）
  *
- * ログイン時: データベースから最新のしおりを読み込む
- * 未ログイン時: LocalStorageから読み込む（従来通り）
+ * middlewareで認証保護されているため、このコンポーネントはログイン済みユーザーのみが使用。
+ * データベースから最新のしおりを読み込む。
  */
 export const StorageInitializer: React.FC = () => {
   const searchParams = useSearchParams();
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
   const initializeFromStorage = useStore(
     (state) => state.initializeFromStorage
   );
   const setItinerary = useStore((state) => state.setItinerary);
-  const setLastSaveTime = useStore((state) => state.setLastSaveTime);
   const setStorageInitialized = useStore(
     (state) => state.setStorageInitialized
   );
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // セッション読み込み中は待機
-    if (sessionStatus === "loading") {
+    // 既に初期化済みなら何もしない
+    if (isInitialized) {
       return;
     }
 
-    // 既に初期化済みなら何もしない
-    if (isInitialized) {
+    // セッションがまだロードされていない場合は待機
+    if (!session?.user) {
       return;
     }
 
@@ -45,67 +42,26 @@ export const StorageInitializer: React.FC = () => {
       const itineraryId = searchParams.get("itineraryId");
 
       if (itineraryId) {
-        // URLパラメータで指定されたしおりを読み込む
-        if (session?.user) {
-          // ログイン時: データベースから読み込む
-          try {
-            const response = await fetch(
-              `/api/itinerary/load?id=${itineraryId}`
-            );
-            if (response.ok) {
-              const data = await response.json();
-              if (data.itinerary) {
-                setItinerary(data.itinerary);
-              }
-            } else {
-              // DB読み込み失敗時はLocalStorageにフォールバック
-              const itinerary = getItineraryById(itineraryId);
-              if (itinerary) {
-                setItinerary(itinerary);
-              }
+        // URLパラメータで指定されたしおりをデータベースから読み込む
+        try {
+          const response = await fetch(
+            `/api/itinerary/load?id=${itineraryId}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data.itinerary) {
+              setItinerary(data.itinerary);
             }
-          } catch (error) {
-            console.error("Failed to load itinerary from database:", error);
-            // エラー時はLocalStorageにフォールバック
-            const itinerary = getItineraryById(itineraryId);
-            if (itinerary) {
-              setItinerary(itinerary);
-            }
+          } else {
+            console.error("Failed to load itinerary from database");
           }
-        } else {
-          // 未ログイン時: LocalStorageから読み込む
-          const itinerary = getItineraryById(itineraryId);
-          if (itinerary) {
-            setItinerary(itinerary);
-          }
+        } catch (error) {
+          console.error("Failed to load itinerary from database:", error);
         }
       } else {
-        // URLパラメータがない場合
-        if (session?.user) {
-          // ログイン時: 最後に編集したしおりをDBから読み込む試み
-          // 注: この機能は現時点ではLocalStorageフォールバックのみ
-          // TODO: 将来的にDBから「最後に編集したしおり」を取得する機能を実装
-          const savedItinerary = loadCurrentItinerary();
-          if (savedItinerary) {
-            setItinerary(savedItinerary);
-
-            const lastSaveTime = getLastSaveTime();
-            if (lastSaveTime) {
-              setLastSaveTime(lastSaveTime);
-            }
-          }
-        } else {
-          // 未ログイン時: LocalStorageから現在のしおりを復元
-          const savedItinerary = loadCurrentItinerary();
-          if (savedItinerary) {
-            setItinerary(savedItinerary);
-
-            const lastSaveTime = getLastSaveTime();
-            if (lastSaveTime) {
-              setLastSaveTime(lastSaveTime);
-            }
-          }
-        }
+        // URLパラメータがない場合、最後に編集したしおりをDBから読み込む
+        // TODO: 将来的にDBから「最後に編集したしおり」を取得する機能を実装
+        // 現時点では何も読み込まない（空の状態から開始）
       }
 
       // 初期化完了を通知
@@ -116,11 +72,9 @@ export const StorageInitializer: React.FC = () => {
     initialize();
   }, [
     session,
-    sessionStatus,
     isInitialized,
     initializeFromStorage,
     setItinerary,
-    setLastSaveTime,
     setStorageInitialized,
     searchParams,
   ]);

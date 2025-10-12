@@ -136,6 +136,57 @@ npm run test:e2e:ui
 npm run test:all
 ```
 
+### E2Eテストでの認証バイパス
+
+メインアプリケーション（`/`）は認証必須ですが、E2Eテストでは以下の方法で認証をバイパスできます。
+
+#### HTTPヘッダーによるバイパス
+
+`playwright.config.ts`で`x-test-mode: 'true'`ヘッダーを設定:
+
+```typescript
+export default defineConfig({
+  use: {
+    extraHTTPHeaders: {
+      'x-test-mode': 'true',
+    },
+  },
+});
+```
+
+#### ミドルウェアでの処理
+
+`middleware.ts`が`x-test-mode`ヘッダーを検出し、認証チェックをスキップします。
+
+```typescript
+export default withAuth(
+  function middleware(req) {
+    // E2Eテスト用バイパス
+    const testMode = req.headers.get('x-test-mode');
+    if (testMode === 'true') {
+      return NextResponse.next();
+    }
+    
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        // E2Eテスト用バイパス
+        const testMode = req.headers.get('x-test-mode');
+        if (testMode === 'true') {
+          return true;
+        }
+        
+        return !!token;
+      },
+    },
+  }
+);
+```
+
+**重要**: このバイパスは開発・テスト環境のみで使用してください。本番環境では環境変数やヘッダーでの制御を厳格に管理してください。
+
 ---
 
 ## テストの実行方法
