@@ -72,10 +72,10 @@ export async function generateMetadata({
     // キーワード（SEO）
     keywords: [
       itinerary.destination,
-      '旅行',
-      'しおり',
-      '旅のしおり',
-      'Journee',
+      "旅行",
+      "しおり",
+      "旅のしおり",
+      "Journee",
       ...(itinerary.schedule?.flatMap((day) =>
         day.spots.map((spot) => spot.name)
       ) || []),
@@ -168,10 +168,11 @@ export default async function PublicItineraryPage({ params }: PageProps) {
         name: itinerary.destination,
       },
     }),
-    ...(itinerary.schedule && itinerary.schedule.length > 0 && {
-      startDate: itinerary.schedule[0]?.date,
-      endDate: itinerary.schedule[itinerary.schedule.length - 1]?.date,
-    }),
+    ...(itinerary.schedule &&
+      itinerary.schedule.length > 0 && {
+        startDate: itinerary.schedule[0]?.date,
+        endDate: itinerary.schedule[itinerary.schedule.length - 1]?.date,
+      }),
     // 作成者情報（将来的に実装）
     // ...(itinerary.user_name && {
     //   creator: {
