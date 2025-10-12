@@ -6,7 +6,6 @@ import type {
   ItineraryData,
   DaySchedule,
   TouristSpot,
-  ItineraryPhase,
 } from "@/types/itinerary";
 import { generateId } from "@/lib/utils/id-generator";
 
@@ -89,98 +88,6 @@ export const INITIAL_PROMPT = `こんにちは！旅行計画のお手伝いを�
 お気軽にお話しください！`;
 
 /**
- * Phase 4: 段階的旅程構築システム用のシステムプロンプト
- * ユーザーと一緒に段階的に旅程を構築していく
- */
-export const INCREMENTAL_SYSTEM_PROMPT = `あなたは旅行計画のエキスパートAIアシスタントです。ユーザーと対話しながら、段階的に旅のしおりを作成します。
-
-【段階的構築のフロー】
-旅程作成は以下の段階で進めます：
-
-1. **基本情報収集 (collecting)**
-   - 行き先、期間、人数、興味などをヒアリング
-   - まだ具体的なスポットは提案しない
-   - 全体の方向性を固める
-
-2. **骨組み作成 (skeleton)**
-   - 各日の大まかなテーマ・エリアを決定
-   - 例: "1日目: 浅草・スカイツリー周辺", "2日目: 渋谷・原宿エリア"
-   - 具体的な観光スポットはまだ決めない
-   - JSONには各日のtheme（テーマ）とstatus: "skeleton"を含める
-
-3. **日程詳細化 (detailing)**
-   - 1日ずつ、具体的な観光スポット、時間、移動手段を追加
-   - 現在詳細化中の日にフォーカス
-   - 実在する観光スポットを提案
-   - 移動時間と滞在時間を現実的に設定
-
-4. **完成 (completed)**
-   - 全ての日程が詳細化された
-   - 必要に応じて微調整
-
-【現在のフェーズに応じた振る舞い】
-- collecting: 基本情報を丁寧にヒアリング、まだ具体的な提案はしない
-- skeleton: 各日の大まかなテーマを提案、具体的なスポットは次の段階で
-- detailing: 指定された日の詳細を具体的に作成
-- completed: 全体の調整や微修正
-
-【JSONフォーマット（骨組み作成時）】
-\`\`\`json
-{
-  "title": "旅行のタイトル",
-  "destination": "旅行先",
-  "duration": 3,
-  "phase": "skeleton",
-  "schedule": [
-    {
-      "day": 1,
-      "title": "1日目のタイトル",
-      "theme": "浅草・スカイツリー周辺",
-      "status": "skeleton",
-      "spots": []
-    }
-  ]
-}
-\`\`\`
-
-【JSONフォーマット（詳細化時）】
-\`\`\`json
-{
-  "phase": "detailing",
-  "currentDay": 1,
-  "schedule": [
-    {
-      "day": 1,
-      "title": "1日目のタイトル",
-      "theme": "浅草・スカイツリー周辺",
-      "status": "detailed",
-      "spots": [
-        {
-          "id": "spot-1",
-          "name": "浅草寺",
-          "description": "東京最古の寺院",
-          "location": {
-            "lat": 35.7148,
-            "lng": 139.7967,
-            "address": "東京都台東区浅草2-3-1"
-          },
-          "scheduledTime": "10:00",
-          "duration": 90,
-          "category": "sightseeing",
-          "estimatedCost": 0
-        }
-      ]
-    }
-  ]
-}
-\`\`\`
-
-【重要な原則】
-- 一度に全てを決めようとしない
-- ユーザーのペースに合わせる
-- 各段階で適切な粒度の情報を提供
-- 段階を飛ばさない（collecting → skeleton → detailing の順）
-- 常に親しみやすく、わかりやすい日本語で`;
 
 /**
  * しおり更新プロンプト
@@ -496,75 +403,9 @@ JSONには以下を含めてください：
 }
 
 /**
- * Phase 4.3: 次のステップ誘導用プロンプト
- * 現在のフェーズから次のフェーズへ進むよう促す
- */
-export function createNextStepPrompt(
-  currentPhase: ItineraryPhase,
-  itinerary?: ItineraryData
-): string {
-  switch (currentPhase) {
-    case "initial":
-    case "collecting":
-      return `【情報収集】
-まだ基本情報が不足しています。以下の情報を教えてください：
-
-${!itinerary?.destination ? "- 行き先（どこに行きたいですか？）" : ""}
-${!itinerary?.duration ? "- 旅行期間（何日間の旅行ですか？）" : ""}
-${!itinerary?.summary ? "- 旅行の目的や興味（どんなことをしたいですか？）" : ""}
-
-これらの情報が揃えば、旅程の骨組みを作成できます。`;
-
-    case "skeleton":
-      return `【骨組み確認】
-各日の大まかなテーマは決まりました。
-次のステップでは、1日ずつ具体的な観光スポットと時間を決めていきます。
-
-準備ができたら「次へ」または「1日目を詳しく」とお伝えください。`;
-
-    case "detailing":
-      if (!itinerary) {
-        return "次の日の詳細化に進む準備ができています。";
-      }
-
-      const currentDay = itinerary.currentDay || 1;
-      const totalDays = itinerary.duration || itinerary.schedule.length;
-
-      if (currentDay < totalDays) {
-        return `【${currentDay}日目完了】
-${currentDay}日目の詳細が決まりました。
-
-次は${currentDay + 1}日目の詳細を作成しましょうか？
-または、${currentDay}日目の内容を修正したい場合はお知らせください。`;
-      } else {
-        return `【全日程完了】
-おめでとうございます！${totalDays}日間の旅程がすべて完成しました。
-
-何か修正したい点があればお知らせください。
-問題なければ、この旅のしおりは完成です！`;
-      }
-
-    case "completed":
-      return `【旅のしおり完成】
-旅のしおりが完成しました！
-
-必要に応じて微調整や変更も可能です。
-何かご要望があればお気軽にお知らせください。`;
-
-    default:
-      return "";
-  }
-}
-
-/**
  * Phase 4.3: フェーズに応じたシステムプロンプトを選択
  */
-export function getSystemPromptForPhase(phase: ItineraryPhase): string {
-  // Phase 4では段階的構築用のシステムプロンプトを使用
-  if (phase !== "initial") {
-    return INCREMENTAL_SYSTEM_PROMPT;
-  }
-
-  // 初期状態では通常のシステムプロンプト
+export function getSystemPromptForPhase(): string {
+  // Phase 4の段階的構築システムが廃止されたため、常に通常のシステムプロンプトを返す
   return SYSTEM_PROMPT;
 }
