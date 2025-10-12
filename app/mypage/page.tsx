@@ -2,8 +2,62 @@ import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { MyPageContent } from "@/components/mypage/MyPageContent";
+
+/**
+ * Phase 10: OGPメタデータ生成
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return {
+      title: "ログインが必要です | Journee",
+      description: "マイページを表示するにはログインが必要です。",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const userName = user.name || "ユーザー";
+  const title = `${userName}のマイページ | Journee`;
+  const description = `${userName}の旅行記録とアクティビティを確認できます。作成したしおりの一覧や統計情報を表示。`;
+
+  return {
+    title,
+    description,
+    robots: {
+      index: false, // マイページは検索エンジンにインデックスさせない
+      follow: true,
+    },
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      url: "/mypage",
+      siteName: "Journee",
+      locale: "ja_JP",
+      images: [
+        {
+          url: "/api/og/default",
+          width: 1200,
+          height: 630,
+          alt: "Journee - マイページ",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/api/og/default"],
+    },
+  };
+}
 
 /**
  * Phase 10.4: マイページ（DB統合版）

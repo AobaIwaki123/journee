@@ -1,10 +1,45 @@
 import { LoginButton } from "@/components/auth/LoginButton";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
+import { Metadata } from "next";
 
 // ログインページは常に動的にレンダリングして、認証状態のキャッシュによる
 // 不正なリダイレクト（例: ログアウト直後にホームへ戻される）を防ぐ
 export const dynamic = "force-dynamic";
+
+/**
+ * Phase 10: OGPメタデータ
+ */
+export const metadata: Metadata = {
+  title: 'ログイン | Journee',
+  description: 'Journee（AI旅のしおり作成アプリ）にログインして、AIとともに旅行計画を作成しましょう。Googleアカウントで簡単ログイン。',
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: 'ログイン | Journee',
+    description: 'JourneeにログインしてAIとともに旅のしおりを作成',
+    type: 'website',
+    url: '/login',
+    siteName: 'Journee',
+    locale: 'ja_JP',
+    images: [
+      {
+        url: '/api/og/default',
+        width: 1200,
+        height: 630,
+        alt: 'Journee - ログイン',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ログイン | Journee',
+    description: 'JourneeにログインしてAIとともに旅のしおりを作成',
+    images: ['/api/og/default'],
+  },
+};
 
 interface LoginPageProps {
   searchParams: { callbackUrl?: string };

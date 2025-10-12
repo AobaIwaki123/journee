@@ -1,4 +1,39 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+/**
+ * Phase 10: OGPメタデータ
+ */
+export const metadata: Metadata = {
+  title: '利用規約 | Journee',
+  description: 'Journee（AI旅のしおり作成アプリ）の利用規約。サービスの利用条件、禁止事項、免責事項について説明しています。',
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: '利用規約 | Journee',
+    description: 'Journeeの利用規約。サービスの利用条件について説明しています。',
+    type: 'website',
+    url: '/terms',
+    siteName: 'Journee',
+    locale: 'ja_JP',
+    images: [
+      {
+        url: '/api/og/default',
+        width: 1200,
+        height: 630,
+        alt: 'Journee - 利用規約',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '利用規約 | Journee',
+    description: 'Journeeの利用規約',
+    images: ['/api/og/default'],
+  },
+};
 
 /**
  * 利用規約ページ

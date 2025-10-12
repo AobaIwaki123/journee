@@ -1,4 +1,39 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+/**
+ * Phase 10: OGPメタデータ
+ */
+export const metadata: Metadata = {
+  title: 'プライバシーポリシー | Journee',
+  description: 'Journee（AI旅のしおり作成アプリ）のプライバシーポリシー。個人情報の収集・利用・管理方法について説明しています。',
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: 'プライバシーポリシー | Journee',
+    description: 'Journeeのプライバシーポリシー。個人情報の取扱いについて説明しています。',
+    type: 'website',
+    url: '/privacy',
+    siteName: 'Journee',
+    locale: 'ja_JP',
+    images: [
+      {
+        url: '/api/og/default',
+        width: 1200,
+        height: 630,
+        alt: 'Journee - プライバシーポリシー',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'プライバシーポリシー | Journee',
+    description: 'Journeeのプライバシーポリシー',
+    images: ['/api/og/default'],
+  },
+};
 
 /**
  * プライバシーポリシーページ
