@@ -50,6 +50,7 @@ import {
   updateItineraryBudget,
 } from "@/lib/utils/budget-utils";
 import { generateId } from "@/lib/utils/id-generator";
+import type { SaveLocation } from "@/types/save";
 
 interface ToastMessage {
   id: string;
@@ -214,6 +215,10 @@ interface AppState {
   // Auto-save state (Phase 5.2)
   lastSaveTime: Date | null;
   setLastSaveTime: (time: Date | null) => void;
+  saveLocation: SaveLocation | null;
+  setSaveLocation: (location: SaveLocation | null) => void;
+  dbSaveSuccess: boolean | null;
+  setDbSaveSuccess: (success: boolean | null) => void;
 
   // Storage initialization state (Phase 5.2.10)
   isStorageInitialized: boolean;
@@ -947,6 +952,10 @@ export const useStore = create<AppState>()((set, get) => ({
   // Auto-save state (Phase 5.2)
   lastSaveTime: null,
   setLastSaveTime: (time) => set({ lastSaveTime: time }),
+  saveLocation: null,
+  setSaveLocation: (location) => set({ saveLocation: location }),
+  dbSaveSuccess: null,
+  setDbSaveSuccess: (success) => set({ dbSaveSuccess: success }),
 
   // Storage initialization state (Phase 5.2.10)
   isStorageInitialized: false,

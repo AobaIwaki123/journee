@@ -15,6 +15,7 @@ import { SaveButton } from "./SaveButton";
 import { ResetButton } from "./ResetButton";
 import { PDFExportButton } from "./PDFExportButton";
 import { ToastContainer } from "@/components/ui/Toast";
+import { LoginPromptBanner } from "@/components/ui/LoginPromptBanner";
 import { List, Map as MapIcon } from "lucide-react";
 import { DaySchedule as DayScheduleType } from "@/types/itinerary";
 import { MobilePlannerControls } from "./MobilePlannerControls";
@@ -91,6 +92,9 @@ export const ItineraryPreview: React.FC = () => {
 
           {/* Content */}
           <div className="p-4 md:p-6 max-w-5xl mx-auto">
+            {/* Login Prompt Banner (for unauthenticated users) */}
+            <LoginPromptBanner />
+
             {/* Action Buttons & View Mode Switcher */}
             {currentItinerary.schedule &&
               currentItinerary.schedule.length > 0 && (
