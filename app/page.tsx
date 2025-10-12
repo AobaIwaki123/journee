@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/auth/session';
 import { Header } from '@/components/layout/Header';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ResizableLayout } from '@/components/layout/ResizableLayout';
@@ -10,7 +8,8 @@ import { AutoSave } from '@/components/layout/AutoSave';
 /**
  * メインページ（ホーム）
  * 
- * 認証済みユーザー向けのメインアプリケーション画面。
+ * 認証済みユーザー専用のメインアプリケーション画面。
+ * middleware.tsで認証保護されているため、このページには常に認証済みユーザーのみがアクセスできます。
  * 
  * **デスクトップ (≥768px)**:
  * - 左側にチャットボックス（40%）、右側に旅のしおりプレビュー（60%）
@@ -20,14 +19,7 @@ import { AutoSave } from '@/components/layout/AutoSave';
  * - しおりタブがデフォルト
  */
 export default async function Home() {
-  // 認証チェック（E2Eテスト時はスキップ）
-  const isE2ETest = process.env.PLAYWRIGHT_TEST_MODE === 'true';
-  if (!isE2ETest) {
-    const session = await getSession();
-    if (!session) {
-      redirect('/login');
-    }
-  }
+  // 認証はmiddleware.tsで保護されているため、このページには常に認証済みユーザーのみがアクセスできます
 
   return (
     <div className="flex flex-col h-screen">
