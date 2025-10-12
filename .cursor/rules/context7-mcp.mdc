@@ -1,0 +1,501 @@
+---
+alwaysApply: true
+description: Context7 MCP Serverの効率的な使用ガイド - 最新ライブラリドキュメントの取得
+---
+
+# Context7 MCP Server 使用ガイド
+
+## 概要
+
+Context7 MCP Serverは、npm、GitHub、公式ドキュメントから最新のライブラリドキュメントを取得します。
+常に最新の情報を参照できるため、ライブラリのAPI仕様、使用例、ベストプラクティスを確認する際に有用です。
+
+## いつ使うべきか
+
+### Context7を使うべき場面
+
+1. **ライブラリの使い方を確認したい**
+   - Next.js、React、Zustandなどの最新API
+   - 新しいフックやメソッドの使用方法
+   - 非推奨APIの確認
+
+2. **実装パターンを調べたい**
+   - 認証実装（NextAuth.js）
+   - 状態管理（Zustand）
+   - スタイリング（Tailwind CSS）
+
+3. **エラー解決**
+   - ライブラリ特有のエラーメッセージ
+   - 設定ミスの確認
+   - バージョン互換性の確認
+
+4. **新機能の実装**
+   - 使用したことのないライブラリ
+   - 最新のベストプラクティス
+   - 公式推奨パターン
+
+### 使わなくて良い場面
+
+- プロジェクト固有の実装（→ codebase_search, Serena）
+- 一般的なJavaScript/TypeScript構文（→ 組み込み知識）
+- 既に実装済みの機能の確認（→ read_file, grep）
+
+## ツールの使用方法
+
+### ステップ1: ライブラリIDの解決
+
+#### `mcp_context7_resolve-library-id`
+
+ライブラリ名から正確なContext7互換IDを取得します。
+
+```typescript
+// 例1: Next.jsの最新ドキュメント
+{
+  libraryName: "next.js"
+}
+// 返り値: '/vercel/next.js' または '/vercel/next.js/v14.2.0'
+
+// 例2: Zustand
+{
+  libraryName: "zustand"
+}
+// 返り値: '/pmndrs/zustand'
+
+// 例3: NextAuth.js
+{
+  libraryName: "next-auth"
+}
+// 返り値: '/nextauthjs/next-auth'
+
+// 例4: Supabase
+{
+  libraryName: "supabase"
+}
+// 返り値: '/supabase/supabase'
+```
+
+**重要:**
+- ドキュメント取得前に必ず実行（ユーザーが明示的にIDを提供した場合を除く）
+- 複数の候補がある場合、最も関連性の高いものを選択
+- Trust Score 7-10のライブラリを優先
+
+### ステップ2: ドキュメントの取得
+
+#### `mcp_context7_get-library-docs`
+
+ライブラリの最新ドキュメントを取得します。
+
+```typescript
+// 基本的な使用
+{
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "app router",  // オプション: 特定のトピックに絞る
+  tokens: 5000  // オプション: デフォルトは5000トークン
+}
+
+// より詳細な情報が必要な場合
+{
+  context7CompatibleLibraryID: "/pmndrs/zustand",
+  topic: "middleware persist",
+  tokens: 10000  // より多くの情報を取得
+}
+
+// 特定バージョンのドキュメント
+{
+  context7CompatibleLibraryID: "/vercel/next.js/v14.0.0",
+  topic: "server actions"
+}
+```
+
+**パラメータ:**
+- `context7CompatibleLibraryID`: 必須。Step 1で取得したID
+- `topic`: オプション。特定のトピックに焦点を当てる
+- `tokens`: オプション。取得する情報量（デフォルト5000）
+
+## ワークフロー例
+
+### 例1: Next.jsのApp Routerについて調べる
+
+```typescript
+// ステップ1: ライブラリIDを解決
+mcp_context7_resolve-library-id({
+  libraryName: "next.js"
+})
+// 返り値: '/vercel/next.js'
+
+// ステップ2: App Routerのドキュメントを取得
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "app router routing",
+  tokens: 5000
+})
+// 最新のルーティング仕様、使用例を取得
+```
+
+### 例2: Zustandのpersistミドルウェアを使いたい
+
+```typescript
+// ステップ1: Zustandを検索
+mcp_context7_resolve-library-id({
+  libraryName: "zustand"
+})
+// 返り値: '/pmndrs/zustand'
+
+// ステップ2: persistの使い方を取得
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/pmndrs/zustand",
+  topic: "persist middleware localstorage",
+  tokens: 5000
+})
+// persistミドルウェアの使い方、オプション、注意点を取得
+```
+
+### 例3: NextAuth.jsのGoogle OAuth設定
+
+```typescript
+// ステップ1: NextAuth.jsを検索
+mcp_context7_resolve-library-id({
+  libraryName: "next-auth"
+})
+// 返り値: '/nextauthjs/next-auth'
+
+// ステップ2: Google Providerの設定方法を取得
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/nextauthjs/next-auth",
+  topic: "google provider configuration",
+  tokens: 5000
+})
+// Google OAuthの設定手順、必要な環境変数、コード例を取得
+```
+
+### 例4: Supabaseのデータベース操作
+
+```typescript
+// ステップ1: Supabaseを検索
+mcp_context7_resolve-library-id({
+  libraryName: "supabase"
+})
+// 返り値: '/supabase/supabase'
+
+// ステップ2: データベースクエリの方法を取得
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/supabase/supabase",
+  topic: "database select insert update typescript",
+  tokens: 7000
+})
+// CRUD操作のTypeScript実装例を取得
+```
+
+## このプロジェクトでの主な使用ケース
+
+### 1. Next.js 関連
+
+```typescript
+// App Routerのレイアウト
+mcp_context7_resolve-library-id({ libraryName: "next.js" })
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "app router layout metadata"
+})
+
+// Server Components vs Client Components
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "server components client components use client"
+})
+
+// API Routes (Route Handlers)
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "route handlers api routes POST GET"
+})
+```
+
+### 2. Zustand 状態管理
+
+```typescript
+mcp_context7_resolve-library-id({ libraryName: "zustand" })
+
+// 基本的な使い方
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/pmndrs/zustand",
+  topic: "create store actions typescript"
+})
+
+// ミドルウェア
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/pmndrs/zustand",
+  topic: "middleware persist devtools immer"
+})
+
+// パフォーマンス最適化
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/pmndrs/zustand",
+  topic: "selectors re-render optimization"
+})
+```
+
+### 3. NextAuth.js 認証
+
+```typescript
+mcp_context7_resolve-library-id({ libraryName: "next-auth" })
+
+// 基本設定
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/nextauthjs/next-auth",
+  topic: "configuration providers callbacks"
+})
+
+// セッション管理
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/nextauthjs/next-auth",
+  topic: "session jwt strategy"
+})
+
+// TypeScript型定義の拡張
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/nextauthjs/next-auth",
+  topic: "typescript module augmentation types"
+})
+```
+
+### 4. Supabase データベース
+
+```typescript
+mcp_context7_resolve-library-id({ libraryName: "supabase" })
+
+// クライアント初期化
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/supabase/supabase",
+  topic: "client initialization nextjs"
+})
+
+// データベースクエリ
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/supabase/supabase",
+  topic: "database queries select insert update delete"
+})
+
+// Row Level Security (RLS)
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/supabase/supabase",
+  topic: "row level security policies authentication"
+})
+```
+
+### 5. Tailwind CSS
+
+```typescript
+mcp_context7_resolve-library-id({ libraryName: "tailwindcss" })
+
+// カスタム設定
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/tailwindlabs/tailwindcss",
+  topic: "configuration theme extend colors"
+})
+
+// レスポンシブデザイン
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/tailwindlabs/tailwindcss",
+  topic: "responsive design breakpoints"
+})
+```
+
+### 6. React (必要に応じて)
+
+```typescript
+mcp_context7_resolve-library-id({ libraryName: "react" })
+
+// Hooks
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/facebook/react",
+  topic: "hooks useState useEffect useCallback useMemo"
+})
+
+// Server Components (React 18+)
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/facebook/react",
+  topic: "server components async await"
+})
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+
+1. **必ずライブラリIDを解決してから使用**
+   ```typescript
+   // ✅ Good
+   const resolved = await mcp_context7_resolve-library-id({ libraryName: "zustand" });
+   const docs = await mcp_context7_get-library-docs({
+     context7CompatibleLibraryID: resolved.id
+   });
+   ```
+
+2. **topicで検索を絞る**
+   ```typescript
+   // ✅ Good - 具体的なトピック
+   topic: "persist middleware configuration typescript"
+   
+   // ❌ Bad - 広すぎる
+   topic: "zustand"
+   ```
+
+3. **必要に応じてtokens数を調整**
+   ```typescript
+   // シンプルな確認: 5000トークン（デフォルト）
+   tokens: 5000
+   
+   // 詳細な実装例が必要: 10000トークン
+   tokens: 10000
+   ```
+
+4. **取得したドキュメントを活用**
+   - コード例をそのまま参考にする
+   - 公式推奨パターンに従う
+   - 注意事項やベストプラクティスを確認
+
+5. **バージョン指定が必要な場合**
+   ```typescript
+   // 特定バージョンのドキュメント
+   context7CompatibleLibraryID: "/vercel/next.js/v14.0.0"
+   ```
+
+### DON'T（非推奨）
+
+1. ❌ **resolve-library-idをスキップ**
+   ```typescript
+   // ❌ Bad - IDが間違っている可能性
+   mcp_context7_get-library-docs({
+     context7CompatibleLibraryID: "/zustand"  // 不正なID
+   })
+   ```
+
+2. ❌ **プロジェクト固有の実装を探す**
+   ```typescript
+   // ❌ Bad - プロジェクト内のコードを探すべき
+   mcp_context7_get-library-docs({
+     context7CompatibleLibraryID: "/vercel/next.js",
+     topic: "useStore implementation in this project"
+   })
+   // 代わりに: codebase_search または Serena を使用
+   ```
+
+3. ❌ **過度に広いトピック**
+   ```typescript
+   // ❌ Bad - 情報が多すぎて役立たない
+   topic: "everything about next.js"
+   
+   // ✅ Good - 具体的に
+   topic: "app router dynamic routes params"
+   ```
+
+4. ❌ **古い情報への依存**
+   - Context7は最新のドキュメントを提供
+   - 取得した情報が現在のプロジェクト設定と合っているか確認
+
+## トピックの効果的な指定方法
+
+### パターン1: 機能 + 具体的な用途
+```typescript
+topic: "authentication google oauth configuration"
+topic: "database insert with typescript types"
+topic: "middleware persist localstorage"
+```
+
+### パターン2: 問題 + コンテキスト
+```typescript
+topic: "error handling server components"
+topic: "typescript types session user"
+topic: "performance optimization re-render"
+```
+
+### パターン3: 実装パターン
+```typescript
+topic: "best practices server actions"
+topic: "patterns state management async"
+topic: "examples file upload progress"
+```
+
+## 他のツールとの連携
+
+### Context7 → Serena
+```typescript
+// 1. Context7でライブラリの使い方を学ぶ
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/pmndrs/zustand",
+  topic: "persist middleware"
+})
+
+// 2. Serenaで実際にコードを編集
+mcp_serena_find_symbol({
+  name_path: "/useStore",
+  relative_path: "lib/store/useStore.ts"
+})
+
+mcp_serena_insert_before_symbol({
+  name_path: "/useStore",
+  relative_path: "lib/store/useStore.ts",
+  body: "import { persist } from 'zustand/middleware';\n"
+})
+```
+
+### Context7 → codebase_search
+```typescript
+// 1. Context7でNext.jsのServer Actionsを学ぶ
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "server actions form"
+})
+
+// 2. codebase_searchで既存の実装パターンを確認
+codebase_search({
+  query: "How are server actions implemented in this project?",
+  target_directories: ["app/api"]
+})
+```
+
+## トラブルシューティング
+
+### ライブラリが見つからない
+```typescript
+// 別名で試す
+libraryName: "nextauth"  // ❌
+libraryName: "next-auth"  // ✅
+
+libraryName: "react-query"  // ❌
+libraryName: "@tanstack/react-query"  // ✅
+```
+
+### 情報が不足している
+```typescript
+// tokens数を増やす
+tokens: 10000
+
+// トピックを変更/具体化
+topic: "configuration"  // ❌ 広すぎる
+topic: "configuration environment variables production"  // ✅
+```
+
+### 取得した情報が古い
+- Context7は常に最新のドキュメントを参照
+- プロジェクトのライブラリバージョンを確認（package.json）
+- 必要に応じて特定バージョンのIDを指定
+
+## まとめ
+
+Context7 MCP Serverは、最新のライブラリドキュメントを素早く取得するための強力なツールです。
+
+**基本フロー:**
+1. `resolve-library-id` でライブラリIDを取得
+2. `get-library-docs` でドキュメントを取得
+3. 取得した情報を元に実装
+4. 必要に応じて Serena や他のツールで編集
+
+**使い分けの基本:**
+- **Context7**: ライブラリの使い方、API仕様、ベストプラクティス
+- **Serena**: プロジェクト内のコード構造、シンボル操作
+- **codebase_search**: プロジェクト固有の実装パターン
+- **grep**: 正確なテキスト検索
+
+これらを組み合わせることで、効率的に開発を進められます。

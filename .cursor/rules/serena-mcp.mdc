@@ -1,0 +1,424 @@
+---
+alwaysApply: true
+description: Serena MCP Serverの効率的な使用ガイド - シンボルベースのコード操作とプロジェクト記憶機能
+---
+
+# Serena MCP Server 使用ガイド
+
+## 概要
+
+Serena MCP Serverは、コードベースのシンボル（クラス、関数、メソッドなど）を中心とした高度な操作を提供します。
+LSP（Language Server Protocol）ベースで、型安全な編集とプロジェクト記憶機能を備えています。
+
+## いつ使うべきか
+
+### Serenaを優先すべき場面
+
+1. **シンボルベースの操作**
+   - クラスや関数の定義を探す
+   - メソッドの実装を確認
+   - シンボルの参照箇所を調査
+   - シンボル単位での編集（関数の置き換えなど）
+
+2. **構造的な編集**
+   - 関数やメソッドの追加
+   - クラスメンバーの挿入
+   - シンボル本体の置き換え
+
+3. **プロジェクト記憶の活用**
+   - プロジェクト固有の知識を保存
+   - 過去の調査結果を参照
+   - アーキテクチャパターンの記録
+
+### 既存ツールを使うべき場面
+
+- **codebase_search**: セマンティック検索が必要な場合
+- **grep**: 正確なテキストマッチングが必要な場合
+- **search_replace**: 単純な文字列置換の場合
+- **read_file**: ファイル全体を読む場合
+
+## 主要ツールと使用パターン
+
+### 1. ファイル探索
+
+#### `mcp_serena_find_file`
+```typescript
+// 特定のファイル名やパターンでファイルを検索
+// 使用例: "ChatBox"という名前のファイルを探す
+{
+  file_mask: "ChatBox*",
+  relative_path: "components"
+}
+```
+
+### 2. シンボル検索
+
+#### `mcp_serena_get_symbols_overview`
+```typescript
+// ファイルのシンボル構造を把握（最初に呼ぶべき）
+{
+  relative_path: "lib/store/useStore.ts"
+}
+```
+
+#### `mcp_serena_find_symbol`
+```typescript
+// シンボルを名前パスで検索
+// 名前パス: "/class/method" (絶対), "class/method" (相対), "method" (名前のみ)
+
+// 例1: トップレベルの関数を探す
+{
+  name_path: "/useStore",
+  relative_path: "lib/store",
+  include_body: true  // コードも取得
+}
+
+// 例2: クラス内のメソッドを探す
+{
+  name_path: "ChatBox/handleSend",
+  relative_path: "components/chat",
+  depth: 1  // 子要素も取得
+}
+
+// 例3: 特定の種類のシンボルのみ
+{
+  name_path: "use",
+  substring_matching: true,
+  include_kinds: [12],  // 12 = function
+  relative_path: "lib/hooks"
+}
+```
+
+**LSPシンボル種別:**
+- 5: class
+- 6: method
+- 7: property
+- 8: field
+- 12: function
+- 13: variable
+- 14: constant
+- 22: enum member
+
+#### `mcp_serena_find_referencing_symbols`
+```typescript
+// シンボルの参照箇所を調査
+{
+  name_path: "useStore",
+  relative_path: "lib/store/useStore.ts"
+}
+```
+
+### 3. パターン検索
+
+#### `mcp_serena_search_for_pattern`
+```typescript
+// 正規表現でコードを検索（非コードファイルも対象可能）
+
+// 例1: コードファイルのみで検索
+{
+  substring_pattern: "useState.*<.*>",
+  relative_path: "components",
+  restrict_search_to_code_files: true,
+  context_lines_before: 2,
+  context_lines_after: 2
+}
+
+// 例2: 特定のファイル種別に限定
+{
+  substring_pattern: "TODO|FIXME",
+  paths_include_glob: "*.ts",
+  paths_exclude_glob: "*test*"
+}
+```
+
+### 4. シンボル編集
+
+#### `mcp_serena_replace_symbol_body`
+```typescript
+// シンボル本体を置き換え（関数定義全体）
+{
+  name_path: "ChatBox/handleSend",
+  relative_path: "components/chat/ChatBox.tsx",
+  body: `const handleSend = async (content: string) => {
+  // 新しい実装
+  console.log('Sending:', content);
+};`
+}
+```
+
+#### `mcp_serena_insert_after_symbol`
+```typescript
+// シンボルの後に挿入（新しいメソッド追加など）
+{
+  name_path: "ChatBox/handleSend",
+  relative_path: "components/chat/ChatBox.tsx",
+  body: `
+  const handleReset = () => {
+    setMessages([]);
+  };`
+}
+```
+
+#### `mcp_serena_insert_before_symbol`
+```typescript
+// シンボルの前に挿入（インポート追加など）
+{
+  name_path: "/useStore",  // ファイル最初のシンボル
+  relative_path: "lib/store/useStore.ts",
+  body: `import { persist } from 'zustand/middleware';\n`
+}
+```
+
+### 5. プロジェクト記憶（Memory）
+
+#### `mcp_serena_write_memory`
+```typescript
+// プロジェクト固有の知識を保存
+{
+  memory_name: "authentication-flow",
+  content: `# 認証フロー
+
+NextAuth.jsを使用してGoogle OAuthで認証。
+- エントリーポイント: app/api/auth/[...nextauth]/route.ts
+- 設定: lib/auth/auth-options.ts
+- プロバイダー: components/auth/AuthProvider.tsx`
+}
+```
+
+#### `mcp_serena_read_memory`
+```typescript
+// 保存した知識を参照
+{
+  memory_file_name: "authentication-flow"
+}
+```
+
+#### `mcp_serena_list_memories`
+```typescript
+// 利用可能な記憶を一覧
+{}
+```
+
+### 6. 思考ツール（重要）
+
+#### `mcp_serena_think_about_collected_information`
+**検索後に必ず呼ぶ** - 情報が十分か、関連性があるかを評価
+```typescript
+{}
+```
+
+#### `mcp_serena_think_about_task_adherence`
+**編集前に必ず呼ぶ** - タスクに沿っているか確認
+```typescript
+{}
+```
+
+#### `mcp_serena_think_about_whether_you_are_done`
+**完了時に呼ぶ** - 本当に完了したか確認
+```typescript
+{}
+```
+
+## ワークフロー例
+
+### 例1: 関数の実装を調査して変更
+
+```typescript
+// ステップ1: シンボル構造を把握
+mcp_serena_get_symbols_overview({
+  relative_path: "components/chat/ChatBox.tsx"
+})
+
+// ステップ2: 特定の関数を検索
+mcp_serena_find_symbol({
+  name_path: "ChatBox/handleSend",
+  relative_path: "components/chat/ChatBox.tsx",
+  include_body: true
+})
+
+// ステップ3: 参照箇所を確認
+mcp_serena_find_referencing_symbols({
+  name_path: "handleSend",
+  relative_path: "components/chat/ChatBox.tsx"
+})
+
+// ステップ4: 収集した情報を評価
+mcp_serena_think_about_collected_information({})
+
+// ステップ5: タスク確認
+mcp_serena_think_about_task_adherence({})
+
+// ステップ6: 編集実行
+mcp_serena_replace_symbol_body({
+  name_path: "ChatBox/handleSend",
+  relative_path: "components/chat/ChatBox.tsx",
+  body: "// 新しい実装"
+})
+
+// ステップ7: 完了確認
+mcp_serena_think_about_whether_you_are_done({})
+```
+
+### 例2: 新しい機能を追加してメモリに記録
+
+```typescript
+// ステップ1: 既存のシンボルを確認
+mcp_serena_get_symbols_overview({
+  relative_path: "lib/store/useStore.ts"
+})
+
+// ステップ2: 適切な位置を特定
+mcp_serena_find_symbol({
+  name_path: "/useStore",
+  relative_path: "lib/store/useStore.ts"
+})
+
+// ステップ3: 新しい機能を追加
+mcp_serena_insert_after_symbol({
+  name_path: "setLoading",
+  relative_path: "lib/store/useStore.ts",
+  body: `
+  setError: (error: string | null) => set({ error }),`
+})
+
+// ステップ4: 実装パターンをメモリに保存
+mcp_serena_write_memory({
+  memory_name: "zustand-action-pattern",
+  content: "Zustandアクションは常にsetを使用してイミュータブルに更新する"
+})
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+
+1. **段階的な探索**
+   - まず `get_symbols_overview` でファイル構造を把握
+   - 次に `find_symbol` で詳細を取得
+   - 必要に応じて `find_referencing_symbols` で影響範囲を確認
+
+2. **思考ツールの活用**
+   - 検索後: `think_about_collected_information`
+   - 編集前: `think_about_task_adherence`
+   - 完了時: `think_about_whether_you_are_done`
+
+3. **シンボルベースの編集**
+   - `replace_symbol_body`: 関数/メソッド全体を置き換え
+   - `insert_after_symbol`: 新しいメンバーを追加
+   - `insert_before_symbol`: インポートやヘッダーを追加
+
+4. **メモリの活用**
+   - 複雑なアーキテクチャパターンを記録
+   - 調査結果を保存して再利用
+   - プロジェクト固有の規約を記録
+
+5. **relative_pathの指定**
+   - 検索範囲を絞ることで高速化
+   - ファイルが分かっている場合は明示的に指定
+
+### DON'T（非推奨）
+
+1. ❌ シンボル以外の編集に使用
+   - テキストの置換は `search_replace` を使用
+   - ファイル全体の書き換えは `write` を使用
+
+2. ❌ 思考ツールのスキップ
+   - 思考ツールは品質保証に重要
+   - 必ずワークフローに組み込む
+
+3. ❌ 過度に広い検索
+   - `relative_path` を指定しない全体検索は遅い
+   - まず対象を絞ってから検索
+
+4. ❌ メモリの乱用
+   - 一時的な情報は保存しない
+   - プロジェクト固有の重要な知識のみ
+
+## 既存ツールとの使い分け
+
+| 操作 | Serena | 既存ツール |
+|------|--------|------------|
+| セマンティック検索 | - | ✅ codebase_search |
+| テキスト完全一致 | - | ✅ grep |
+| シンボル検索 | ✅ find_symbol | - |
+| シンボル編集 | ✅ replace_symbol_body | - |
+| テキスト置換 | - | ✅ search_replace |
+| ファイル全体読込 | - | ✅ read_file |
+| ファイル名検索 | ✅ find_file | ✅ glob_file_search |
+| 正規表現検索 | ✅ search_for_pattern | ✅ grep |
+
+## 注意事項
+
+1. **シンボル名の正確性**
+   - 名前パスは正確に指定する必要がある
+   - まず `get_symbols_overview` で構造を確認
+
+2. **編集範囲の理解**
+   - `replace_symbol_body` は関数定義全体を置き換える
+   - docstringやコメントは含まれない
+
+3. **メモリの管理**
+   - 定期的に `list_memories` で確認
+   - 不要なメモリは `delete_memory` で削除
+
+4. **パフォーマンス**
+   - `max_answer_chars` で出力サイズを制限可能
+   - 大きなファイルは範囲を絞って検索
+
+## トラブルシューティング
+
+### シンボルが見つからない場合
+1. `get_symbols_overview` で構造を確認
+2. 名前パスの形式を確認（絶対/相対/名前のみ）
+3. `substring_matching: true` を試す
+
+### 編集が失敗する場合
+1. `include_body: true` でシンボル本体を確認
+2. body構文が言語仕様に合っているか確認
+3. インデントや改行に注意
+
+### 検索結果が多すぎる場合
+1. `relative_path` で範囲を絞る
+2. `include_kinds` で種類を限定
+3. `paths_include_glob` / `paths_exclude_glob` を使用
+
+## このプロジェクトでの主な使用例
+
+### Zustandストア操作
+```typescript
+// ストアのシンボル構造を取得
+mcp_serena_get_symbols_overview({
+  relative_path: "lib/store/useStore.ts"
+})
+
+// 新しいアクションを追加
+mcp_serena_insert_after_symbol({
+  name_path: "setLoading",
+  relative_path: "lib/store/useStore.ts",
+  body: "\n  setError: (error: string | null) => set({ error }),"
+})
+```
+
+### コンポーネント調査
+```typescript
+// Chatコンポーネントの構造を把握
+mcp_serena_get_symbols_overview({
+  relative_path: "components/chat/ChatBox.tsx"
+})
+
+// handleSendの参照箇所を調査
+mcp_serena_find_referencing_symbols({
+  name_path: "handleSend",
+  relative_path: "components/chat/ChatBox.tsx"
+})
+```
+
+### API routes分析
+```typescript
+// APIルートを検索
+mcp_serena_find_symbol({
+  name_path: "/POST",
+  relative_path: "app/api/chat/route.ts",
+  include_body: true
+})
+```
