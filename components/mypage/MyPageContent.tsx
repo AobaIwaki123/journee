@@ -6,10 +6,10 @@ import { UserProfile } from '@/components/mypage/UserProfile';
 import { UserStats } from '@/components/mypage/UserStats';
 import { ItineraryCard } from '@/components/mypage/ItineraryCard';
 import { PullToRefresh } from '@/components/ui/PullToRefresh';
-import { getMockUserStats } from '@/lib/mock-data/user-stats';
 import { getMockRecentItineraries } from '@/lib/mock-data/recent-itineraries';
 import { itineraryRepository } from '@/lib/db/itinerary-repository';
 import type { ItineraryListItem } from '@/types/itinerary';
+import type { UserStats as UserStatsType } from '@/types/auth';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -20,32 +20,44 @@ export const MyPageContent: React.FC = () => {
   const { data: session, status } = useSession();
   const [recentItineraries, setRecentItineraries] = useState<ItineraryListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userStats, setUserStats] = useState(getMockUserStats());
+  const [userStats, setUserStats] = useState<UserStatsType>({
+    totalItineraries: 0,
+    totalCountries: 0,
+    totalDays: 0,
+    monthlyStats: [],
+    countryDistribution: [],
+  });
 
   // データを読み込む関数
   const loadData = async () => {
     if (!session?.user) {
       // 未ログイン時はモックデータを使用
       setRecentItineraries(getMockRecentItineraries());
-      setUserStats(getMockUserStats());
       setIsLoading(false);
       return;
     }
 
     try {
-      const result = await itineraryRepository.listItineraries(
+      // しおり一覧を取得
+      const itinerariesResult = await itineraryRepository.listItineraries(
         session.user.id,
         {},
         'updated_at',
         'desc',
         { page: 1, pageSize: 6 }
       );
-      setRecentItineraries(result.data);
+      setRecentItineraries(itinerariesResult.data);
       
-      // TODO: 将来的にDBから統計情報を計算する
-      setUserStats(getMockUserStats());
+      // 統計情報をAPIから取得
+      const statsResponse = await fetch('/api/user/stats');
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        setUserStats(stats);
+      } else {
+        console.error('Failed to fetch user stats:', statsResponse.statusText);
+      }
     } catch (error) {
-      console.error('Failed to load recent itineraries:', error);
+      console.error('Failed to load data:', error);
       // エラー時はモックデータにフォールバック
       setRecentItineraries(getMockRecentItineraries());
     } finally {

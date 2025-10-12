@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User as UserIcon, Mail, Calendar } from 'lucide-react';
 import type { Session } from 'next-auth';
 
@@ -14,14 +14,33 @@ interface UserProfileProps {
  */
 export const UserProfile: React.FC<UserProfileProps> = ({ session }) => {
   const { user } = session;
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
   
-  // モックの登録日（実際はDBから取得）
-  const registeredDate = new Date('2025-03-15');
-  const formattedDate = registeredDate.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  // APIからユーザー情報（登録日含む）を取得
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/user/me');
+        if (response.ok) {
+          const userData = await response.json();
+          setCreatedAt(userData.createdAt);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      }
+    };
+    
+    fetchUserData();
+  }, []);
+  
+  // 登録日をフォーマット
+  const formattedDate = createdAt
+    ? new Date(createdAt).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : '取得中...';
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">

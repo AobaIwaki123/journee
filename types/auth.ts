@@ -61,3 +61,31 @@ export interface UserProfile {
   createdAt: Date
   updatedAt: Date
 }
+
+/**
+ * 月別統計
+ */
+export interface MonthlyStats {
+  month: string // YYYY-MM形式
+  count: number
+}
+
+/**
+ * 国別分布
+ */
+export interface CountryDistribution {
+  country: string
+  count: number
+  [key: string]: any // recharts互換性のため
+}
+
+/**
+ * ユーザー統計型
+ */
+export interface UserStats {
+  totalItineraries: number
+  totalCountries: number
+  totalDays: number
+  monthlyStats: MonthlyStats[]
+  countryDistribution: CountryDistribution[]
+}
