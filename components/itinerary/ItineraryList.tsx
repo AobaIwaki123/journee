@@ -1,26 +1,20 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useSession } from "next-auth/react";
 import { ItineraryData } from "@/types/itinerary";
 import { ItineraryCard } from "./ItineraryCard";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { useStore } from "@/lib/store/useStore";
-import {
-  loadItinerariesFromStorage,
-  initializeMockData,
-} from "@/lib/mock-data/itineraries";
 import { FileText, Loader2 } from "lucide-react";
 
 /**
  * Phase 10.4: しおり一覧コンポーネント（DB統合版）
  * 
- * ログイン時: データベースから取得
- * 未ログイン時: LocalStorageから取得（従来通り）
+ * 認証必須: データベースから取得
+ * このコンポーネントは認証済みユーザーのみが使用できます。
  * プルトゥリフレッシュ機能付き
  */
 export const ItineraryList: React.FC = () => {
-  const { data: session, status: sessionStatus } = useSession();
   const [itineraries, setItineraries] = useState<ItineraryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,49 +26,36 @@ export const ItineraryList: React.FC = () => {
     setError(null);
 
     try {
-      if (session?.user) {
-        // ログイン時: データベースから取得
-        const response = await fetch('/api/itinerary/list');
-        if (!response.ok) {
-          throw new Error('Failed to load itineraries from database');
-        }
-
-        const data = await response.json();
-        
-        // Date型に変換
-        const itinerariesWithDates = (data.itineraries || []).map((item: any) => ({
-          ...item,
-          createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
-          updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
-          publishedAt: item.publishedAt ? new Date(item.publishedAt) : undefined,
-        }));
-        
-        setItineraries(itinerariesWithDates);
-      } else {
-        // 未ログイン時: LocalStorageから取得
-        initializeMockData();
-        const data = loadItinerariesFromStorage();
-        setItineraries(data);
+      // データベースから取得
+      const response = await fetch('/api/itinerary/list');
+      if (!response.ok) {
+        throw new Error('Failed to load itineraries from database');
       }
+
+      const data = await response.json();
+      
+      // Date型に変換
+      const itinerariesWithDates = (data.itineraries || []).map((item: any) => ({
+        ...item,
+        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+        updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
+        publishedAt: item.publishedAt ? new Date(item.publishedAt) : undefined,
+      }));
+      
+      setItineraries(itinerariesWithDates);
     } catch (err) {
       console.error('Failed to load itineraries:', err);
       setError('しおりの読み込みに失敗しました');
-      
-      // エラー時はLocalStorageにフォールバック
-      initializeMockData();
-      const data = loadItinerariesFromStorage();
-      setItineraries(data);
+      setItineraries([]);
     } finally {
       setIsLoading(false);
     }
-  }, [session]);
+  }, []);
 
   // 初回読み込み
   useEffect(() => {
-    if (sessionStatus !== 'loading') {
-      loadItineraries();
-    }
-  }, [session, sessionStatus, loadItineraries]);
+    loadItineraries();
+  }, [loadItineraries]);
 
   const handleDelete = () => {
     loadItineraries();

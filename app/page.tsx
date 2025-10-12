@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Header } from '@/components/layout/Header';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ResizableLayout } from '@/components/layout/ResizableLayout';
@@ -22,7 +23,9 @@ export default async function Home() {
   return (
     <div className="flex flex-col h-screen">
       {/* データベースからデータ復元 */}
-      <StorageInitializer />
+      <Suspense fallback={null}>
+        <StorageInitializer />
+      </Suspense>
       
       {/* しおりの自動保存 */}
       <AutoSave />

@@ -136,6 +136,42 @@ npm run test:e2e:ui
 npm run test:all
 ```
 
+### 認証バイパス（E2Eテスト用）
+
+しおり作成ページ（`/`）は認証必須ですが、E2Eテスト時は以下の仕組みで認証をバイパスします。
+
+#### HTTPヘッダーによるバイパス
+
+Playwright設定で `x-test-mode: true` ヘッダーを送信することで、ミドルウェアが認証チェックをスキップします。
+
+```typescript
+// playwright.config.ts
+use: {
+  extraHTTPHeaders: {
+    'x-test-mode': 'true',
+  },
+}
+```
+
+#### ミドルウェア側の対応
+
+```typescript
+// middleware.ts
+authorized: ({ token, req }) => {
+  const testMode = req.headers.get('x-test-mode');
+  if (testMode === 'true') {
+    return true; // テスト時は認証をバイパス
+  }
+  return !!token;
+}
+```
+
+#### セキュリティ上の注意
+
+- `x-test-mode` ヘッダーは開発環境とCI環境でのみ使用されます
+- 本番環境では無効化する必要があります（環境変数による制御を推奨）
+- E2Eテスト時のみ、認証が不要になります
+
 ---
 
 ## テストの実行方法

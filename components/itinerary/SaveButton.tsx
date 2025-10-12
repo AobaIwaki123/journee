@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSession } from "next-auth/react";
 import { Save, FilePlus } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
-import { saveCurrentItinerary } from "@/lib/utils/storage";
-import { updateItinerary, addItinerary } from "@/lib/mock-data/itineraries";
 import { generateId } from "@/lib/utils/id-generator";
 
 /**
  * Phase 10.4: しおり保存ボタン（DB統合版）
  *
- * ログイン時: データベースに保存
- * 未ログイン時: LocalStorageに保存（従来通り）
+ * 認証必須: データベースに保存
+ * このコンポーネントは認証済みユーザーのみが使用できます。
  *
  * 保存モード:
  * - overwrite: 既存のしおりを上書き保存
@@ -52,54 +49,24 @@ export const SaveButton: React.FC = () => {
         setItinerary(itineraryToSave);
       }
 
-      if (session?.user) {
-        // ログイン時: データベースに保存
-        const response = await fetch("/api/itinerary/save", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            itinerary: itineraryToSave,
-            saveMode: mode,
-          }),
-        });
+      // データベースに保存
+      const response = await fetch("/api/itinerary/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          itinerary: itineraryToSave,
+          saveMode: mode,
+        }),
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to save itinerary to database");
-        }
-
-        const data = await response.json();
-        addToast(data.message || "しおりを保存しました", "success");
-      } else {
-        // 未ログイン時: LocalStorageに保存（従来通り）
-        const success = saveCurrentItinerary(itineraryToSave);
-
-        if (success) {
-          // しおり一覧に追加/更新
-          const itineraries = JSON.parse(
-            localStorage.getItem("journee_itineraries") || "[]"
-          );
-          const existingIndex = itineraries.findIndex(
-            (item: any) => item.id === itineraryToSave.id
-          );
-
-          if (existingIndex !== -1 && mode === "overwrite") {
-            updateItinerary(itineraryToSave.id, itineraryToSave);
-            addToast("しおりを更新しました", "success");
-          } else {
-            addItinerary(itineraryToSave);
-            addToast(
-              mode === "new"
-                ? "新規しおりとして保存しました"
-                : "しおりを保存しました",
-              "success"
-            );
-          }
-        } else {
-          throw new Error("Failed to save to LocalStorage");
-        }
+      if (!response.ok) {
+        throw new Error("Failed to save itinerary to database");
       }
+
+      const data = await response.json();
+      addToast(data.message || "しおりを保存しました", "success");
     } catch (error) {
       console.error("Failed to save itinerary:", error);
       addToast("保存に失敗しました", "error");

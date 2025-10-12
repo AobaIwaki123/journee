@@ -11,6 +11,9 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    extraHTTPHeaders: {
+      'x-test-mode': 'true', // E2Eテスト時に認証をバイパス
+    },
   },
 
   projects: [

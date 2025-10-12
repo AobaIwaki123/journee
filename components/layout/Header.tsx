@@ -78,9 +78,9 @@ export const Header: React.FC = () => {
           {/* 認証ボタン */}
           {status === 'loading' ? (
             <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
-          ) : (
+          ) : session ? (
             <UserMenu />
-          )}
+          ) : null}
         </div>
 
         {/* モバイルメニュー (<768px) */}
@@ -95,14 +95,14 @@ export const Header: React.FC = () => {
           {/* ハンバーガーメニュー */}
           {status === 'loading' ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-          ) : (
+          ) : session ? (
             <MobileMenu
               userName={session.user?.name}
               userEmail={session.user?.email}
               userImage={session.user?.image}
               onFeedbackClick={() => setIsFeedbackModalOpen(true)}
             />
-          )}
+          ) : null}
         </div>
       </div>
 
