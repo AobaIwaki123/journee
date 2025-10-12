@@ -1,5 +1,7 @@
 # localStorage移行実装ガイド
 
+> ⚠️ **重要**: Zustand persistの使用を検討する場合は、[Zustand persistの初期レンダリング問題](#️-重要-zustand-persistの初期レンダリング問題)を必ずご確認ください。
+
 ## ✅ 実装完了項目
 
 ### Phase 1: IndexedDBラッパー実装 ✅
@@ -160,6 +162,8 @@ Skipped keys: ["journee_claude_api_key"]
 
 現在のZustand永続化は`localStorage`を使用しています。これをIndexedDBに移行します。
 
+> ⚠️ **重要**: この変更を実装する前に、必ず下記の[Zustand persistの初期レンダリング問題](#️-重要-zustand-persistの初期レンダリング問題)をお読みください。LocalStorageの同期アクセスとは異なる挙動になります。
+
 **実装方法**:
 ```typescript
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -191,6 +195,107 @@ export const useStore = create<AppState>()(
 
 **注意**: Zustand v4の非同期ストレージ対応を確認してください。
 
+### ⚠️ 重要: Zustand persistの初期レンダリング問題
+
+**問題点**:
+Zustand persistミドルウェアは非同期的にストレージから状態を復元するため、以下の問題が発生する可能性があります：
+
+1. **初期レンダリング時の空状態**
+   - アプリ起動直後、ストレージから状態が復元される前に、初期値（空の状態）でレンダリングされる
+   - `currentItinerary: null`のような初期値が一瞬表示される可能性がある
+
+2. **ハイドレーションミスマッチ（SSR環境）**
+   - Next.jsのApp Routerではサーバー側レンダリングとクライアント側の状態が異なる
+   - サーバー: 初期値、クライアント: 復元された値 → ハイドレーションエラー
+
+3. **レース条件**
+   - コンポーネントマウント時に状態がまだ復元されていない
+   - データに依存するロジックが正しく動作しない可能性
+
+**現在のlocalStorage直接アクセスとの違い**:
+```typescript
+// 現在の実装（同期的）
+const savedItinerary = localStorage.getItem('journee-storage');
+// すぐに使用可能
+
+// Zustand persist（非同期的）
+const { currentItinerary } = useStore(); // 初回は空の可能性
+```
+
+**対策方法**:
+
+#### 対策1: ハイドレーション完了を待つ
+```typescript
+import { useStore } from '@/lib/store/useStore';
+import { useState, useEffect } from 'react';
+
+export function MyComponent() {
+  const [isHydrated, setIsHydrated] = useState(false);
+  const currentItinerary = useStore((state) => state.currentItinerary);
+  
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+  
+  if (!isHydrated) {
+    return <LoadingSpinner />;
+  }
+  
+  return <div>{/* 復元完了後のUI */}</div>;
+}
+```
+
+#### 対策2: Zustand persistのonRehydrateStorageを使用
+```typescript
+export const useStore = create<AppState>()(
+  persist(
+    (set, get) => ({ /* ... */ }),
+    {
+      name: 'journee-storage',
+      storage: indexedDBStorage,
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('Failed to rehydrate:', error);
+        } else {
+          console.log('Rehydration complete');
+          // 復元完了フラグを立てる
+          state?.setStorageInitialized(true);
+        }
+      },
+    }
+  )
+);
+```
+
+#### 対策3: 既存のStorageInitializerコンポーネントを活用
+現在のプロジェクトには`components/layout/StorageInitializer.tsx`があり、これを拡張してハイドレーション待機を実装できます。
+
+**推奨アプローチ**:
+1. Phase 4でpersistを導入する際、必ず`onRehydrateStorage`コールバックを実装
+2. 既存の`isStorageInitialized`フラグを活用し、復元完了を管理
+3. 重要なコンポーネント（ItineraryPreview等）ではハイドレーション完了を確認
+4. E2Eテストで初期レンダリング時の状態を確認
+
+**テスト項目**:
+```typescript
+// e2e/storage-hydration.spec.ts
+test('should not show empty state during hydration', async ({ page }) => {
+  // 状態を保存
+  await page.evaluate(() => {
+    localStorage.setItem('journee-storage', JSON.stringify({
+      state: { currentItinerary: { /* データ */ } }
+    }));
+  });
+  
+  // ページリロード
+  await page.reload();
+  
+  // 空状態が表示されないことを確認
+  await expect(page.locator('[data-testid="empty-itinerary"]')).not.toBeVisible();
+  await expect(page.locator('[data-testid="itinerary-content"]')).toBeVisible();
+});
+```
+
 ### Phase 5: localStorageキャッシュの削除
 
 **対象**:
@@ -200,6 +305,8 @@ export const useStore = create<AppState>()(
 
 **変更内容**:
 これらのメソッドからlocalStorageへの直接保存を削除し、Zustand persistに委譲します。
+
+> ⚠️ **注意**: Phase 4で説明した初期レンダリング問題への対策が完了していることを確認してから、この変更を実施してください。
 
 **変更前**:
 ```typescript
