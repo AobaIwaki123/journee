@@ -74,6 +74,8 @@ jobs:
           file: ./Dockerfile.prod
           push: true
           tags: ${{ env.GCR_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ needs.determine-image-tag.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=min
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
