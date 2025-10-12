@@ -408,7 +408,7 @@ NextAuth.jsでGoogle OAuth認証を実装
 
 <!-- ここに記載する内容：OGP画像生成の実装 -->
 <!--
-- @vercel/ogを使用
+- Next.jsのImageResponseを使用
 - しおりの情報を含めた画像生成
 - SNS共有時のプレビュー最適化
 -->
@@ -417,7 +417,7 @@ NextAuth.jsでGoogle OAuth認証を実装
 共有時に魅力的なプレビューを表示したい
 
 **解決策：**
-`@vercel/og`で動的にOGP画像を生成
+Next.jsの`ImageResponse`で動的にOGP画像を生成
 
 **実装例：**
 

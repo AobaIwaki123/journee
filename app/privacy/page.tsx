@@ -124,7 +124,7 @@ export default function PrivacyPage() {
 
             <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">4.3 ホスティングサービス</h3>
             <p className="ml-4">
-              本サービスはVercelでホスティングされています。
+              本サービスはGoogle Cloud Run/Kubernetesでホスティングされています。
             </p>
           </section>
 
