@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { MyPageContent } from "@/components/mypage/MyPageContent";
 
@@ -10,6 +11,45 @@ import { MyPageContent } from "@/components/mypage/MyPageContent";
  * ユーザープロフィール、統計、クイックアクション、最近のしおりを表示
  * プルトゥリフレッシュ機能付き
  */
+
+/**
+ * マイページのメタデータを動的生成
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return {
+      title: 'マイページ | Journee',
+      description: 'ログインして旅のしおりを管理しましょう。',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  return {
+    title: `${user.name}のマイページ | Journee`,
+    description: `${user.name}の旅行記録とアクティビティ。作成したしおり、統計情報を確認できます。`,
+    openGraph: {
+      title: `${user.name}のマイページ | Journee`,
+      description: `${user.name}の旅行記録`,
+      type: 'profile',
+      images: ['/api/og/default'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${user.name}のマイページ | Journee`,
+      description: `${user.name}の旅行記録`,
+      images: ['/api/og/default'],
+    },
+    robots: {
+      index: false,
+      follow: false,
+    },
+  };
+}
 export default async function MyPage() {
   // 認証チェック（サーバーサイド）
   const user = await getCurrentUser();

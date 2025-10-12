@@ -1,10 +1,32 @@
 import { LoginButton } from "@/components/auth/LoginButton";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
+import type { Metadata } from "next";
 
 // ログインページは常に動的にレンダリングして、認証状態のキャッシュによる
 // 不正なリダイレクト（例: ログアウト直後にホームへ戻される）を防ぐ
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: 'ログイン | Journee',
+  description: 'Journeeにログインして、AIとともに旅のしおりを作成しましょう。',
+  openGraph: {
+    title: 'ログイン | Journee',
+    description: 'Journeeにログインして、旅のしおり作成を始めましょう',
+    type: 'website',
+    images: ['/api/og/default'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ログイン | Journee',
+    description: 'AIとともに旅のしおりを作成',
+    images: ['/api/og/default'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 interface LoginPageProps {
   searchParams: { callbackUrl?: string };

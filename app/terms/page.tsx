@@ -1,4 +1,26 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '利用規約 | Journee',
+  description: 'Journeeの利用規約。サービス利用にあたっての条件を定めています。',
+  openGraph: {
+    title: '利用規約 | Journee',
+    description: 'Journeeの利用規約',
+    type: 'website',
+    images: ['/api/og/default'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '利用規約 | Journee',
+    description: 'Journeeの利用規約',
+    images: ['/api/og/default'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 /**
  * 利用規約ページ
