@@ -1,0 +1,269 @@
+# Cursor AI Rules - npm build チェック規約
+
+## 🎯 最重要ルール: ビルドを壊さない
+
+**すべてのコード変更前に以下を確認すること：**
+1. 型チェックが通ること (`npm run type-check`)
+2. Lintが通ること (`npm run lint`)
+3. ビルドが成功すること (`npm run build`)
+
+## 📋 コーディング規約
+
+### TypeScript
+
+#### 型定義
+- **必須**: すべての関数の引数と戻り値に型を付ける
+- **禁止**: `any` 型の使用（やむを得ない場合は理由をコメントで明記）
+- **推奨**: `unknown` を使い、型ガードで絞り込む
+
+```typescript
+// ❌ NG
+function processData(data: any) {
+  return data.value;
+}
+
+// ✅ OK
+function processData(data: { value: string }): string {
+  return data.value;
+}
+
+// ✅ OK (unknownを使う場合)
+function processData(data: unknown): string {
+  if (typeof data === 'object' && data !== null && 'value' in data) {
+    return String(data.value);
+  }
+  throw new Error('Invalid data');
+}
+```
+
+#### Null/Undefined チェック
+- **必須**: オプショナルなプロパティにアクセスする際は `?.` を使用
+- **必須**: null/undefined の可能性がある値は `??` で代替値を提供
+
+```typescript
+// ❌ NG
+const name = user.profile.name;
+
+// ✅ OK
+const name = user?.profile?.name ?? 'Unknown';
+```
+
+#### インポート
+- **必須**: `@/` エイリアスを使用する（相対パスは禁止）
+- **禁止**: ファイル拡張子を含めない
+
+```typescript
+// ❌ NG
+import { useStore } from '../../../lib/store/useStore';
+import MyComponent from './MyComponent.tsx';
+
+// ✅ OK
+import { useStore } from '@/lib/store/useStore';
+import MyComponent from './MyComponent';
+```
+
+### Next.js App Router
+
+#### Server/Client Components
+- **必須**: hooks や state を使う場合は `'use client'` を先頭に追加
+- **推奨**: デフォルトはServer Componentとし、必要な場合のみClient Componentにする
+
+```typescript
+// Client Component の場合
+'use client';
+import { useState } from 'react';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+#### API Routes
+- **必須**: 名前付きエクスポート（GET, POST, etc.）を使用
+- **必須**: Request/Response オブジェクトを使用
+
+```typescript
+// ❌ NG
+export default function handler(req, res) {
+  res.json({ data: 'hello' });
+}
+
+// ✅ OK
+export async function GET(request: Request) {
+  return Response.json({ data: 'hello' });
+}
+```
+
+#### Dynamic Routes
+- **必須**: params は Promise として扱う（Next.js 15+）
+
+```typescript
+// Next.js 14
+export default function Page({ params }: { params: { id: string } }) {
+  return <div>{params.id}</div>;
+}
+
+// Next.js 15+ (推奨)
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <div>{id}</div>;
+}
+```
+
+### React
+
+#### Hooks
+- **必須**: useEffect の依存配列を正確に設定
+- **必須**: useEffect でクリーンアップが必要な場合は return 関数を実装
+- **推奨**: カスタムフックは `use` プレフィックスで始める
+
+```typescript
+// ❌ NG
+useEffect(() => {
+  const interval = setInterval(() => {
+    console.log('tick');
+  }, 1000);
+  // クリーンアップがない
+}, []);
+
+// ✅ OK
+useEffect(() => {
+  const interval = setInterval(() => {
+    console.log('tick');
+  }, 1000);
+  
+  return () => clearInterval(interval);
+}, []);
+```
+
+#### コンポーネント
+- **必須**: コンポーネントの Props に型を定義
+- **推奨**: Props が多い場合は interface を使用
+
+```typescript
+// ❌ NG
+export default function Button({ label, onClick }) {
+  return <button onClick={onClick}>{label}</button>;
+}
+
+// ✅ OK
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+}
+
+export default function Button({ label, onClick, variant = 'primary' }: ButtonProps) {
+  return <button onClick={onClick} className={variant}>{label}</button>;
+}
+```
+
+### ESLint
+
+#### デバッグコード
+- **禁止**: `console.log` の本番コードへのコミット
+- **許可**: `console.error`, `console.warn` は OK
+
+```typescript
+// ❌ NG
+console.log('Debug:', data);
+
+// ✅ OK（開発時のみ）
+if (process.env.NODE_ENV === 'development') {
+  console.log('Debug:', data);
+}
+
+// ✅ OK
+console.error('Error occurred:', error);
+```
+
+#### 未使用コード
+- **必須**: 未使用の変数・インポートを削除
+- **必須**: 未使用の関数・コンポーネントを削除
+
+### Zustand
+
+#### ストア更新
+- **必須**: イミュータブルな更新を行う（直接変更禁止）
+- **推奨**: スプレッド演算子または map/filter を使用
+
+```typescript
+// ❌ NG
+set((state) => {
+  state.items.push(newItem);
+  return state;
+});
+
+// ✅ OK
+set((state) => ({
+  items: [...state.items, newItem]
+}));
+
+// ✅ OK (配列の更新)
+set((state) => ({
+  items: state.items.map(item => 
+    item.id === id ? { ...item, ...updates } : item
+  )
+}));
+```
+
+## 🔧 コミット前チェックリスト
+
+コードを変更したら、必ず以下を実行してください：
+
+```bash
+# 1. 型チェック
+npm run type-check
+
+# 2. Lintチェック
+npm run lint
+
+# 3. ビルド確認
+npm run build
+```
+
+エラーが出た場合は、`docs/LINT.md` を参照してください。
+
+## 🚫 絶対にやってはいけないこと
+
+1. **型エラーを無視してコミット**
+   - `// @ts-ignore` を安易に使わない
+   - 型エラーは必ず修正する
+
+2. **ビルドエラーを無視してプッシュ**
+   - ローカルで `npm run build` が成功することを確認
+
+3. **ESLint エラーを無視**
+   - `// eslint-disable-next-line` を安易に使わない
+
+4. **console.log を残したままコミット**
+   - デバッグコードは削除するか、開発環境のみで実行
+
+5. **未使用のインポート・変数を残す**
+   - IDE の警告に従って削除
+
+## 📝 AI コーディング支援での注意点
+
+Cursor AI に依頼する際は、以下のように明示してください：
+
+```
+以下のルールを守ってコードを生成してください：
+1. すべての型を明示的に定義
+2. console.log を使用しない
+3. Next.js App Router の規約に従う
+4. Zustand の更新はイミュータブルに行う
+5. コミット前に npm run type-check && npm run lint && npm run build が通ることを確認
+```
+
+## 🎓 推奨リソース
+
+- [docs/LINT.md](docs/LINT.md) - 詳細なチェックリストとエラー例
+- [docs/GUIDELINE.md](docs/GUIDELINE.md) - 開発ガイドライン
+- [Next.js ドキュメント](https://nextjs.org/docs)
+- [TypeScript ドキュメント](https://www.typescriptlang.org/docs/)
+
+## 🔄 このルールの更新
+
+このルールは定期的に見直し、プロジェクトの成長に合わせて更新してください。
+新しいパターンやアンチパターンが見つかったら、チームで議論して追加してください。
