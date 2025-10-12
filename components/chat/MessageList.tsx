@@ -75,10 +75,6 @@ export const MessageList: React.FC = () => {
   const selectedAI = useStore((state: any) => state.selectedAI);
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setError = useStore((state: any) => state.setError);
-  const planningPhase = useStore((state: any) => state.planningPhase);
-  const currentDetailingDay = useStore(
-    (state: any) => state.currentDetailingDay
-  );
   const currency = useStore((state: any) => state.settings.general.currency);
   const setAbortController = useStore((state: any) => state.setAbortController);
   const updateChecklist = useStore((state: any) => state.updateChecklist);
@@ -155,8 +151,6 @@ export const MessageList: React.FC = () => {
         currentItinerary || undefined,
         selectedAI,
         claudeApiKey || undefined,
-        planningPhase,
-        currentDetailingDay,
         currency,
         abortController.signal
       )) {
