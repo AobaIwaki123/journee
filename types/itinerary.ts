@@ -212,3 +212,20 @@ export interface PublicItineraryMetadata {
   viewCount: number;
   publishedAt: Date;
 }
+
+/**
+ * ユーザー統計情報
+ */
+export interface UserStats {
+  totalItineraries: number;
+  totalCountries: number;
+  totalDays: number;
+  monthlyStats: {
+    month: string;
+    count: number;
+  }[];
+  countryDistribution: {
+    country: string;
+    count: number;
+  }[];
+}

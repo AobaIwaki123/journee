@@ -15,7 +15,7 @@ import {
   Legend,
 } from "recharts";
 import { FileText, MapPin, Calendar as CalendarIcon } from "lucide-react";
-import type { UserStats as UserStatsType } from "@/lib/mock-data/user-stats";
+import type { UserStats as UserStatsType } from "@/types/itinerary";
 import { toSafeDate } from "@/lib/utils/date-utils";
 
 interface UserStatsProps {
@@ -39,13 +39,15 @@ const COLORS = [
  */
 export const UserStats: React.FC<UserStatsProps> = ({ stats }) => {
   // 月別データの整形（月名を表示用に変換）
-  const monthlyData = stats.monthlyStats.map((item) => ({
-    ...item,
-    monthLabel:
-      toSafeDate(item.month + "-01")?.toLocaleDateString("ja-JP", {
-        month: "short",
-      }) || item.month,
-  }));
+  const monthlyData = stats.monthlyStats.map(
+    (item: { month: string; count: number }) => ({
+      ...item,
+      monthLabel:
+        toSafeDate(item.month + "-01")?.toLocaleDateString("ja-JP", {
+          month: "short",
+        }) || item.month,
+    })
+  );
 
   return (
     <div className="space-y-6">
@@ -147,12 +149,17 @@ export const UserStats: React.FC<UserStatsProps> = ({ stats }) => {
                 fill="#8884d8"
                 dataKey="count"
               >
-                {stats.countryDistribution.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
+                {stats.countryDistribution.map(
+                  (
+                    entry: { country: string; count: number },
+                    index: number
+                  ) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  )
+                )}
               </Pie>
               <Tooltip
                 contentStyle={{

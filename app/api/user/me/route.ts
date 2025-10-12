@@ -50,7 +50,14 @@ export async function GET() {
       .from("users")
       .select("id, email, name, image, google_id, created_at")
       .eq("id", sessionUser.id)
-      .single();
+      .single<{
+        id: string;
+        email: string;
+        name: string | null;
+        image: string | null;
+        google_id: string;
+        created_at: string;
+      }>();
 
     if (error || !dbUser) {
       console.error("Failed to fetch user from database:", error);

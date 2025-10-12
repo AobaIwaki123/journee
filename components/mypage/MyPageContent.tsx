@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { UserProfile } from '@/components/mypage/UserProfile';
-import { UserStats } from '@/components/mypage/UserStats';
-import { ItineraryCard } from '@/components/mypage/ItineraryCard';
-import { PullToRefresh } from '@/components/ui/PullToRefresh';
-import { getMockUserStats } from '@/lib/mock-data/user-stats';
-import { getMockRecentItineraries } from '@/lib/mock-data/recent-itineraries';
-import { itineraryRepository } from '@/lib/db/itinerary-repository';
-import type { ItineraryListItem } from '@/types/itinerary';
-import type { UserStats as UserStatsType } from '@/types/itinerary';
-import type { UserMeResponse, UserStatsResponse } from '@/types/auth';
-import { Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { UserProfile } from "@/components/mypage/UserProfile";
+import { UserStats } from "@/components/mypage/UserStats";
+import { ItineraryCard } from "@/components/mypage/ItineraryCard";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
+import { getMockUserStats } from "@/lib/mock-data/user-stats";
+import { getMockRecentItineraries } from "@/lib/mock-data/recent-itineraries";
+import { itineraryRepository } from "@/lib/db/itinerary-repository";
+import type { ItineraryListItem } from "@/types/itinerary";
+import type { UserStats as UserStatsType } from "@/types/itinerary";
+import type { UserMeResponse, UserStatsResponse } from "@/types/auth";
+import { Loader2 } from "lucide-react";
 
 /**
  * マイページのメインコンテンツ（クライアントコンポーネント）
@@ -20,7 +20,9 @@ import { Loader2 } from 'lucide-react';
  */
 export const MyPageContent: React.FC = () => {
   const { data: session, status } = useSession();
-  const [recentItineraries, setRecentItineraries] = useState<ItineraryListItem[]>([]);
+  const [recentItineraries, setRecentItineraries] = useState<
+    ItineraryListItem[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStatsType | null>(null);
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null);
@@ -37,17 +39,18 @@ export const MyPageContent: React.FC = () => {
 
     try {
       // 並列でデータを取得
-      const [itinerariesResult, statsResponse, userResponse] = await Promise.all([
-        itineraryRepository.listItineraries(
-          session.user.id,
-          {},
-          'updated_at',
-          'desc',
-          { page: 1, pageSize: 6 }
-        ),
-        fetch('/api/user/stats'),
-        fetch('/api/user/me'),
-      ]);
+      const [itinerariesResult, statsResponse, userResponse] =
+        await Promise.all([
+          itineraryRepository.listItineraries(
+            session.user.id,
+            {},
+            "updated_at",
+            "desc",
+            { page: 1, pageSize: 6 }
+          ),
+          fetch("/api/user/stats"),
+          fetch("/api/user/me"),
+        ]);
 
       // しおり一覧
       setRecentItineraries(itinerariesResult.data);
@@ -60,12 +63,12 @@ export const MyPageContent: React.FC = () => {
           totalItineraries: apiStats.totalItineraries,
           totalCountries: apiStats.totalCountries,
           totalDays: apiStats.totalDays,
-          monthlyStats: apiStats.monthlyStats,
-          countryDistribution: apiStats.countryDistribution,
+          monthlyStats: apiStats.monthlyStats || [],
+          countryDistribution: apiStats.countryDistribution || [],
         };
         setUserStats(stats);
       } else {
-        console.warn('Failed to fetch user stats, using mock data');
+        console.warn("Failed to fetch user stats, using mock data");
         setUserStats(getMockUserStats()); // フォールバック
       }
 
@@ -74,10 +77,10 @@ export const MyPageContent: React.FC = () => {
         const userData: UserMeResponse = await userResponse.json();
         setUserCreatedAt(userData.createdAt);
       } else {
-        console.warn('Failed to fetch user info');
+        console.warn("Failed to fetch user info");
       }
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error("Failed to load data:", error);
       // エラー時はモックデータにフォールバック
       setRecentItineraries(getMockRecentItineraries());
       setUserStats(getMockUserStats());
@@ -93,13 +96,13 @@ export const MyPageContent: React.FC = () => {
 
   // 初回読み込み
   useEffect(() => {
-    if (status !== 'loading') {
+    if (status !== "loading") {
       loadData();
     }
   }, [session, status]);
 
   // ローディング状態
-  if (status === 'loading' || (isLoading && !recentItineraries.length)) {
+  if (status === "loading" || (isLoading && !recentItineraries.length)) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
@@ -112,7 +115,12 @@ export const MyPageContent: React.FC = () => {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-8">
         {/* プロフィールセクション */}
-        {session && <UserProfile session={session} createdAt={userCreatedAt || undefined} />}
+        {session && (
+          <UserProfile
+            session={session}
+            createdAt={userCreatedAt || undefined}
+          />
+        )}
 
         {/* 統計セクション */}
         {userStats && <UserStats stats={userStats} />}
