@@ -260,10 +260,52 @@ export async function clearAllUIState(): Promise<boolean> {
     await journeeDB.init();
     await journeeDB.clear('ui_state');
     await journeeDB.clear('settings');
+    await journeeDB.clear('store_state');
+    await journeeDB.clear('cache');
     memoryCache.clear();
     return true;
   } catch (error) {
     console.error('Failed to clear UI state:', error);
+    return false;
+  }
+}
+
+/**
+ * すべてのアプリケーションデータをクリア
+ * IndexedDB + localStorage（マイグレーションフラグ用）
+ */
+export async function clearAllAppData(): Promise<boolean> {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    // IndexedDBをクリア
+    const indexedDBResult = await clearAllUIState();
+
+    // localStorageの旧キーもクリア（マイグレーション用）
+    try {
+      const keysToRemove = [
+        'journee_selected_ai',
+        'journee_panel_width',
+        'journee_auto_progress_mode',
+        'journee_auto_progress_settings',
+        'journee_app_settings',
+        'journee_public_itineraries',
+        'journee-storage',
+        'journee_migration_completed',
+      ];
+      
+      keysToRemove.forEach((key) => {
+        localStorage.removeItem(key);
+      });
+    } catch (error) {
+      console.error('Failed to clear localStorage:', error);
+    }
+
+    return indexedDBResult;
+  } catch (error) {
+    console.error('Failed to clear all app data:', error);
     return false;
   }
 }
