@@ -6,18 +6,11 @@
 import { journeeDB, isIndexedDBAvailable } from './indexed-db';
 import type { AIModelId } from '@/types/ai';
 import { isValidModelId, DEFAULT_AI_MODEL } from '@/lib/ai/models';
-import type { AutoProgressSettings } from './storage';
 
 // デフォルト値
 const DEFAULT_CHAT_PANEL_WIDTH = 40; // 40%
 const MIN_PANEL_WIDTH = 30;
 const MAX_PANEL_WIDTH = 70;
-
-const DEFAULT_AUTO_PROGRESS_SETTINGS: AutoProgressSettings = {
-  enabled: true,
-  parallelCount: 3,
-  showNotifications: true,
-};
 
 /**
  * IndexedDBが利用できない場合のフォールバック用
@@ -67,97 +60,6 @@ export async function loadChatPanelWidth(): Promise<number> {
   } catch (error) {
     console.error('Failed to load chat panel width:', error);
     return memoryCache.get('chat_panel_width') || DEFAULT_CHAT_PANEL_WIDTH;
-  }
-}
-
-/**
- * 自動進行モードを保存
- */
-export async function saveAutoProgressMode(enabled: boolean): Promise<boolean> {
-  if (!isIndexedDBAvailable()) {
-    memoryCache.set('auto_progress_mode', enabled);
-    return false;
-  }
-
-  try {
-    await journeeDB.init();
-    await journeeDB.set('ui_state', 'auto_progress_mode', enabled);
-    return true;
-  } catch (error) {
-    console.error('Failed to save auto progress mode:', error);
-    memoryCache.set('auto_progress_mode', enabled);
-    return false;
-  }
-}
-
-/**
- * 自動進行モードを取得
- */
-export async function loadAutoProgressMode(): Promise<boolean> {
-  if (!isIndexedDBAvailable()) {
-    return memoryCache.get('auto_progress_mode') ?? true;
-  }
-
-  try {
-    await journeeDB.init();
-    const mode = await journeeDB.get<boolean>('ui_state', 'auto_progress_mode');
-    return mode ?? true; // デフォルトはON
-  } catch (error) {
-    console.error('Failed to load auto progress mode:', error);
-    return memoryCache.get('auto_progress_mode') ?? true;
-  }
-}
-
-/**
- * 自動進行設定を保存
- */
-export async function saveAutoProgressSettings(
-  settings: AutoProgressSettings
-): Promise<boolean> {
-  if (!isIndexedDBAvailable()) {
-    memoryCache.set('auto_progress_settings', settings);
-    return false;
-  }
-
-  try {
-    await journeeDB.init();
-    await journeeDB.set('ui_state', 'auto_progress_settings', settings);
-    return true;
-  } catch (error) {
-    console.error('Failed to save auto progress settings:', error);
-    memoryCache.set('auto_progress_settings', settings);
-    return false;
-  }
-}
-
-/**
- * 自動進行設定を取得
- */
-export async function loadAutoProgressSettings(): Promise<AutoProgressSettings> {
-  if (!isIndexedDBAvailable()) {
-    return memoryCache.get('auto_progress_settings') || DEFAULT_AUTO_PROGRESS_SETTINGS;
-  }
-
-  try {
-    await journeeDB.init();
-    const settings = await journeeDB.get<AutoProgressSettings>(
-      'ui_state',
-      'auto_progress_settings'
-    );
-    
-    if (!settings) {
-      return DEFAULT_AUTO_PROGRESS_SETTINGS;
-    }
-
-    return {
-      ...DEFAULT_AUTO_PROGRESS_SETTINGS,
-      ...settings,
-    };
-  } catch (error) {
-    console.error('Failed to load auto progress settings:', error);
-    return (
-      memoryCache.get('auto_progress_settings') || DEFAULT_AUTO_PROGRESS_SETTINGS
-    );
   }
 }
 
@@ -288,8 +190,6 @@ export async function clearAllAppData(): Promise<boolean> {
       const keysToRemove = [
         'journee_selected_ai',
         'journee_panel_width',
-        'journee_auto_progress_mode',
-        'journee_auto_progress_settings',
         'journee_app_settings',
         'journee_public_itineraries',
         'journee-storage',
