@@ -81,6 +81,11 @@ spec:
                 secretKeyRef:
                   name: journee-env
                   key: ENCRYPTION_KEY
+            - name: ENCRYPTION_KEY_OLD
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: ENCRYPTION_KEY_OLD
             - name: GITHUB_OWNER
               value: AobaIwaki123
             - name: GITHUB_REPO
