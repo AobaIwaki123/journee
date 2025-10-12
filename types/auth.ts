@@ -79,8 +79,5 @@ export interface UserMeResponse {
  */
 export interface UserStatsResponse {
   totalItineraries: number
-  totalCountries: number
-  totalDays: number
   monthlyStats: { month: string; count: number }[]
-  countryDistribution: { country: string; count: number; percent: number }[]
 }

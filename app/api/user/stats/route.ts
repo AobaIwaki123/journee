@@ -8,10 +8,7 @@ import type { UserStatsResponse } from "@/types/auth";
  *
  * 現在ログインしているユーザーの統計情報を取得するAPI
  * - しおり総数
- * - 訪問国数（重複なし）
- * - 総旅行日数
  * - 月別しおり作成推移（直近6ヶ月）
- * - 訪問国分布
  *
  * @returns 統計情報またはエラーレスポンス
  *
@@ -50,20 +47,6 @@ export async function GET() {
     // しおり総数
     const totalItineraries = itineraries.length;
 
-    // 訪問国数（重複なし）
-    const countries = new Set<string>();
-    itineraries.forEach((itinerary) => {
-      if (itinerary.destination) {
-        countries.add(itinerary.destination);
-      }
-    });
-    const totalCountries = countries.size;
-
-    // 総旅行日数
-    const totalDays = itineraries.reduce((sum, itinerary) => {
-      return sum + (itinerary.duration || 0);
-    }, 0);
-
     // 月別しおり作成推移（直近6ヶ月）
     const now = new Date();
     const monthlyStats: { month: string; count: number }[] = [];
@@ -84,30 +67,10 @@ export async function GET() {
       });
     }
 
-    // 訪問国分布（降順でソート、パーセント計算）
-    const countryCount = new Map<string, number>();
-    itineraries.forEach((itinerary) => {
-      if (itinerary.destination) {
-        const count = countryCount.get(itinerary.destination) || 0;
-        countryCount.set(itinerary.destination, count + 1);
-      }
-    });
-
-    const countryDistribution = Array.from(countryCount.entries())
-      .map(([country, count]) => ({
-        country,
-        count,
-        percent: totalItineraries > 0 ? Math.round((count / totalItineraries) * 100) : 0,
-      }))
-      .sort((a, b) => b.count - a.count);
-
     // レスポンスを構築
     const stats: UserStatsResponse = {
       totalItineraries,
-      totalCountries,
-      totalDays,
       monthlyStats,
-      countryDistribution,
     };
 
     return NextResponse.json(stats);

@@ -53,7 +53,7 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ itinerary }) => {
 
   return (
     <Link
-      href={`/itineraries/${itinerary.id}`}
+      href={`/?itinerary=${itinerary.id}`}
       className="group block bg-white rounded-lg shadow-md overflow-hidden transform transition-all duration-200 hover:scale-105 hover:shadow-xl"
     >
       {/* サムネイル画像 */}

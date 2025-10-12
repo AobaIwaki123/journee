@@ -61,10 +61,10 @@ export const MyPageContent: React.FC = () => {
         // UserStatsResponse を UserStats 型に変換
         const stats: UserStatsType = {
           totalItineraries: apiStats.totalItineraries,
-          totalCountries: apiStats.totalCountries,
-          totalDays: apiStats.totalDays,
+          totalCountries: 0, // 表示しない（ダミー値）
+          totalDays: 0, // 表示しない（ダミー値）
           monthlyStats: apiStats.monthlyStats || [],
-          countryDistribution: apiStats.countryDistribution || [],
+          countryDistribution: [], // 表示しない（ダミー値）
         };
         setUserStats(stats);
       } else {
