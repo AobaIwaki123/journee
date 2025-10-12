@@ -52,7 +52,7 @@ export default function PublicItineraryView({
   const [pdfProgress, setPdfProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+  const [mapHeight, setMapHeight] = useState<string>("400px");
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
   // 位置情報を持つスポットが存在するかチェック
@@ -64,6 +64,29 @@ export default function PublicItineraryView({
         typeof spot.location.lng === "number"
     )
   );
+
+  // 位置情報がある場合はデフォルトで地図を表示
+  const [showMap, setShowMap] = useState(hasLocationData);
+
+  // レスポンシブな地図の高さを設定
+  useEffect(() => {
+    const updateMapHeight = () => {
+      if (typeof window !== "undefined") {
+        const width = window.innerWidth;
+        if (width < 640) {
+          setMapHeight("300px"); // モバイル
+        } else if (width < 1024) {
+          setMapHeight("400px"); // タブレット
+        } else {
+          setMapHeight("500px"); // デスクトップ
+        }
+      }
+    };
+
+    updateMapHeight();
+    window.addEventListener("resize", updateMapHeight);
+    return () => window.removeEventListener("resize", updateMapHeight);
+  }, []);
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
@@ -305,10 +328,10 @@ export default function PublicItineraryView({
               </button>
             </div>
             {showMap && (
-              <div className="bg-white rounded-lg shadow-md overflow-hidden h-[300px] sm:h-[400px] lg:h-[500px]">
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <MapView
                   days={itinerary.schedule}
-                  height="100%"
+                  height={mapHeight}
                   showDaySelector={true}
                   numberingMode="perDay"
                 />
