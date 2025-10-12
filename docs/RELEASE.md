@@ -10,14 +10,16 @@
 **リリース日**: 2025-10-12
 
 #### 新機能
-- **住所マップリンク機能**: 閲覧モードで住所をタップするとGoogle Mapsが開く
+- **住所マップリンク機能**: 住所をタップするとGoogle Mapsが開く
   - AddressLinkコンポーネントによるクリック可能な住所表示
   - Google Maps検索URLの自動生成
   - 新しいタブで地図を開く（モバイル・デスクトップ両対応）
   - セキュリティ対応（noopener, noreferrer）
+  - **閲覧モード**と**編集モード（しおり作成ページ）**の両方で対応
 
 #### 改善点
-- SpotCardコンポーネントでの住所表示をリンク化
+- SpotCardコンポーネント（閲覧モード）での住所表示をリンク化
+- EditableSpotCardコンポーネント（編集モード）での住所表示をリンク化
 - アクセシビリティ向上（タイトル属性、適切なARIA）
 - URLエンコーディングによる特殊文字対応
 
@@ -28,6 +30,7 @@
 #### 主要ファイル
 - `components/itinerary/AddressLink.tsx` (新規)
 - `components/itinerary/SpotCard.tsx` (更新)
+- `components/itinerary/EditableSpotCard.tsx` (更新)
 
 ---
 

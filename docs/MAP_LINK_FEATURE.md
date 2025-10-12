@@ -8,7 +8,7 @@
 
 ## 📝 概要
 
-閲覧モードで住所をタップすると、Google Mapsが開く機能を実装しました。これにより、ユーザーはしおりに記載されている観光スポットの場所を簡単に確認できるようになります。
+住所をタップするとGoogle Mapsが開く機能を実装しました。**閲覧モード**（公開しおり）と**編集モード**（しおり作成ページ）の両方で動作します。これにより、ユーザーはしおりに記載されている観光スポットの場所を簡単に確認できるようになります。
 
 ### ユーザーからのフィードバック
 
@@ -53,7 +53,13 @@ https://www.google.com/maps/search/?api=1&query={encodeURIComponent(address)}
 
 **ファイル**: `components/itinerary/SpotCard.tsx`
 
-住所表示部分を`AddressLink`コンポーネントに置き換えました。
+住所表示部分を`AddressLink`コンポーネントに置き換えました（閲覧モード用）。
+
+### 3. EditableSpotCardコンポーネントの更新
+
+**ファイル**: `components/itinerary/EditableSpotCard.tsx`
+
+住所表示部分を`AddressLink`コンポーネントに置き換えました（編集モード・しおり作成ページ用）。
 
 #### 変更内容
 - `MapPin`アイコンのインポートを削除（AddressLinkに含まれるため）
@@ -77,15 +83,23 @@ https://www.google.com/maps/search/?api=1&query={encodeURIComponent(address)}
 )}
 ```
 
-### 3. 閲覧モードでの動作確認
+### 4. 動作確認
 
+#### 閲覧モード
 **対象コンポーネント**: `PublicItineraryView.tsx`, `DaySchedule.tsx`
 
 - `PublicItineraryView`は`DaySchedule`を`editable={false}`で呼び出す
 - `DaySchedule`は閲覧モード時に`SpotCard`を使用
 - 結果として、閲覧モードで自動的に住所リンク機能が有効になる
 
-### 4. テストの実装
+#### 編集モード（しおり作成ページ）
+**対象コンポーネント**: `app/page.tsx`, `DaySchedule.tsx`
+
+- しおり作成ページは`DaySchedule`を`editable={true}`（デフォルト）で呼び出す
+- `DaySchedule`は編集モード時に`EditableSpotCard`を使用
+- 結果として、編集モードでも住所リンク機能が有効になる
+
+### 5. テストの実装
 
 #### E2Eテスト
 **ファイル**: `e2e/address-map-link.spec.ts`
@@ -171,20 +185,22 @@ JavaScriptの`encodeURIComponent()`を使用して、以下の文字を適切に
 ## 📦 影響範囲
 
 ### 変更されたファイル
-- ✅ `components/itinerary/SpotCard.tsx` - 住所表示をリンク化
+- ✅ `components/itinerary/SpotCard.tsx` - 住所表示をリンク化（閲覧モード）
+- ✅ `components/itinerary/EditableSpotCard.tsx` - 住所表示をリンク化（編集モード・しおり作成ページ）
 - ✅ `docs/RELEASE.md` - リリースノートに追記
+- ✅ `docs/MAP_LINK_FEATURE.md` - 実装サマリー（このファイル）
 
 ### 新規作成されたファイル
 - ✅ `components/itinerary/AddressLink.tsx` - 住所リンクコンポーネント
 - ✅ `e2e/address-map-link.spec.ts` - E2Eテスト
 - ✅ `components/itinerary/__tests__/AddressLink.test.tsx` - ユニットテスト
-- ✅ `docs/MAP_LINK_FEATURE.md` - 実装サマリー（このファイル）
 
 ### 影響を受けるコンポーネント
-- `SpotCard.tsx` - 住所表示ロジックの変更
-- `EditableSpotCard.tsx` - 影響なし（編集モードでは変更なし）
-- `DaySchedule.tsx` - 影響なし（SpotCardを使用するため自動的に反映）
+- `SpotCard.tsx` - 住所表示ロジックの変更（閲覧モード用）
+- `EditableSpotCard.tsx` - 住所表示ロジックの変更（編集モード用）
+- `DaySchedule.tsx` - 影響なし（SpotCard/EditableSpotCardを使用するため自動的に反映）
 - `PublicItineraryView.tsx` - 影響なし（DayScheduleを使用するため自動的に反映）
+- `app/page.tsx` - 影響なし（DayScheduleを使用するため自動的に反映）
 
 ---
 
