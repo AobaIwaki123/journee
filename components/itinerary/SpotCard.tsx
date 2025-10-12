@@ -6,7 +6,6 @@ import { useStore } from '@/lib/store/useStore';
 import { formatCurrency } from '@/lib/utils/currency';
 import { 
   Clock, 
-  MapPin, 
   Wallet, 
   Info, 
   Camera,
@@ -15,6 +14,7 @@ import {
   Hotel,
   Sparkles
 } from 'lucide-react';
+import { AddressLink } from './AddressLink';
 
 interface SpotCardProps {
   spot: TouristSpot;
@@ -121,10 +121,7 @@ export const SpotCard: React.FC<SpotCardProps> = memo(({ spot }) => {
           {/* Location & Cost */}
           <div className="flex flex-wrap items-center gap-4 text-sm">
             {spot.location?.address && (
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <span className="truncate">{spot.location.address}</span>
-              </div>
+              <AddressLink address={spot.location.address} />
             )}
 
             {spot.estimatedCost !== undefined && spot.estimatedCost > 0 && (
