@@ -111,6 +111,10 @@ interface AppState {
   clearMessages: () => void;
   setHasReceivedResponse: (value: boolean) => void;
 
+  // しおりが未保存かどうか（チャット履歴の一括保存に使用）
+  isItineraryUnsaved: boolean;
+  setItineraryUnsaved: (unsaved: boolean) => void;
+
   // Message editing state
   editingMessageId: string | null;
   messageDraft: string;
@@ -251,6 +255,10 @@ interface AppState {
   // Phase 7.1: Panel resizer state
   chatPanelWidth: number; // チャットパネルの幅（パーセンテージ: 30-70）
   setChatPanelWidth: (width: number) => void;
+
+  // チャット履歴のDB統合アクション
+  loadChatHistory: (itineraryId: string) => Promise<void>;
+  saveChatHistoryToDb: (itineraryId: string) => Promise<boolean>;
 }
 
 /**
@@ -313,6 +321,10 @@ export const useStore = create<AppState>()(
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
   clearMessages: () => set({ messages: [], streamingMessage: "" }),
   setHasReceivedResponse: (value) => set({ hasReceivedResponse: value }),
+
+  // しおりが未保存かどうか
+  isItineraryUnsaved: true, // 初期状態は未保存
+  setItineraryUnsaved: (unsaved) => set({ isItineraryUnsaved: unsaved }),
 
   // Message editing state
   editingMessageId: null,
@@ -1180,6 +1192,52 @@ export const useStore = create<AppState>()(
     set({ chatPanelWidth: clampedWidth });
     // IndexedDBに保存
     saveChatPanelWidth(clampedWidth);
+  },
+
+  // チャット履歴の読み込み
+  loadChatHistory: async (itineraryId: string) => {
+    try {
+      const response = await fetch(`/api/chat/history?itineraryId=${itineraryId}`);
+
+      if (!response.ok) {
+        console.error('[loadChatHistory] Failed to load chat history');
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.messages) {
+        // メッセージをストアに設定
+        set({ messages: data.messages });
+      }
+    } catch (error) {
+      console.error('[loadChatHistory] Exception while loading chat history:', error);
+    }
+  },
+
+  // チャット履歴の保存
+  saveChatHistoryToDb: async (itineraryId: string) => {
+    const { messages } = get();
+
+    if (!itineraryId || messages.length === 0) {
+      return false;
+    }
+
+    try {
+      const response = await fetch('/api/chat/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itineraryId,
+          messages,
+        }),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('[saveChatHistoryToDb] Exception while saving chat history:', error);
+      return false;
+    }
   },
     }),
     {
