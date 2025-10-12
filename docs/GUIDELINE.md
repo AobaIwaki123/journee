@@ -32,7 +32,7 @@ Auth:      NextAuth.js (Google OAuth)
 Database:  Supabase (PostgreSQL)
 AI:        Google Gemini API, Anthropic Claude API
 Icons:     lucide-react
-Deploy:    Vercel, Google Cloud Run
+Deploy:    Google Cloud Run, Kubernetes
 ```
 
 ### 開発原則

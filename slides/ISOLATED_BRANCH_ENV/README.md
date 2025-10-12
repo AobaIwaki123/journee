@@ -202,7 +202,6 @@ slides/ISOLATED_BRANCH_ENV/
 
 - **GitHub Pages**: 最も簡単
 - **Cloudflare Pages**: 高速
-- **Vercel**: 自動デプロイ
 - **Netlify**: 簡単な設定
 
 ## 今後の拡張
