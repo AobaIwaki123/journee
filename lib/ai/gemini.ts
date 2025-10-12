@@ -5,7 +5,7 @@
 
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import type { ChatMessage } from "@/types/chat";
-import type { ItineraryData, ItineraryPhase } from "@/types/itinerary";
+import type { ItineraryData } from "@/types/itinerary";
 import { getModelName } from "./models";
 import { limitChatHistoryByTokens } from './token-manager'; // 追加
 import {
@@ -16,7 +16,6 @@ import {
   getSystemPromptForPhase,
   createSkeletonPrompt,
   createDayDetailPrompt,
-  createNextStepPrompt,
 } from "./prompts";
 
 /**
@@ -47,9 +46,7 @@ export class GeminiClient {
   async chat(
     userMessage: string,
     chatHistory: ChatMessage[] = [],
-    currentItinerary?: ItineraryData,
-    planningPhase?: ItineraryPhase,
-    currentDetailingDay?: number | null
+    currentItinerary?: ItineraryData
   ): Promise<{
     message: string;
     itinerary?: ItineraryData;
@@ -59,9 +56,7 @@ export class GeminiClient {
       const prompt = this.buildPrompt(
         userMessage,
         chatHistory,
-        currentItinerary,
-        planningPhase,
-        currentDetailingDay
+        currentItinerary
       );
 
       // Gemini APIに送信
@@ -89,18 +84,14 @@ export class GeminiClient {
   async *chatStream(
     userMessage: string,
     chatHistory: ChatMessage[] = [],
-    currentItinerary?: ItineraryData,
-    planningPhase?: ItineraryPhase,
-    currentDetailingDay?: number | null
+    currentItinerary?: ItineraryData
   ): AsyncGenerator<string, void, unknown> {
     try {
       // プロンプトの構築
       const prompt = this.buildPrompt(
         userMessage,
         chatHistory,
-        currentItinerary,
-        planningPhase,
-        currentDetailingDay
+        currentItinerary
       );
 
       // Gemini APIにストリーミングリクエスト
@@ -126,12 +117,12 @@ export class GeminiClient {
   private buildPrompt(
     userMessage: string,
     chatHistory: ChatMessage[],
-    currentItinerary?: ItineraryData,
-    planningPhase: ItineraryPhase = 'initial',
-    currentDetailingDay?: number | null
+    currentItinerary?: ItineraryData
   ): string {
     // Phase 4: フェーズに応じたシステムプロンプトを選択
-    let prompt = getSystemPromptForPhase(planningPhase) + "\n\n";
+    // planningPhaseが削除されたため、getSystemPromptForPhaseの引数を調整する必要がある
+    // 一旦、引数なしで呼び出すが、後でprompts.tsを確認して修正する
+    let prompt = getSystemPromptForPhase() + "\n\n";
 
     // チャット履歴がある場合は追加
     if (chatHistory.length > 0) {
@@ -158,45 +149,11 @@ export class GeminiClient {
       prompt += `## ${itineraryContext}\n\n`;
     }
 
-    // Phase 4: フェーズ別の追加プロンプト
-    let phaseSpecificPrompt = '';
-    
-    switch (planningPhase) {
-      case 'skeleton':
-        // 骨組み作成フェーズ
-        if (currentItinerary) {
-          phaseSpecificPrompt = createSkeletonPrompt(currentItinerary);
-        }
-        break;
-        
-      case 'detailing':
-        // 日程詳細化フェーズ
-        if (currentItinerary && currentDetailingDay) {
-          phaseSpecificPrompt = createDayDetailPrompt(currentItinerary, currentDetailingDay);
-        }
-        break;
-        
-      case 'collecting':
-      case 'completed':
-        // 他のフェーズでは特別なプロンプトなし
-        break;
-    }
-    
-    if (phaseSpecificPrompt) {
-      prompt += `## ${phaseSpecificPrompt}\n\n`;
-    }
-
     // ユーザーのメッセージを追加
     prompt += `## ユーザーの新しいメッセージ\n${userMessage}\n\n`;
     
-    // Phase 4: フェーズに応じた応答指示
-    if (planningPhase === 'skeleton') {
-      prompt += `上記のメッセージに対して応答してください。骨組み作成フェーズでは、各日のテーマ・エリアを決定し、JSON形式で出力してください。具体的な観光スポット名はまだ出さないでください。`;
-    } else if (planningPhase === 'detailing') {
-      prompt += `上記のメッセージに対して応答してください。${currentDetailingDay}日目の詳細なスケジュールを作成し、実在する観光スポット、時間、費用を含めてJSON形式で出力してください。`;
-    } else {
-      prompt += `上記のメッセージに対して、親切に応答してください。必要に応じて旅のしおりデータをJSON形式で出力してください。`;
-    }
+    // フェーズ固有のプロンプトロジックを削除したため、汎用的な応答指示のみ残す
+    prompt += `上記のメッセージに対して、親切に応答してください。必要に応じて旅のしおりデータをJSON形式で出力してください。`;
 
     return prompt;
   }
@@ -229,15 +186,13 @@ export async function sendGeminiMessage(
   chatHistory?: ChatMessage[],
   currentItinerary?: ItineraryData,
   apiKey?: string,
-  planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null,
   modelId: 'gemini' | 'gemini-flash' = 'gemini'
 ): Promise<{
   message: string;
   itinerary?: ItineraryData;
 }> {
   const client = getGeminiClient(modelId, apiKey);
-  return client.chat(message, chatHistory, currentItinerary, planningPhase, currentDetailingDay);
+  return client.chat(message, chatHistory, currentItinerary);
 }
 
 /**
@@ -249,10 +204,8 @@ export async function* streamGeminiMessage(
   chatHistory?: ChatMessage[],
   currentItinerary?: ItineraryData,
   apiKey?: string,
-  planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null,
   modelId: 'gemini' | 'gemini-flash' = 'gemini'
 ): AsyncGenerator<string, void, unknown> {
   const client = getGeminiClient(modelId, apiKey);
-  yield* client.chatStream(message, chatHistory, currentItinerary, planningPhase, currentDetailingDay);
+  yield* client.chatStream(message, chatHistory, currentItinerary);
 }
