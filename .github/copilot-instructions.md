@@ -41,6 +41,14 @@ Purpose: Enable AI coding agents to contribute productively to this Next.js 14 +
 - Tests: npm test (Jest), npm run test:e2e (Playwright)
 - Docker helpers: npm run docker:start|stop|logs|shell (optional)
 
+## Cursor rules and commands
+
+- Rules live under `.cursor/rules/` and are authoritative for patterns and guardrails. Always follow `mandatory-pre-build-check.mdc`.
+- Custom commands live under `.cursor/commands/` and can be invoked in Cursor chat:
+  - `@pre-commit-check` – run type-check + lint before commit
+  - `@pre-build-check` – run type-check + lint + build before push/PR
+- Before pushing code, always ensure pre-commit checks pass locally or via the commands above.
+
 ## Environment (minimal)
 
 - NextAuth: NEXTAUTH_URL, NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
