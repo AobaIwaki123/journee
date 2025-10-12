@@ -1,7 +1,7 @@
 /**
  * IndexedDBラッパークラス
  * localStorageの代替として使用
- * 
+ *
  * 特徴:
  * - 非同期API
  * - 構造化データ対応
@@ -9,7 +9,7 @@
  * - トランザクション管理
  */
 
-import { openDB, IDBPDatabase, DBSchema } from 'idb';
+import { openDB, IDBPDatabase, DBSchema } from "idb";
 
 /**
  * データベーススキーマ定義
@@ -29,7 +29,7 @@ interface JourneeDBSchema extends DBSchema {
   cache: {
     key: string;
     value: any;
-    indexes: { 'by-timestamp': number };
+    indexes: { "by-timestamp": number };
   };
   // Zustandストア永続化
   store_state: {
@@ -44,7 +44,7 @@ interface JourneeDBSchema extends DBSchema {
 class JourneeDB {
   private static instance: JourneeDB;
   private db: IDBPDatabase<JourneeDBSchema> | null = null;
-  private readonly DB_NAME = 'journee-db';
+  private readonly DB_NAME = "journee-db";
   private readonly VERSION = 1;
 
   private constructor() {}
@@ -73,30 +73,30 @@ class JourneeDB {
           // バージョン1: 初期スキーマ作成
           if (oldVersion < 1) {
             // UI状態ストア
-            if (!db.objectStoreNames.contains('ui_state')) {
-              db.createObjectStore('ui_state');
+            if (!db.objectStoreNames.contains("ui_state")) {
+              db.createObjectStore("ui_state");
             }
 
             // アプリケーション設定ストア
-            if (!db.objectStoreNames.contains('settings')) {
-              db.createObjectStore('settings');
+            if (!db.objectStoreNames.contains("settings")) {
+              db.createObjectStore("settings");
             }
 
             // キャッシュストア
-            if (!db.objectStoreNames.contains('cache')) {
-              const cacheStore = db.createObjectStore('cache');
-              cacheStore.createIndex('by-timestamp', 'timestamp');
+            if (!db.objectStoreNames.contains("cache")) {
+              const cacheStore = db.createObjectStore("cache");
+              cacheStore.createIndex("by-timestamp", "timestamp");
             }
 
             // Zustandストア永続化
-            if (!db.objectStoreNames.contains('store_state')) {
-              db.createObjectStore('store_state');
+            if (!db.objectStoreNames.contains("store_state")) {
+              db.createObjectStore("store_state");
             }
           }
         },
       });
     } catch (error) {
-      console.error('Failed to initialize IndexedDB:', error);
+      console.error("Failed to initialize IndexedDB:", error);
       throw error;
     }
   }
@@ -106,7 +106,7 @@ class JourneeDB {
    */
   private ensureInitialized(): void {
     if (!this.db) {
-      throw new Error('Database not initialized. Call init() first.');
+      throw new Error("Database not initialized. Call init() first.");
     }
   }
 
@@ -114,7 +114,7 @@ class JourneeDB {
    * 値を保存
    */
   async set(
-    store: 'ui_state' | 'settings' | 'cache' | 'store_state',
+    store: "ui_state" | "settings" | "cache" | "store_state",
     key: string,
     value: any
   ): Promise<void> {
@@ -130,7 +130,10 @@ class JourneeDB {
   /**
    * 値を取得
    */
-  async get<T>(store: 'ui_state' | 'settings' | 'cache' | 'store_state', key: string): Promise<T | null> {
+  async get<T>(
+    store: "ui_state" | "settings" | "cache" | "store_state",
+    key: string
+  ): Promise<T | null> {
     this.ensureInitialized();
     try {
       const value = await this.db!.get(store as any, key);
@@ -144,7 +147,10 @@ class JourneeDB {
   /**
    * 値を削除
    */
-  async delete(store: 'ui_state' | 'settings' | 'cache' | 'store_state', key: string): Promise<void> {
+  async delete(
+    store: "ui_state" | "settings" | "cache" | "store_state",
+    key: string
+  ): Promise<void> {
     this.ensureInitialized();
     try {
       await this.db!.delete(store as any, key);
@@ -157,7 +163,9 @@ class JourneeDB {
   /**
    * ストアをクリア
    */
-  async clear(store: 'ui_state' | 'settings' | 'cache' | 'store_state'): Promise<void> {
+  async clear(
+    store: "ui_state" | "settings" | "cache" | "store_state"
+  ): Promise<void> {
     this.ensureInitialized();
     try {
       await this.db!.clear(store as any);
@@ -170,7 +178,9 @@ class JourneeDB {
   /**
    * ストア内のすべてのキーを取得
    */
-  async getAllKeys(store: 'ui_state' | 'settings' | 'cache' | 'store_state'): Promise<string[]> {
+  async getAllKeys(
+    store: "ui_state" | "settings" | "cache" | "store_state"
+  ): Promise<string[]> {
     this.ensureInitialized();
     try {
       const keys = await this.db!.getAllKeys(store as any);
@@ -184,7 +194,9 @@ class JourneeDB {
   /**
    * ストア内のすべての値を取得
    */
-  async getAll<T>(store: 'ui_state' | 'settings' | 'cache' | 'store_state'): Promise<T[]> {
+  async getAll<T>(
+    store: "ui_state" | "settings" | "cache" | "store_state"
+  ): Promise<T[]> {
     this.ensureInitialized();
     try {
       const values = await this.db!.getAll(store as any);
@@ -198,7 +210,10 @@ class JourneeDB {
   /**
    * キーの存在確認
    */
-  async has(store: 'ui_state' | 'settings' | 'cache' | 'store_state', key: string): Promise<boolean> {
+  async has(
+    store: "ui_state" | "settings" | "cache" | "store_state",
+    key: string
+  ): Promise<boolean> {
     this.ensureInitialized();
     try {
       const value = await this.db!.get(store as any, key);
@@ -227,12 +242,12 @@ export const journeeDB = JourneeDB.getInstance();
  * IndexedDBが利用可能かチェック
  */
 export function isIndexedDBAvailable(): boolean {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return false;
   }
 
   try {
-    return 'indexedDB' in window && window.indexedDB !== null;
+    return "indexedDB" in window && window.indexedDB !== null;
   } catch (e) {
     return false;
   }
