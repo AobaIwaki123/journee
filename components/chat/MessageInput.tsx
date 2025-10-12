@@ -318,15 +318,7 @@ export const MessageInput: React.FC = () => {
         </button>
       </form>
 
-      {/* チャット履歴リセットボタン */}
-      <button
-        onClick={resetChatHistory}
-        disabled={isLoading || isStreaming || messages.length === 0}
-        className="absolute bottom-2 right-16 p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
-        title="チャット履歴をリセット"
-      >
-        リセット
-      </button>
+      {/* チャット履歴リセットボタンはChatBoxに移動 */}
     </div>
   );
 };
