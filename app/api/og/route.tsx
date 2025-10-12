@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const summary = itinerary.summary || '';
 
     // OGP画像を生成（1200x630px）
-    return new ImageResponse(
+    const response = new ImageResponse(
       (
         <div
           style={{
@@ -242,11 +242,24 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     );
+
+    // キャッシュ設定（1日間）
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800'
+    );
+
+    return response;
   } catch (error) {
-    console.error('Failed to generate OG image:', error);
+    console.error('[OGP Image Generation] Failed to generate OG image:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      slug: request.nextUrl.searchParams.get('slug'),
+      timestamp: new Date().toISOString(),
+    });
     
     // エラー時はデフォルトのOGP画像を返す
-    return new ImageResponse(
+    const errorResponse = new ImageResponse(
       (
         <div
           style={{
@@ -297,5 +310,13 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     );
+
+    // エラー時も短時間キャッシュ
+    errorResponse.headers.set(
+      'Cache-Control',
+      'public, max-age=3600, s-maxage=3600'
+    );
+
+    return errorResponse;
   }
 }

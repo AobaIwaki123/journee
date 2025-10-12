@@ -1,0 +1,529 @@
+---
+globs: "**/*.ts,**/*.tsx,app/api/**/*,lib/**/*"
+description: エラーハンドリングの標準パターンとベストプラクティス
+---
+
+# エラーハンドリングパターン
+
+## 概要
+一貫したエラーハンドリングにより、ユーザーエクスペリエンスを向上させ、デバッグを容易にします。
+
+## エラーの種類
+
+### 1. クライアントサイドエラー
+- ネットワークエラー
+- バリデーションエラー
+- ユーザー入力エラー
+- 予期しないUI状態
+
+### 2. サーバーサイドエラー
+- データベースエラー
+- 外部API エラー（AI、認証など）
+- 認証・認可エラー
+- ビジネスロジックエラー
+
+## API エラーハンドリング
+
+### 標準エラーレスポンス
+
+```typescript
+// types/api.ts
+export type ApiErrorCode =
+  | 'Unauthorized'
+  | 'Forbidden'
+  | 'NotFound'
+  | 'ValidationError'
+  | 'RateLimitExceeded'
+  | 'InternalServerError'
+  | 'BadRequest'
+  | 'ServiceUnavailable';
+
+export interface ApiErrorResponse {
+  error: ApiErrorCode;
+  message: string;
+  details?: unknown;
+  timestamp?: string;
+}
+
+export interface ApiSuccessResponse<T = unknown> {
+  data: T;
+  message?: string;
+}
+```
+
+### APIエラークラス
+
+```typescript
+// lib/utils/errors.ts
+export class ApiError extends Error {
+  constructor(
+    public statusCode: number,
+    public errorCode: ApiErrorCode,
+    message: string,
+    public details?: unknown
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+
+  toJSON(): ApiErrorResponse {
+    return {
+      error: this.errorCode,
+      message: this.message,
+      details: this.details,
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
+
+// 便利なファクトリー関数
+export const createApiError = {
+  unauthorized: (message = 'ログインが必要です') =>
+    new ApiError(401, 'Unauthorized', message),
+  
+  forbidden: (message = 'アクセス権限がありません') =>
+    new ApiError(403, 'Forbidden', message),
+  
+  notFound: (message = 'リソースが見つかりません') =>
+    new ApiError(404, 'NotFound', message),
+  
+  validation: (message: string, details?: unknown) =>
+    new ApiError(400, 'ValidationError', message, details),
+  
+  rateLimit: (message = 'リクエスト数が上限に達しました') =>
+    new ApiError(429, 'RateLimitExceeded', message),
+  
+  internal: (message = 'サーバーエラーが発生しました', details?: unknown) =>
+    new ApiError(500, 'InternalServerError', message, details),
+};
+```
+
+### API Route Handlerパターン
+
+```typescript
+// app/api/example/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createApiError } from '@/lib/utils/errors';
+import { getCurrentUser } from '@/lib/auth/session';
+
+export async function GET(req: NextRequest) {
+  try {
+    // 認証チェック
+    const user = await getCurrentUser();
+    if (!user) {
+      throw createApiError.unauthorized();
+    }
+
+    // ビジネスロジック
+    const data = await fetchData(user.id);
+    
+    if (!data) {
+      throw createApiError.notFound('データが見つかりません');
+    }
+
+    // 成功レスポンス
+    return NextResponse.json({ data });
+
+  } catch (error) {
+    // エラーハンドリング
+    return handleApiError(error);
+  }
+}
+
+// エラーハンドラー
+function handleApiError(error: unknown): NextResponse {
+  console.error('[API Error]', error);
+
+  if (error instanceof ApiError) {
+    return NextResponse.json(
+      error.toJSON(),
+      { status: error.statusCode }
+    );
+  }
+
+  // 予期しないエラー
+  const genericError = createApiError.internal();
+  return NextResponse.json(
+    genericError.toJSON(),
+    { status: 500 }
+  );
+}
+```
+
+## クライアントサイドエラーハンドリング
+
+### Fetch ラッパー
+
+```typescript
+// lib/utils/api-client.ts
+export class FetchError extends Error {
+  constructor(
+    public statusCode: number,
+    public errorCode: ApiErrorCode,
+    message: string,
+    public details?: unknown
+  ) {
+    super(message);
+    this.name = 'FetchError';
+  }
+}
+
+export async function fetchApi<T>(
+  url: string,
+  options?: RequestInit
+): Promise<T> {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
+
+    // レスポンスのパース
+    const data = await response.json();
+
+    // エラーレスポンスの場合
+    if (!response.ok) {
+      throw new FetchError(
+        response.status,
+        data.error || 'InternalServerError',
+        data.message || 'エラーが発生しました',
+        data.details
+      );
+    }
+
+    return data.data || data;
+
+  } catch (error) {
+    // ネットワークエラー
+    if (error instanceof TypeError) {
+      throw new FetchError(
+        0,
+        'ServiceUnavailable',
+        'ネットワークエラーが発生しました'
+      );
+    }
+
+    // その他のエラー
+    throw error;
+  }
+}
+```
+
+### React コンポーネントでのエラーハンドリング
+
+```typescript
+// components/example/ExampleComponent.tsx
+'use client';
+
+import { useState } from 'react';
+import { fetchApi, FetchError } from '@/lib/utils/api-client';
+
+export const ExampleComponent: React.FC = () => {
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (data: FormData) => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const result = await fetchApi('/api/example', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      // 成功処理
+      console.log('Success:', result);
+
+    } catch (err) {
+      // エラーハンドリング
+      if (err instanceof FetchError) {
+        // APIエラー
+        switch (err.errorCode) {
+          case 'Unauthorized':
+            setError('ログインが必要です');
+            break;
+          case 'ValidationError':
+            setError(err.message);
+            break;
+          case 'RateLimitExceeded':
+            setError('リクエスト数が上限に達しました。しばらくお待ちください');
+            break;
+          default:
+            setError('エラーが発生しました。もう一度お試しください');
+        }
+      } else {
+        // 予期しないエラー
+        console.error('Unexpected error:', err);
+        setError('予期しないエラーが発生しました');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      {error && (
+        <div className="p-4 mb-4 text-red-700 bg-red-100 border border-red-200 rounded-lg">
+          {error}
+        </div>
+      )}
+      {/* コンポーネントUI */}
+    </div>
+  );
+};
+```
+
+## 非同期処理のエラーハンドリング
+
+### async/await パターン
+
+```typescript
+// ✅ Good - try-catchで適切にハンドリング
+async function fetchUserData(userId: string) {
+  try {
+    const user = await fetchApi<User>(`/api/users/${userId}`);
+    return user;
+  } catch (error) {
+    if (error instanceof FetchError && error.errorCode === 'NotFound') {
+      // ユーザーが見つからない場合の処理
+      return null;
+    }
+    // その他のエラーは上位に伝播
+    throw error;
+  }
+}
+
+// ❌ Bad - エラーを無視
+async function fetchUserDataBad(userId: string) {
+  const user = await fetchApi<User>(`/api/users/${userId}`);
+  return user; // エラーが発生してもハンドリングしない
+}
+```
+
+### Promise.all でのエラーハンドリング
+
+```typescript
+// ✅ Good - 個別にエラーをハンドリング
+async function fetchMultipleUsers(userIds: string[]) {
+  const results = await Promise.allSettled(
+    userIds.map(id => fetchApi<User>(`/api/users/${id}`))
+  );
+
+  return results.map((result, index) => {
+    if (result.status === 'fulfilled') {
+      return result.value;
+    } else {
+      console.error(`Failed to fetch user ${userIds[index]}:`, result.reason);
+      return null;
+    }
+  });
+}
+
+// ❌ Bad - 1つでも失敗すると全て失敗
+async function fetchMultipleUsersBad(userIds: string[]) {
+  return await Promise.all(
+    userIds.map(id => fetchApi<User>(`/api/users/${id}`))
+  ); // 1つでもエラーが発生すると全体が失敗
+}
+```
+
+## バリデーションエラー
+
+### Zodを使用したバリデーション（推奨）
+
+```typescript
+import { z } from 'zod';
+
+// スキーマ定義
+const CreateItinerarySchema = z.object({
+  title: z.string().min(1, 'タイトルは必須です').max(100, 'タイトルは100文字以内です'),
+  destination: z.string().min(1, '目的地は必須です'),
+  startDate: z.string().datetime('有効な日時を入力してください'),
+  endDate: z.string().datetime('有効な日時を入力してください'),
+});
+
+// API Routeでの使用
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    
+    // バリデーション
+    const validated = CreateItinerarySchema.parse(body);
+    
+    // 処理続行
+    const result = await createItinerary(validated);
+    return NextResponse.json({ data: result });
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // Zodバリデーションエラー
+      return NextResponse.json(
+        {
+          error: 'ValidationError',
+          message: 'リクエストが不正です',
+          details: error.errors,
+        },
+        { status: 400 }
+      );
+    }
+
+    return handleApiError(error);
+  }
+}
+```
+
+## ログとモニタリング
+
+### ログ出力パターン
+
+```typescript
+// ✅ Good - 構造化ログ
+console.error('[API Error]', {
+  path: req.url,
+  method: req.method,
+  userId: user?.id,
+  error: error instanceof Error ? error.message : 'Unknown error',
+  stack: error instanceof Error ? error.stack : undefined,
+  timestamp: new Date().toISOString(),
+});
+
+// ❌ Bad - 情報不足
+console.error('Error:', error);
+```
+
+### 環境別ログレベル
+
+```typescript
+// lib/utils/logger.ts
+const isDev = process.env.NODE_ENV === 'development';
+
+export const logger = {
+  error: (message: string, data?: unknown) => {
+    console.error(`[ERROR] ${message}`, data);
+  },
+  
+  warn: (message: string, data?: unknown) => {
+    console.warn(`[WARN] ${message}`, data);
+  },
+  
+  info: (message: string, data?: unknown) => {
+    if (isDev) {
+      console.log(`[INFO] ${message}`, data);
+    }
+  },
+  
+  debug: (message: string, data?: unknown) => {
+    if (isDev) {
+      console.log(`[DEBUG] ${message}`, data);
+    }
+  },
+};
+```
+
+## エラーバウンダリ（React）
+
+```typescript
+// components/ErrorBoundary.tsx
+'use client';
+
+import React from 'react';
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[ErrorBoundary]', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="p-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                エラーが発生しました
+              </h2>
+              <p className="text-gray-600 mb-4">
+                アプリケーションでエラーが発生しました。
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                再読み込み
+              </button>
+            </div>
+          </div>
+        )
+      );
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ すべてのasync関数でtry-catchを使用
+- ✅ エラーメッセージはユーザーフレンドリーに
+- ✅ エラーの詳細はコンソールに出力
+- ✅ 適切なHTTPステータスコードを使用
+- ✅ エラーを型安全に扱う（ApiError, FetchError）
+- ✅ エラーログには十分な情報を含める
+- ✅ バリデーションエラーは具体的に
+- ✅ ネットワークエラーとAPIエラーを区別
+
+### DON'T（非推奨）
+- ❌ エラーを無視する（catch節が空）
+- ❌ 500エラーで詳細情報を露出
+- ❌ すべてのエラーを同じメッセージで処理
+- ❌ エラーログなしでエラーを握りつぶす
+- ❌ any型でエラーをキャッチ
+- ❌ 開発環境でのみエラーハンドリング
+- ❌ ユーザーに技術的詳細を表示
+
+## エラー処理のチェックリスト
+
+- [ ] API Routeに適切なtry-catchがある
+- [ ] エラーレスポンスが標準フォーマットに従っている
+- [ ] クライアント側でエラーを適切にハンドリング
+- [ ] ユーザーにフレンドリーなエラーメッセージを表示
+- [ ] エラーログに十分な情報が含まれている
+- [ ] エラーバウンダリを設置している
+- [ ] バリデーションエラーが具体的
+- [ ] ネットワークエラーに対応している
+
+## 参考リンク
+
+- [lib/utils/api-client.ts](mdc:lib/utils/api-client.ts) - APIクライアント実装
+- [types/api.ts](mdc:types/api.ts) - API型定義
+- [docs/API.md](mdc:docs/API.md) - API仕様書
+- [.cursor/rules/api-patterns.mdc](mdc:.cursor/rules/api-patterns.mdc) - API開発パターン

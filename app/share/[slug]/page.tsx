@@ -44,10 +44,7 @@ export async function generateMetadata({
   const ogImageUrl = `/api/og?slug=${params.slug}`;
 
   // ベースURLを取得（本番環境・開発環境対応）
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
   const shareUrl = `${baseUrl}/share/${params.slug}`;
 
@@ -72,10 +69,10 @@ export async function generateMetadata({
     // キーワード（SEO）
     keywords: [
       itinerary.destination,
-      '旅行',
-      'しおり',
-      '旅のしおり',
-      'Journee',
+      "旅行",
+      "しおり",
+      "旅のしおり",
+      "Journee",
       ...(itinerary.schedule?.flatMap((day) =>
         day.spots.map((spot) => spot.name)
       ) || []),
@@ -151,10 +148,7 @@ export default async function PublicItineraryPage({ params }: PageProps) {
   }
 
   // 構造化データ（JSON-LD）の生成
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -168,10 +162,11 @@ export default async function PublicItineraryPage({ params }: PageProps) {
         name: itinerary.destination,
       },
     }),
-    ...(itinerary.schedule && itinerary.schedule.length > 0 && {
-      startDate: itinerary.schedule[0]?.date,
-      endDate: itinerary.schedule[itinerary.schedule.length - 1]?.date,
-    }),
+    ...(itinerary.schedule &&
+      itinerary.schedule.length > 0 && {
+        startDate: itinerary.schedule[0]?.date,
+        endDate: itinerary.schedule[itinerary.schedule.length - 1]?.date,
+      }),
     // 作成者情報（将来的に実装）
     // ...(itinerary.user_name && {
     //   creator: {
