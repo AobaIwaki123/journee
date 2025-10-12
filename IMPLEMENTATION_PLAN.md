@@ -116,7 +116,7 @@
 
 ### 3.2 Cursor Rule（.cursorrules）への追加
 
-**配置場所**: `.cursorrules` または `.cursor/rules/build-check.md`
+**配置場所**: `.cursor/rules/build-check.mdc`
 
 **内容**:
 ```markdown
