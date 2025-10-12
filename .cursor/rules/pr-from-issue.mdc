@@ -1,0 +1,183 @@
+---
+alwaysApply: true
+description: IssueからPRを作成する際のガイドライン
+---
+
+# PR作成ガイドライン - Issue連携
+
+## 概要
+
+IssueからPull Requestを作成する際は、Issue内容をPR説明に適切に含め、レビュアーが文脈を理解できるようにします。
+
+## 必須事項
+
+### 1. Issue番号の明示
+
+PR説明の冒頭に、関連するIssue番号を必ず記載してください。
+
+```markdown
+Closes #123
+Fixes #456
+Relates to #789
+```
+
+**キーワード:**
+- `Closes #N` / `Fixes #N`: PRマージ時にIssueを自動クローズ
+- `Relates to #N`: 関連するが自動クローズしない
+
+### 2. Issue内容の要約
+
+Issueに記載されている以下の情報をPR説明に含めてください：
+
+- **目的・背景**: なぜこの変更が必要か
+- **期待される動作**: 何を実現するか
+- **関連する課題**: どの問題を解決するか
+
+### 3. 実装内容の記載
+
+Issueで要求された内容に対して、**どのように実装したか**を具体的に記述：
+
+- 変更したファイル・コンポーネント
+- 採用したアプローチ・パターン
+- 技術的な判断の理由
+- 既存機能への影響
+
+### 4. テスト・確認方法
+
+実装が正しく動作することを確認した方法を記載：
+
+- 手動テストの手順
+- E2Eテストの追加・更新
+- スクリーンショット（UI変更の場合）
+- ビルド・型チェック・Lintの確認
+
+## PR Template活用
+
+プロジェクトの`.github/pull_request_template.md`に従ってPR説明を記載してください。
+
+## チェックリスト
+
+PR作成前に以下を確認：
+
+- [ ] Issue番号を明記（`Closes #N`, `Fixes #N`, `Relates to #N`）
+- [ ] Issueの目的・背景をPR説明に含めた
+- [ ] 実装内容を具体的に記述した
+- [ ] テスト方法・確認結果を記載した
+- [ ] [pre-build-check](mdc:.cursor/rules/pre-build-check.mdc)を実行
+  - [ ] `npm run type-check` 成功
+  - [ ] `npm run lint` 成功
+  - [ ] `npm run build` 成功
+- [ ] console.log等のデバッグコードを削除した
+- [ ] 必要に応じてドキュメントを更新した
+
+## 良いPR説明の例
+
+```markdown
+Closes #42
+
+## 概要
+チャット機能にストリーミングレスポンス対応を追加しました。
+
+## 背景（Issueより）
+現状、AI応答を全て受け取るまでユーザーは待つ必要があり、UXが悪いとの報告がありました。
+リアルタイムで応答を表示することで、応答性を改善します。
+
+## 実装内容
+
+### 追加・変更したファイル
+- `app/api/chat/route.ts`: ストリーミングレスポンス対応
+- `lib/ai/gemini.ts`: Gemini APIのストリーム処理
+- `components/chat/MessageList.tsx`: ストリーミング中の表示UI
+- `lib/store/useStore.ts`: ストリーミング状態管理
+
+### 技術的な判断
+- ReadableStreamを使用したチャンク単位のレスポンス送信
+- Zustandストアに`isStreaming`と`streamingMessage`を追加
+- ストリーミング中は送信ボタンを無効化
+
+## テスト方法
+
+### 動作確認
+1. チャットで「東京の観光スポットを教えて」と送信
+2. AIアイコンが表示され、文字が徐々に表示される
+3. 完全に受信後、メッセージリストに追加される
+
+### 自動テスト
+E2Eテスト追加: `e2e/streaming-response.spec.ts`
+
+### ビルド確認
+- [x] `npm run type-check` 成功
+- [x] `npm run lint` 成功
+- [x] `npm run build` 成功
+
+## スクリーンショット
+![ストリーミング中](./images/streaming.gif)
+
+## 関連ドキュメント
+- [AI統合ドキュメント](docs/AI_INTEGRATION.md)
+- [Gemini Streaming API](https://ai.google.dev/docs/streaming)
+```
+
+## 悪いPR説明の例（避けるべき）
+
+```markdown
+ストリーミング対応
+
+コード変更しました。
+動作確認済みです。
+```
+
+**問題点:**
+- Issue番号がない
+- 背景・目的が不明
+- 何をどう変更したか分からない
+- テスト内容が不明確
+
+## コミットメッセージとの関係
+
+PRはIssueの目的と実装を結びつけるもの。コミットメッセージは個々の変更履歴。
+
+**コミットメッセージ例（Conventional Commits）:**
+```
+feat(chat): add streaming response support
+
+- Implement Gemini streaming API
+- Add streaming indicator in MessageList
+
+Relates to #42
+```
+
+詳細は[docs/GUIDELINE.md](mdc:docs/GUIDELINE.md#コミット規約)を参照。
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ Issue番号を必ず含める
+- ✅ 「なぜ」「何を」「どのように」を明確に
+- ✅ スクリーンショット・GIFで視覚的に説明（UI変更時）
+- ✅ テスト方法を具体的に記載
+- ✅ ビルド・Lintチェックを実行してからPR作成
+- ✅ レビュアーの視点で説明を書く
+
+### DON'T（非推奨）
+- ❌ Issue番号を省略
+- ❌ 「修正しました」だけの曖昧な説明
+- ❌ テストをせずにPR作成
+- ❌ ビルドエラーがある状態でPR作成
+- ❌ デバッグコード（console.log等）を残す
+
+## 関連ドキュメント
+
+- [.github/pull_request_template.md](mdc:.github/pull_request_template.md) - PR テンプレート
+- [docs/GUIDELINE.md](mdc:docs/GUIDELINE.md) - 開発ガイドライン
+- [.cursor/rules/pre-build-check.mdc](mdc:.cursor/rules/pre-build-check.mdc) - Push前チェック
+
+## まとめ
+
+良いPR説明は：
+- **レビュアーの時間を節約**
+- **レビューの質を向上**
+- **コードの文脈を保存**
+- **チーム全体の生産性を向上**
+
+Issue内容を適切にPRに反映することで、開発プロセス全体が効率化されます。
