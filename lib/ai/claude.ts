@@ -13,6 +13,7 @@ import {
   parseAIResponse,
   formatChatHistory,
 } from "./prompts";
+import { limitChatHistoryByTokens } from "./token-manager";
 
 /**
  * Claude APIクライアント
@@ -159,10 +160,22 @@ export class ClaudeClient {
     // ユーザープロンプトを構築
     let userPrompt = "";
 
-    // チャット履歴がある場合は追加（最新10件のみ）
+    // チャット履歴がある場合は追加（トークン制限内の全履歴）
     if (chatHistory.length > 0) {
+      // Claude: 5万トークンまで送信可能
+      const limitedHistory = limitChatHistoryByTokens(
+        chatHistory
+          .filter((msg) => msg.role !== "system")
+          .map((msg) => ({
+            id: msg.id || `msg-${Date.now()}`,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: msg.timestamp || new Date(),
+          })),
+        50000
+      );
       const historyText = formatChatHistory(
-        chatHistory.slice(-10).map((msg) => ({
+        limitedHistory.map((msg) => ({
           role: msg.role,
           content: msg.content,
         }))
@@ -192,10 +205,20 @@ export class ClaudeClient {
   ): Anthropic.MessageParam[] {
     const messages: Anthropic.MessageParam[] = [];
 
-    // 最新10件のチャット履歴を追加（システムメッセージは除外）
-    const recentHistory = chatHistory
-      .slice(-10)
-      .filter((msg) => msg.role !== "system");
+    // トークン制限内のチャット履歴を追加（システムメッセージは除外）
+    // Claude: 5万トークンまで送信可能
+    const limitedHistory = limitChatHistoryByTokens(
+      chatHistory
+        .filter((msg) => msg.role !== "system")
+        .map((msg) => ({
+          id: msg.id || `msg-${Date.now()}`,
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+          timestamp: msg.timestamp || new Date(),
+        })),
+      50000
+    );
+    const recentHistory = limitedHistory;
 
     for (const msg of recentHistory) {
       messages.push({

@@ -9,6 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "pre-commit-check": "npm run type-check && npm run lint",
+    "pre-push-check": "npm run type-check && npm run lint && npm run build",
+    "prepare": "husky install",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -51,6 +54,7 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "husky": "^9.0.0",
     "@playwright/test": "^1.56.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",

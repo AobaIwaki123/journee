@@ -79,6 +79,11 @@ spec:
                 secretKeyRef:
                   name: journee-env
                   key: ENCRYPTION_KEY
+            - name: CHAT_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: journee-env
+                  key: CHAT_ENCRYPTION_KEY
             - name: ENCRYPTION_KEY_OLD
               valueFrom:
                 secretKeyRef:

@@ -17,6 +17,7 @@ import {
   createDayDetailPrompt,
   createNextStepPrompt,
 } from "./prompts";
+import { limitChatHistoryByTokens } from "./token-manager";
 
 /**
  * Gemini APIクライアント
@@ -132,10 +133,22 @@ export class GeminiClient {
     // Phase 4: フェーズに応じたシステムプロンプトを選択
     let prompt = getSystemPromptForPhase(planningPhase) + "\n\n";
 
-    // チャット履歴がある場合は追加
+    // チャット履歴がある場合は追加（トークン制限内の全履歴）
     if (chatHistory.length > 0) {
+      // Gemini: 10万トークンまで送信可能
+      const limitedHistory = limitChatHistoryByTokens(
+        chatHistory
+          .filter((msg) => msg.role !== "system")
+          .map((msg) => ({
+            id: msg.id || `msg-${Date.now()}`,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: msg.timestamp || new Date(),
+          })),
+        100000
+      );
       const historyText = formatChatHistory(
-        chatHistory.slice(-10).map((msg) => ({
+        limitedHistory.map((msg) => ({
           role: msg.role,
           content: msg.content,
         }))
