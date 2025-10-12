@@ -6,6 +6,7 @@ import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { DaySchedule } from "./DaySchedule";
+import { MapView } from "./MapView";
 import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
@@ -18,6 +19,8 @@ import {
   Loader2,
   Eye,
   LogIn,
+  Map,
+  MapOff,
 } from "lucide-react";
 import {
   generateItineraryPDF,
@@ -49,7 +52,18 @@ export default function PublicItineraryView({
   const [pdfProgress, setPdfProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+
+  // 位置情報を持つスポットが存在するかチェック
+  const hasLocationData = itinerary.schedule.some((day) =>
+    day.spots.some(
+      (spot) =>
+        spot.location &&
+        typeof spot.location.lat === "number" &&
+        typeof spot.location.lng === "number"
+    )
+  );
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
@@ -263,6 +277,45 @@ export default function PublicItineraryView({
             />
           ))}
         </div>
+
+        {/* 地図表示セクション */}
+        {hasLocationData && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Map className="w-5 h-5" />
+                ルートマップ
+              </h2>
+              <button
+                onClick={() => setShowMap(!showMap)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                title={showMap ? "地図を非表示" : "地図を表示"}
+              >
+                {showMap ? (
+                  <>
+                    <MapOff className="w-4 h-4" />
+                    <span className="hidden sm:inline">地図を非表示</span>
+                  </>
+                ) : (
+                  <>
+                    <Map className="w-4 h-4" />
+                    <span className="hidden sm:inline">地図を表示</span>
+                  </>
+                )}
+              </button>
+            </div>
+            {showMap && (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden h-[300px] sm:h-[400px] lg:h-[500px]">
+                <MapView
+                  days={itinerary.schedule}
+                  height="100%"
+                  showDaySelector={true}
+                  numberingMode="perDay"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* コメントセクション（Phase 11） */}
         {itinerary.id ? (
