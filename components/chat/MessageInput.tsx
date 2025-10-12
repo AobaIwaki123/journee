@@ -31,6 +31,8 @@ export const MessageInput: React.FC = () => {
   const setHasReceivedResponse = useStore(
     (state: any) => state.setHasReceivedResponse
   );
+  const compressAndSaveChatHistory = useStore((state: any) => state.compressAndSaveChatHistory); // 追加
+  const resetChatHistory = useStore((state: any) => state.resetChatHistory); // 追加
 
   // Message editing state
   const messageDraft = useStore((state: any) => state.messageDraft);
@@ -99,8 +101,13 @@ export const MessageInput: React.FC = () => {
     setAbortController(abortController);
 
     try {
-      // チャット履歴を準備（最新10件）
-      const chatHistory = messages.slice(-10).map((msg: any) => ({
+      // ✅ 追加: 送信前にチャット履歴を圧縮（必要に応じて）
+      if (currentItinerary?.id && messages.length > 20) {
+        await compressAndSaveChatHistory(currentItinerary.id);
+      }
+
+      // チャット履歴を準備
+      const chatHistory = messages.map((msg: any) => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,
@@ -271,43 +278,47 @@ export const MessageInput: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex space-x-2">
-      {editingMessageId && (
-        <div className="absolute -top-8 left-0 right-0 bg-yellow-100 text-yellow-800 px-4 py-1 text-sm rounded-t-lg">
-          メッセージを編集中です。編集を完了してから新しいメッセージを送信してください。
-        </div>
-      )}
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={
-          editingMessageId
-            ? "メッセージを編集中..."
-            : "メッセージを入力... (Shift + Enterで改行)"
-        }
-        disabled={disabled}
-        rows={1}
-        className="flex-1 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all resize-none overflow-hidden min-h-[42px] max-h-[200px]"
-        style={{
-          height: "auto",
-          minHeight: "42px",
-        }}
-        onInput={(e) => {
-          // 自動で高さを調整
-          const target = e.target as HTMLTextAreaElement;
-          target.style.height = "auto";
-          target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
-        }}
-      />
-      <button
-        type="submit"
-        disabled={disabled}
-        aria-label="メッセージを送信"
-        className="px-3 py-2 md:px-4 md:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
-      >
-        <Send className="w-5 h-5 md:w-5 md:h-5" />
-      </button>
-    </form>
+    <div className="relative w-full"> {/* 親要素をrelativeにする */}
+      <form onSubmit={handleSubmit} className="flex space-x-2">
+        {editingMessageId && (
+          <div className="absolute -top-8 left-0 right-0 bg-yellow-100 text-yellow-800 px-4 py-1 text-sm rounded-t-lg">
+            メッセージを編集中です。編集を完了してから新しいメッセージを送信してください。
+          </div>
+        )}
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            editingMessageId
+              ? "メッセージを編集中..."
+              : "メッセージを入力... (Shift + Enterで改行)"
+          }
+          disabled={disabled}
+          rows={1}
+          className="flex-1 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base text-gray-900 placeholder:text-gray-400 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all resize-none overflow-hidden min-h-[42px] max-h-[200px]"
+          style={{
+            height: "auto",
+            minHeight: "42px",
+          }}
+          onInput={(e) => {
+            // 自動で高さを調整
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = "auto";
+            target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+          }}
+        />
+        <button
+          type="submit"
+          disabled={disabled}
+          aria-label="メッセージを送信"
+          className="px-3 py-2 md:px-4 md:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
+        >
+          <Send className="w-5 h-5 md:w-5 md:h-5" />
+        </button>
+      </form>
+
+      {/* チャット履歴リセットボタンはChatBoxに移動 */}
+    </div>
   );
 };

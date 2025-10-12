@@ -205,10 +205,26 @@ data: {"type":"error","error":"エラーメッセージ"}
 - `次へ`, `next`, `進む`: 次フェーズへの移行誘導
 
 ---
-
-## 📝 しおりAPI
-
-しおりの保存・読込・管理。Supabaseデータベース使用。
+ 
+ ## 💬 チャット履歴API
+ 
+ ### チャット履歴保存
+ 
+ **POST /api/chat/history**
+ 
+ ### チャット履歴取得
+ 
+ **GET /api/chat/history?itineraryId={id}**
+ 
+ ### チャット履歴圧縮
+ 
+ **POST /api/chat/compress**
+ 
+ ---
+ 
+ ## 📝 しおりAPI
+ 
+ しおりの保存・読込・管理。Supabaseデータベース使用。
 
 ### ベースURL
 

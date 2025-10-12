@@ -96,7 +96,7 @@ export interface ItinerarySort {
   order: ItinerarySortOrder;
 }
 
-interface AppState {
+export interface AppState {
   // Chat state
   messages: Message[];
   isLoading: boolean;
@@ -110,6 +110,11 @@ interface AppState {
   appendStreamingMessage: (chunk: string) => void;
   clearMessages: () => void;
   setHasReceivedResponse: (value: boolean) => void;
+  resetChatHistory: () => void; // 追加: チャット履歴をリセットするアクション
+
+  // 追加: しおりがまだ未保存かどうか
+  isItineraryUnsaved: boolean;
+  setItineraryUnsaved: (unsaved: boolean) => void;
 
   // Message editing state
   editingMessageId: string | null;
@@ -251,6 +256,11 @@ interface AppState {
   // Phase 7.1: Panel resizer state
   chatPanelWidth: number; // チャットパネルの幅（パーセンテージ: 30-70）
   setChatPanelWidth: (width: number) => void;
+
+  // ✅ 追加: チャット履歴DB統合
+  loadChatHistory: (itineraryId: string) => Promise<void>;
+  saveChatHistoryToDb: (itineraryId: string) => Promise<boolean>;
+  compressAndSaveChatHistory: (itineraryId: string) => Promise<void>;
 }
 
 /**
@@ -313,6 +323,10 @@ export const useStore = create<AppState>()(
     set((state) => ({ streamingMessage: state.streamingMessage + chunk })),
   clearMessages: () => set({ messages: [], streamingMessage: "" }),
   setHasReceivedResponse: (value) => set({ hasReceivedResponse: value }),
+  resetChatHistory: () => set({ messages: [], streamingMessage: "", hasReceivedResponse: false }), // 追加
+
+  isItineraryUnsaved: true, // 初期状態は未保存
+  setItineraryUnsaved: (unsaved) => set({ isItineraryUnsaved: unsaved }),
 
   // Message editing state
   editingMessageId: null,
@@ -1181,6 +1195,93 @@ export const useStore = create<AppState>()(
     // IndexedDBに保存
     saveChatPanelWidth(clampedWidth);
   },
+
+  // ✅ チャット履歴の読み込み
+  loadChatHistory: async (itineraryId: string) => {
+    try {
+      const response = await fetch(`/api/chat/history?itineraryId=${itineraryId}`);
+      
+      if (!response.ok) {
+        console.error('Failed to load chat history');
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.messages) {
+        // メッセージをストアに設定
+        set({ messages: data.messages });
+      }
+    } catch (error) {
+      console.error('Load chat history error:', error);
+    }
+  },
+
+  // ✅ チャット履歴の保存
+  saveChatHistoryToDb: async (itineraryId: string) => {
+    const { messages } = get();
+    
+    if (!itineraryId || messages.length === 0) {
+      return false;
+    }
+
+    try {
+      const response = await fetch('/api/chat/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itineraryId,
+          messages,
+        }),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Save chat history error:', error);
+      return false;
+    }
+  },
+
+  // ✅ チャット履歴の圧縮と保存
+  compressAndSaveChatHistory: async (itineraryId: string) => {
+    const { messages, selectedAI, claudeApiKey } = get();
+
+    // トークン数をチェック
+    if (messages.length < 20) {
+      // メッセージ数が少ない場合はスキップ
+      return;
+    }
+
+    try {
+      // クライアント側で圧縮APIを呼び出し
+      const response = await fetch('/api/chat/compress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          modelId: selectedAI,
+          claudeApiKey,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.didCompress && data.compressed) {
+          // 圧縮されたメッセージでストアを更新
+          set({ messages: data.compressed });
+
+          // DBに保存
+          await get().saveChatHistoryToDb(itineraryId);
+
+          // ユーザーに通知
+          get().addToast('チャット履歴が長くなったため、自動的に要約されました', 'info');
+        }
+      }
+    } catch (error) {
+      console.error('Compress chat history error:', error);
+    }
+  },
     }),
     {
       name: 'journee-storage',
@@ -1194,6 +1295,7 @@ export const useStore = create<AppState>()(
         autoProgressMode: state.autoProgressMode,
         autoProgressSettings: state.autoProgressSettings,
         chatPanelWidth: state.chatPanelWidth,
+        isItineraryUnsaved: state.isItineraryUnsaved, // 追加
       }),
       // ハイドレーション完了時のコールバック
       onRehydrateStorage: () => (state, error) => {

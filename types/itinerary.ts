@@ -115,7 +115,7 @@ export interface ItineraryData {
   /** 通貨（デフォルト: JPY） */
   currency?: string;
   /** ステータス */
-  status: "draft" | "completed" | "archived";
+  status: "draft" | "completed" | "archived" | "published";
   /** 作成日時 */
   createdAt: Date;
   /** 更新日時 */
@@ -183,7 +183,7 @@ export interface ItineraryListItem {
   destination: string;
   startDate?: string;
   endDate?: string;
-  status: "draft" | "completed" | "archived";
+  status: "draft" | "completed" | "archived" | "published";
   createdAt: Date;
   updatedAt: Date;
   thumbnailUrl?: string;

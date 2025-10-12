@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Calendar, MapPin, FileText, Clock } from 'lucide-react';
-import type { ItineraryListItem } from '@/types/itinerary';
+import React from "react";
+import Link from "next/link";
+import { Calendar, MapPin, FileText, Clock } from "lucide-react";
+import type { ItineraryListItem } from "@/types/itinerary";
 
 interface ItineraryCardProps {
   itinerary: ItineraryListItem;
@@ -15,16 +15,18 @@ interface ItineraryCardProps {
  */
 export const ItineraryCard: React.FC<ItineraryCardProps> = ({ itinerary }) => {
   // ステータスバッジのスタイル
-  const getStatusBadge = (status: ItineraryListItem['status']) => {
+  const getStatusBadge = (status: ItineraryListItem["status"]) => {
     const styles = {
-      draft: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-green-100 text-green-800',
-      archived: 'bg-gray-100 text-gray-800',
+      draft: "bg-yellow-100 text-yellow-800",
+      completed: "bg-green-100 text-green-800",
+      archived: "bg-gray-100 text-gray-800",
+      published: "bg-blue-100 text-blue-800",
     };
     const labels = {
-      draft: '下書き',
-      completed: '完成',
-      archived: 'アーカイブ',
+      draft: "下書き",
+      completed: "完成",
+      archived: "アーカイブ",
+      published: "公開中",
     };
     return { style: styles[status], label: labels[status] };
   };
@@ -33,9 +35,9 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ itinerary }) => {
 
   // 日付のフォーマット
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
     const date = new Date(dateStr);
-    return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
   };
 
   // 更新日の相対表示
@@ -43,9 +45,9 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ itinerary }) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (days === 0) return '今日';
-    if (days === 1) return '昨日';
+
+    if (days === 0) return "今日";
+    if (days === 1) return "昨日";
     if (days < 7) return `${days}日前`;
     if (days < 30) return `${Math.floor(days / 7)}週間前`;
     return `${Math.floor(days / 30)}ヶ月前`;
@@ -71,7 +73,9 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ itinerary }) => {
         )}
         {/* ステータスバッジ */}
         <div className="absolute top-3 right-3">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusBadge.style}`}>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${statusBadge.style}`}
+          >
             {statusBadge.label}
           </span>
         </div>
@@ -95,7 +99,8 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ itinerary }) => {
           <div className="flex items-center gap-2 text-gray-600 mb-3">
             <Calendar className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm">
-              {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
+              {formatDate(itinerary.startDate)} -{" "}
+              {formatDate(itinerary.endDate)}
             </span>
           </div>
         )}

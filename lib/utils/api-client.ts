@@ -9,7 +9,7 @@ import type {
   ChatAPIResponse, 
   ChatStreamChunk 
 } from '@/types/api';
-import type { ChatMessage } from '@/types/chat';
+import type { ChatMessage, Message } from '@/types/chat';
 import type { ItineraryData, ItineraryPhase } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
@@ -206,4 +206,51 @@ export async function* sendChatMessageStream(
     currency,
     signal,
   });
+}
+
+/**
+ * しおりとチャット履歴をまとめて保存するヘルパー関数
+ * Phase 5.3: しおり保存時にチャット履歴も一括保存
+ */
+export async function saveItineraryWithChatHistory(
+  itinerary: ItineraryData,
+  messages: Message[]
+): Promise<ItineraryData> {
+  const isFirstSave = !itinerary.id;
+
+  // 1. しおりを保存
+  const response = await fetch('/api/itinerary/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(itinerary),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to save itinerary');
+  }
+
+  const savedItinerary = await response.json();
+
+  // 2. 初回保存の場合、チャット履歴も一括保存
+  if (isFirstSave && messages.length > 0) {
+    const chatHistoryResponse = await fetch('/api/chat/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        itineraryId: savedItinerary.id,
+        messages,
+      }),
+    });
+
+    if (!chatHistoryResponse.ok) {
+      console.error('Failed to save chat history during initial itinerary save');
+      // エラーが発生しても、しおりの保存は成功しているので続行
+    }
+
+    // 保存フラグを更新
+    // useStore.getState().setItineraryUnsaved(false); // This will be handled by the SaveButton component
+  }
+
+  return savedItinerary;
 }

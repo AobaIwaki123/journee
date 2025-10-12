@@ -7,7 +7,7 @@ This file provides guidance to agents when working with code in this repository.
 - Supports Gemini / Claude AI models (switchable), Supabase persistence, PDF export, and public sharing features.
 
 ## Essential Commands
-- **Pre-Commit Checklist**: Always run `npm run type-check && npm run lint && npm run build` before committing.
+- **Pre-Commit Checklist**: Always run `npm run type-check && npm run lint && npm run build` before committing. (Refer to `.cursor/rules/mandatory-pre-build-check.mdc` for details.)
 - **Single Test**: `npm test -- <path/to/test.test.ts>` for Jest unit tests. `npm run test:e2e -- <path/to/spec.spec.ts>` for Playwright E2E tests.
 - **Custom Scripts**:
     - `npm run docker:start|stop|restart|logs|shell|build|clean|status` for Docker development.
@@ -34,7 +34,7 @@ This file provides guidance to agents when working with code in this repository.
 - **Interface vs Type**: Prefer `interface` for type definitions.
 
 ## AI Assistant Rules Integration
-- Refer to `.cursor/rules/` for comprehensive coding rules, including `project_structure.mdc`, `typescript-react-rules.mdc`, `styling-rules.mdc`, `api-patterns.mdc`, `error-handling.mdc`, `authentication.mdc`, `database-integration.mdc`, `ai-integration.mdc`, `testing-strategy.mdc`, and `git-workflow.mdc`.
+- Refer to `.cursor/rules/` for comprehensive coding rules, including `project_structure.mdc`, `typescript-react-rules.mdc`, `styling-rules.mdc`, `api-patterns.mdc`, `error-handling.mdc`, `authentication.mdc`, `database-integration.mdc`, `ai-integration.mdc`, `testing-strategy.mdc`, `git-workflow.mdc`, `comment-feature.mdc`, `feedback-feature.mdc`, `ogp-image-generation.mdc`, `branch-isolation.mdc`, `cursor-commands.mdc`, `context7-mcp.mdc`, `serena-mcp.mdc`, `environment-variables.mdc`, `security_and_performance.mdc`, `responsive-layout.mdc`, and `state_management.mdc`.
 - Custom Cursor commands are defined in `.cursor/commands/`.
 
 ## Important Notes

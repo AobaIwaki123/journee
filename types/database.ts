@@ -1,6 +1,6 @@
 /**
  * Supabaseデータベースの型定義（Phase 8）
- * 
+ *
  * supabase gen types typescript コマンドで自動生成することも可能
  */
 
@@ -56,14 +56,20 @@ export interface Database {
           summary: string | null;
           total_budget: number | null;
           currency: string | null;
-          status: 'draft' | 'completed' | 'archived';
+          status: "draft" | "completed" | "archived" | "published";
           is_public: boolean | null;
           public_slug: string | null;
           published_at: string | null;
           view_count: number | null;
           allow_pdf_download: boolean | null;
           custom_message: string | null;
-          phase: 'initial' | 'collecting' | 'skeleton' | 'detailing' | 'completed' | null;
+          phase:
+            | "initial"
+            | "collecting"
+            | "skeleton"
+            | "detailing"
+            | "completed"
+            | null;
           current_day: number | null;
           created_at: string;
           updated_at: string;
@@ -79,14 +85,20 @@ export interface Database {
           summary?: string | null;
           total_budget?: number | null;
           currency?: string | null;
-          status?: 'draft' | 'completed' | 'archived';
+          status?: "draft" | "completed" | "archived" | "published";
           is_public?: boolean | null;
           public_slug?: string | null;
           published_at?: string | null;
           view_count?: number | null;
           allow_pdf_download?: boolean | null;
           custom_message?: string | null;
-          phase?: 'initial' | 'collecting' | 'skeleton' | 'detailing' | 'completed' | null;
+          phase?:
+            | "initial"
+            | "collecting"
+            | "skeleton"
+            | "detailing"
+            | "completed"
+            | null;
           current_day?: number | null;
           created_at?: string;
           updated_at?: string;
@@ -102,14 +114,20 @@ export interface Database {
           summary?: string | null;
           total_budget?: number | null;
           currency?: string | null;
-          status?: 'draft' | 'completed' | 'archived';
+          status?: "draft" | "completed" | "archived" | "published";
           is_public?: boolean | null;
           public_slug?: string | null;
           published_at?: string | null;
           view_count?: number | null;
           allow_pdf_download?: boolean | null;
           custom_message?: string | null;
-          phase?: 'initial' | 'collecting' | 'skeleton' | 'detailing' | 'completed' | null;
+          phase?:
+            | "initial"
+            | "collecting"
+            | "skeleton"
+            | "detailing"
+            | "completed"
+            | null;
           current_day?: number | null;
           created_at?: string;
           updated_at?: string;
@@ -124,7 +142,7 @@ export interface Database {
           title: string | null;
           total_distance: number | null;
           total_cost: number | null;
-          status: 'draft' | 'skeleton' | 'detailed' | 'completed' | null;
+          status: "draft" | "skeleton" | "detailed" | "completed" | null;
           theme: string | null;
           is_loading: boolean | null;
           error: string | null;
@@ -140,7 +158,7 @@ export interface Database {
           title?: string | null;
           total_distance?: number | null;
           total_cost?: number | null;
-          status?: 'draft' | 'skeleton' | 'detailed' | 'completed' | null;
+          status?: "draft" | "skeleton" | "detailed" | "completed" | null;
           theme?: string | null;
           is_loading?: boolean | null;
           error?: string | null;
@@ -156,7 +174,7 @@ export interface Database {
           title?: string | null;
           total_distance?: number | null;
           total_cost?: number | null;
-          status?: 'draft' | 'skeleton' | 'detailed' | 'completed' | null;
+          status?: "draft" | "skeleton" | "detailed" | "completed" | null;
           theme?: string | null;
           is_loading?: boolean | null;
           error?: string | null;
@@ -173,7 +191,13 @@ export interface Database {
           description: string | null;
           scheduled_time: string | null;
           duration: number | null;
-          category: 'sightseeing' | 'dining' | 'transportation' | 'accommodation' | 'other' | null;
+          category:
+            | "sightseeing"
+            | "dining"
+            | "transportation"
+            | "accommodation"
+            | "other"
+            | null;
           estimated_cost: number | null;
           notes: string | null;
           image_url: string | null;
@@ -192,7 +216,13 @@ export interface Database {
           description?: string | null;
           scheduled_time?: string | null;
           duration?: number | null;
-          category?: 'sightseeing' | 'dining' | 'transportation' | 'accommodation' | 'other' | null;
+          category?:
+            | "sightseeing"
+            | "dining"
+            | "transportation"
+            | "accommodation"
+            | "other"
+            | null;
           estimated_cost?: number | null;
           notes?: string | null;
           image_url?: string | null;
@@ -211,7 +241,13 @@ export interface Database {
           description?: string | null;
           scheduled_time?: string | null;
           duration?: number | null;
-          category?: 'sightseeing' | 'dining' | 'transportation' | 'accommodation' | 'other' | null;
+          category?:
+            | "sightseeing"
+            | "dining"
+            | "transportation"
+            | "accommodation"
+            | "other"
+            | null;
           estimated_cost?: number | null;
           notes?: string | null;
           image_url?: string | null;
@@ -228,22 +264,28 @@ export interface Database {
         Row: {
           id: string;
           itinerary_id: string;
-          role: 'user' | 'assistant';
-          content: string;
+          role: "user" | "assistant";
+          content: string | null;
+          encrypted_content: string | null;
+          is_encrypted: boolean | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           itinerary_id: string;
-          role: 'user' | 'assistant';
-          content: string;
+          role: "user" | "assistant";
+          content?: string | null;
+          encrypted_content?: string | null;
+          is_encrypted?: boolean | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           itinerary_id?: string;
-          role?: 'user' | 'assistant';
-          content?: string;
+          role?: "user" | "assistant";
+          content?: string | null;
+          encrypted_content?: string | null;
+          is_encrypted?: boolean | null;
           created_at?: string;
         };
       };
@@ -330,6 +372,26 @@ export interface Database {
           p_encryption_key: string;
         };
         Returns: string | null;
+      };
+      encrypt_chat_message: {
+        Args: {
+          p_content: string;
+          p_encryption_key: string;
+        };
+        Returns: string;
+      };
+      decrypt_chat_message: {
+        Args: {
+          p_encrypted_content: string;
+          p_encryption_key: string;
+        };
+        Returns: string | null;
+      };
+      migrate_existing_chat_messages: {
+        Args: {
+          p_encryption_key: string;
+        };
+        Returns: void;
       };
       increment_view_count: {
         Args: {

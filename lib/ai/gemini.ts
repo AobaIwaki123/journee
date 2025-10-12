@@ -7,6 +7,7 @@ import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import type { ChatMessage } from "@/types/chat";
 import type { ItineraryData, ItineraryPhase } from "@/types/itinerary";
 import { getModelName } from "./models";
+import { limitChatHistoryByTokens } from './token-manager'; // 追加
 import {
   SYSTEM_PROMPT,
   createUpdatePrompt,
@@ -24,16 +25,18 @@ import {
 export class GeminiClient {
   private client: GoogleGenerativeAI;
   private model: GenerativeModel;
+  private modelId: 'gemini' | 'gemini-flash';
 
-  constructor(apiKey?: string) {
+  constructor(modelId: 'gemini' | 'gemini-flash' = 'gemini', apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY;
     if (!key) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
     this.client = new GoogleGenerativeAI(key);
+    this.modelId = modelId;
     // モデル設定から取得
-    const modelName = getModelName('gemini');
+    const modelName = getModelName(modelId);
     this.model = this.client.getGenerativeModel({ model: modelName });
   }
 
@@ -132,8 +135,16 @@ export class GeminiClient {
 
     // チャット履歴がある場合は追加
     if (chatHistory.length > 0) {
+      const filteredChatHistory = chatHistory.filter(msg => msg.role !== 'system');
+      const mappedHistory = filteredChatHistory.map(msg => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant", // 'system' messages are already filtered out
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+      const limitedHistory = limitChatHistoryByTokens(mappedHistory, 100000); // Gemini: 10万トークン
       const historyText = formatChatHistory(
-        chatHistory.slice(-10).map((msg) => ({
+        limitedHistory.map((msg) => ({
           role: msg.role,
           content: msg.content,
         }))
@@ -192,18 +203,21 @@ export class GeminiClient {
 }
 
 /**
- * Geminiクライアントのシングルトンインスタンス
+ * Geminiクライアントのキャッシュ（モデルIDごと）
  */
-let geminiClientInstance: GeminiClient | null = null;
+const geminiClientCache: Map<string, GeminiClient> = new Map();
 
 /**
  * Geminiクライアントを取得
  */
-export function getGeminiClient(apiKey?: string): GeminiClient {
-  if (!geminiClientInstance) {
-    geminiClientInstance = new GeminiClient(apiKey);
+export function getGeminiClient(modelId: 'gemini' | 'gemini-flash' = 'gemini', apiKey?: string): GeminiClient {
+  const cacheKey = `${modelId}-${apiKey || 'default'}`;
+  
+  if (!geminiClientCache.has(cacheKey)) {
+    geminiClientCache.set(cacheKey, new GeminiClient(modelId, apiKey));
   }
-  return geminiClientInstance;
+  
+  return geminiClientCache.get(cacheKey)!;
 }
 
 /**
@@ -216,12 +230,13 @@ export async function sendGeminiMessage(
   currentItinerary?: ItineraryData,
   apiKey?: string,
   planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null
+  currentDetailingDay?: number | null,
+  modelId: 'gemini' | 'gemini-flash' = 'gemini'
 ): Promise<{
   message: string;
   itinerary?: ItineraryData;
 }> {
-  const client = getGeminiClient(apiKey);
+  const client = getGeminiClient(modelId, apiKey);
   return client.chat(message, chatHistory, currentItinerary, planningPhase, currentDetailingDay);
 }
 
@@ -235,8 +250,9 @@ export async function* streamGeminiMessage(
   currentItinerary?: ItineraryData,
   apiKey?: string,
   planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null
+  currentDetailingDay?: number | null,
+  modelId: 'gemini' | 'gemini-flash' = 'gemini'
 ): AsyncGenerator<string, void, unknown> {
-  const client = getGeminiClient(apiKey);
+  const client = getGeminiClient(modelId, apiKey);
   yield* client.chatStream(message, chatHistory, currentItinerary, planningPhase, currentDetailingDay);
 }

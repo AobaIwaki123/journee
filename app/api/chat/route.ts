@@ -21,6 +21,7 @@ import {
 } from "@/lib/ai/prompts";
 import { isValidModelId } from "@/lib/ai/models";
 import { mockItineraries } from "@/lib/mock-data/itineraries";
+import { saveMessage } from "@/lib/db/chat-repository";
 
 /**
  * デバッグ用モックレスポンス生成関数
@@ -206,7 +207,8 @@ export async function POST(request: NextRequest) {
         chatHistory,
         currentItinerary,
         planningPhase,
-        currentDetailingDay
+        currentDetailingDay,
+        selectedModel
       );
     }
 
@@ -216,7 +218,8 @@ export async function POST(request: NextRequest) {
       chatHistory,
       currentItinerary,
       planningPhase,
-      currentDetailingDay
+      currentDetailingDay,
+      selectedModel
     );
   } catch (error: any) {
     console.error("Chat API Error:", error);
@@ -241,9 +244,13 @@ async function handleGeminiNonStreamingResponse(
   chatHistory: any[],
   currentItinerary: any,
   planningPhase: any,
-  currentDetailingDay: any
+  currentDetailingDay: any,
+  modelId: AIModelId
 ) {
   try {
+    // GeminiモデルIDを抽出
+    const geminiModelId = (modelId === "gemini-flash" ? "gemini-flash" : "gemini") as 'gemini' | 'gemini-flash';
+
     // Gemini APIにメッセージを送信
     const result = await sendGeminiMessage(
       message,
@@ -251,7 +258,8 @@ async function handleGeminiNonStreamingResponse(
       currentItinerary,
       undefined,
       planningPhase,
-      currentDetailingDay
+      currentDetailingDay,
+      geminiModelId
     );
 
     // しおりデータをマージ
@@ -260,10 +268,33 @@ async function handleGeminiNonStreamingResponse(
       updatedItinerary = mergeItineraryData(currentItinerary, result.itinerary);
     }
 
+    // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
+    if (updatedItinerary?.id) {
+      const saveUserMessageResult = await saveMessage(updatedItinerary.id, {
+        role: 'user',
+        content: message,
+        timestamp: new Date(),
+      });
+      if (!saveUserMessageResult.success) {
+        console.error('Failed to save user message:', saveUserMessageResult.error);
+      }
+
+      const saveAIMessageResult = await saveMessage(updatedItinerary.id, {
+        role: 'assistant',
+        content: result.message,
+        timestamp: new Date(),
+      });
+      if (!saveAIMessageResult.success) {
+        console.error('Failed to save AI message:', saveAIMessageResult.error);
+      }
+    } else {
+      console.warn('Itinerary ID not found for non-streaming response. Chat history will be saved on itinerary save.');
+    }
+
     const response: ChatAPIResponse = {
       message: result.message,
       itinerary: updatedItinerary,
-      model: "gemini",
+      model: modelId,
     };
 
     return NextResponse.json(response);
@@ -296,6 +327,29 @@ async function handleClaudeNonStreamingResponse(
       updatedItinerary = mergeItineraryData(currentItinerary, result.itinerary);
     }
 
+    // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
+    if (updatedItinerary?.id) {
+      const saveUserMessageResult = await saveMessage(updatedItinerary.id, {
+        role: 'user',
+        content: message,
+        timestamp: new Date(),
+      });
+      if (!saveUserMessageResult.success) {
+        console.error('Failed to save user message:', saveUserMessageResult.error);
+      }
+
+      const saveAIMessageResult = await saveMessage(updatedItinerary.id, {
+        role: 'assistant',
+        content: result.message,
+        timestamp: new Date(),
+      });
+      if (!saveAIMessageResult.success) {
+        console.error('Failed to save AI message:', saveAIMessageResult.error);
+      }
+    } else {
+      console.warn('Itinerary ID not found for non-streaming response. Chat history will be saved on itinerary save.');
+    }
+
     const response: ChatAPIResponse = {
       message: result.message,
       itinerary: updatedItinerary,
@@ -316,7 +370,8 @@ async function handleGeminiStreamingResponse(
   chatHistory: any[],
   currentItinerary: any,
   planningPhase: any,
-  currentDetailingDay: any
+  currentDetailingDay: any,
+  modelId: AIModelId
 ) {
   const encoder = new TextEncoder();
 
@@ -326,6 +381,9 @@ async function handleGeminiStreamingResponse(
       try {
         let fullResponse = "";
 
+        // GeminiモデルIDを抽出
+        const geminiModelId = (modelId === "gemini-flash" ? "gemini-flash" : "gemini") as 'gemini' | 'gemini-flash';
+
         // Gemini APIからストリーミングレスポンスを取得
         for await (const chunk of streamGeminiMessage(
           message,
@@ -333,7 +391,8 @@ async function handleGeminiStreamingResponse(
           currentItinerary,
           undefined,
           planningPhase,
-          currentDetailingDay
+          currentDetailingDay,
+          geminiModelId
         )) {
           fullResponse += chunk;
 
@@ -352,11 +411,13 @@ async function handleGeminiStreamingResponse(
           parseAIResponse(fullResponse);
 
         // しおりデータがある場合は送信
+        let finalItinerary = currentItinerary;
         if (itineraryData) {
           const updatedItinerary = mergeItineraryData(
             currentItinerary,
             itineraryData
           );
+          finalItinerary = updatedItinerary;
 
           const itineraryChunk: ChatStreamChunk = {
             type: "itinerary",
@@ -365,6 +426,29 @@ async function handleGeminiStreamingResponse(
 
           const data = `data: ${JSON.stringify(itineraryChunk)}\n\n`;
           controller.enqueue(encoder.encode(data));
+        }
+
+        // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
+        if (finalItinerary?.id) {
+          const saveUserMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'user',
+            content: message,
+            timestamp: new Date(),
+          });
+          if (!saveUserMessageResult.success) {
+            console.error('Failed to save user message (streaming):', saveUserMessageResult.error);
+          }
+
+          const saveAIMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'assistant',
+            content: fullResponse,
+            timestamp: new Date(),
+          });
+          if (!saveAIMessageResult.success) {
+            console.error('Failed to save AI message (streaming):', saveAIMessageResult.error);
+          }
+        } else {
+          console.warn('Itinerary ID not found for streaming response. Chat history will be saved on itinerary save.');
         }
 
         // 完了を通知
@@ -444,11 +528,13 @@ async function handleClaudeStreamingResponse(
           parseAIResponse(fullResponse);
 
         // しおりデータがある場合は送信
+        let finalItinerary = currentItinerary;
         if (itineraryData) {
           const updatedItinerary = mergeItineraryData(
             currentItinerary,
             itineraryData
           );
+          finalItinerary = updatedItinerary;
 
           const itineraryChunk: ChatStreamChunk = {
             type: "itinerary",
@@ -457,6 +543,29 @@ async function handleClaudeStreamingResponse(
 
           const data = `data: ${JSON.stringify(itineraryChunk)}\n\n`;
           controller.enqueue(encoder.encode(data));
+        }
+
+        // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
+        if (finalItinerary?.id) {
+          const saveUserMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'user',
+            content: message,
+            timestamp: new Date(),
+          });
+          if (!saveUserMessageResult.success) {
+            console.error('Failed to save user message (streaming):', saveUserMessageResult.error);
+          }
+
+          const saveAIMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'assistant',
+            content: fullResponse,
+            timestamp: new Date(),
+          });
+          if (!saveAIMessageResult.success) {
+            console.error('Failed to save AI message (streaming):', saveAIMessageResult.error);
+          }
+        } else {
+          console.warn('Itinerary ID not found for streaming response. Chat history will be saved on itinerary save.');
         }
 
         // 完了を通知

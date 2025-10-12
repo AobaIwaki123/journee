@@ -113,6 +113,7 @@ types/                 # TypeScript type definitions
 #### State Management (Zustand)
 - Single global store: `lib/store/useStore.ts`
 - Slices: Chat, Itinerary, Settings, UI state
+- LocalStorage persistence via `persist` middleware
 - IndexedDB persistence via `persist` middleware
 - **Always use selective subscriptions** for performance:
   ```typescript

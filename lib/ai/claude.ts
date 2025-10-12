@@ -7,6 +7,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ChatMessage } from "@/types/chat";
 import type { ItineraryData } from "@/types/itinerary";
 import { getModelName, getModelConfig } from "./models";
+import { limitChatHistoryByTokens } from './token-manager'; // 追加
 import {
   SYSTEM_PROMPT,
   createUpdatePrompt,
@@ -159,10 +160,18 @@ export class ClaudeClient {
     // ユーザープロンプトを構築
     let userPrompt = "";
 
-    // チャット履歴がある場合は追加（最新10件のみ）
+    // チャット履歴がある場合は追加
     if (chatHistory.length > 0) {
+      const filteredChatHistory = chatHistory.filter(msg => msg.role !== 'system');
+      const mappedHistory = filteredChatHistory.map(msg => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant", // 'system' messages are already filtered out
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+      const limitedHistory = limitChatHistoryByTokens(mappedHistory, 50000); // Claude: 5万トークン
       const historyText = formatChatHistory(
-        chatHistory.slice(-10).map((msg) => ({
+        limitedHistory.map((msg) => ({
           role: msg.role,
           content: msg.content,
         }))
@@ -194,8 +203,7 @@ export class ClaudeClient {
 
     // 最新10件のチャット履歴を追加（システムメッセージは除外）
     const recentHistory = chatHistory
-      .slice(-10)
-      .filter((msg) => msg.role !== "system");
+      .filter((msg) => msg.role !== "system"); // limitChatHistoryByTokensで既に制限されているためslice(-10)は不要
 
     for (const msg of recentHistory) {
       messages.push({
