@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: journee-f0b387
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/AobaIwaki123/journee'
+    targetRevision: cursor/create-implementation-plan-for-ogp-images-4d93
+    path: k8s/manifests-f0b387
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: journee
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
