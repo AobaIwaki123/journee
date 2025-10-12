@@ -4,12 +4,21 @@
 
 しおり作成ページ（`/`）に未ログイン状態でアクセスすることは想定されていないため、関連する未ログイン時の処理を削除し、コードベースを簡素化する。
 
+**重要な例外**: 以下の機能は**未認証でもアクセス可能**を維持：
+- 公開しおりの閲覧（`/share/[slug]`）
+- OGP画像生成（`/api/og`）
+- コメント閲覧（`GET /api/itinerary/[id]/comments`）
+- コメント投稿は**ログイン必須**（`POST /api/itinerary/[id]/comments`）
+
+**セキュリティ重視**: E2Eテスト用の認証バイパスには、クライアント側から操作不可能な**環境変数のみ**を使用し、本番環境での誤用リスクを完全に排除。
+
 ## 目的
 
 - 認証が必須であることをアーキテクチャレベルで明確化
 - 不要なコード（未ログイン時のLocalStorage処理など）を削除
 - メンテナンス性の向上
-- セキュリティの明確化
+- **セキュリティの強化**（環境変数ベースの安全な認証バイパス）
+- 本番環境での認証バイパスリスクの完全排除
 
 ## 現状分析
 
@@ -51,16 +60,34 @@
 
 **変更内容**:
 - ルートパス`/`をmatcherに追加し、認証必須にする
-- E2Eテスト用のバイパス機能を追加（HTTPヘッダー`x-test-mode: 'true'`）
+- E2Eテスト用のバイパス機能を追加（環境変数`PLAYWRIGHT_TEST_MODE`のみで制御）
+- **公開しおり関連のエンドポイントを未認証でもアクセス可能にする**
+  - `/api/og` - OGP画像生成（SNS共有用、未認証OK）
+  - `GET /api/itinerary/[id]/comments` - コメント閲覧（未認証OK）
+  - `POST /api/itinerary/[id]/comments` - コメント投稿（**認証必須**）
 
 **実装**:
 ```typescript
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
+
 export default withAuth(
   function middleware(req) {
-    // E2Eテスト用バイパス
-    const testMode = req.headers.get('x-test-mode');
-    if (testMode === 'true') {
+    const pathname = req.nextUrl.pathname;
+    const method = req.method;
+    
+    // 公開しおり関連APIで未認証アクセスを許可するパス
+    // OGP画像生成は常に未認証OK
+    if (pathname.startsWith('/api/og')) {
       return NextResponse.next();
+    }
+    
+    // コメント閲覧（GET）は未認証OK、投稿（POST/DELETE）は認証必須
+    if (pathname.match(/\/api\/itinerary\/[^/]+\/comments/)) {
+      if (method === 'GET') {
+        return NextResponse.next(); // 閲覧は未認証OK
+      }
+      // POST/DELETEは認証必須なので、通常の認証フローへ
     }
     
     return NextResponse.next();
@@ -68,9 +95,21 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // E2Eテスト用バイパス
-        const testMode = req.headers.get('x-test-mode');
-        if (testMode === 'true') {
+        const pathname = req.nextUrl.pathname;
+        const method = req.method;
+        
+        // E2Eテスト環境ではバイパス（環境変数のみで制御）
+        if (process.env.PLAYWRIGHT_TEST_MODE === 'true') {
+          return true;
+        }
+        
+        // OGP画像生成は常に許可
+        if (pathname.startsWith('/api/og')) {
+          return true;
+        }
+        
+        // コメント閲覧（GET）は認証不要
+        if (pathname.match(/\/api\/itinerary\/[^/]+\/comments/) && method === 'GET') {
           return true;
         }
         
@@ -85,9 +124,9 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/", // ルートパスを追加
+    "/", // ルートパスを追加（認証必須）
     "/api/chat/:path*",
-    "/api/itinerary/:path*",
+    "/api/itinerary/:path*", // コメントAPIも含むが、middleware内でGETを除外
     "/api/generate-pdf/:path*",
     "/api/settings/:path*",
     "/itineraries/:path*",
@@ -100,7 +139,12 @@ export const config = {
 **理由**:
 - 認証チェックをミドルウェアに一元化
 - ページコンポーネントから認証ロジックを削除可能に
-- E2Eテストは環境変数ではなくHTTPヘッダーでバイパス（より安全）
+- E2Eテストは環境変数のみでバイパス（クライアント側から操作不可能で安全）
+- 本番環境では環境変数が設定されないため、絶対にバイパスされない
+- `/api/og` は SNS共有時のOGP画像生成に必要（未認証ユーザーも閲覧）
+- `GET /api/itinerary/[id]/comments` は公開しおりのコメント閲覧（未認証OK）
+- `POST /api/itinerary/[id]/comments` はコメント投稿（ログイン必須）
+- `/share/[slug]` は matcherに含まれないため、自動的に未認証でアクセス可能
 
 ---
 
@@ -638,6 +682,152 @@ if (session?.user) {
 
 ---
 
+#### 3.4 app/api/itinerary/[id]/comments/route.tsの更新
+
+**ファイル**: `app/api/itinerary/[id]/comments/route.ts`
+
+**変更内容**:
+- POST（コメント投稿）時の認証チェックを強化
+- 未認証ユーザーによるコメント投稿を明示的に拒否
+- GET（コメント閲覧）は未認証でも可能（変更なし）
+
+**現在の問題点**:
+現在のコードでは、POSTメソッドで認証チェックが不十分です：
+```typescript
+// 現在のコード（問題あり）
+const session = await getServerSession(authOptions);
+// sessionがnullでもその後の処理が続行される可能性
+```
+
+**修正後の実装**:
+```typescript
+/**
+ * POST /api/itinerary/[id]/comments
+ * コメント投稿（認証必須）
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    console.log("[Comments API] POST request for itinerary ID:", params.id);
+
+    // 認証チェック（必須）
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "コメントを投稿するにはログインが必要です" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { content } = body;
+
+    // バリデーション
+    if (!content || typeof content !== "string") {
+      return NextResponse.json(
+        { error: "コメント内容を入力してください" },
+        { status: 400 }
+      );
+    }
+
+    if (content.length > 500) {
+      return NextResponse.json(
+        { error: "コメントは500文字以内で入力してください" },
+        { status: 400 }
+      );
+    }
+
+    // しおりが公開されているか確認（IDベース）
+    const itinerary = await itineraryRepository.getPublicItineraryById(
+      params.id
+    );
+
+    if (!itinerary) {
+      return NextResponse.json(
+        {
+          error:
+            "公開しおりが見つかりません。しおりが存在しないか、非公開に設定されている可能性があります。",
+        },
+        { status: 404 }
+      );
+    }
+
+    // コメントを作成（認証済みユーザー情報を使用）
+    const comment = await commentRepository.createComment(
+      {
+        itineraryId: itinerary.id!,
+        content: content.trim(),
+        // 認証済みユーザー情報をそのまま使用
+        isAnonymous: false,
+        authorName: session.user.name || "匿名ユーザー",
+      },
+      session.user.id // 必須：認証済みユーザーID
+    );
+
+    return NextResponse.json(comment, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create comment:", error);
+    const message =
+      error instanceof Error ? error.message : "コメントの投稿に失敗しました";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+```
+
+**変更点**:
+```diff
+  const session = await getServerSession(authOptions);
+  
++ // 認証チェックを最初に実行（必須）
++ if (!session?.user) {
++   return NextResponse.json(
++     { error: "コメントを投稿するにはログインが必要です" },
++     { status: 401 }
++   );
++ }
+
+  const body = await request.json();
+- const { content, isAnonymous, authorName } = body;
++ const { content } = body;
+
+- // 名前は必須
+- if (!authorName || authorName.trim().length === 0) {
+-   return NextResponse.json(
+-     { error: "名前を入力してください" },
+-     { status: 400 }
+-   );
+- }
+
+  const comment = await commentRepository.createComment(
+    {
+      itineraryId: itinerary.id!,
+      content: content.trim(),
+-     isAnonymous: true, // 常に匿名扱い（ユーザー入力の名前を使用）
+-     authorName: authorName.trim(),
++     isAnonymous: false, // 認証済みユーザー
++     authorName: session.user.name || "匿名ユーザー",
+    },
+-   session?.user?.id
++   session.user.id // 必須：認証済みユーザーID
+  );
+```
+
+**理由**:
+- middlewareで認証保護されていても、API内で再度チェックすることで二重の安全性を確保
+- 未認証ユーザーによるコメント投稿を確実にブロック
+- 認証済みユーザー情報（名前、ID）を自動的に使用
+- ユーザーが名前を手動入力する必要がなく、なりすまし防止
+
+**コメント機能の認証要件まとめ**:
+- **GET（閲覧）**: 未認証でも可能 ✅
+- **POST（投稿）**: ログイン必須 🔒
+- **DELETE（削除）**: ログイン必須（作成者のみ） 🔒
+
+---
+
 ### Phase 4: E2Eテストの更新
 
 #### 4.1 playwright.config.tsの更新
@@ -645,8 +835,8 @@ if (session?.user) {
 **ファイル**: `playwright.config.ts`
 
 **変更内容**:
-- 環境変数`PLAYWRIGHT_TEST_MODE`を削除
-- HTTPヘッダー`x-test-mode: 'true'`を追加
+- 環境変数`PLAYWRIGHT_TEST_MODE=true`を維持（既存の実装と同じ）
+- HTTPヘッダーは使用しない（セキュリティリスク回避）
 
 **実装**:
 ```typescript
@@ -663,10 +853,6 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    extraHTTPHeaders: {
-      // E2Eテスト時に認証をバイパス
-      'x-test-mode': 'true',
-    },
   },
 
   projects: [
@@ -677,34 +863,27 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
+    command: 'PLAYWRIGHT_TEST_MODE=true npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      PLAYWRIGHT_TEST_MODE: 'true',
+    },
   },
 });
 ```
 
 **変更点**:
 ```diff
-- command: 'PLAYWRIGHT_TEST_MODE=true npm run dev',
-+ command: 'npm run dev',
-  use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-+   extraHTTPHeaders: {
-+     'x-test-mode': 'true',
-+   },
-  },
-- env: {
--   PLAYWRIGHT_TEST_MODE: 'true',
-- },
+(変更なし - 既存の実装を維持)
 ```
 
 **理由**:
-- HTTPヘッダーの方がより安全（プロダクション環境変数の誤設定を防ぐ）
-- ミドルウェアで統一的に処理可能
+- 環境変数はサーバーサイドでのみ制御されるため安全
+- クライアント側から操作不可能
+- 本番環境では環境変数が設定されないため、バイパスされない
+- 既存のE2Eテストが引き続き動作
 
 ---
 
@@ -726,13 +905,14 @@ Journeeのメインアプリケーション（`/`）は**認証必須**です。
 
 ### E2Eテスト時の認証バイパス
 
-E2Eテストでは、HTTPヘッダー`x-test-mode: 'true'`を送信することで認証をバイパスできます。
+E2Eテストでは、サーバーサイドの環境変数`PLAYWRIGHT_TEST_MODE=true`を設定することで認証をバイパスできます。
 
 ```typescript
 // playwright.config.ts
-use: {
-  extraHTTPHeaders: {
-    'x-test-mode': 'true',
+webServer: {
+  command: 'PLAYWRIGHT_TEST_MODE=true npm run dev',
+  env: {
+    PLAYWRIGHT_TEST_MODE: 'true',
   },
 },
 ```
@@ -748,15 +928,16 @@ use: {
 
 メインアプリケーション（`/`）は認証必須ですが、E2Eテストでは以下の方法で認証をバイパスできます。
 
-### HTTPヘッダーによるバイパス
+### 環境変数によるバイパス
 
-`playwright.config.ts`で`x-test-mode: 'true'`ヘッダーを設定:
+`playwright.config.ts`で`PLAYWRIGHT_TEST_MODE=true`環境変数を設定:
 
 ```typescript
 export default defineConfig({
-  use: {
-    extraHTTPHeaders: {
-      'x-test-mode': 'true',
+  webServer: {
+    command: 'PLAYWRIGHT_TEST_MODE=true npm run dev',
+    env: {
+      PLAYWRIGHT_TEST_MODE: 'true',
     },
   },
 });
@@ -764,9 +945,19 @@ export default defineConfig({
 
 ### ミドルウェアでの処理
 
-`middleware.ts`が`x-test-mode`ヘッダーを検出し、認証チェックをスキップします。
+`middleware.ts`が`PLAYWRIGHT_TEST_MODE`環境変数を検出し、認証チェックをスキップします。
 
-**重要**: このバイパスは開発・テスト環境のみで使用してください。本番環境では環境変数やヘッダーでの制御を厳格に管理してください。
+```typescript
+authorized: ({ token }) => {
+  // E2Eテスト環境ではバイパス
+  if (process.env.PLAYWRIGHT_TEST_MODE === 'true') {
+    return true;
+  }
+  return !!token;
+}
+```
+
+**セキュリティ**: この環境変数はサーバーサイドでのみ制御されるため、クライアント側から操作できません。本番環境では絶対に設定しないでください。
 ```
 
 ---
@@ -779,14 +970,15 @@ export default defineConfig({
 
 ### 変更されるファイル
 
-1. `middleware.ts` - 認証保護の強化、E2Eバイパス追加
+1. `middleware.ts` - 認証保護の強化、E2Eバイパス追加、公開しおりAPI除外
 2. `app/page.tsx` - 手動認証チェック削除
 3. `components/layout/Header.tsx` - LoginButton削除
 4. `components/layout/StorageInitializer.tsx` - 未ログイン処理削除
 5. `components/itinerary/SaveButton.tsx` - LocalStorage保存削除
-6. `playwright.config.ts` - E2Eテスト設定更新
-7. `README.md` - 認証要件の明記
-8. `docs/TESTING.md` - E2Eテスト手順更新
+6. `app/api/itinerary/[id]/comments/route.ts` - コメント投稿の認証チェック強化
+7. `playwright.config.ts` - E2Eテスト設定更新
+8. `README.md` - 認証要件の明記
+9. `docs/TESTING.md` - E2Eテスト手順更新
 
 ### 影響を受けるコンポーネント
 
@@ -808,6 +1000,15 @@ export default defineConfig({
 - データベースへの保存・読み込み
 - 他の認証必須ページ（`/mypage`, `/settings`, etc.）
 - E2Eテスト（認証バイパス機構を更新）
+- **公開しおりの閲覧**（`/share/[slug]`）- 未認証でもアクセス可能 ✅
+- **OGP画像の生成**（`/api/og`）- SNS共有時に必要、未認証OK ✅
+- **コメントの閲覧**（`GET /api/itinerary/[id]/comments`）- 未認証OK ✅
+
+#### 🔒 認証が必要になる機能（変更なし）
+- しおり作成ページ（`/`）
+- コメント投稿（`POST /api/itinerary/[id]/comments`）
+- コメント削除（`DELETE /api/itinerary/[id]/comments/[commentId]`）
+- しおりの保存・編集・削除
 
 #### ⚠️ 削除される機能
 - 未ログイン時のしおり作成（そもそも想定外）
@@ -828,12 +1029,12 @@ export default defineConfig({
 1. **認証保護テスト**
    - ファイル: `e2e/auth-protection.spec.ts`（新規作成）
    - 内容:
-     - `x-test-mode`ヘッダーなしで`/`にアクセス → `/login`にリダイレクト
-     - `x-test-mode: 'true'`ヘッダーありで`/`にアクセス → 正常表示
+     - E2Eテスト環境（`PLAYWRIGHT_TEST_MODE=true`）で`/`にアクセス → 正常表示
+     - 本番環境シミュレーション（環境変数なし）で`/`にアクセス → `/login`にリダイレクト
 
 #### 既存テストの確認
-- 既存のE2Eテストが`x-test-mode`ヘッダーで動作することを確認
-- `playwright.config.ts`の変更だけで動作するはず
+- 既存のE2Eテストが環境変数バイパスで引き続き動作することを確認
+- `middleware.ts`の変更だけで動作するはず（`playwright.config.ts`は変更不要）
 
 ### Manual Tests
 
@@ -858,12 +1059,13 @@ export default defineConfig({
 
 ### リスク1: E2Eテストの失敗
 
-**リスク**: HTTPヘッダーによる認証バイパスが正しく動作しない
+**リスク**: 環境変数による認証バイパスが正しく動作しない
 
 **対策**:
-- ミドルウェアで確実に`x-test-mode`ヘッダーをチェック
+- ミドルウェアで確実に`PLAYWRIGHT_TEST_MODE`環境変数をチェック
 - 新規E2Eテストで認証バイパスを検証
 - CI環境での動作確認
+- 本番環境では環境変数が設定されないことを確認
 
 ### リスク2: 既存コンポーネントへの影響
 
@@ -896,11 +1098,12 @@ export default defineConfig({
 1. `app/page.tsx`から認証チェック削除
 2. 動作確認
 
-### Step 3: コンポーネントの簡素化
+### Step 3: コンポーネントとAPIの簡素化
 1. `components/layout/Header.tsx`を更新
 2. `components/layout/StorageInitializer.tsx`を更新
 3. `components/itinerary/SaveButton.tsx`を更新
-4. 各ステップで動作確認
+4. `app/api/itinerary/[id]/comments/route.ts`を更新（認証チェック強化）
+5. 各ステップで動作確認
 
 ### Step 4: テストとドキュメント
 1. E2Eテストを実行・確認
@@ -922,16 +1125,83 @@ export default defineConfig({
 - [ ] ルートパス`/`がミドルウェアで保護されている
 - [ ] 未ログイン時に`/`にアクセスすると`/login`にリダイレクト
 - [ ] ログイン時に`/`が正常に表示される
-- [ ] E2Eテストが`x-test-mode`ヘッダーでバイパス可能
+- [ ] **公開しおり閲覧**（`/share/[slug]`）が未認証でもアクセス可能
+- [ ] **OGP画像生成**（`/api/og`）が未認証でもアクセス可能
+- [ ] **コメント閲覧**（`GET /api/itinerary/[id]/comments`）が未認証でもアクセス可能
+- [ ] **コメント投稿**（`POST /api/itinerary/[id]/comments`）が認証必須
+- [ ] E2Eテストが環境変数`PLAYWRIGHT_TEST_MODE=true`でバイパス可能
 - [ ] すべてのE2Eテストがパスする
 - [ ] ビルドエラーがない（`npm run build`）
 - [ ] 型チェックがパスする（`npm run type-check`）
 - [ ] Lintがパスする（`npm run lint`）
+- [ ] 本番環境で環境変数が設定されないことを確認
 
 ### 推奨条件
 - [ ] 新規E2Eテスト（認証保護テスト）が追加されている
 - [ ] ドキュメント（README.md, TESTING.md）が更新されている
 - [ ] コードレビューが完了している
+
+---
+
+## セキュリティ考慮事項
+
+### 環境変数によるバイパスの安全性
+
+この実装では、E2Eテスト用の認証バイパスに**環境変数のみ**を使用します。これは以下の理由で安全です：
+
+#### ✅ セキュリティ上の利点
+
+1. **サーバーサイド制御**
+   - `process.env`はサーバー側の環境変数
+   - クライアント側から操作不可能
+   - ビルド時または実行時に設定
+
+2. **本番環境での安全性**
+   - 本番環境では`PLAYWRIGHT_TEST_MODE`環境変数を設定しない
+   - 環境変数が設定されていなければバイパスは絶対に発動しない
+   - デプロイメント設定で明示的に除外可能
+
+3. **HTTPヘッダーよりも安全**
+   - HTTPヘッダーはクライアント側から自由に送信可能（`curl -H "x-test-mode: true"`）
+   - 環境変数はサーバー管理者のみが制御可能
+   - 本番環境での誤用リスクがない
+
+#### 🔒 本番環境での確認事項
+
+本番環境のデプロイ時に以下を確認してください：
+
+- [ ] `PLAYWRIGHT_TEST_MODE`環境変数が設定されていない
+- [ ] `NODE_ENV=production`が設定されている
+- [ ] デプロイメント設定ファイル（Docker、Kubernetes等）に`PLAYWRIGHT_TEST_MODE`が含まれていない
+
+#### 🧪 テスト環境での使用
+
+テスト環境では以下のように環境変数を設定します：
+
+```bash
+# ローカル開発・E2Eテスト
+PLAYWRIGHT_TEST_MODE=true npm run dev
+
+# 本番環境（環境変数なし）
+npm run dev
+```
+
+#### ⚠️ セキュリティベストプラクティス
+
+1. **環境変数の管理**
+   - `.env.local`に`PLAYWRIGHT_TEST_MODE`を含めない
+   - `.gitignore`で`.env*`を除外
+   - CI/CD環境でのみテスト用に設定
+
+2. **ミドルウェアのロジック**
+   - 環境変数チェックを最初に実行
+   - 本番環境では常にトークンチェックを実行
+   - エラーログで不正アクセスを検出
+
+3. **定期的な監査**
+   - デプロイメント設定の定期的なレビュー
+   - 本番環境の環境変数チェック
+   - セキュリティログの監視
 
 ---
 
@@ -945,8 +1215,9 @@ export default defineConfig({
 ### NextAuth.js Middleware
 - [NextAuth.js Middleware Documentation](https://next-auth.js.org/configuration/nextjs#middleware)
 
-### Playwright HTTP Headers
-- [Playwright extraHTTPHeaders](https://playwright.dev/docs/api/class-browser#browser-new-context-option-extra-http-headers)
+### Playwright環境変数
+- [Playwright Web Server](https://playwright.dev/docs/test-webserver)
+- [Node.js環境変数](https://nodejs.org/docs/latest/api/process.html#process_process_env)
 
 ---
 
@@ -954,4 +1225,6 @@ export default defineConfig({
 
 | 日付 | バージョン | 変更内容 | 作成者 |
 |-----|---------|---------|-------|
+| 2025-10-12 | 1.2.0 | 公開しおりとコメント機能の未認証アクセス要件を明確化、コメントAPI認証強化を追加 | Cursor Agent |
+| 2025-10-12 | 1.1.0 | HTTPヘッダーベースのバイパスから環境変数ベースに変更（セキュリティ改善） | Cursor Agent |
 | 2025-10-12 | 1.0.0 | 初版作成 | Cursor Agent |
