@@ -6,6 +6,7 @@ import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { DaySchedule } from "./DaySchedule";
+import { MapView } from "./MapView";
 import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
@@ -17,7 +18,9 @@ import {
   Check,
   Loader2,
   Eye,
+  EyeOff,
   LogIn,
+  Map,
 } from "lucide-react";
 import {
   generateItineraryPDF,
@@ -49,7 +52,41 @@ export default function PublicItineraryView({
   const [pdfProgress, setPdfProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [mapHeight, setMapHeight] = useState<string>("400px");
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+
+  // 位置情報を持つスポットが存在するかチェック
+  const hasLocationData = itinerary.schedule.some((day) =>
+    day.spots.some(
+      (spot) =>
+        spot.location &&
+        typeof spot.location.lat === "number" &&
+        typeof spot.location.lng === "number"
+    )
+  );
+
+  // 位置情報がある場合はデフォルトで地図を表示
+  const [showMap, setShowMap] = useState(hasLocationData);
+
+  // レスポンシブな地図の高さを設定
+  useEffect(() => {
+    const updateMapHeight = () => {
+      if (typeof window !== "undefined") {
+        const width = window.innerWidth;
+        if (width < 640) {
+          setMapHeight("300px"); // モバイル
+        } else if (width < 1024) {
+          setMapHeight("400px"); // タブレット
+        } else {
+          setMapHeight("500px"); // デスクトップ
+        }
+      }
+    };
+
+    updateMapHeight();
+    window.addEventListener("resize", updateMapHeight);
+    return () => window.removeEventListener("resize", updateMapHeight);
+  }, []);
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
@@ -263,6 +300,45 @@ export default function PublicItineraryView({
             />
           ))}
         </div>
+
+        {/* 地図表示セクション */}
+        {hasLocationData && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Map className="w-5 h-5" />
+                ルートマップ
+              </h2>
+              <button
+                onClick={() => setShowMap(!showMap)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                title={showMap ? "地図を非表示" : "地図を表示"}
+              >
+                {showMap ? (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    <span className="hidden sm:inline">地図を非表示</span>
+                  </>
+                ) : (
+                  <>
+                    <Map className="w-4 h-4" />
+                    <span className="hidden sm:inline">地図を表示</span>
+                  </>
+                )}
+              </button>
+            </div>
+            {showMap && (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <MapView
+                  days={itinerary.schedule}
+                  height={mapHeight}
+                  showDaySelector={true}
+                  numberingMode="perDay"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* コメントセクション（Phase 11） */}
         {itinerary.id ? (
