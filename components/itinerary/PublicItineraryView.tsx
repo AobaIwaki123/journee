@@ -18,9 +18,9 @@ import {
   Check,
   Loader2,
   Eye,
+  EyeOff,
   LogIn,
   Map,
-  MapOff,
 } from "lucide-react";
 import {
   generateItineraryPDF,
@@ -293,7 +293,7 @@ export default function PublicItineraryView({
               >
                 {showMap ? (
                   <>
-                    <MapOff className="w-4 h-4" />
+                    <EyeOff className="w-4 h-4" />
                     <span className="hidden sm:inline">地図を非表示</span>
                   </>
                 ) : (
