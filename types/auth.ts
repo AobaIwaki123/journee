@@ -61,3 +61,26 @@ export interface UserProfile {
   createdAt: Date
   updatedAt: Date
 }
+
+/**
+ * /api/user/me レスポンス型
+ */
+export interface UserMeResponse {
+  id: string
+  email: string
+  name: string | null
+  image: string | null
+  googleId: string | null
+  createdAt: string
+}
+
+/**
+ * /api/user/stats レスポンス型
+ */
+export interface UserStatsResponse {
+  totalItineraries: number
+  totalCountries: number
+  totalDays: number
+  monthlyStats: { month: string; count: number }[]
+  countryDistribution: { country: string; count: number; percent: number }[]
+}

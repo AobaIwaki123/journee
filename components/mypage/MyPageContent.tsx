@@ -10,6 +10,8 @@ import { getMockUserStats } from '@/lib/mock-data/user-stats';
 import { getMockRecentItineraries } from '@/lib/mock-data/recent-itineraries';
 import { itineraryRepository } from '@/lib/db/itinerary-repository';
 import type { ItineraryListItem } from '@/types/itinerary';
+import type { UserStats as UserStatsType } from '@/types/itinerary';
+import type { UserMeResponse, UserStatsResponse } from '@/types/auth';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -20,7 +22,8 @@ export const MyPageContent: React.FC = () => {
   const { data: session, status } = useSession();
   const [recentItineraries, setRecentItineraries] = useState<ItineraryListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userStats, setUserStats] = useState(getMockUserStats());
+  const [userStats, setUserStats] = useState<UserStatsType | null>(null);
+  const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null);
 
   // データを読み込む関数
   const loadData = async () => {
@@ -33,21 +36,51 @@ export const MyPageContent: React.FC = () => {
     }
 
     try {
-      const result = await itineraryRepository.listItineraries(
-        session.user.id,
-        {},
-        'updated_at',
-        'desc',
-        { page: 1, pageSize: 6 }
-      );
-      setRecentItineraries(result.data);
-      
-      // TODO: 将来的にDBから統計情報を計算する
-      setUserStats(getMockUserStats());
+      // 並列でデータを取得
+      const [itinerariesResult, statsResponse, userResponse] = await Promise.all([
+        itineraryRepository.listItineraries(
+          session.user.id,
+          {},
+          'updated_at',
+          'desc',
+          { page: 1, pageSize: 6 }
+        ),
+        fetch('/api/user/stats'),
+        fetch('/api/user/me'),
+      ]);
+
+      // しおり一覧
+      setRecentItineraries(itinerariesResult.data);
+
+      // 統計情報
+      if (statsResponse.ok) {
+        const apiStats: UserStatsResponse = await statsResponse.json();
+        // UserStatsResponse を UserStats 型に変換
+        const stats: UserStatsType = {
+          totalItineraries: apiStats.totalItineraries,
+          totalCountries: apiStats.totalCountries,
+          totalDays: apiStats.totalDays,
+          monthlyStats: apiStats.monthlyStats,
+          countryDistribution: apiStats.countryDistribution,
+        };
+        setUserStats(stats);
+      } else {
+        console.warn('Failed to fetch user stats, using mock data');
+        setUserStats(getMockUserStats()); // フォールバック
+      }
+
+      // 登録日
+      if (userResponse.ok) {
+        const userData: UserMeResponse = await userResponse.json();
+        setUserCreatedAt(userData.createdAt);
+      } else {
+        console.warn('Failed to fetch user info');
+      }
     } catch (error) {
-      console.error('Failed to load recent itineraries:', error);
+      console.error('Failed to load data:', error);
       // エラー時はモックデータにフォールバック
       setRecentItineraries(getMockRecentItineraries());
+      setUserStats(getMockUserStats());
     } finally {
       setIsLoading(false);
     }
@@ -79,10 +112,10 @@ export const MyPageContent: React.FC = () => {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-8">
         {/* プロフィールセクション */}
-        {session && <UserProfile session={session} />}
+        {session && <UserProfile session={session} createdAt={userCreatedAt || undefined} />}
 
         {/* 統計セクション */}
-        <UserStats stats={userStats} />
+        {userStats && <UserStats stats={userStats} />}
 
         {/* 最近のしおりセクション */}
         <div className="bg-white rounded-lg shadow-md p-6">
