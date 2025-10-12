@@ -1,7 +1,6 @@
 /**
  * チャットAPIルート
  * POST /api/chat
- * Phase 4.5: フェーズ判定ロジックと「次へ」キーワード検出を追加
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -17,7 +16,6 @@ import {
   parseAIResponse,
   mergeItineraryData,
   generateErrorMessage,
-  createNextStepPrompt,
 } from "@/lib/ai/prompts";
 import { isValidModelId } from "@/lib/ai/models";
 import { mockItineraries } from "@/lib/mock-data/itineraries";
@@ -124,8 +122,6 @@ export async function POST(request: NextRequest) {
       model,
       claudeApiKey,
       stream = false,
-      planningPhase = "initial",
-      currentDetailingDay,
     } = body;
 
     // モデルIDの検証
@@ -156,20 +152,7 @@ export async function POST(request: NextRequest) {
       return handleMockResponse(stream, requestCurrency);
     }
 
-    // Phase 4.5: 「次へ」キーワードの検出
-    const isNextStepTrigger = detectNextStepKeyword(message);
     let enhancedMessage = message;
-
-    if (isNextStepTrigger) {
-      // 「次へ」が検出された場合、次のステップ誘導プロンプトを追加
-      const nextStepPrompt = createNextStepPrompt(
-        planningPhase,
-        currentItinerary
-      );
-      if (nextStepPrompt) {
-        enhancedMessage = `${message}\n\n【システムからの補足】\n${nextStepPrompt}`;
-      }
-    }
 
     // モデルがClaudeの場合はAPIキーが必要
     if (selectedModel === "claude") {
@@ -206,8 +189,6 @@ export async function POST(request: NextRequest) {
         enhancedMessage,
         chatHistory,
         currentItinerary,
-        planningPhase,
-        currentDetailingDay,
         selectedModel
       );
     }
@@ -217,8 +198,6 @@ export async function POST(request: NextRequest) {
       enhancedMessage,
       chatHistory,
       currentItinerary,
-      planningPhase,
-      currentDetailingDay,
       selectedModel
     );
   } catch (error: any) {
@@ -243,8 +222,6 @@ async function handleGeminiNonStreamingResponse(
   message: string,
   chatHistory: any[],
   currentItinerary: any,
-  planningPhase: any,
-  currentDetailingDay: any,
   modelId: AIModelId
 ) {
   try {
@@ -257,8 +234,6 @@ async function handleGeminiNonStreamingResponse(
       chatHistory,
       currentItinerary,
       undefined,
-      planningPhase,
-      currentDetailingDay,
       geminiModelId
     );
 
@@ -369,8 +344,6 @@ async function handleGeminiStreamingResponse(
   message: string,
   chatHistory: any[],
   currentItinerary: any,
-  planningPhase: any,
-  currentDetailingDay: any,
   modelId: AIModelId
 ) {
   const encoder = new TextEncoder();
@@ -390,8 +363,6 @@ async function handleGeminiStreamingResponse(
           chatHistory,
           currentItinerary,
           undefined,
-          planningPhase,
-          currentDetailingDay,
           geminiModelId
         )) {
           fullResponse += chunk;
@@ -604,25 +575,6 @@ async function handleClaudeStreamingResponse(
   });
 }
 
-/**
- * Phase 4.5: 「次へ」キーワードを検出
- */
-function detectNextStepKeyword(message: string): boolean {
-  const lowerMessage = message.toLowerCase().trim();
-  const nextKeywords = [
-    "次へ",
-    "次に",
-    "次",
-    "つぎ",
-    "進む",
-    "進んで",
-    "次のステップ",
-    "次の段階",
-    "next",
-  ];
-
-  return nextKeywords.some((keyword) => lowerMessage.includes(keyword));
-}
 
 /**
  * OPTIONS /api/chat
