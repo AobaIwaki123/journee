@@ -10,8 +10,8 @@ import { loadCurrentItinerary, getLastSaveTime } from '@/lib/utils/storage';
 /**
  * Phase 10.4: ストレージ初期化コンポーネント（DB統合版）
  * 
- * ログイン時: データベースから最新のしおりを読み込む
- * 未ログイン時: LocalStorageから読み込む（従来通り）
+ * 認証必須: データベースから最新のしおりを読み込む
+ * このページは認証済みユーザーのみがアクセス可能です。
  */
 export const StorageInitializer: React.FC = () => {
   const searchParams = useSearchParams();
@@ -40,64 +40,29 @@ export const StorageInitializer: React.FC = () => {
       // URLパラメータからしおりIDを取得
       const itineraryId = searchParams.get('itineraryId');
       
-      if (itineraryId) {
-        // URLパラメータで指定されたしおりを読み込む
-        if (session?.user) {
-          // ログイン時: データベースから読み込む
-          try {
-            const response = await fetch(`/api/itinerary/load?id=${itineraryId}`);
-            if (response.ok) {
-              const data = await response.json();
-              if (data.itinerary) {
-                setItinerary(data.itinerary);
-              }
-            } else {
-              // DB読み込み失敗時はLocalStorageにフォールバック
-              const itinerary = getItineraryById(itineraryId);
-              if (itinerary) {
-                setItinerary(itinerary);
-              }
-            }
-          } catch (error) {
-            console.error('Failed to load itinerary from database:', error);
-            // エラー時はLocalStorageにフォールバック
-            const itinerary = getItineraryById(itineraryId);
-            if (itinerary) {
-              setItinerary(itinerary);
+      if (itineraryId && session?.user) {
+        // データベースから指定されたしおりを読み込む
+        try {
+          const response = await fetch(`/api/itinerary/load?id=${itineraryId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.itinerary) {
+              setItinerary(data.itinerary);
             }
           }
-        } else {
-          // 未ログイン時: LocalStorageから読み込む
-          const itinerary = getItineraryById(itineraryId);
-          if (itinerary) {
-            setItinerary(itinerary);
-          }
+        } catch (error) {
+          console.error('Failed to load itinerary from database:', error);
         }
-      } else {
-        // URLパラメータがない場合
-        if (session?.user) {
-          // ログイン時: 最後に編集したしおりをDBから読み込む試み
-          // 注: この機能は現時点ではLocalStorageフォールバックのみ
-          // TODO: 将来的にDBから「最後に編集したしおり」を取得する機能を実装
-          const savedItinerary = loadCurrentItinerary();
-          if (savedItinerary) {
-            setItinerary(savedItinerary);
-            
-            const lastSaveTime = getLastSaveTime();
-            if (lastSaveTime) {
-              setLastSaveTime(lastSaveTime);
-            }
-          }
-        } else {
-          // 未ログイン時: LocalStorageから現在のしおりを復元
-          const savedItinerary = loadCurrentItinerary();
-          if (savedItinerary) {
-            setItinerary(savedItinerary);
-            
-            const lastSaveTime = getLastSaveTime();
-            if (lastSaveTime) {
-              setLastSaveTime(lastSaveTime);
-            }
+      } else if (session?.user) {
+        // URLパラメータがない場合、最後に編集したしおりをDBから読み込む
+        // TODO: 将来的にDBから「最後に編集したしおり」を取得する機能を実装
+        const savedItinerary = loadCurrentItinerary();
+        if (savedItinerary) {
+          setItinerary(savedItinerary);
+          
+          const lastSaveTime = getLastSaveTime();
+          if (lastSaveTime) {
+            setLastSaveTime(lastSaveTime);
           }
         }
       }
