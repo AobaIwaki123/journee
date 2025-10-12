@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { TouristSpot } from '@/types/itinerary';
 import { useStore } from '@/lib/store/useStore';
 import { formatCurrency } from '@/lib/utils/currency';
+import { getDayColor } from '@/lib/utils/map-utils';
 import { 
   Clock, 
   MapPin, 
@@ -25,6 +26,8 @@ interface EditableSpotCardProps {
   spot: TouristSpot;
   dayIndex: number;
   spotIndex: number;
+  markerNumber?: number; // マップマーカー番号
+  dayNumber?: number; // 日程番号（色表示用）
 }
 
 const getCategoryLabel = (category?: string): string => {
@@ -72,7 +75,7 @@ const getCategoryGradient = (category?: string): string => {
   return category ? gradients[category] || gradients.other : gradients.other;
 };
 
-export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayIndex, spotIndex }) => {
+export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayIndex, spotIndex, markerNumber, dayNumber }) => {
   const [isEditing, setIsEditing] = useState(false);
   const currentItinerary = useStore((state: any) => state.currentItinerary);
   const currency = currentItinerary?.currency;
@@ -258,6 +261,17 @@ export const EditableSpotCard: React.FC<EditableSpotCardProps> = ({ spot, dayInd
 
       {/* Card Content */}
       <div className="flex items-start gap-4 p-4 pl-8">
+        {/* Marker Number Badge */}
+        {markerNumber !== undefined && dayNumber !== undefined && (
+          <div
+            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm shadow-md"
+            style={{ backgroundColor: getDayColor(dayNumber) }}
+            title={`マーカー番号: ${markerNumber}`}
+          >
+            {markerNumber}
+          </div>
+        )}
+
         {/* Category Icon */}
         <div className={`flex-shrink-0 flex items-center justify-center w-12 h-12 bg-gradient-to-br ${getCategoryGradient(spot.category)} text-white rounded-lg shadow-md group-hover:scale-110 transition-transform duration-200`}>
           {getCategoryIcon(spot.category)}
