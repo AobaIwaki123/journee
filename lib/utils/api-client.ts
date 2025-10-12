@@ -10,7 +10,7 @@ import type {
   ChatStreamChunk 
 } from '@/types/api';
 import type { ChatMessage, Message } from '@/types/chat';
-import type { ItineraryData, ItineraryPhase } from '@/types/itinerary';
+import type { ItineraryData } from '@/types/itinerary';
 import type { AIModelId } from '@/types/ai';
 import { DEFAULT_AI_MODEL } from '@/lib/ai/models';
 
@@ -35,8 +35,6 @@ export class ChatAPIClient {
       currentItinerary?: ItineraryData;
       model?: AIModelId;
       claudeApiKey?: string;
-      planningPhase?: ItineraryPhase;
-      currentDetailingDay?: number | null;
       currency?: string;
     }
   ): Promise<ChatAPIResponse> {
@@ -47,8 +45,6 @@ export class ChatAPIClient {
       model: options?.model || 'gemini',
       claudeApiKey: options?.claudeApiKey,
       stream: false,
-      planningPhase: options?.planningPhase,
-      currentDetailingDay: options?.currentDetailingDay,
     };
 
     const response = await fetch(`${this.baseUrl}/chat`, {
@@ -78,8 +74,6 @@ export class ChatAPIClient {
       currentItinerary?: ItineraryData;
       model?: AIModelId;
       claudeApiKey?: string;
-      planningPhase?: ItineraryPhase;
-      currentDetailingDay?: number | null;
       currency?: string;
       signal?: AbortSignal;
     }
@@ -91,8 +85,6 @@ export class ChatAPIClient {
       model: options?.model || DEFAULT_AI_MODEL,
       claudeApiKey: options?.claudeApiKey,
       stream: true,
-      planningPhase: options?.planningPhase,
-      currentDetailingDay: options?.currentDetailingDay,
       currency: options?.currency,
     };
 
@@ -191,8 +183,6 @@ export async function* sendChatMessageStream(
   currentItinerary?: ItineraryData,
   model?: AIModelId,
   claudeApiKey?: string,
-  planningPhase?: ItineraryPhase,
-  currentDetailingDay?: number | null,
   currency?: string,
   signal?: AbortSignal
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
@@ -201,8 +191,6 @@ export async function* sendChatMessageStream(
     currentItinerary,
     model,
     claudeApiKey,
-    planningPhase,
-    currentDetailingDay,
     currency,
     signal,
   });
