@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ItineraryData } from "@/types/itinerary";
+import { ItineraryData, DaySchedule as DayScheduleType } from "@/types/itinerary";
 import { Comment } from "@/types/comment";
 import { ItineraryHeader } from "./ItineraryHeader";
 import { ItinerarySummary } from "./ItinerarySummary";
 import { DaySchedule } from "./DaySchedule";
+import { MapView } from "./MapView";
+import { ScheduleMapSplitView } from "./ScheduleMapSplitView";
 import CommentList from "@/components/comments/CommentList";
 import { formatDate } from "@/lib/utils/date-utils";
 import { ItineraryPDFLayout } from "./ItineraryPDFLayout";
@@ -18,12 +20,17 @@ import {
   Loader2,
   Eye,
   LogIn,
+  List,
+  Map as MapIcon,
+  Columns,
 } from "lucide-react";
 import {
   generateItineraryPDF,
   generateFilename,
 } from "@/lib/utils/pdf-generator";
 import { showToast } from "@/components/ui/Toast";
+
+type ViewMode = "schedule" | "map" | "split";
 
 interface PublicItineraryViewProps {
   slug: string;
@@ -50,6 +57,15 @@ export default function PublicItineraryView({
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  
+  // デフォルトはPC版では同時表示、モバイルではスケジュール表示
+  const [viewMode, setViewMode] = useState<ViewMode>("split");
+
+  // 位置情報を持つスポットがあるかチェック
+  const hasLocations =
+    itinerary?.schedule.some((day: DayScheduleType) =>
+      day.spots.some((spot) => spot.location?.lat && spot.location?.lng)
+    ) || false;
 
   // クライアントサイドで日付をフォーマット（ハイドレーションエラー回避）
   useEffect(() => {
@@ -252,17 +268,98 @@ export default function PublicItineraryView({
         {/* しおりサマリー */}
         <ItinerarySummary itinerary={itinerary} />
 
-        {/* 日程表 */}
-        <div className="mt-8 space-y-6">
-          {itinerary.schedule.map((day, index) => (
-            <DaySchedule
-              key={day.date || `day-${index}`}
-              day={day}
-              dayIndex={index}
-              editable={false} // Read-onlyモード
+        {/* View Mode Switcher (only if has locations) */}
+        {hasLocations && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            {/* PC版: 同時表示ボタン */}
+            <button
+              onClick={() => setViewMode("split")}
+              className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                viewMode === "split"
+                  ? "bg-blue-500 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <Columns className="w-4 h-4" />
+              <span className="text-sm font-medium">同時表示</span>
+            </button>
+
+            {/* スケジュールボタン */}
+            <button
+              onClick={() => setViewMode("schedule")}
+              className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg transition-colors ${
+                viewMode === "schedule"
+                  ? "bg-blue-500 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span className="text-xs md:text-sm font-medium">
+                スケジュール
+              </span>
+            </button>
+
+            {/* 地図ボタン */}
+            <button
+              onClick={() => setViewMode("map")}
+              className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg transition-colors ${
+                viewMode === "map"
+                  ? "bg-blue-500 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <MapIcon className="w-4 h-4" />
+              <span className="text-xs md:text-sm font-medium">地図</span>
+            </button>
+          </div>
+        )}
+
+        {/* Split View (PC only) - スケジュールと地図を同時表示 */}
+        {viewMode === "split" && hasLocations && (
+          <div className="mt-8 hidden md:block">
+            <ScheduleMapSplitView days={itinerary.schedule} editable={false} />
+          </div>
+        )}
+
+        {/* Split View (Mobile fallback) - モバイルではスケジュール表示 */}
+        {viewMode === "split" && (
+          <div className="mt-8 md:hidden space-y-6">
+            {itinerary.schedule.map((day, index) => (
+              <DaySchedule
+                key={day.date || `day-${index}`}
+                day={day}
+                dayIndex={index}
+                editable={false}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Map View */}
+        {viewMode === "map" && hasLocations && (
+          <div className="mt-8 mb-6">
+            <MapView
+              days={itinerary.schedule}
+              showDaySelector={true}
+              numberingMode="perDay"
+              height="600px"
             />
-          ))}
-        </div>
+          </div>
+        )}
+
+        {/* 日程表 (Schedule View) */}
+        {viewMode === "schedule" && (
+          <div className="mt-8 space-y-6">
+            {itinerary.schedule.map((day, index) => (
+              <DaySchedule
+                key={day.date || `day-${index}`}
+                day={day}
+                dayIndex={index}
+                editable={false} // Read-onlyモード
+              />
+            ))}
+          </div>
+        )}
 
         {/* コメントセクション（Phase 11） */}
         {itinerary.id ? (

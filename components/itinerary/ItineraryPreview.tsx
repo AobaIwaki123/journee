@@ -15,11 +15,12 @@ import { SaveButton } from "./SaveButton";
 import { ResetButton } from "./ResetButton";
 import { PDFExportButton } from "./PDFExportButton";
 import { ToastContainer } from "@/components/ui/Toast";
-import { List, Map as MapIcon } from "lucide-react";
+import { List, Map as MapIcon, Columns } from "lucide-react";
 import { DaySchedule as DayScheduleType } from "@/types/itinerary";
 import { MobilePlannerControls } from "./MobilePlannerControls";
+import { ScheduleMapSplitView } from "./ScheduleMapSplitView";
 
-type ViewMode = "schedule" | "map";
+type ViewMode = "schedule" | "map" | "split";
 
 export const ItineraryPreview: React.FC = () => {
   const {
@@ -29,7 +30,8 @@ export const ItineraryPreview: React.FC = () => {
     autoProgressState,
   } = useStore();
 
-  const [viewMode, setViewMode] = useState<ViewMode>("schedule");
+  // デフォルトはPC版では同時表示、モバイルではスケジュール表示
+  const [viewMode, setViewMode] = useState<ViewMode>("split");
 
   // 位置情報を持つスポットがあるかチェック
   const hasLocations =
@@ -99,6 +101,22 @@ export const ItineraryPreview: React.FC = () => {
                     {/* View Mode Switcher (only if has locations) */}
                     {hasLocations ? (
                       <div className="flex items-center gap-2">
+                        {/* PC版: 同時表示ボタン */}
+                        <button
+                          onClick={() => setViewMode("split")}
+                          className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                            viewMode === "split"
+                              ? "bg-blue-500 text-white shadow-sm"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          <Columns className="w-4 h-4" />
+                          <span className="text-sm font-medium">
+                            同時表示
+                          </span>
+                        </button>
+                        
+                        {/* スケジュールボタン */}
                         <button
                           onClick={() => setViewMode("schedule")}
                           className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg transition-colors ${
@@ -112,6 +130,8 @@ export const ItineraryPreview: React.FC = () => {
                             スケジュール
                           </span>
                         </button>
+                        
+                        {/* 地図ボタン */}
                         <button
                           onClick={() => setViewMode("map")}
                           className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg transition-colors ${
@@ -149,11 +169,37 @@ export const ItineraryPreview: React.FC = () => {
               )}
 
             {/* Summary */}
-            {viewMode === "schedule" &&
+            {(viewMode === "schedule" || viewMode === "split") &&
               currentItinerary.schedule &&
               currentItinerary.schedule.length > 0 && (
                 <ItinerarySummary itinerary={currentItinerary} />
               )}
+
+            {/* Split View (PC only) - スケジュールと地図を同時表示 */}
+            {viewMode === "split" && hasLocations && (
+              <div className="hidden md:block">
+                <ScheduleMapSplitView
+                  days={currentItinerary.schedule}
+                  editable={true}
+                />
+              </div>
+            )}
+
+            {/* Split View (Mobile fallback) - モバイルではスケジュール表示 */}
+            {viewMode === "split" && hasLocations && (
+              <div className="md:hidden space-y-6">
+                {currentItinerary.schedule.map(
+                  (day: DayScheduleType, index: number) => (
+                    <DaySchedule
+                      key={day.day}
+                      day={day}
+                      dayIndex={index}
+                      editable={true}
+                    />
+                  )
+                )}
+              </div>
+            )}
 
             {/* Map View */}
             {viewMode === "map" && hasLocations && (
@@ -195,7 +241,7 @@ export const ItineraryPreview: React.FC = () => {
             ) : null}
 
             {/* PDF Export Button */}
-            {viewMode === "schedule" &&
+            {(viewMode === "schedule" || viewMode === "split") &&
               currentItinerary.schedule.length > 0 && (
                 <div className="mt-10 mb-6 flex justify-center">
                   <PDFExportButton itinerary={currentItinerary} />
