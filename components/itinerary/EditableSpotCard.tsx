@@ -6,7 +6,6 @@ import { useStore } from '@/lib/store/useStore';
 import { formatCurrency } from '@/lib/utils/currency';
 import { 
   Clock, 
-  MapPin, 
   Wallet, 
   Info, 
   Camera,
@@ -20,6 +19,7 @@ import {
   X,
   GripVertical
 } from 'lucide-react';
+import { AddressLink } from './AddressLink';
 
 interface EditableSpotCardProps {
   spot: TouristSpot;
