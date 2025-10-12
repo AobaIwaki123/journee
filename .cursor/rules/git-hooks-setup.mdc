@@ -1,0 +1,295 @@
+---
+description: Git Hooksによる自動pre-build-check設定ガイド
+---
+
+# Git Hooks自動チェック設定
+
+## 概要
+
+Git Hooksを使用して、コミット時に自動的にpre-build-checkを実行します。これにより、エラーのあるコードをコミットすることを防ぎます。
+
+## セットアップ方法
+
+### 方法1: Huskyを使用（推奨）
+
+#### 1. Huskyのインストール
+```bash
+npm install --save-dev husky
+```
+
+#### 2. Huskyの初期化
+```bash
+npx husky install
+```
+
+#### 3. package.jsonにprepareスクリプトを追加
+```json
+{
+  "scripts": {
+    "prepare": "husky install"
+  }
+}
+```
+
+#### 4. pre-commitフックの作成
+```bash
+npx husky add .husky/pre-commit "npm run type-check && npm run lint && echo '✅ Pre-commit checks passed!'"
+```
+
+または、手動で `.husky/pre-commit` ファイルを作成：
+
+```bash
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# 型チェック
+echo "⚙️  Type checking..."
+npm run type-check || {
+  echo "❌ Type check failed. Please fix errors before committing."
+  exit 1
+}
+
+# Lint
+echo "🔍 Linting..."
+npm run lint || {
+  echo "❌ Lint check failed. Run 'npm run lint -- --fix' to auto-fix."
+  exit 1
+}
+
+echo "✅ All pre-commit checks passed!"
+```
+
+#### 5. 実行権限の付与
+```bash
+chmod +x .husky/pre-commit
+```
+
+### 方法2: 手動でGit Hooksを設定
+
+#### 1. `.git/hooks/pre-commit` ファイルを作成
+```bash
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+
+# 型チェック
+npm run type-check || exit 1
+
+# Lint
+npm run lint || exit 1
+
+echo "✅ All checks passed!"
+```
+
+#### 2. 実行権限の付与
+```bash
+chmod +x .git/hooks/pre-commit
+```
+
+### 方法3: npm scriptsで統合
+
+#### package.jsonに追加
+```json
+{
+  "scripts": {
+    "precommit": "npm run type-check && npm run lint",
+    "prepush": "npm run build"
+  }
+}
+```
+
+## フックの種類
+
+### pre-commit（推奨）
+- **タイミング**: コミット実行時
+- **チェック内容**: 型チェック、Lint
+- **所要時間**: 短い（数秒〜30秒）
+
+```bash
+#!/bin/sh
+npm run type-check && npm run lint
+```
+
+### pre-push（より厳格）
+- **タイミング**: Push実行時
+- **チェック内容**: 型チェック、Lint、ビルド
+- **所要時間**: 長い（1〜3分）
+
+```bash
+#!/bin/sh
+npm run type-check && npm run lint && npm run build
+```
+
+### commit-msg
+- **タイミング**: コミットメッセージ作成時
+- **チェック内容**: Conventional Commits形式のチェック
+
+```bash
+#!/bin/sh
+# commitlint を使用
+npx --no -- commitlint --edit "$1"
+```
+
+## トラブルシューティング
+
+### フックが実行されない場合
+
+#### 原因1: 実行権限がない
+```bash
+# 確認
+ls -la .husky/pre-commit
+
+# 権限付与
+chmod +x .husky/pre-commit
+```
+
+#### 原因2: Huskyが初期化されていない
+```bash
+npx husky install
+```
+
+#### 原因3: Git Hooksが無効化されている
+```bash
+# 確認
+git config core.hooksPath
+
+# Huskyのフックパスを設定
+git config core.hooksPath .husky
+```
+
+### フックをスキップしたい場合（非推奨）
+
+```bash
+# --no-verify オプションを使用（緊急時のみ）
+git commit --no-verify -m "emergency fix"
+
+# ⚠️ 通常は使用しないでください！
+```
+
+## Lint-stagedとの組み合わせ（オプション）
+
+変更されたファイルのみをチェックして、実行速度を向上させます。
+
+### 1. インストール
+```bash
+npm install --save-dev lint-staged
+```
+
+### 2. package.jsonに設定を追加
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}
+```
+
+### 3. pre-commitフックを更新
+```bash
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+npx lint-staged
+npm run type-check
+```
+
+## CI/CDとの統合
+
+### GitHub Actions例
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Type check
+        run: npm run type-check
+      
+      - name: Lint
+        run: npm run lint
+      
+      - name: Build
+        run: npm run build
+```
+
+## チーム全体での導入
+
+### 1. リポジトリに設定をコミット
+```bash
+git add .husky/
+git add package.json
+git commit -m "chore: add git hooks for pre-commit checks"
+git push
+```
+
+### 2. チームメンバーへの周知
+```markdown
+## セットアップ手順（新メンバー向け）
+
+1. リポジトリをクローン
+git clone <repository-url>
+cd journee
+
+2. 依存関係のインストール
+npm install
+
+3. Git Hooksの初期化（自動で実行されます）
+npm run prepare
+
+4. 動作確認
+git commit --allow-empty -m "test: verify hooks"
+# → 型チェック・Lintが実行されればOK
+```
+
+## ベストプラクティス
+
+### DO（推奨）
+- ✅ pre-commitで軽量なチェック（型チェック、Lint）
+- ✅ pre-pushで重いチェック（ビルド）
+- ✅ エラーメッセージを分かりやすく
+- ✅ チーム全体で統一したフックを使用
+- ✅ CI/CDと同じチェックを実行
+
+### DON'T（非推奨）
+- ❌ フックを頻繁にスキップ（`--no-verify`）
+- ❌ 過度に重いチェック（pre-commitで数分かかる）
+- ❌ エラーメッセージなしで失敗
+- ❌ ローカルだけの設定（共有しない）
+
+## まとめ
+
+Git Hooksを設定することで：
+- ✅ 自動的にpre-build-checkが実行される
+- ✅ エラーのあるコードをコミットできない
+- ✅ CI/CDエラーを未然に防げる
+- ✅ チーム全体のコード品質が向上
+- ✅ レビュー時間が短縮される
+
+**推奨設定**: Husky + pre-commitフック（型チェック + Lint）
+
+詳細は [.cursor/rules/mandatory-pre-build-check.mdc](mdc:.cursor/rules/mandatory-pre-build-check.mdc) を参照してください。

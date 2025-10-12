@@ -1,0 +1,244 @@
+---
+alwaysApply: true
+---
+
+# 必須：Pre-Build Check実行
+
+## 🚨 重要: コード変更時の必須チェック
+
+**すべてのコード変更（ファイル編集、コミット、PR作成）の前に、以下のチェックを必ず実行してください。**
+
+## 必須実行コマンド
+
+```bash
+npm run type-check && npm run lint && npm run build
+```
+
+### 個別実行
+
+```bash
+# 1. 型チェック（必須）
+npm run type-check
+
+# 2. Lintチェック（必須、自動修正付き）
+npm run lint -- --fix
+
+# 3. ビルド確認（必須）
+npm run build
+```
+
+## いつ実行するか
+
+### 必ず実行するタイミング
+
+- ✅ **ファイルを編集した後**（特にTypeScript/TSXファイル）
+- ✅ **コミット前**（必須）
+- ✅ **Push前**（必須）
+- ✅ **PR作成前**（必須）
+- ✅ **複数ファイルを変更した後**
+- ✅ **依存関係を追加/更新した後**
+- ✅ **型定義を変更した後**
+- ✅ **API Routeを追加/変更した後**
+- ✅ **コンポーネントを追加/変更した後**
+
+### 実行しないとどうなるか
+
+- ❌ CI/CDでビルドエラー
+- ❌ 型エラーが本番環境に混入
+- ❌ Lintエラーでコードレビューが遅延
+- ❌ 他の開発者の作業をブロック
+- ❌ デプロイ失敗
+
+## AI Assistantへの指示
+
+### コード変更後の必須フロー
+
+1. **ファイル編集後、必ず以下を実行**:
+   ```bash
+   npm run type-check && npm run lint -- --fix && npm run build
+   ```
+
+2. **エラーが出た場合**:
+   - すぐに修正する（コミット前に解決必須）
+   - エラーを無視してコミットしない
+   - ユーザーに報告して修正方法を提案
+
+3. **成功した場合のみ**:
+   - コミット可能
+   - Push可能
+   - PR作成可能
+
+### 実行タイミングの例
+
+#### 例1: コンポーネント編集時
+```
+1. components/chat/ChatBox.tsx を編集
+2. npm run type-check を実行 ← 必須
+3. エラーがあれば修正
+4. npm run lint -- --fix を実行 ← 必須
+5. npm run build を実行 ← 必須
+6. すべて成功したら完了報告
+```
+
+#### 例2: API Route追加時
+```
+1. app/api/example/route.ts を作成
+2. npm run type-check を実行 ← 必須
+3. npm run lint -- --fix を実行 ← 必須
+4. npm run build を実行 ← 必須
+5. すべて成功したら完了報告
+```
+
+#### 例3: 複数ファイル変更時
+```
+1. 複数ファイルを編集
+2. npm run type-check を実行 ← 必須
+3. npm run lint -- --fix を実行 ← 必須
+4. npm run build を実行 ← 必須
+5. すべて成功したら完了報告
+```
+
+## エラーが出た場合の対処
+
+### 型エラー（type-check）
+```typescript
+// ❌ エラー例
+Property 'title' does not exist on type 'Itinerary'
+
+// ✅ 修正方法
+// 1. 型定義を確認（types/*.ts）
+// 2. プロパティ名のタイポを修正
+// 3. 必要なら型定義を追加/更新
+// 4. 再度 npm run type-check を実行
+```
+
+### Lintエラー
+```bash
+# 自動修正を試す
+npm run lint -- --fix
+
+# 手動修正が必要な場合
+# - console.log を削除
+# - 未使用の変数を削除
+# - import文を整理
+```
+
+### ビルドエラー
+```bash
+# キャッシュクリア
+rm -rf .next
+
+# 依存関係の再インストール
+npm install
+
+# 再ビルド
+npm run build
+```
+
+## Background実行時の注意
+
+### ターミナルコマンド実行時
+```bash
+# ❌ Bad - チェックなし
+git commit -m "feat: add feature"
+
+# ✅ Good - チェック後にコミット
+npm run type-check && npm run lint && npm run build && git commit -m "feat: add feature"
+```
+
+### 複数の変更を行う場合
+```bash
+# すべての編集が完了した後、まとめて実行
+npm run type-check && npm run lint -- --fix && npm run build
+```
+
+## Git Hooks統合（推奨）
+
+### Huskyの設定
+`.husky/pre-commit` ファイルを作成:
+
+```bash
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Pre-build チェックを実行中..."
+
+# 型チェック
+echo "⚙️  型チェック..."
+npm run type-check || exit 1
+
+# Lint
+echo "🔍 Lintチェック..."
+npm run lint || exit 1
+
+echo "✅ すべてのチェックが成功しました！"
+```
+
+### Huskyのインストール
+```bash
+npm install --save-dev husky
+npx husky install
+npx husky add .husky/pre-commit "npm run type-check && npm run lint"
+```
+
+## PR作成時の最終チェック
+
+### 必須確認事項
+- [ ] `npm run type-check` 成功
+- [ ] `npm run lint` 警告なしで成功
+- [ ] `npm run build` 成功
+- [ ] console.log等のデバッグコードを削除
+- [ ] 未使用のインポートを削除
+- [ ] コミットメッセージが [Conventional Commits](https://www.conventionalcommits.org/) に準拠
+
+## よくある失敗パターン
+
+### ❌ パターン1: チェックをスキップ
+```
+開発者: 「小さな変更だからチェック不要だろう」
+結果: CI/CDで型エラー → デプロイ失敗
+```
+
+### ❌ パターン2: エラーを無視
+```
+開発者: 「Lintの警告は無視してPush」
+結果: コードレビューで指摘 → 修正PRを再度作成
+```
+
+### ❌ パターン3: ビルド未確認
+```
+開発者: 「ローカルで動くからOK」
+結果: 本番ビルドで失敗 → リリース遅延
+```
+
+## ✅ 正しいフロー
+
+```
+1. コードを編集
+2. npm run type-check （エラーがあれば修正）
+3. npm run lint -- --fix （エラーがあれば修正）
+4. npm run build （エラーがあれば修正）
+5. すべて成功 → コミット・Push可能
+```
+
+## まとめ
+
+### 守るべきルール
+1. **すべてのコード変更後に必ず実行**
+2. **エラーは即座に修正**
+3. **チェック成功後のみコミット・Push**
+4. **Git Hooksで自動化を推奨**
+5. **チームメンバー全員が遵守**
+
+### メリット
+- ✅ CI/CDエラーの削減
+- ✅ コードレビューの高速化
+- ✅ バグの早期発見
+- ✅ 本番環境の安定性向上
+- ✅ 開発効率の向上
+
+---
+
+**このルールは必須です。例外はありません。** 🚨
+
+詳細は [.cursor/rules/pre-build-check.mdc](mdc:.cursor/rules/pre-build-check.mdc) を参照してください。
