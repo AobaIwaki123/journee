@@ -4,9 +4,7 @@ import { Message } from "@/types/chat";
 import {
   ItineraryData,
   TouristSpot,
-  DaySchedule,
   ItineraryPhase,
-  DayStatus,
   PublicItinerarySettings,
 } from "@/types/itinerary";
 import type { AIModelId } from "@/types/ai";
@@ -26,20 +24,14 @@ import {
   saveClaudeApiKey,
   loadClaudeApiKey,
   removeClaudeApiKey,
-  hasClaudeApiKey,
 } from "@/lib/utils/api-key-manager";
 import {
-  type AutoProgressSettings,
   savePublicItinerary,
   removePublicItinerary,
 } from "@/lib/utils/storage";
 import {
   saveSelectedAI,
   loadSelectedAI,
-  saveAutoProgressMode,
-  loadAutoProgressMode,
-  saveAutoProgressSettings,
-  loadAutoProgressSettings,
   saveAppSettings,
   loadAppSettings,
   saveChatPanelWidth,
@@ -149,25 +141,6 @@ export interface AppState {
   buttonReadiness: ButtonReadiness | null;
   updateChecklist: () => void;
   getChecklistForPhase: (phase: ItineraryPhase) => RequirementChecklistItem[];
-
-  // Phase 4.10: Auto progress state
-  autoProgressMode: boolean;
-  autoProgressSettings: AutoProgressSettings;
-  isAutoProgressing: boolean;
-  autoProgressState: {
-    phase: "idle" | "skeleton" | "detailing" | "completed" | "error";
-    currentStep: string;
-    currentDay?: number;
-    totalDays?: number;
-    progress: number;
-    error?: string;
-  } | null;
-  enableAutoProgress: () => void;
-  disableAutoProgress: () => void;
-  setAutoProgressSettings: (settings: AutoProgressSettings) => void;
-  setIsAutoProgressing: (value: boolean) => void;
-  setAutoProgressState: (state: any) => void;
-  shouldTriggerAutoProgress: () => boolean;
 
   // Phase 5.1.2: Itinerary editing actions
   updateItineraryTitle: (title: string) => void;
@@ -544,16 +517,6 @@ export const useStore = create<AppState>()(
   checklistStatus: null,
   buttonReadiness: null,
 
-  // Phase 4.10: Auto progress state
-  autoProgressMode: true,
-  autoProgressSettings: {
-    enabled: true,
-    parallelCount: 3,
-    showNotifications: true,
-  },
-  isAutoProgressing: false,
-  autoProgressState: null,
-
   // Phase 4.8: Update requirements checklist
   updateChecklist: () => {
     const { messages, currentItinerary, planningPhase } = get();
@@ -592,51 +555,6 @@ export const useStore = create<AppState>()(
   getChecklistForPhase: (phase: ItineraryPhase) => {
     const requirements = getRequirementsForPhase(phase);
     return requirements.items;
-  },
-
-  // Phase 4.10: Auto progress actions
-  enableAutoProgress: () => {
-    saveAutoProgressMode(true);
-    set({ autoProgressMode: true });
-  },
-  disableAutoProgress: () => {
-    saveAutoProgressMode(false);
-    set({ autoProgressMode: false });
-  },
-  setAutoProgressSettings: (settings) => {
-    saveAutoProgressSettings(settings);
-    set({ autoProgressSettings: settings });
-  },
-  setIsAutoProgressing: (value) => set({ isAutoProgressing: value }),
-  setAutoProgressState: (state) => set({ autoProgressState: state }),
-
-  /**
-   * Phase 4.10.1: 自動進行をトリガーすべきか判定
-   */
-  shouldTriggerAutoProgress: () => {
-    const state = get();
-
-    // 自動進行モードがOFFなら false
-    if (!state.autoProgressMode || !state.autoProgressSettings.enabled) {
-      return false;
-    }
-
-    // すでに自動進行中なら false
-    if (state.isAutoProgressing) {
-      return false;
-    }
-
-    // collecting フェーズでのみトリガー
-    if (state.planningPhase !== "collecting") {
-      return false;
-    }
-
-    // 必須情報が揃っているかチェック
-    if (!state.checklistStatus?.allRequiredFilled) {
-      return false;
-    }
-
-    return true;
   },
 
   // Phase 5.1.2: Itinerary editing actions
@@ -906,8 +824,6 @@ export const useStore = create<AppState>()(
 
     // UI設定もIndexedDBから非同期ロード（Zustand persist対象外の設定）
     const savedAI = await loadSelectedAI();
-    const autoProgressMode = await loadAutoProgressMode();
-    const autoProgressSettings = await loadAutoProgressSettings();
     const savedSettings = await loadAppSettings();
     const savedPanelWidth = await loadChatPanelWidth();
 
@@ -915,8 +831,6 @@ export const useStore = create<AppState>()(
       claudeApiKey: savedApiKey,
       // persistで復元されない場合のフォールバック
       selectedAI: state.selectedAI || savedAI,
-      autoProgressMode: state.autoProgressMode ?? autoProgressMode,
-      autoProgressSettings: state.autoProgressSettings || autoProgressSettings,
       settings: state.settings || (savedSettings
         ? { ...DEFAULT_SETTINGS, ...savedSettings }
         : DEFAULT_SETTINGS),
@@ -1292,8 +1206,6 @@ export const useStore = create<AppState>()(
         messages: state.messages,
         settings: state.settings,
         selectedAI: state.selectedAI,
-        autoProgressMode: state.autoProgressMode,
-        autoProgressSettings: state.autoProgressSettings,
         chatPanelWidth: state.chatPanelWidth,
         isItineraryUnsaved: state.isItineraryUnsaved, // 追加
       }),

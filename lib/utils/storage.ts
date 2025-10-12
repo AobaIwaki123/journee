@@ -11,8 +11,6 @@ import type { ItineraryData } from "@/types/itinerary";
 const STORAGE_KEYS = {
   SELECTED_AI: "journee_selected_ai",
   PANEL_WIDTH: "journee_panel_width", // Phase 7用
-  AUTO_PROGRESS_MODE: "journee_auto_progress_mode", // Phase 4.10用
-  AUTO_PROGRESS_SETTINGS: "journee_auto_progress_settings", // Phase 4.10用
   APP_SETTINGS: "journee_app_settings", // Phase 5.4.3用
   PUBLIC_ITINERARIES: "journee_public_itineraries", // Phase 5.5用
   CURRENT_ITINERARY: "journee_current_itinerary", // Phase 5.2用
@@ -192,111 +190,6 @@ export function loadChatPanelWidth(): number {
   } catch (error) {
     console.error("Failed to load panel width:", error);
     return DEFAULT_CHAT_PANEL_WIDTH;
-  }
-}
-
-/**
- * Phase 4.10: 自動進行モードの設定
- */
-
-export interface AutoProgressSettings {
-  enabled: boolean;
-  parallelCount: number; // 並列数（デフォルト: 3）
-  showNotifications: boolean; // 通知表示（デフォルト: true）
-}
-
-/**
- * 自動進行モード設定を保存
- */
-export function saveAutoProgressMode(enabled: boolean): boolean {
-  if (!isLocalStorageAvailable()) {
-    return false;
-  }
-
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEYS.AUTO_PROGRESS_MODE,
-      enabled.toString()
-    );
-    return true;
-  } catch (error) {
-    console.error("Failed to save auto progress mode:", error);
-    return false;
-  }
-}
-
-/**
- * 自動進行モード設定を取得
- */
-export function loadAutoProgressMode(): boolean {
-  if (!isLocalStorageAvailable()) {
-    return true; // デフォルトはON
-  }
-
-  try {
-    const mode = window.localStorage.getItem(STORAGE_KEYS.AUTO_PROGRESS_MODE);
-    if (mode === null) {
-      return true; // デフォルトはON
-    }
-    return mode === "true";
-  } catch (error) {
-    console.error("Failed to load auto progress mode:", error);
-    return true;
-  }
-}
-
-/**
- * 自動進行詳細設定を保存
- */
-export function saveAutoProgressSettings(
-  settings: AutoProgressSettings
-): boolean {
-  if (!isLocalStorageAvailable()) {
-    return false;
-  }
-
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEYS.AUTO_PROGRESS_SETTINGS,
-      JSON.stringify(settings)
-    );
-    return true;
-  } catch (error) {
-    console.error("Failed to save auto progress settings:", error);
-    return false;
-  }
-}
-
-/**
- * 自動進行詳細設定を取得
- */
-export function loadAutoProgressSettings(): AutoProgressSettings {
-  const defaultSettings: AutoProgressSettings = {
-    enabled: true,
-    parallelCount: 3,
-    showNotifications: true,
-  };
-
-  if (!isLocalStorageAvailable()) {
-    return defaultSettings;
-  }
-
-  try {
-    const settingsStr = window.localStorage.getItem(
-      STORAGE_KEYS.AUTO_PROGRESS_SETTINGS
-    );
-    if (!settingsStr) {
-      return defaultSettings;
-    }
-
-    const settings = JSON.parse(settingsStr) as AutoProgressSettings;
-    return {
-      ...defaultSettings,
-      ...settings,
-    };
-  } catch (error) {
-    console.error("Failed to load auto progress settings:", error);
-    return defaultSettings;
   }
 }
 

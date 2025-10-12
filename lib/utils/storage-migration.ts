@@ -3,8 +3,6 @@
  */
 
 import { journeeDB, isIndexedDBAvailable } from './indexed-db';
-import type { AIModelId } from '@/types/ai';
-import type { AutoProgressSettings } from './storage';
 
 /**
  * マイグレーション結果

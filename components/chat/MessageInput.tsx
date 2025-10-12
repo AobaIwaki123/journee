@@ -5,8 +5,6 @@ import { useStore } from "@/lib/store/useStore";
 import { Send } from "lucide-react";
 import { sendChatMessageStream } from "@/lib/utils/api-client";
 import { mergeItineraryData, parseAIResponse } from "@/lib/ai/prompts";
-import { executeSequentialItineraryCreation } from "@/lib/execution/sequential-itinerary-builder";
-import type { Message } from "@/types/chat";
 import { generateId } from "@/lib/utils/id-generator";
 
 export const MessageInput: React.FC = () => {
@@ -51,16 +49,7 @@ export const MessageInput: React.FC = () => {
 
   // Phase 4.10: 自動進行機能
   const updateChecklist = useStore((state: any) => state.updateChecklist);
-  const shouldTriggerAutoProgress = useStore(
-    (state: any) => state.shouldTriggerAutoProgress
-  );
-  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
-  const setIsAutoProgressing = useStore(
-    (state: any) => state.setIsAutoProgressing
-  );
-  const setAutoProgressState = useStore(
-    (state: any) => state.setAutoProgressState
-  );
+
   const currency = useStore((state: any) => state.settings.general.currency);
 
   // Initialize input from messageDraft on mount and when messageDraft changes
@@ -172,16 +161,6 @@ export const MessageInput: React.FC = () => {
       // Phase 4.10.2: 自動進行トリガーチェック
       updateChecklist();
 
-      // 自動進行モードが有効で、トリガー条件を満たしている場合
-      if (shouldTriggerAutoProgress() && !isAutoProgressing) {
-        console.log("🚀 Auto progress triggered");
-        setIsAutoProgressing(true);
-
-        // 少し待ってから自動進行を開始
-        setTimeout(() => {
-          executeAutoProgress();
-        }, 500);
-      }
     } catch (error: any) {
       // AbortErrorの場合は、エラーメッセージを表示しない（ユーザーが意図的にキャンセルした）
       if (error.name === "AbortError") {
@@ -215,47 +194,8 @@ export const MessageInput: React.FC = () => {
     }
   };
 
-  /**
-   * Phase 4.10.2: 自動進行実行
-   */
-  const executeAutoProgress = async () => {
-    try {
-      await executeSequentialItineraryCreation(
-        messages,
-        currentItinerary || undefined,
-        selectedAI,
-        claudeApiKey || "",
-        {
-          onStateChange: (state) => {
-            console.log("Auto progress state:", state);
-            setAutoProgressState(state);
-          },
-          onMessage: (message: Message) => {
-            addMessage(message);
-          },
-          onItineraryUpdate: (itinerary) => {
-            setItinerary(itinerary);
-          },
-          onComplete: () => {
-            console.log("✅ Auto progress completed");
-            setIsAutoProgressing(false);
-          },
-          onError: (error) => {
-            console.error("❌ Auto progress error:", error);
-            setError(error);
-            setIsAutoProgressing(false);
-          },
-        }
-      );
-    } catch (error: any) {
-      console.error("Auto progress execution error:", error);
-      setError(error.message);
-      setIsAutoProgressing(false);
-    }
-  };
-
   const disabled =
-    isLoading || isStreaming || isAutoProgressing || editingMessageId !== null;
+    isLoading || isStreaming || editingMessageId !== null;
 
   /**
    * キーボードイベントハンドラー

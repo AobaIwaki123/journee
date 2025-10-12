@@ -54,7 +54,6 @@ export const MessageList: React.FC = () => {
   const saveEditedMessage = useStore((state: any) => state.saveEditedMessage);
   const deleteMessage = useStore((state: any) => state.deleteMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isAutoProgressing = useStore((state: any) => state.isAutoProgressing);
   const hasReceivedResponse = useStore(
     (state: any) => state.hasReceivedResponse
   );
@@ -82,15 +81,6 @@ export const MessageList: React.FC = () => {
   const currency = useStore((state: any) => state.settings.general.currency);
   const setAbortController = useStore((state: any) => state.setAbortController);
   const updateChecklist = useStore((state: any) => state.updateChecklist);
-  const shouldTriggerAutoProgress = useStore(
-    (state: any) => state.shouldTriggerAutoProgress
-  );
-  const setIsAutoProgressing = useStore(
-    (state: any) => state.setIsAutoProgressing
-  );
-  const setAutoProgressState = useStore(
-    (state: any) => state.setAutoProgressState
-  );
 
   const isProcessing = (isLoading || isStreaming) && !hasReceivedResponse;
 
@@ -191,13 +181,6 @@ export const MessageList: React.FC = () => {
       // チェックリスト更新と自動進行チェック
       updateChecklist();
 
-      if (shouldTriggerAutoProgress() && !isAutoProgressing) {
-        console.log("🚀 Auto progress triggered");
-        setIsAutoProgressing(true);
-        setTimeout(() => {
-          // executeAutoProgress(); // 自動進行は省略
-        }, 500);
-      }
     } catch (error: any) {
       // AbortErrorの場合は、エラーメッセージを表示しない
       if (error.name === "AbortError") {
