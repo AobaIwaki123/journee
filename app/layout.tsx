@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/images/og-default.png',
+        url: '/api/og/default',
         width: 1200,
         height: 630,
         alt: 'Journee - AI旅のしおり作成アプリ',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Journee - AI旅のしおり作成アプリ',
     description: 'AIとともに旅のしおりを作成するアプリケーション。',
-    images: ['/images/og-default.png'],
+    images: ['/api/og/default'],
     creator: '@journee_app',
     site: '@journee_app',
   },
