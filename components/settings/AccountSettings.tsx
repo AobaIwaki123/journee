@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { User, Mail, Calendar, LogOut, Trash2, AlertCircle } from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { clearAllAppData } from '@/lib/utils/ui-storage';
-import { formatDate as formatDateUtil } from '@/lib/utils/date-utils';
+import React from "react";
+import {
+  User,
+  Mail,
+  Calendar,
+  LogOut,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { clearAllAppData } from "@/lib/utils/ui-storage";
+import { formatDate as formatDateUtil } from "@/lib/utils/date-utils";
 
 /**
  * アカウント設定コンポーネント
@@ -16,26 +23,30 @@ export const AccountSettings: React.FC = () => {
   const router = useRouter();
 
   const handleLogout = async () => {
-    if (confirm('ログアウトしますか？')) {
-      await signOut({ callbackUrl: '/login' });
+    if (confirm("ログアウトしますか？")) {
+      await signOut({ callbackUrl: "/login" });
     }
   };
 
   const handleClearData = async () => {
-    if (confirm('すべてのアプリケーションデータを削除しますか？\n\n削除されるデータ:\n- AIモデル設定\n- Claude APIキー\n- アプリケーション設定\n\nこの操作は取り消せません。')) {
+    if (
+      confirm(
+        "すべてのアプリケーションデータを削除しますか？\n\n削除されるデータ:\n- AIモデル設定\n- Claude APIキー\n- アプリケーション設定\n\nこの操作は取り消せません。"
+      )
+    ) {
       const success = await clearAllAppData();
       if (success) {
-        alert('すべてのデータを削除しました。ページをリロードします。');
+        alert("すべてのデータを削除しました。ページをリロードします。");
         window.location.reload();
       } else {
-        alert('データの削除に失敗しました。');
+        alert("データの削除に失敗しました。");
       }
     }
   };
 
   const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return '不明';
-    return formatDateUtil(dateString, 'full');
+    if (!dateString) return "不明";
+    return formatDateUtil(dateString, "full");
   };
 
   return (
@@ -51,7 +62,7 @@ export const AccountSettings: React.FC = () => {
       {/* ユーザー情報 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="font-medium text-gray-800 mb-4">ユーザー情報</h3>
-        
+
         {session?.user ? (
           <div className="space-y-4">
             {/* プロフィール画像と名前 */}
@@ -59,7 +70,7 @@ export const AccountSettings: React.FC = () => {
               {session.user.image ? (
                 <img
                   src={session.user.image}
-                  alt={session.user.name || 'User'}
+                  alt={session.user.name || "User"}
                   className="w-16 h-16 rounded-full border-2 border-gray-200"
                 />
               ) : (
@@ -69,11 +80,9 @@ export const AccountSettings: React.FC = () => {
               )}
               <div>
                 <p className="text-lg font-medium text-gray-800">
-                  {session.user.name || '名前未設定'}
+                  {session.user.name || "名前未設定"}
                 </p>
-                <p className="text-sm text-gray-600">
-                  {session.user.email}
-                </p>
+                <p className="text-sm text-gray-600">{session.user.email}</p>
               </div>
             </div>
 
@@ -181,9 +190,9 @@ export const AccountSettings: React.FC = () => {
           <div className="flex-1">
             <h4 className="font-medium text-yellow-800">データ管理について</h4>
             <p className="text-sm text-yellow-700 mt-1">
-              現在、データはブラウザのLocalStorageに保存されています。
-              ブラウザのキャッシュをクリアすると、保存されたデータが失われる可能性があります。
-              Phase 8以降でデータベース統合を予定しています。
+              ログインしている場合、データはSupabaseデータベースに安全に保存されます。
+              未ログインの場合は、ブラウザのLocalStorageに一時的に保存されます。
+              ブラウザのキャッシュをクリアすると、未ログイン時のデータが失われる可能性があります。
             </p>
           </div>
         </div>

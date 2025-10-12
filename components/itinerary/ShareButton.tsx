@@ -1,9 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Share2, Link2, Copy, Check, Globe, Lock, Download, X } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
-import { PublicItinerarySettings } from '@/types/itinerary';
+import React, { useState } from "react";
+import {
+  Share2,
+  Link2,
+  Copy,
+  Check,
+  Globe,
+  Lock,
+  Download,
+  X,
+} from "lucide-react";
+import { useStore } from "@/lib/store/useStore";
+import { PublicItinerarySettings } from "@/types/itinerary";
 
 /**
  * Phase 5.5: しおり公開・共有ボタンコンポーネント
@@ -12,17 +21,19 @@ export const ShareButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  
+
   const currentItinerary = useStore((state: any) => state.currentItinerary);
   const publishItinerary = useStore((state: any) => state.publishItinerary);
   const unpublishItinerary = useStore((state: any) => state.unpublishItinerary);
-  const updatePublicSettings = useStore((state: any) => state.updatePublicSettings);
+  const updatePublicSettings = useStore(
+    (state: any) => state.updatePublicSettings
+  );
   const addToast = useStore((state: any) => state.addToast);
-  
+
   const [settings, setSettings] = useState<PublicItinerarySettings>({
     isPublic: currentItinerary?.isPublic || false,
     allowPdfDownload: currentItinerary?.allowPdfDownload ?? true,
-    customMessage: currentItinerary?.customMessage || '',
+    customMessage: currentItinerary?.customMessage || "",
   });
 
   if (!currentItinerary) {
@@ -31,47 +42,47 @@ export const ShareButton: React.FC = () => {
 
   const publicUrl = currentItinerary.publicSlug
     ? `${window.location.origin}/share/${currentItinerary.publicSlug}`
-    : '';
+    : "";
 
   const handlePublish = async () => {
     setIsPublishing(true);
-    
+
     try {
       const result = await publishItinerary(settings);
-      
+
       if (result.success) {
-        addToast('しおりを公開しました！', 'success');
+        addToast("しおりを公開しました！", "success");
         setSettings({ ...settings, isPublic: true });
       } else {
-        addToast(result.error || '公開に失敗しました', 'error');
+        addToast(result.error || "公開に失敗しました", "error");
       }
     } catch (error) {
-      console.error('Error publishing:', error);
-      addToast('公開に失敗しました', 'error');
+      console.error("Error publishing:", error);
+      addToast("公開に失敗しました", "error");
     } finally {
       setIsPublishing(false);
     }
   };
 
   const handleUnpublish = async () => {
-    if (!confirm('しおりを非公開にしますか？公開URLは無効になります。')) {
+    if (!confirm("しおりを非公開にしますか？公開URLは無効になります。")) {
       return;
     }
 
     setIsPublishing(true);
-    
+
     try {
       const result = await unpublishItinerary();
-      
+
       if (result.success) {
-        addToast('しおりを非公開にしました', 'success');
+        addToast("しおりを非公開にしました", "success");
         setSettings({ ...settings, isPublic: false });
       } else {
-        addToast(result.error || '非公開化に失敗しました', 'error');
+        addToast(result.error || "非公開化に失敗しました", "error");
       }
     } catch (error) {
-      console.error('Error unpublishing:', error);
-      addToast('非公開化に失敗しました', 'error');
+      console.error("Error unpublishing:", error);
+      addToast("非公開化に失敗しました", "error");
     } finally {
       setIsPublishing(false);
     }
@@ -82,7 +93,7 @@ export const ShareButton: React.FC = () => {
       allowPdfDownload: settings.allowPdfDownload,
       customMessage: settings.customMessage,
     });
-    addToast('設定を更新しました', 'success');
+    addToast("設定を更新しました", "success");
   };
 
   const copyPublicUrl = async () => {
@@ -91,11 +102,11 @@ export const ShareButton: React.FC = () => {
     try {
       await navigator.clipboard.writeText(publicUrl);
       setCopied(true);
-      addToast('URLをコピーしました', 'success');
+      addToast("URLをコピーしました", "success");
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying URL:', error);
-      addToast('URLのコピーに失敗しました', 'error');
+      console.error("Error copying URL:", error);
+      addToast("URLのコピーに失敗しました", "error");
     }
   };
 
@@ -111,8 +122,8 @@ export const ShareButton: React.FC = () => {
         });
       } catch (error) {
         // ユーザーがキャンセルした場合は何もしない
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
+        if ((error as Error).name !== "AbortError") {
+          console.error("Error sharing:", error);
         }
       }
     } else {
@@ -211,11 +222,16 @@ export const ShareButton: React.FC = () => {
                       type="checkbox"
                       checked={settings.allowPdfDownload}
                       onChange={(e) =>
-                        setSettings({ ...settings, allowPdfDownload: e.target.checked })
+                        setSettings({
+                          ...settings,
+                          allowPdfDownload: e.target.checked,
+                        })
                       }
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">PDFダウンロードを許可</span>
+                    <span className="text-sm text-gray-700">
+                      PDFダウンロードを許可
+                    </span>
                   </label>
 
                   <div>
@@ -225,7 +241,10 @@ export const ShareButton: React.FC = () => {
                     <textarea
                       value={settings.customMessage}
                       onChange={(e) =>
-                        setSettings({ ...settings, customMessage: e.target.value })
+                        setSettings({
+                          ...settings,
+                          customMessage: e.target.value,
+                        })
                       }
                       placeholder="閲覧者へのメッセージを入力..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -238,8 +257,10 @@ export const ShareButton: React.FC = () => {
                 </div>
 
                 {/* 設定更新ボタン */}
-                {(settings.allowPdfDownload !== currentItinerary.allowPdfDownload ||
-                  settings.customMessage !== currentItinerary.customMessage) && (
+                {(settings.allowPdfDownload !==
+                  currentItinerary.allowPdfDownload ||
+                  settings.customMessage !==
+                    currentItinerary.customMessage) && (
                   <button
                     onClick={handleUpdateSettings}
                     className="w-full mb-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
@@ -291,7 +312,9 @@ export const ShareButton: React.FC = () => {
                       }
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 font-medium">公開する</span>
+                    <span className="text-sm text-gray-700 font-medium">
+                      公開する
+                    </span>
                   </label>
 
                   <label className="flex items-center gap-2">
@@ -299,12 +322,17 @@ export const ShareButton: React.FC = () => {
                       type="checkbox"
                       checked={settings.allowPdfDownload}
                       onChange={(e) =>
-                        setSettings({ ...settings, allowPdfDownload: e.target.checked })
+                        setSettings({
+                          ...settings,
+                          allowPdfDownload: e.target.checked,
+                        })
                       }
                       disabled={!settings.isPublic}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                     />
-                    <span className="text-sm text-gray-700">PDFダウンロードを許可</span>
+                    <span className="text-sm text-gray-700">
+                      PDFダウンロードを許可
+                    </span>
                   </label>
 
                   <div>
@@ -314,7 +342,10 @@ export const ShareButton: React.FC = () => {
                     <textarea
                       value={settings.customMessage}
                       onChange={(e) =>
-                        setSettings({ ...settings, customMessage: e.target.value })
+                        setSettings({
+                          ...settings,
+                          customMessage: e.target.value,
+                        })
                       }
                       disabled={!settings.isPublic}
                       placeholder="閲覧者へのメッセージを入力..."
@@ -354,10 +385,12 @@ export const ShareButton: React.FC = () => {
             {/* ヘルプテキスト */}
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-500">
-                <strong>公開URL:</strong> 誰でもアクセス可能なリンクが発行されます
+                <strong>公開URL:</strong>{" "}
+                誰でもアクセス可能なリンクが発行されます
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                <strong>注意:</strong> Phase 8以降で他ユーザーとの共有が可能になります
+                <strong>注意:</strong>{" "}
+                公開したしおりは、URLを知っている全てのユーザーが閲覧できます
               </p>
             </div>
           </div>

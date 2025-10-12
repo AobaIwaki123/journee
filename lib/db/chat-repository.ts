@@ -3,12 +3,12 @@
  * チャットメッセージのDB操作（暗号化対応）
  */
 
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
-import type { ChatMessage } from '@/types/chat';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import type { ChatMessage } from "@/types/chat";
 
 // Supabaseクライアントのシングルトン
-let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+let supabaseClient: SupabaseClient<Database> | null = null;
 
 /**
  * Supabaseクライアントを取得
@@ -19,7 +19,7 @@ function getSupabaseClient() {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase credentials are not configured');
+      throw new Error("Supabase credentials are not configured");
     }
 
     supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
@@ -34,7 +34,7 @@ function getSupabaseClient() {
 function getEncryptionKey(): string {
   const key = process.env.CHAT_ENCRYPTION_KEY || process.env.NEXTAUTH_SECRET;
   if (!key) {
-    throw new Error('CHAT_ENCRYPTION_KEY is not configured');
+    throw new Error("CHAT_ENCRYPTION_KEY is not configured");
   }
   return key;
 }
@@ -44,7 +44,7 @@ function getEncryptionKey(): string {
  */
 export async function saveMessage(
   itineraryId: string,
-  message: Omit<ChatMessage, 'id'>
+  message: Omit<ChatMessage, "id">
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = getSupabaseClient();
@@ -52,35 +52,35 @@ export async function saveMessage(
 
     // サーバーサイドの暗号化関数を使用
     const { data: encryptedContent, error: encryptError } = await supabase.rpc(
-      'encrypt_chat_message',
+      "encrypt_chat_message" as any,
       {
         p_content: message.content,
         p_encryption_key: encryptionKey,
-      }
+      } as any
     );
 
     if (encryptError) {
-      console.error('Encryption error:', encryptError);
+      console.error("Encryption error:", encryptError);
       return { success: false, error: encryptError.message };
     }
 
     // 暗号化されたメッセージを保存
-    const { error: insertError } = await supabase.from('chat_messages').insert({
+    const { error: insertError } = await supabase.from("chat_messages").insert({
       itinerary_id: itineraryId,
       role: message.role,
       encrypted_content: encryptedContent as string,
       is_encrypted: true,
       content: null, // 平文は保存しない
-    });
+    } as any);
 
     if (insertError) {
-      console.error('Insert error:', insertError);
+      console.error("Insert error:", insertError);
       return { success: false, error: insertError.message };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error('saveMessage error:', error);
+    console.error("saveMessage error:", error);
     return { success: false, error: error.message };
   }
 }
@@ -90,7 +90,7 @@ export async function saveMessage(
  */
 export async function saveMessages(
   itineraryId: string,
-  messages: Omit<ChatMessage, 'id'>[]
+  messages: Omit<ChatMessage, "id">[]
 ): Promise<{ success: boolean; error?: string; saved: number }> {
   try {
     const supabase = getSupabaseClient();
@@ -100,29 +100,32 @@ export async function saveMessages(
 
     // メッセージを1件ずつ暗号化して保存
     for (const message of messages) {
-      const { data: encryptedContent, error: encryptError } = await supabase.rpc(
-        'encrypt_chat_message',
-        {
-          p_content: message.content,
-          p_encryption_key: encryptionKey,
-        }
-      );
+      const { data: encryptedContent, error: encryptError } =
+        await supabase.rpc(
+          "encrypt_chat_message" as any,
+          {
+            p_content: message.content,
+            p_encryption_key: encryptionKey,
+          } as any
+        );
 
       if (encryptError) {
-        console.error('Encryption error:', encryptError);
+        console.error("Encryption error:", encryptError);
         continue; // スキップして次へ
       }
 
-      const { error: insertError } = await supabase.from('chat_messages').insert({
-        itinerary_id: itineraryId,
-        role: message.role,
-        encrypted_content: encryptedContent as string,
-        is_encrypted: true,
-        content: null,
-      });
+      const { error: insertError } = await supabase
+        .from("chat_messages")
+        .insert({
+          itinerary_id: itineraryId,
+          role: message.role,
+          encrypted_content: encryptedContent as string,
+          is_encrypted: true,
+          content: null,
+        } as any);
 
       if (insertError) {
-        console.error('Insert error:', insertError);
+        console.error("Insert error:", insertError);
         continue;
       }
 
@@ -131,7 +134,7 @@ export async function saveMessages(
 
     return { success: true, saved: savedCount };
   } catch (error: any) {
-    console.error('saveMessages error:', error);
+    console.error("saveMessages error:", error);
     return { success: false, error: error.message, saved: 0 };
   }
 }
@@ -148,13 +151,13 @@ export async function getChatHistory(
 
     // チャットメッセージを取得
     const { data: rawMessages, error: fetchError } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('itinerary_id', itineraryId)
-      .order('created_at', { ascending: true });
+      .from("chat_messages")
+      .select("*")
+      .eq("itinerary_id", itineraryId)
+      .order("created_at", { ascending: true });
 
     if (fetchError) {
-      console.error('Fetch error:', fetchError);
+      console.error("Fetch error:", fetchError);
       return { success: false, error: fetchError.message };
     }
 
@@ -168,41 +171,44 @@ export async function getChatHistory(
     for (const raw of rawMessages) {
       let content: string;
 
-      if (raw.is_encrypted && raw.encrypted_content) {
+      const rawAny = raw as any;
+
+      if (rawAny.is_encrypted && rawAny.encrypted_content) {
         // 暗号化されている場合は復号化
-        const { data: decryptedContent, error: decryptError } = await supabase.rpc(
-          'decrypt_chat_message',
-          {
-            p_encrypted_content: raw.encrypted_content,
-            p_encryption_key: encryptionKey,
-          }
-        );
+        const { data: decryptedContent, error: decryptError } =
+          await supabase.rpc(
+            "decrypt_chat_message" as any,
+            {
+              p_encrypted_content: rawAny.encrypted_content,
+              p_encryption_key: encryptionKey,
+            } as any
+          );
 
         if (decryptError || !decryptedContent) {
-          console.error('Decryption error:', decryptError);
+          console.error("Decryption error:", decryptError);
           continue; // 復号化失敗時はスキップ
         }
 
         content = decryptedContent as string;
-      } else if (raw.content) {
+      } else if (rawAny.content) {
         // 平文の場合（旧データ）
-        content = raw.content;
+        content = rawAny.content;
       } else {
         // contentもencrypted_contentもない場合はスキップ
         continue;
       }
 
       messages.push({
-        id: raw.id,
-        role: raw.role as 'user' | 'assistant',
+        id: rawAny.id,
+        role: rawAny.role as "user" | "assistant",
         content,
-        timestamp: new Date(raw.created_at),
+        timestamp: new Date(rawAny.created_at),
       });
     }
 
     return { success: true, messages };
   } catch (error: any) {
-    console.error('getChatHistory error:', error);
+    console.error("getChatHistory error:", error);
     return { success: false, error: error.message };
   }
 }
@@ -217,18 +223,18 @@ export async function deleteChatHistory(
     const supabase = getSupabaseClient();
 
     const { error: deleteError } = await supabase
-      .from('chat_messages')
+      .from("chat_messages")
       .delete()
-      .eq('itinerary_id', itineraryId);
+      .eq("itinerary_id", itineraryId);
 
     if (deleteError) {
-      console.error('Delete error:', deleteError);
+      console.error("Delete error:", deleteError);
       return { success: false, error: deleteError.message };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error('deleteChatHistory error:', error);
+    console.error("deleteChatHistory error:", error);
     return { success: false, error: error.message };
   }
 }
@@ -243,18 +249,18 @@ export async function getChatHistoryCount(
     const supabase = getSupabaseClient();
 
     const { count, error } = await supabase
-      .from('chat_messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('itinerary_id', itineraryId);
+      .from("chat_messages")
+      .select("*", { count: "exact", head: true })
+      .eq("itinerary_id", itineraryId);
 
     if (error) {
-      console.error('Count error:', error);
+      console.error("Count error:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true, count: count || 0 };
   } catch (error: any) {
-    console.error('getChatHistoryCount error:', error);
+    console.error("getChatHistoryCount error:", error);
     return { success: false, error: error.message };
   }
 }
