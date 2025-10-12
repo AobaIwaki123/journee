@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: journee-cdc97d
+  namespace: journee
+spec:
+  selector:
+    app: journee-cdc97d
+  ports:
+    - port: 80
+      targetPort: 3000
