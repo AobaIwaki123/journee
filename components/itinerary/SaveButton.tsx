@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store/useStore";
 import { saveCurrentItinerary } from "@/lib/utils/storage";
 import { updateItinerary, addItinerary } from "@/lib/mock-data/itineraries";
 import { generateId } from "@/lib/utils/id-generator";
+import { saveItineraryWithChatHistory } from "@/lib/utils/api-client"; // 追加
 
 /**
  * Phase 10.4: しおり保存ボタン（DB統合版）
@@ -21,7 +22,9 @@ import { generateId } from "@/lib/utils/id-generator";
 export const SaveButton: React.FC = () => {
   const { data: session } = useSession();
   const currentItinerary = useStore((state) => state.currentItinerary);
+  const messages = useStore((state) => state.messages); // 追加
   const setItinerary = useStore((state) => state.setItinerary);
+  const setItineraryUnsaved = useStore((state) => state.setItineraryUnsaved); // 追加
   const addToast = useStore((state) => state.addToast);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -53,24 +56,17 @@ export const SaveButton: React.FC = () => {
       }
 
       if (session?.user) {
-        // ログイン時: データベースに保存
-        const response = await fetch("/api/itinerary/save", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            itinerary: itineraryToSave,
-            saveMode: mode,
-          }),
-        });
+        // ログイン時: データベースに保存 (チャット履歴も一緒に保存)
+        const savedItinerary = await saveItineraryWithChatHistory(
+          itineraryToSave,
+          messages
+        );
 
-        if (!response.ok) {
-          throw new Error("Failed to save itinerary to database");
-        }
+        // Zustandストアを更新
+        setItinerary(savedItinerary);
+        setItineraryUnsaved(false); // 保存されたのでフラグをfalseに
 
-        const data = await response.json();
-        addToast(data.message || "しおりを保存しました", "success");
+        addToast("しおりとチャット履歴を保存しました", "success");
       } else {
         // 未ログイン時: LocalStorageに保存（従来通り）
         const success = saveCurrentItinerary(itineraryToSave);

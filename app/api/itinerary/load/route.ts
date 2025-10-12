@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
 import { itineraryRepository } from '@/lib/db/itinerary-repository';
+import { chatRepository } from '@/lib/db/chat-repository'; // 追加
 
 /**
  * Phase 8.3: しおり読込API（Database版）
@@ -42,9 +43,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // チャット履歴を取得
+    const chatMessages = await chatRepository.getMessagesByItineraryId(itineraryId, user.id);
+
     return NextResponse.json({
       success: true,
       itinerary,
+      messages: chatMessages,
     });
   } catch (error) {
     console.error('Failed to load itinerary:', error);

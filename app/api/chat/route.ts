@@ -270,19 +270,25 @@ async function handleGeminiNonStreamingResponse(
 
     // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
     if (updatedItinerary?.id) {
-      // ユーザーメッセージを保存
-      await saveMessage(updatedItinerary.id, {
+      const saveUserMessageResult = await saveMessage(updatedItinerary.id, {
         role: 'user',
         content: message,
         timestamp: new Date(),
       });
+      if (!saveUserMessageResult.success) {
+        console.error('Failed to save user message:', saveUserMessageResult.error);
+      }
 
-      // AIメッセージを保存
-      await saveMessage(updatedItinerary.id, {
+      const saveAIMessageResult = await saveMessage(updatedItinerary.id, {
         role: 'assistant',
         content: result.message,
         timestamp: new Date(),
       });
+      if (!saveAIMessageResult.success) {
+        console.error('Failed to save AI message:', saveAIMessageResult.error);
+      }
+    } else {
+      console.warn('Itinerary ID not found for non-streaming response. Chat history will be saved on itinerary save.');
     }
 
     const response: ChatAPIResponse = {
@@ -323,19 +329,25 @@ async function handleClaudeNonStreamingResponse(
 
     // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
     if (updatedItinerary?.id) {
-      // ユーザーメッセージを保存
-      await saveMessage(updatedItinerary.id, {
+      const saveUserMessageResult = await saveMessage(updatedItinerary.id, {
         role: 'user',
         content: message,
         timestamp: new Date(),
       });
+      if (!saveUserMessageResult.success) {
+        console.error('Failed to save user message:', saveUserMessageResult.error);
+      }
 
-      // AIメッセージを保存
-      await saveMessage(updatedItinerary.id, {
+      const saveAIMessageResult = await saveMessage(updatedItinerary.id, {
         role: 'assistant',
         content: result.message,
         timestamp: new Date(),
       });
+      if (!saveAIMessageResult.success) {
+        console.error('Failed to save AI message:', saveAIMessageResult.error);
+      }
+    } else {
+      console.warn('Itinerary ID not found for non-streaming response. Chat history will be saved on itinerary save.');
     }
 
     const response: ChatAPIResponse = {
@@ -418,24 +430,25 @@ async function handleGeminiStreamingResponse(
 
         // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
         if (finalItinerary?.id) {
-          try {
-            // ユーザーメッセージを保存
-            await saveMessage(finalItinerary.id, {
-              role: 'user',
-              content: message,
-              timestamp: new Date(),
-            });
-
-            // AIメッセージを保存
-            await saveMessage(finalItinerary.id, {
-              role: 'assistant',
-              content: fullResponse,
-              timestamp: new Date(),
-            });
-          } catch (saveError) {
-            console.error('Failed to save chat history:', saveError);
-            // エラーが発生してもストリーミングは継続
+          const saveUserMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'user',
+            content: message,
+            timestamp: new Date(),
+          });
+          if (!saveUserMessageResult.success) {
+            console.error('Failed to save user message (streaming):', saveUserMessageResult.error);
           }
+
+          const saveAIMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'assistant',
+            content: fullResponse,
+            timestamp: new Date(),
+          });
+          if (!saveAIMessageResult.success) {
+            console.error('Failed to save AI message (streaming):', saveAIMessageResult.error);
+          }
+        } else {
+          console.warn('Itinerary ID not found for streaming response. Chat history will be saved on itinerary save.');
         }
 
         // 完了を通知
@@ -534,24 +547,25 @@ async function handleClaudeStreamingResponse(
 
         // チャット履歴をDBに自動保存（しおりIDがある場合のみ）
         if (finalItinerary?.id) {
-          try {
-            // ユーザーメッセージを保存
-            await saveMessage(finalItinerary.id, {
-              role: 'user',
-              content: message,
-              timestamp: new Date(),
-            });
-
-            // AIメッセージを保存
-            await saveMessage(finalItinerary.id, {
-              role: 'assistant',
-              content: fullResponse,
-              timestamp: new Date(),
-            });
-          } catch (saveError) {
-            console.error('Failed to save chat history:', saveError);
-            // エラーが発生してもストリーミングは継続
+          const saveUserMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'user',
+            content: message,
+            timestamp: new Date(),
+          });
+          if (!saveUserMessageResult.success) {
+            console.error('Failed to save user message (streaming):', saveUserMessageResult.error);
           }
+
+          const saveAIMessageResult = await saveMessage(finalItinerary.id, {
+            role: 'assistant',
+            content: fullResponse,
+            timestamp: new Date(),
+          });
+          if (!saveAIMessageResult.success) {
+            console.error('Failed to save AI message (streaming):', saveAIMessageResult.error);
+          }
+        } else {
+          console.warn('Itinerary ID not found for streaming response. Chat history will be saved on itinerary save.');
         }
 
         // 完了を通知

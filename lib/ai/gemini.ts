@@ -7,6 +7,7 @@ import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import type { ChatMessage } from "@/types/chat";
 import type { ItineraryData, ItineraryPhase } from "@/types/itinerary";
 import { getModelName } from "./models";
+import { limitChatHistoryByTokens } from './token-manager'; // 追加
 import {
   SYSTEM_PROMPT,
   createUpdatePrompt,
@@ -134,8 +135,9 @@ export class GeminiClient {
 
     // チャット履歴がある場合は追加
     if (chatHistory.length > 0) {
+      const limitedHistory = limitChatHistoryByTokens(chatHistory, 100000); // Gemini: 10万トークン
       const historyText = formatChatHistory(
-        chatHistory.slice(-10).map((msg) => ({
+        limitedHistory.map((msg) => ({
           role: msg.role,
           content: msg.content,
         }))

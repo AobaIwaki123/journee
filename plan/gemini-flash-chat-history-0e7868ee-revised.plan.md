@@ -25,7 +25,7 @@
 
 |-------|------|------|--------|
 
-| Phase 5 (残り) | チャット履歴保存バグ修正 + しおり読込時の履歴取得 | ❌ 未実装 | 🔴 高 |
+| Phase 5 (残り) | チャット履歴保存バグ修正 | ❌ 未実装 | 🔴 高 |
 
 | Phase 6 | AIプロンプト改善とトークン管理 | ❌ 未実装 | 🔴 高 |
 
@@ -39,7 +39,17 @@
 
 ## 🎯 残実装項目の詳細
 
-### Phase 5（残り）: しおり読込時のチャット履歴取得 + チャット履歴保存問題の修正
+## Phase 4: ユーザーによる追加課題のため情報が少ない課題
+
+- チャット画面にチャット履歴のリセット機能が欲しい
+- 理由: 今回の変更により会話履歴が全て送られるようになってしまうため、不要な履歴は削除できる方がユーザー体験が良い
+- 仕様
+  - 削除ボタンを押すと、UI上および内部的なチャット履歴保持情報も削除され、次のチャット送信時に確実に何もコンテキストがない状態で会話を始められる
+  - 但し、すでにDBに保存されてしまったチャットまで削除する必要はない。UI上から削除され、コンテキストに載らないことが何よりも重要
+- レイアウト
+  - チャットボックスの右下にホバーさせる
+
+### Phase 5（残り）: チャット履歴保存問題の修正
 
 **現状:**
 
@@ -190,27 +200,6 @@ const handleSave = async () => {
     setLoading(false);
   }
 };
-```
-
-#### 5.5 itinerary/load API の更新（チャット履歴取得追加）
-
-**ファイル:** `app/api/itinerary/load/route.ts`
-
-```typescript
-import { getChatHistory } from '@/lib/db/chat-repository';
-
-export async function GET(request: NextRequest) {
-  // ... 既存の認証とitinerary取得処理 ...
-
-  // ✅ 追加: チャット履歴も取得
-  const chatHistoryResult = await getChatHistory(itineraryId);
-
-  return NextResponse.json({
-    success: true,
-    itinerary,
-    chatHistory: chatHistoryResult.success ? chatHistoryResult.messages : [], // ← 追加
-  });
-}
 ```
 
 **優先度:** 🔴 高（フロントエンド統合に必須、かつ現在のバグ修正）
@@ -527,7 +516,6 @@ private buildPrompt(
 **現状:**
 
 - Zustandストアにチャット履歴の自動保存・復元ロジックがない
-- しおり読み込み時にチャット履歴を復元する仕組みがない
 - メッセージ送信前の自動圧縮がない
 
 **必要な実装:**
@@ -638,30 +626,6 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 }));
-```
-
-#### 7.2 しおり読み込み時のチャット履歴復元
-
-**ファイル:** `components/layout/StorageInitializer.tsx` または新規コンポーネント
-
-```typescript
-'use client';
-
-import { useEffect } from 'react';
-import { useStore } from '@/lib/store/useStore';
-
-export const ChatHistoryInitializer: React.FC<{ itineraryId?: string }> = ({ itineraryId }) => {
-  const loadChatHistory = useStore((state) => state.loadChatHistory);
-
-  useEffect(() => {
-    if (itineraryId) {
-      // しおりが読み込まれたらチャット履歴も復元
-      loadChatHistory(itineraryId);
-    }
-  }, [itineraryId, loadChatHistory]);
-
-  return null;
-};
 ```
 
 #### 7.3 メッセージ送信前の自動圧縮
@@ -878,11 +842,9 @@ test.describe('チャット履歴自動要約', () => {
 4. ✅ **Phase 5.4**: SaveButtonコンポーネントの更新
 5. ✅ **Phase 5.5**: `itinerary/load` APIの更新（チャット履歴取得追加）
 6. ✅ **Phase 7.1**: Zustandストアにチャット履歴関連アクション追加
-7. ✅ **Phase 7.2**: しおり読み込み時のチャット履歴復元
 
 **目的:**
 - **バグ修正**: しおり未保存時にチャット履歴が保存されない問題を解決
-- **基本機能**: チャット履歴の保存・復元を完全に動作させる
 
 **参考:** `.cursor/plans/chat-history-debug-guide.md` に詳細なデバッグ手順を記載
 
@@ -955,7 +917,6 @@ test.describe('チャット履歴自動要約', () => {
 - [ ] 🚨 **バグ修正確認**: しおり未保存でもチャット履歴が保存される（しおり保存時に一括保存）
 - [ ] チャットAPI側で適切なエラーログが出力される
 - [ ] しおり初回保存時にチャット履歴が一括保存される
-- [ ] しおり読み込み時にチャット履歴が復元される
 - [ ] メッセージ送信後、DBに保存される（しおりIDが存在する場合）
 - [ ] トークン数が閾値を超えると自動要約される
 - [ ] 要約後のメッセージ数が削減される
