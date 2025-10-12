@@ -229,21 +229,27 @@ export interface Database {
           id: string;
           itinerary_id: string;
           role: 'user' | 'assistant';
-          content: string;
+          content: string | null;
+          encrypted_content: string | null;
+          is_encrypted: boolean | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           itinerary_id: string;
           role: 'user' | 'assistant';
-          content: string;
+          content?: string | null;
+          encrypted_content?: string | null;
+          is_encrypted?: boolean | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           itinerary_id?: string;
           role?: 'user' | 'assistant';
-          content?: string;
+          content?: string | null;
+          encrypted_content?: string | null;
+          is_encrypted?: boolean | null;
           created_at?: string;
         };
       };
@@ -330,6 +336,26 @@ export interface Database {
           p_encryption_key: string;
         };
         Returns: string | null;
+      };
+      encrypt_chat_message: {
+        Args: {
+          p_content: string;
+          p_encryption_key: string;
+        };
+        Returns: string;
+      };
+      decrypt_chat_message: {
+        Args: {
+          p_encrypted_content: string;
+          p_encryption_key: string;
+        };
+        Returns: string | null;
+      };
+      migrate_existing_chat_messages: {
+        Args: {
+          p_encryption_key: string;
+        };
+        Returns: void;
       };
       increment_view_count: {
         Args: {
