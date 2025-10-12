@@ -162,7 +162,14 @@ export class ClaudeClient {
 
     // チャット履歴がある場合は追加
     if (chatHistory.length > 0) {
-      const limitedHistory = limitChatHistoryByTokens(chatHistory, 50000); // Claude: 5万トークン
+      const filteredChatHistory = chatHistory.filter(msg => msg.role !== 'system');
+      const mappedHistory = filteredChatHistory.map(msg => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant", // 'system' messages are already filtered out
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+      const limitedHistory = limitChatHistoryByTokens(mappedHistory, 50000); // Claude: 5万トークン
       const historyText = formatChatHistory(
         limitedHistory.map((msg) => ({
           role: msg.role,
