@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OGP画像テスト - Journee</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.2rem;
+      margin-bottom: 3rem;
+    }
+    
+    .test-section {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    
+    .test-section h2 {
+      color: #333;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .status {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    
+    .status.success {
+      background: #10b981;
+      color: white;
+    }
+    
+    .status.loading {
+      background: #f59e0b;
+      color: white;
+    }
+    
+    .status.error {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .image-container {
+      margin: 1rem 0;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f9fafb;
+    }
+    
+    .image-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .image-info {
+      padding: 1rem;
+      background: white;
+      border-top: 2px solid #e5e7eb;
+    }
+    
+    .image-info p {
+      margin: 0.5rem 0;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    
+    .image-info strong {
+      color: #374151;
+    }
+    
+    .code {
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 1rem;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 0.75rem 1.5rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #5568d3;
+    }
+    
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .link:hover {
+      text-decoration: underline;
+    }
+    
+    .warning {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    
+    .success-box {
+      background: #d1fae5;
+      border-left: 4px solid #10b981;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    
+    .external-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .external-link-card {
+      background: #f9fafb;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+    }
+    
+    .external-link-card:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+    
+    .external-link-card h3 {
+      color: #667eea;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .external-link-card p {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>✈️ OGP画像テスト</h1>
+    <p class="subtitle">Journee - AI旅のしおり作成アプリ</p>
+    
+    <!-- デフォルトOGP画像 -->
+    <div class="test-section">
+      <h2>
+        🎨 デフォルトOGP画像
+        <span class="status loading" id="default-status">読み込み中...</span>
+      </h2>
+      <p>トップページやメタデータ未設定ページで使用される画像です。</p>
+      
+      <div class="image-container">
+        <img 
+          id="default-image" 
+          src="/api/og/default" 
+          alt="デフォルトOGP画像"
+          onload="imageLoaded('default')"
+          onerror="imageError('default')"
+        />
+        <div class="image-info">
+          <p><strong>エンドポイント:</strong> /api/og/default</p>
+          <p><strong>サイズ:</strong> 1200x630px（OGP標準）</p>
+          <p><strong>キャッシュ:</strong> 7日間</p>
+        </div>
+      </div>
+      
+      <div class="button-group">
+        <button onclick="window.open('/api/og/default', '_blank')">新しいタブで開く</button>
+        <button onclick="copyToClipboard(window.location.origin + '/api/og/default')">URLをコピー</button>
+      </div>
+    </div>
+    
+    <!-- しおりOGP画像テスト -->
+    <div class="test-section">
+      <h2>
+        📋 しおりOGP画像
+        <span class="status loading" id="itinerary-status">準備中</span>
+      </h2>
+      <p>公開しおり用の動的OGP画像です。Slugを入力してテストできます。</p>
+      
+      <div class="warning">
+        <strong>⚠️ 注意:</strong> テストするには、データベースに公開しおりが存在する必要があります。
+      </div>
+      
+      <div style="margin: 1rem 0;">
+        <label for="slug-input" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+          しおりのSlug:
+        </label>
+        <input 
+          type="text" 
+          id="slug-input" 
+          placeholder="例: tokyo-trip-2025" 
+          style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"
+        />
+      </div>
+      
+      <div class="button-group">
+        <button onclick="loadItineraryOGP()">画像を読み込む</button>
+      </div>
+      
+      <div id="itinerary-image-container" style="display: none;">
+        <div class="image-container">
+          <img 
+            id="itinerary-image" 
+            alt="しおりOGP画像"
+            onload="imageLoaded('itinerary')"
+            onerror="imageError('itinerary')"
+          />
+          <div class="image-info">
+            <p><strong>エンドポイント:</strong> <span id="itinerary-endpoint"></span></p>
+            <p><strong>サイズ:</strong> 1200x630px（OGP標準）</p>
+            <p><strong>キャッシュ:</strong> 1日間</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 実装状況 -->
+    <div class="test-section">
+      <h2>✅ 実装状況</h2>
+      <div class="success-box">
+        <ul style="list-style: none; padding: 0;">
+          <li style="margin: 0.5rem 0;">✅ デフォルトOGP画像API（/api/og/default）</li>
+          <li style="margin: 0.5rem 0;">✅ しおりOGP画像API（/api/og?slug=xxx）</li>
+          <li style="margin: 0.5rem 0;">✅ Edge Runtime設定（高速レスポンス）</li>
+          <li style="margin: 0.5rem 0;">✅ キャッシュ戦略（CDN最適化）</li>
+          <li style="margin: 0.5rem 0;">✅ エラーハンドリング（フォールバック画像）</li>
+          <li style="margin: 0.5rem 0;">✅ すべてのページにメタデータ設定</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- 外部検証ツール -->
+    <div class="test-section">
+      <h2>🔗 外部検証ツール</h2>
+      <p>本番環境デプロイ後、以下のツールでOGP画像を検証できます：</p>
+      
+      <div class="external-links">
+        <a href="https://developers.facebook.com/tools/debug/" target="_blank" rel="noopener noreferrer" class="external-link-card">
+          <h3>Facebook Sharing Debugger</h3>
+          <p>FacebookでのOGP表示を確認・デバッグ</p>
+        </a>
+        
+        <a href="https://cards-dev.twitter.com/validator" target="_blank" rel="noopener noreferrer" class="external-link-card">
+          <h3>Twitter Card Validator</h3>
+          <p>TwitterでのOGP表示を確認・デバッグ</p>
+        </a>
+        
+        <a href="https://www.linkedin.com/post-inspector/" target="_blank" rel="noopener noreferrer" class="external-link-card">
+          <h3>LinkedIn Post Inspector</h3>
+          <p>LinkedInでのOGP表示を確認</p>
+        </a>
+      </div>
+    </div>
+    
+    <!-- メタデータ設定ページ一覧 -->
+    <div class="test-section">
+      <h2>📄 メタデータ設定済みページ</h2>
+      <ul style="line-height: 1.8;">
+        <li><a href="/" class="link">トップページ (/)</a></li>
+        <li><a href="/mypage" class="link">マイページ (/mypage)</a></li>
+        <li><a href="/itineraries" class="link">しおり一覧 (/itineraries)</a></li>
+        <li><a href="/privacy" class="link">プライバシーポリシー (/privacy)</a></li>
+        <li><a href="/terms" class="link">利用規約 (/terms)</a></li>
+        <li><a href="/login" class="link">ログイン (/login)</a></li>
+        <li><a href="/settings" class="link">設定 (/settings)</a></li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    function imageLoaded(type) {
+      const statusEl = document.getElementById(`${type}-status`);
+      statusEl.textContent = '✓ 読み込み成功';
+      statusEl.className = 'status success';
+    }
+    
+    function imageError(type) {
+      const statusEl = document.getElementById(`${type}-status`);
+      statusEl.textContent = '✗ 読み込み失敗';
+      statusEl.className = 'status error';
+    }
+    
+    function loadItineraryOGP() {
+      const slug = document.getElementById('slug-input').value.trim();
+      
+      if (!slug) {
+        alert('Slugを入力してください');
+        return;
+      }
+      
+      const endpoint = `/api/og?slug=${encodeURIComponent(slug)}`;
+      const container = document.getElementById('itinerary-image-container');
+      const image = document.getElementById('itinerary-image');
+      const endpointEl = document.getElementById('itinerary-endpoint');
+      const statusEl = document.getElementById('itinerary-status');
+      
+      statusEl.textContent = '読み込み中...';
+      statusEl.className = 'status loading';
+      
+      image.src = endpoint;
+      endpointEl.textContent = endpoint;
+      container.style.display = 'block';
+    }
+    
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('URLをクリップボードにコピーしました！');
+      }, () => {
+        alert('コピーに失敗しました');
+      });
+    }
+  </script>
+</body>
+</html>
