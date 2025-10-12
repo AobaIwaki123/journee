@@ -1,27 +1,30 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { X, Key, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
-import { validateApiKeyFormat, maskApiKey } from '@/lib/utils/encryption';
+import React, { useState, useEffect } from "react";
+import { X, Key, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
+import { useStore } from "@/lib/store/useStore";
+import { validateApiKeyFormat, maskApiKey } from "@/lib/utils/api-key-utils";
 
 interface APIKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => {
+export const APIKeyModal: React.FC<APIKeyModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
   const claudeApiKey = useStore((state: any) => state.claudeApiKey);
   const setClaudeApiKey = useStore((state: any) => state.setClaudeApiKey);
   const removeClaudeApiKey = useStore((state: any) => state.removeClaudeApiKey);
 
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [validationStatus, setValidationStatus] = useState<
-    'idle' | 'success' | 'error'
-  >('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+    "idle" | "success" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (isOpen && claudeApiKey) {
@@ -32,56 +35,65 @@ export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => 
   const handleSave = async () => {
     // 入力値の検証
     if (!apiKey.trim()) {
-      setErrorMessage('APIキーを入力してください');
-      setValidationStatus('error');
+      setErrorMessage("APIキーを入力してください");
+      setValidationStatus("error");
       return;
     }
 
     if (!validateApiKeyFormat(apiKey)) {
-      setErrorMessage('APIキーの形式が正しくありません（最低20文字必要）');
-      setValidationStatus('error');
+      setErrorMessage("APIキーの形式が正しくありません（最低20文字必要）");
+      setValidationStatus("error");
       return;
     }
 
     setIsValidating(true);
-    setValidationStatus('idle');
-    setErrorMessage('');
+    setValidationStatus("idle");
+    setErrorMessage("");
 
-    // 簡易的な検証（形式チェックのみ）
-    // Phase 6.2で実際のAPI呼び出しによる検証を追加
     try {
-      // 形式検証のみ
-      await new Promise((resolve) => setTimeout(resolve, 500)); // UXのための遅延
+      // サーバーに保存（非同期）
+      const success = await setClaudeApiKey(apiKey);
 
-      setClaudeApiKey(apiKey);
-      setValidationStatus('success');
-      
+      if (!success) {
+        setErrorMessage("APIキーの保存に失敗しました");
+        setValidationStatus("error");
+        return;
+      }
+
+      setValidationStatus("success");
+
       // 成功後1秒待ってモーダルを閉じる
       setTimeout(() => {
         onClose();
         resetModal();
       }, 1000);
     } catch (error) {
-      setErrorMessage('APIキーの保存に失敗しました');
-      setValidationStatus('error');
+      setErrorMessage("APIキーの保存に失敗しました");
+      setValidationStatus("error");
     } finally {
       setIsValidating(false);
     }
   };
 
-  const handleRemove = () => {
-    if (confirm('Claude APIキーを削除してもよろしいですか？\nGemini APIに切り替わります。')) {
-      removeClaudeApiKey();
-      resetModal();
-      onClose();
+  const handleRemove = async () => {
+    if (
+      confirm(
+        "Claude APIキーを削除してもよろしいですか？\nGemini APIに切り替わります。"
+      )
+    ) {
+      const success = await removeClaudeApiKey();
+      if (success) {
+        resetModal();
+        onClose();
+      }
     }
   };
 
   const resetModal = () => {
-    setApiKey('');
+    setApiKey("");
     setShowKey(false);
-    setValidationStatus('idle');
-    setErrorMessage('');
+    setValidationStatus("idle");
+    setErrorMessage("");
   };
 
   const handleClose = () => {
@@ -147,12 +159,12 @@ export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => 
             </label>
             <div className="relative">
               <input
-                type={showKey ? 'text' : 'password'}
+                type={showKey ? "text" : "password"}
                 value={apiKey}
                 onChange={(e) => {
                   setApiKey(e.target.value);
-                  setValidationStatus('idle');
-                  setErrorMessage('');
+                  setValidationStatus("idle");
+                  setErrorMessage("");
                 }}
                 placeholder="sk-ant-..."
                 className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -172,7 +184,7 @@ export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => 
           </div>
 
           {/* バリデーション結果 */}
-          {validationStatus === 'error' && errorMessage && (
+          {validationStatus === "error" && errorMessage && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-start space-x-2">
                 <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
@@ -183,13 +195,11 @@ export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => 
             </div>
           )}
 
-          {validationStatus === 'success' && (
+          {validationStatus === "success" && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
-                <p className="text-sm text-green-800">
-                  APIキーを保存しました
-                </p>
+                <p className="text-sm text-green-800">APIキーを保存しました</p>
               </div>
             </div>
           )}
@@ -197,7 +207,7 @@ export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => 
           {/* セキュリティに関する注意 */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-xs text-yellow-800">
-              ⚠️ APIキーはブラウザのLocalStorageに暗号化して保存されます。
+              ⚠️ APIキーはサーバーサイドで暗号化して保存されます。
               共有PCでは使用後に必ず削除してください。
             </p>
           </div>
@@ -227,7 +237,7 @@ export const APIKeyModal: React.FC<APIKeyModalProps> = ({ isOpen, onClose }) => 
               disabled={isValidating || !apiKey.trim()}
               className="px-4 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {isValidating ? '検証中...' : '保存'}
+              {isValidating ? "検証中..." : "保存"}
             </button>
           </div>
         </div>

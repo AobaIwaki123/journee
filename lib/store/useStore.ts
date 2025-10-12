@@ -25,6 +25,9 @@ import {
   saveClaudeApiKey,
   loadClaudeApiKey,
   removeClaudeApiKey,
+  hasClaudeApiKey,
+} from "@/lib/utils/api-key-manager";
+import {
   saveSelectedAI,
   loadSelectedAI,
   saveAutoProgressMode,
@@ -185,9 +188,9 @@ interface AppState {
   selectedAI: AIModelId;
   claudeApiKey: string;
   setSelectedAI: (ai: AIModelId) => void;
-  setClaudeApiKey: (key: string) => void;
-  removeClaudeApiKey: () => void;
-  initializeFromStorage: () => void;
+  setClaudeApiKey: (key: string) => Promise<boolean>;
+  removeClaudeApiKey: () => Promise<boolean>;
+  initializeFromStorage: () => Promise<void>;
 
   // Mobile UI state (Phase 7.2)
   mobileActiveTab: "chat" | "itinerary";
@@ -851,18 +854,28 @@ export const useStore = create<AppState>()((set, get) => ({
     saveSelectedAI(ai);
     set({ selectedAI: ai });
   },
-  setClaudeApiKey: (key) => {
+  setClaudeApiKey: async (key) => {
     if (key) {
-      saveClaudeApiKey(key);
+      const success = await saveClaudeApiKey(key);
+      if (!success) {
+        console.error("Failed to save API key");
+        return false;
+      }
     }
     set({ claudeApiKey: key });
+    return true;
   },
-  removeClaudeApiKey: () => {
-    removeClaudeApiKey();
+  removeClaudeApiKey: async () => {
+    const success = await removeClaudeApiKey();
+    if (!success) {
+      console.error("Failed to remove API key");
+      return false;
+    }
     set({ claudeApiKey: "", selectedAI: DEFAULT_AI_MODEL });
+    return true;
   },
-  initializeFromStorage: () => {
-    const savedApiKey = loadClaudeApiKey();
+  initializeFromStorage: async () => {
+    const savedApiKey = await loadClaudeApiKey();
     const savedAI = loadSelectedAI();
     const autoProgressMode = loadAutoProgressMode();
     const autoProgressSettings = loadAutoProgressSettings();
