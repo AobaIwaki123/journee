@@ -314,6 +314,7 @@ npm run deploy
 - **絶対に**コミットしない
 - 本番環境とローカル環境で異なるキーを使用
 - キーをローテーションする場合は、既存のAPIキーを再暗号化する必要がある
+  - 詳細は「[🔐 暗号化キーのローテーション](#-暗号化キーのローテーション)」セクションを参照
 
 ### 2. 後方互換性
 
@@ -335,12 +336,344 @@ npm run deploy
 
 ---
 
+## 🔐 暗号化キーのローテーション
+
+### 概要
+
+セキュリティベストプラクティスとして、暗号化キーは定期的にローテーション（変更）する必要があります。
+暗号化キーを変更すると、既存のキーで暗号化されたAPIキーは復号化できなくなるため、適切な手順で移行を行う必要があります。
+
+### 問題点
+
+現在の実装では、`ENCRYPTION_KEY`を変更すると：
+- ❌ 既存のAPIキーが復号化できなくなる
+- ❌ ユーザーがAPIキーを再入力する必要がある
+- ❌ データ損失のリスク
+
+### ローテーション戦略
+
+本プロジェクトでは**複数キー対応方式**を推奨します：
+- ✅ 新旧両方のキーを同時にサポート
+- ✅ ユーザーログイン時に自動的に新キーで再暗号化
+- ✅ データ損失のリスクを最小化
+- ✅ ダウンタイムなし
+
+### 実装手順
+
+#### Step 1: データベース関数の更新
+
+`lib/db/functions.sql`に以下の関数を追加（既存の関数を置き換え）：
+
+```sql
+-- 複数キー対応の復号化関数（フォールバック機能付き）
+CREATE OR REPLACE FUNCTION get_decrypted_api_key(
+  p_user_id UUID,
+  p_encryption_key TEXT,
+  p_encryption_key_old TEXT DEFAULT NULL
+)
+RETURNS TEXT AS $$
+DECLARE
+  encrypted_key TEXT;
+  decrypted_key TEXT;
+BEGIN
+  -- 暗号化されたAPIキーを取得
+  SELECT encrypted_claude_api_key INTO encrypted_key
+  FROM user_settings
+  WHERE user_id = p_user_id;
+  
+  -- レコードがない、またはAPIキーが設定されていない場合
+  IF encrypted_key IS NULL THEN
+    RETURN NULL;
+  END IF;
+  
+  -- 現在のキーで復号化を試みる
+  BEGIN
+    decrypted_key := pgp_sym_decrypt(decode(encrypted_key, 'base64')::bytea, p_encryption_key);
+    RETURN decrypted_key;
+  EXCEPTION WHEN OTHERS THEN
+    -- 現在のキーで失敗した場合、旧キーを試す
+    IF p_encryption_key_old IS NOT NULL THEN
+      BEGIN
+        decrypted_key := pgp_sym_decrypt(decode(encrypted_key, 'base64')::bytea, p_encryption_key_old);
+        
+        -- 旧キーで成功した場合、新しいキーで再暗号化
+        UPDATE user_settings
+        SET encrypted_claude_api_key = encode(pgp_sym_encrypt(decrypted_key, p_encryption_key), 'base64'),
+            updated_at = NOW()
+        WHERE user_id = p_user_id;
+        
+        RAISE NOTICE 'Re-encrypted API key for user % with new key', p_user_id;
+        RETURN decrypted_key;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE WARNING 'Failed to decrypt API key with both keys for user %: %', p_user_id, SQLERRM;
+        RETURN NULL;
+      END;
+    ELSE
+      RAISE WARNING 'Failed to decrypt API key for user %: %', p_user_id, SQLERRM;
+      RETURN NULL;
+    END IF;
+  END;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+Supabase SQL Editorで上記のSQLを実行してください。
+
+#### Step 2: APIエンドポイントの更新
+
+`app/api/user/api-keys/route.ts`の`GET`関数を更新：
+
+```typescript
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { apiKey: null, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (!supabaseAdmin) {
+      console.error('Supabase Admin is not available');
+      return NextResponse.json(
+        { apiKey: null, error: 'Database not configured' },
+        { status: 503 }
+      );
+    }
+
+    const admin = supabaseAdmin;
+
+    // 環境変数から暗号化キーを取得
+    const encryptionKey = process.env.ENCRYPTION_KEY;
+    const encryptionKeyOld = process.env.ENCRYPTION_KEY_OLD; // 移行期間のみ
+
+    if (!encryptionKey) {
+      console.error('ENCRYPTION_KEY is not set');
+      return NextResponse.json(
+        { apiKey: null, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    // 旧キーも渡す（自動再暗号化のため）
+    const { data, error } = await (admin as any).rpc('get_decrypted_api_key', {
+      p_user_id: session.user.id,
+      p_encryption_key: encryptionKey,
+      p_encryption_key_old: encryptionKeyOld || null,
+    });
+
+    if (error) {
+      console.error('Failed to load API key:', error);
+      return NextResponse.json(
+        { apiKey: null, error: 'Failed to load API key' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ apiKey: data || null });
+  } catch (error) {
+    console.error('GET /api/user/api-keys error:', error);
+    return NextResponse.json(
+      { apiKey: null, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+#### Step 3: 新しい暗号化キーの生成
+
+```bash
+# 新しいキーを生成
+NEW_KEY=$(openssl rand -hex 32)
+echo "新しい暗号化キー: $NEW_KEY"
+
+# 安全な場所に保存（パスワードマネージャーなど）
+```
+
+#### Step 4: 環境変数の更新
+
+**ローカル開発環境**（`.env.local`）:
+```env
+# 新キー（書き込み用）
+ENCRYPTION_KEY=<new_key>
+
+# 旧キー（読み取り専用、移行期間のみ）
+ENCRYPTION_KEY_OLD=<old_key>
+```
+
+**本番環境**（Kubernetes）:
+```yaml
+# k8s/secret.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: journee-secrets
+type: Opaque
+stringData:
+  ENCRYPTION_KEY: "<new_key>"
+  ENCRYPTION_KEY_OLD: "<old_key>"
+```
+
+```bash
+# Secretを適用
+kubectl apply -f k8s/secret.yml
+
+# Podを再起動して環境変数を反映
+kubectl rollout restart deployment/journee
+```
+
+#### Step 5: アプリケーションのデプロイ
+
+```bash
+# コードをデプロイ
+git add app/api/user/api-keys/route.ts
+git commit -m "feat: support encryption key rotation"
+git push
+
+# Kubernetes環境の場合、自動的にデプロイされる
+```
+
+#### Step 6: 移行期間
+
+この期間中、以下が自動的に実行されます：
+1. ユーザーがログイン
+2. APIキーの読み込み時に旧キーで復号化を試みる
+3. 成功した場合、新キーで自動的に再暗号化
+4. ユーザーには透過的に処理される
+
+- 本番環境にデプロイされていないため、テストユーザーのみ対応で済みます
+
+#### Step 7: 旧キーの削除
+
+移行期間終了後（全ユーザーが少なくとも1回ログインした後）：
+
+**環境変数を更新**:
+```env
+# .env.local
+ENCRYPTION_KEY=<new_key>
+# ENCRYPTION_KEY_OLD を削除
+```
+
+```yaml
+# k8s/secret.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: journee-secrets
+type: Opaque
+stringData:
+  ENCRYPTION_KEY: "<new_key>"
+  # ENCRYPTION_KEY_OLD を削除
+```
+
+```bash
+# Secretを適用
+kubectl apply -f k8s/secret.yml
+kubectl rollout restart deployment/journee
+```
+
+**データベース関数のクリーンアップ**（オプション）:
+
+旧キー対応のロジックを削除して、シンプルな実装に戻すこともできます。
+ただし、将来のローテーションのために残しておくことを推奨します。
+
+### ベストプラクティス
+
+#### 1. 事前準備
+- ✅ データベースのバックアップを取得
+
+#### 2. 実行タイミング
+- ✅ 監視体制の整備
+
+#### 3. 監視
+- ✅ エラーログの確認
+- ✅ 再暗号化の進捗追跡
+
+#### 4. ドキュメント化
+- ✅ 実施日時の記録
+- ✅ 使用したキーの管理（安全な場所に）
+- ✅ 次回ローテーションの予定
+
+### トラブルシューティング
+
+#### 問題: ユーザーがAPIキーを読み込めない
+
+**原因**: 
+- 旧キーが環境変数に設定されていない
+- データベース関数が更新されていない
+
+**解決方法**:
+```bash
+# 環境変数を確認
+kubectl get secret journee-secrets -o yaml
+
+# データベース関数を確認
+# Supabase SQL Editorで実行
+SELECT routine_name, routine_definition 
+FROM information_schema.routines 
+WHERE routine_name = 'get_decrypted_api_key';
+```
+
+#### 問題: 再暗号化が進まない
+
+**原因**: 
+- ユーザーがログインしていない
+- APIキーの読み込みが発生していない
+
+**解決方法**:
+- 一括再暗号化スクリプトを使用
+- メール通知でユーザーに再ログインを促す
+
+#### 問題: 一部のユーザーのキーが復号化できない
+
+**原因**: 
+- データ破損
+- 異なる暗号化キーで暗号化されている
+
+**解決方法**:
+1. ユーザーに再入力を依頼
+2. 影響を受けたユーザーを特定：
+```sql
+-- 復号化できないユーザーを特定
+SELECT u.id, u.email, us.user_id
+FROM users u
+JOIN user_settings us ON u.id = us.user_id
+WHERE us.encrypted_claude_api_key IS NOT NULL;
+```
+
+### セキュリティ考慮事項
+
+1. **キーの保管**: 
+   - パスワードマネージャーや秘密管理サービスを使用
+   - 複数の場所にバックアップ
+   - アクセス権限の制限
+
+2. **ローテーション頻度**: 
+   - 推奨：6ヶ月〜1年に1回
+   - セキュリティインシデント時は即座に実施
+
+3. **監査ログ**: 
+   - キーローテーション実施の記録
+   - アクセスログの保持
+   - 異常検知の設定
+
+4. **旧キーの破棄**: 
+   - 移行完了後は安全に削除
+   - 記録からも削除（ログファイルなど）
+   - バックアップも考慮
+
+---
+
 ## 📚 参考資料
 
 - [IndexedDB API - MDN](https://developer.mozilla.org/ja/docs/Web/API/IndexedDB_API)
 - [idb library - GitHub](https://github.com/jakearchibald/idb)
 - [PostgreSQL pgcrypto - Docs](https://www.postgresql.org/docs/current/pgcrypto.html)
 - [Zustand Persist Middleware](https://docs.pmnd.rs/zustand/integrations/persisting-store-data)
+- [Encryption Key Rotation Best Practices - OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html)
 
 ---
 
@@ -365,4 +698,5 @@ localStorageデータは30日間保持されているため、ユーザーは引
 ---
 
 **最終更新**: 2025-10-12  
-**ステータス**: Phase 1-3, 6-7 実装完了 / Phase 4-5 保留
+**ステータス**: Phase 1-3, 6-7 実装完了 / Phase 4-5 保留  
+**追記**: 暗号化キーローテーション手順を追加（2025-10-12）
