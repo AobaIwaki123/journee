@@ -3,33 +3,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Clock, ChevronUp, X, ListTodo } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
-import { PlanningProgress, PLANNING_PHASE_LABELS, calculatePlanningProgress } from './PlanningProgress';
-import { QuickActions } from './QuickActions';
-import { PhaseStatusBar } from './PhaseStatusBar';
-import type { ItineraryPhase } from '@/types/itinerary';
 
 export const MobilePlannerControls: React.FC = () => {
   const {
-    planningPhase,
-    currentItinerary,
-    currentDetailingDay,
     isAutoProgressing,
     autoProgressState,
   } = useStore();
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentPhase = (planningPhase || 'initial') as ItineraryPhase;
-
   const progress = useMemo(() => {
-    return calculatePlanningProgress(
-      currentPhase,
-      currentItinerary,
-      currentDetailingDay
-    );
-  }, [currentPhase, currentItinerary, currentDetailingDay]);
+    return autoProgressState?.progress || 0;
+  }, [autoProgressState]);
 
-  const phaseLabel = PLANNING_PHASE_LABELS[currentPhase] || '進捗';
+  const phaseLabel = '進捗';
 
   const handleOpen = () => setIsOpen(true);
   const handleClose = () => setIsOpen(false);
@@ -63,12 +50,12 @@ export const MobilePlannerControls: React.FC = () => {
           </p>
           <p className="text-sm font-semibold leading-tight">
             {isAutoProgressing && autoProgressState
-              ? autoProgressState.currentStep || phaseLabel
-              : phaseLabel}
+              ? autoProgressState.currentStep || '自動進行中'
+              : '進捗'}
           </p>
         </div>
         <div className="ml-2 flex items-center gap-1 text-sm font-semibold">
-          <span>{Math.round(isAutoProgressing && autoProgressState ? autoProgressState.progress : progress)}%</span>
+          <span>{Math.round(progress)}%</span>
           <ChevronUp className="h-4 w-4" />
         </div>
       </button>
@@ -99,22 +86,14 @@ export const MobilePlannerControls: React.FC = () => {
               </div>
               <div className="max-h-[70vh] overflow-y-auto px-5 pb-6 pt-4">
                 {isAutoProgressing && autoProgressState ? (
-                  <PhaseStatusBar state={autoProgressState} />
-                ) : (
-                  <PlanningProgress
-                    showBorder={false}
-                    className="rounded-2xl border border-gray-100 shadow-sm"
-                  />
-                )}
-
-                {!isAutoProgressing ? (
-                  <div className="mt-5 rounded-2xl border border-gray-100 shadow-sm">
-                    <QuickActions showBorder={false} className="rounded-2xl" />
-                  </div>
-                ) : (
                   <div className="mt-5 flex items-center gap-3 rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
                     <ListTodo className="h-5 w-5 flex-shrink-0" />
                     <span>自動進行中です。完了までお待ちください。</span>
+                  </div>
+                ) : (
+                  <div className="mt-5 flex items-center gap-3 rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-700">
+                    <ListTodo className="h-5 w-5 flex-shrink-0" />
+                    <span>現在、手動での操作はありません。</span>
                   </div>
                 )}
               </div>
