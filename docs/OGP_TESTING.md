@@ -211,6 +211,57 @@ time curl -o /dev/null http://localhost:3000/api/og/default
 - [ ] 画像がブランドを適切に表現している
 - [ ] テキストが読みやすい
 
+## 🌐 SNS共有テスト（本番環境のみ）
+
+### ⚠️ ローカル環境では表示されません
+
+**Discord、LINE、その他のSNSでOGP画像をテストするには、本番環境（公開URL）が必要です。**
+
+**理由**:
+- `localhost:3000` は外部のDiscord/LINEサーバーからアクセスできません
+- OGP画像を表示するには、Discord/LINEのサーバーがあなたのサーバーにアクセスして画像を取得する必要があります
+
+### Discord でテスト
+
+1. **プライベートチャンネルまたはDMで試す**
+   ```
+   https://your-domain.com
+   ```
+
+2. **表示されない場合**
+   - URLが正しいか確認
+   - 数分待ってキャッシュが更新されるのを待つ
+   - `Ctrl+R`または`Cmd+R`でDiscordをリロード
+
+### LINE でテスト
+
+1. **Keep（自分専用）にURLを送信**
+   ```
+   https://your-domain.com
+   ```
+
+2. **表示されない場合**
+   - URLが正しいか確認
+   - LINEアプリを再起動
+   - しばらく待ってから再度試す
+
+### ローカル環境で確認する方法
+
+1. **ビジュアルテストページを使用**
+   ```bash
+   npm run dev
+   # http://localhost:3000/ogp-test.html にアクセス
+   ```
+
+2. **ngrokを使用して一時的に公開（上級者向け）**
+   ```bash
+   npm install -g ngrok
+   npm run dev
+   ngrok http 3000
+   ```
+
+---
+
 ## 📚 参考資料
 
 ### OGP仕様
@@ -222,7 +273,6 @@ time curl -o /dev/null http://localhost:3000/api/og/default
 - [Next.js Metadata](https://nextjs.org/docs/app/api-reference/functions/generate-metadata)
 
 ### 実装ドキュメント
-- [OGP実装計画](./OGP_IMPLEMENTATION_PLAN.md)
 - [API仕様](./API.md)
 
 ## 🆘 サポート
