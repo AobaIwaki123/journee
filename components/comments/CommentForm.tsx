@@ -56,7 +56,7 @@ export default function CommentForm({
     try {
       await onSubmit({
         content: content.trim(),
-        isAnonymous: true, // 常に匿名扱い
+        isAnonymous: false, // 常に非匿名扱い
         authorName: authorName.trim(),
       });
 
