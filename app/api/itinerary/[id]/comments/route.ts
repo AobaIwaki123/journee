@@ -156,7 +156,7 @@ export async function POST(
       {
         itineraryId: itinerary.id!,
         content: content.trim(),
-        isAnonymous: false, // 常に匿名扱い（ユーザー入力の名前を使用）
+        isAnonymous: false, // 常に非匿名扱い（ユーザー入力の名前を使用）
         authorName: authorName.trim(),
       },
       session?.user?.id
