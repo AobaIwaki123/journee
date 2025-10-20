@@ -139,42 +139,6 @@ export interface ItineraryData {
 }
 
 /**
- * シンプルなしおり型（UI用）
- */
-export interface Itinerary {
-  id: string;
-  title: string;
-  destination: string;
-  startDate: string;
-  endDate: string;
-  days: DaySchedule[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * しおり状態（Zustand用）
- */
-export interface ItineraryState {
-  currentItinerary: Itinerary | null;
-  isEditing: boolean;
-}
-
-/**
- * しおりの保存リクエスト
- */
-export interface SaveItineraryRequest {
-  itinerary: ItineraryData;
-}
-
-/**
- * しおりの読込レスポンス
- */
-export interface LoadItineraryResponse {
-  itinerary: ItineraryData;
-}
-
-/**
  * しおり一覧のアイテム
  */
 export interface ItineraryListItem {
@@ -196,21 +160,6 @@ export interface PublicItinerarySettings {
   isPublic: boolean;
   allowPdfDownload: boolean;
   customMessage?: string;
-}
-
-/**
- * Phase 5.5: 公開しおりのメタデータ
- */
-export interface PublicItineraryMetadata {
-  slug: string;
-  title: string;
-  destination: string;
-  startDate?: string;
-  endDate?: string;
-  thumbnailUrl?: string;
-  authorName: string;
-  viewCount: number;
-  publishedAt: Date;
 }
 
 /**

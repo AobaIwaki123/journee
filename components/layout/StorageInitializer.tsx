@@ -54,10 +54,23 @@ export const StorageInitializer: React.FC = () => {
             );
             if (response.ok) {
               const data = await response.json();
+              console.log("[StorageInitializer] API response:", data);
               if (data.itinerary) {
+                console.log(
+                  "[StorageInitializer] Setting itinerary with schedule length:",
+                  data.itinerary.schedule?.length
+                );
                 setItinerary(data.itinerary);
+              } else {
+                console.warn(
+                  "[StorageInitializer] API response missing itinerary"
+                );
               }
             } else {
+              console.error(
+                "[StorageInitializer] API response not ok:",
+                response.status
+              );
               // DB読み込み失敗時はLocalStorageにフォールバック
               const itinerary = getItineraryById(itineraryId);
               if (itinerary) {

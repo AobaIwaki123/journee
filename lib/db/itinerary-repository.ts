@@ -79,6 +79,9 @@ export class ItineraryRepository {
       if (daysError) {
         console.error("Failed to fetch day schedules:", daysError);
       } else if (dbDays) {
+        console.log(
+          `[ItineraryRepository] Fetched ${dbDays.length} day schedules for itinerary ${dbItinerary.id}`
+        );
         // 各日のスポットを取得（指定されたクライアントを使用）
         schedule = await Promise.all(
           dbDays.map(async (dbDay: DbDaySchedule) => {
@@ -93,14 +96,24 @@ export class ItineraryRepository {
             }
 
             const spots: TouristSpot[] = (dbSpots || []).map(this.dbToSpot);
+            console.log(
+              `[ItineraryRepository] Day ${dbDay.day}: ${spots.length} spots`
+            );
 
             return this.dbToDaySchedule(dbDay, spots);
           })
         );
+        console.log(
+          `[ItineraryRepository] Final schedule length: ${schedule.length}`
+        );
+      } else {
+        console.log(
+          `[ItineraryRepository] No day schedules found for itinerary ${dbItinerary.id}`
+        );
       }
     }
 
-    return {
+    const result: ItineraryData = {
       id: dbItinerary.id,
       userId: dbItinerary.user_id,
       title: dbItinerary.title,
@@ -128,6 +141,11 @@ export class ItineraryRepository {
       phase: (dbItinerary.phase as ItineraryData["phase"]) || undefined,
       currentDay: dbItinerary.current_day || undefined,
     };
+
+    console.log(
+      `[ItineraryRepository] dbToItinerary result - id: ${result.id}, schedule length: ${result.schedule.length}`
+    );
+    return result;
   }
 
   /**
