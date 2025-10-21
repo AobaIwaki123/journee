@@ -84,7 +84,6 @@ export function generateFeedbackTemplate(params: {
   let template = `## フィードバック
 
 **カテゴリ**: ${category}  
-**送信者**: ${userInfo}  
 **日時**: ${timestamp}
 
 ### 内容
