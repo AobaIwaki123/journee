@@ -28,3 +28,14 @@
 - TypeScript/React/Next.jsによるフルスタックWebアプリ
 - Vercel / Google Cloud Run / Kubernetes対応
 - E2Eテスト・ユニットテスト完備
+
+## 最新補足メモ
+- **アプリ構成**: Next.js 14 App Routerベース。`app/page.tsx` がチャット+しおり画面、`app/itineraries`, `app/mypage`, `app/share/[slug]` などで主要機能を提供。
+- **主要ディレクトリ**: `components/` に機能別UI、`lib/ai` にGemini/Claude連携、`lib/db` にSupabaseアクセス、`lib/store` にZustandのスライスが配置されている。
+- **データベース**: Supabase PostgreSQL。`docs/SCHEMA.md` にテーブル仕様、`lib/db/schema.sql` がDDL。RLSが有効でユーザー単位にアクセス制御。
+- **ドキュメント**: `docs/README.md` が索引。API仕様、スキーマ、デプロイ（Docker/GCR）、テスト、コーディング規約などが細分化されている。
+- **開発スクリプト**: `npm run dev` でローカル起動、`npm run test`（Jest）と `npm run test:e2e`（Playwright）でテスト、`npm run docker:*` でDocker開発環境操作、`npm run deploy:gcr` でGCRデプロイ。
+- **AI実装メモ**: `lib/ai/gemini.ts` を優先し、必要に応じて `lib/ai/claude.ts` にフェイルオーバー。プロンプト管理は `lib/ai/prompts.ts`、チャット履歴圧縮は `lib/ai/chat-compressor.ts`。
+- **PDF & 共有**: `lib/utils/pdf-generator.ts` でjsPDFを利用したしおりPDF化。公開URLは `app/share/[slug]` でレンダリング。
+- **テスト配置**: `__tests__` と `e2e/` ディレクトリ。Playwright設定は `playwright.config.ts`。
+- **その他**: Tailwind設定は `tailwind.config.ts`、グローバルスタイルは `app/globals.css`。Dockerfile, Dockerfile.prod で開発/本番ビルドを分け、`k8s/` にマニフェストがある。
