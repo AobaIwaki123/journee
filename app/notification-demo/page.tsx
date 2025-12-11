@@ -5,16 +5,35 @@ import React, { useCallback, useEffect, useState } from 'react';
 type SupportState = 'checking' | 'supported' | 'unsupported';
 type SwState = 'idle' | 'registering' | 'ready' | 'error';
 
+type SubscriptionState = {
+  endpoint: string;
+  raw: PushSubscription;
+} | null;
+
+const publicVapidKey = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY;
+
 const NotificationDemoPage: React.FC = () => {
   const [supportState, setSupportState] = useState<SupportState>('checking');
   const [swState, setSwState] = useState<SwState>('idle');
-  // 初期値を固定値に変更
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionState>(null);
   const [message, setMessage] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isSendingServer, setIsSendingServer] = useState(false);
+
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = typeof window !== 'undefined' ? window.atob(base64) : '';
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; i += 1) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
 
   useEffect(() => {
-    // クライアントサイドで実際の権限状態を取得
     if (typeof Notification !== 'undefined') {
       setPermission(Notification.permission);
     }
@@ -31,15 +50,13 @@ const NotificationDemoPage: React.FC = () => {
     const register = async () => {
       try {
         const existing = await navigator.serviceWorker.getRegistration();
-        if (existing) {
-          setRegistration(existing);
-          setSwState('ready');
-          return;
+        const activeReg = existing ?? (await navigator.serviceWorker.register('/sw.js'));
+        const readyReg = activeReg ?? (await navigator.serviceWorker.ready);
+        setRegistration(readyReg);
+        const existingSub = await readyReg.pushManager.getSubscription();
+        if (existingSub) {
+          setSubscription({ endpoint: existingSub.endpoint, raw: existingSub });
         }
-
-        await navigator.serviceWorker.register('/sw.js');
-        const ready = await navigator.serviceWorker.ready;
-        setRegistration(ready);
         setSwState('ready');
       } catch (error) {
         setSwState('error');
@@ -56,7 +73,7 @@ const NotificationDemoPage: React.FC = () => {
     setPermission(result);
   }, []);
 
-  const sendTestNotification = useCallback(async () => {
+  const sendLocalNotification = useCallback(async () => {
     if (!registration) {
       setMessage('Service Workerが準備できていません');
       return;
@@ -74,11 +91,75 @@ const NotificationDemoPage: React.FC = () => {
         badge: '/icon-192x192.png',
         tag: 'journee-push-test',
       });
-      setMessage('テスト通知を送信しました');
+      setMessage('ローカル通知を送信しました');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '通知送信に失敗しました');
     }
   }, [registration, permission]);
+
+  const subscribePush = useCallback(async () => {
+    if (!registration) {
+      setMessage('Service Workerが準備できていません');
+      return;
+    }
+    if (!publicVapidKey) {
+      setMessage('VAPID公開鍵が設定されていません');
+      return;
+    }
+    const perm = permission === 'default' ? await Notification.requestPermission() : permission;
+    setPermission(perm);
+    if (perm !== 'granted') {
+      setMessage('通知権限を許可してください');
+      return;
+    }
+
+    setIsSubscribing(true);
+    try {
+      const existing = await registration.pushManager.getSubscription();
+      if (existing) {
+        setSubscription({ endpoint: existing.endpoint, raw: existing });
+        setMessage('既存の購読を再利用します');
+        return;
+      }
+
+      const appServerKey = urlBase64ToUint8Array(publicVapidKey);
+      const newSub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: appServerKey,
+      });
+      setSubscription({ endpoint: newSub.endpoint, raw: newSub });
+      setMessage('購読を作成しました');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '購読に失敗しました');
+    } finally {
+      setIsSubscribing(false);
+    }
+  }, [permission, registration, urlBase64ToUint8Array]);
+
+  const sendServerPush = useCallback(async () => {
+    if (!subscription) {
+      setMessage('まず購読を作成してください');
+      return;
+    }
+    setIsSendingServer(true);
+    try {
+      const res = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: subscription.raw.toJSON() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMessage(data?.error || 'サーバー通知の送信に失敗しました');
+        return;
+      }
+      setMessage('サーバーから通知を送信しました');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'サーバー通知の送信に失敗しました');
+    } finally {
+      setIsSendingServer(false);
+    }
+  }, [subscription]);
 
   const supportLabel =
     supportState === 'checking'
@@ -102,7 +183,7 @@ const NotificationDemoPage: React.FC = () => {
         <div className="bg-white shadow-sm border border-gray-200 rounded-xl p-8">
           <h1 className="text-2xl font-bold text-gray-900">プッシュ通知テスト</h1>
           <p className="text-gray-600 mt-2">
-            PWA環境での通知権限付与とService Worker経由の通知表示を確認します。
+            PWA環境でのローカル通知とWeb Push（サーバー送信）の双方を確認します。
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -124,6 +205,10 @@ const NotificationDemoPage: React.FC = () => {
                 {message || '—'}
               </p>
             </div>
+            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 md:col-span-2">
+              <p className="text-sm text-gray-500">購読エンドポイント</p>
+              <p className="text-xs text-gray-700 break-all">{subscription?.endpoint || '未購読'}</p>
+            </div>
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -137,11 +222,27 @@ const NotificationDemoPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={sendTestNotification}
+              onClick={sendLocalNotification}
               className="inline-flex items-center px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 disabled:opacity-50"
               disabled={permission !== 'granted' || !registration || swState !== 'ready'}
             >
-              テスト通知を送信
+              ローカル通知を送信
+            </button>
+            <button
+              type="button"
+              onClick={subscribePush}
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50"
+              disabled={isSubscribing || swState !== 'ready'}
+            >
+              {isSubscribing ? '購読処理中...' : 'Web Pushを購読'}
+            </button>
+            <button
+              type="button"
+              onClick={sendServerPush}
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+              disabled={isSendingServer || !subscription}
+            >
+              {isSendingServer ? '送信中...' : 'サーバー通知を送信'}
             </button>
           </div>
 
@@ -149,8 +250,10 @@ const NotificationDemoPage: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900">使い方</h2>
             <ol className="mt-3 list-decimal list-inside space-y-2 text-gray-700">
               <li>このページにアクセスするとService Workerを登録します。</li>
-              <li>「通知を許可する」を押して権限を付与します（ブラウザのダイアログが表示されます）。</li>
-              <li>「テスト通知を送信」を押して通知が表示されることを確認します。</li>
+              <li>「通知を許可する」を押して権限を付与します。</li>
+              <li>「Web Pushを購読」で PushManager.subscribe を実行し購読を作成します。</li>
+              <li>「ローカル通知を送信」でクライアント→SW経由の通知を確認します。</li>
+              <li>「サーバー通知を送信」でサーバー→PushService→SW経由の通知を確認します。</li>
             </ol>
           </div>
         </div>
