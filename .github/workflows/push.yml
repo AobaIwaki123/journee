@@ -19,6 +19,7 @@ on:
       - "tsconfig.json"
       - "postcss.config.js"
       - "Dockerfile.prod"
+      - "k8s/manifests/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
