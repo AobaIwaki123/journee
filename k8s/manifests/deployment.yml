@@ -84,21 +84,6 @@ spec:
                 secretKeyRef:
                   name: journee-env
                   key: ENCRYPTION_KEY_OLD
-            - name: NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: journee-env
-                  key: NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
-            - name: WEB_PUSH_PRIVATE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: journee-env
-                  key: WEB_PUSH_PRIVATE_KEY
-            - name: WEB_PUSH_CONTACT
-              valueFrom:
-                secretKeyRef:
-                  name: journee-env
-                  key: WEB_PUSH_CONTACT
             - name: GITHUB_OWNER
               value: AobaIwaki123
             - name: GITHUB_REPO
