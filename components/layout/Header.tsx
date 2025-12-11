@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Plane, Settings, BookOpen, MessageSquare } from 'lucide-react';
+import { Plane, Settings, BookOpen, MessageSquare, Bell } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { UserMenu } from '@/components/auth/UserMenu';
@@ -64,6 +64,16 @@ export const Header: React.FC = () => {
             <MessageSquare className="w-5 h-5" />
             <span>フィードバック</span>
           </button>
+
+          {/* プッシュ通知デモ */}
+          <Link
+            href="/notification-demo"
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="プッシュ通知デモ"
+          >
+            <Bell className="w-5 h-5" />
+            <span>通知デモ</span>
+          </Link>
 
           {/* 設定ボタン */}
           {session && (
