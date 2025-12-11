@@ -8,13 +8,17 @@ type SwState = 'idle' | 'registering' | 'ready' | 'error';
 const NotificationDemoPage: React.FC = () => {
   const [supportState, setSupportState] = useState<SupportState>('checking');
   const [swState, setSwState] = useState<SwState>('idle');
-  const [permission, setPermission] = useState<NotificationPermission>(
-    typeof Notification !== 'undefined' ? Notification.permission : 'default',
-  );
+  // 初期値を固定値に変更
+  const [permission, setPermission] = useState<NotificationPermission>('default');
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    // クライアントサイドで実際の権限状態を取得
+    if (typeof Notification !== 'undefined') {
+      setPermission(Notification.permission);
+    }
+
     if (!('serviceWorker' in navigator) || typeof Notification === 'undefined') {
       setSupportState('unsupported');
       setMessage('このブラウザではプッシュ通知を利用できません。');
