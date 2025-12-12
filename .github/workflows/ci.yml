@@ -161,4 +161,4 @@ jobs:
           
           Test report has been published: $FULL_HTML_REPORT_URL"
         env:
-        GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
