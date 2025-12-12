@@ -135,7 +135,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium
+          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-chromium
       
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -255,7 +255,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium
+          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-chromium
           fail-on-cache-miss: true
       
       - name: Install Playwright system dependencies
