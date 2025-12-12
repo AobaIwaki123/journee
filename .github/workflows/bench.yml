@@ -75,37 +75,54 @@ jobs:
           version: 10
 
       # ────────────────────────────────────────────────────────────────────
-      #  🚀 高速化コア: 依存パッケージキャッシュ                            
-      #  lockfileのハッシュでキャッシュキーを生成し、再利用を最大化         
+      #  🔑 共通化されたキャッシュキー生成ロジック
+      #  依存パッケージ用のキャッシュパスとキーを生成
       # ────────────────────────────────────────────────────────────────────
-      - name: Get cache paths
-        id: cache-paths
+      - name: Generate dependency cache key
+        id: deps-cache-key
         run: |
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            echo "dir=$HOME/.bun/install/cache" >> $GITHUB_OUTPUT
-            echo "lockfile=bun.lockb" >> $GITHUB_OUTPUT
+            CACHE_DIR="$HOME/.bun/install/cache"
+            LOCKFILE="bun.lockb"
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-            echo "lockfile=pnpm-lock.yaml" >> $GITHUB_OUTPUT
+            CACHE_DIR="$(pnpm store path)"
+            LOCKFILE="pnpm-lock.yaml"
           else
-            echo "dir=$HOME/.npm" >> $GITHUB_OUTPUT
-            echo "lockfile=package-lock.json" >> $GITHUB_OUTPUT
+            CACHE_DIR="$HOME/.npm"
+            LOCKFILE="package-lock.json"
           fi
-      
+          
+          LOCKFILE_HASH=$(sha256sum ${LOCKFILE} | cut -d' ' -f1)
+          CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
+          
+          echo "dir=${CACHE_DIR}" >> $GITHUB_OUTPUT
+          echo "lockfile=${LOCKFILE}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          
+          echo "📦 Dependency Cache Configuration:"
+          echo "  Directory: ${CACHE_DIR}"
+          echo "  Lockfile: ${LOCKFILE}"
+          echo "  Cache Key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: 依存パッケージキャッシュ                            
+      #  共通化されたキャッシュキーを使用
+      # ────────────────────────────────────────────────────────────────────
       - name: Cache dependencies
         uses: actions/cache@v5
         id: deps-cache
         with:
           path: |
-            ${{ steps.cache-paths.outputs.dir }}
+            ${{ steps.deps-cache-key.outputs.dir }}
             node_modules
-          key: ${{ runner.os }}-${{ matrix.package-manager }}-${{ hashFiles(format('**/{0}', steps.cache-paths.outputs.lockfile)) }}
+          key: ${{ steps.deps-cache-key.outputs.key }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.package-manager }}-
+            ${{ runner.os }}-${{ matrix.package-manager }}-deps-
       
       - name: Install dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
+          echo "📥 Installing dependencies..."
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
             bun install --frozen-lockfile
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
@@ -115,25 +132,38 @@ jobs:
           fi
 
       # ────────────────────────────────────────────────────────────────────
-      #  🚀 高速化コア: Playwrightブラウザキャッシュ                        
-      #  ブラウザバージョンごとにキャッシュし、ダウンロード時間を削減       
+      #  🔑 共通化されたキャッシュキー生成ロジック
+      #  Playwright用のバージョンとキャッシュキーを生成
       # ────────────────────────────────────────────────────────────────────
-      - name: Get Playwright version
-        id: playwright-version
+      - name: Generate Playwright cache key
+        id: playwright-cache-key
         run: |
           VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-      
+          CACHE_KEY="playwright-${{ runner.os }}-${{ matrix.package-manager }}-${VERSION}-${{ env.PLAYWRIGHT_BROWSERS }}"
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          
+          echo "🎭 Playwright Cache Configuration:"
+          echo "  Version: ${VERSION}"
+          echo "  Browsers: ${{ env.PLAYWRIGHT_BROWSERS }}"
+          echo "  Cache Key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: Playwrightブラウザキャッシュ                        
+      #  共通化されたキャッシュキーを使用
+      # ────────────────────────────────────────────────────────────────────
       - name: Cache Playwright browsers
         uses: actions/cache@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}
+          key: ${{ steps.playwright-cache-key.outputs.key }}
       
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
+          echo "🎭 Installing Playwright browsers..."
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
             bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
@@ -141,13 +171,25 @@ jobs:
           else
             npx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           fi
+      
+      - name: Verify Playwright installation
+        run: |
+          echo "✅ Verifying Playwright installation..."
+          ls -la ~/.cache/ms-playwright || echo "❌ Cache directory not found"
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bunx playwright --version
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm exec playwright --version
+          else
+            npx playwright --version
+          fi
 
   # ════════════════════════════════════════════════════════════════════════════
   # ██ Step 2: e2e-with-cache
   # ██ ⏱️  ベンチマーク計測: キャッシュあり
   # ██
   # ██ 各ステップの実行時間を計測し、JSONに記録
-  # ██ 計測項目: setup_pm, install_deps, get_version, install_deps_only, test_execution
+  # ██ 計測項目: setup_pm, install_deps, get_version, install_browsers, test_execution
   # ════════════════════════════════════════════════════════════════════════════
   e2e-with-cache:
     needs: prepare-cache
@@ -186,37 +228,56 @@ jobs:
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
 
       # ────────────────────────────────────────────────────────────────────
-      #  🚀 高速化コア: 依存パッケージキャッシュ復元                        
-      #  prepare-cacheで保存したキャッシュを復元し、install時間を短縮     
+      #  🔑 共通化されたキャッシュキー生成ロジック（prepare-cacheと同一）
       # ────────────────────────────────────────────────────────────────────
-      # Dependencies Cache (restore only)
-      - name: Get cache paths
-        id: cache-paths
+      - name: Generate dependency cache key
+        id: deps-cache-key
         run: |
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            echo "dir=$HOME/.bun/install/cache" >> $GITHUB_OUTPUT
-            echo "lockfile=bun.lockb" >> $GITHUB_OUTPUT
+            CACHE_DIR="$HOME/.bun/install/cache"
+            LOCKFILE="bun.lockb"
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-            echo "lockfile=pnpm-lock.yaml" >> $GITHUB_OUTPUT
+            CACHE_DIR="$(pnpm store path)"
+            LOCKFILE="pnpm-lock.yaml"
           else
-            echo "dir=$HOME/.npm" >> $GITHUB_OUTPUT
-            echo "lockfile=package-lock.json" >> $GITHUB_OUTPUT
+            CACHE_DIR="$HOME/.npm"
+            LOCKFILE="package-lock.json"
           fi
-      
+          
+          LOCKFILE_HASH=$(sha256sum ${LOCKFILE} | cut -d' ' -f1)
+          CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
+          
+          echo "dir=${CACHE_DIR}" >> $GITHUB_OUTPUT
+          echo "lockfile=${LOCKFILE}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          
+          echo "📦 Restoring with key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: 依存パッケージキャッシュ復元                        
+      #  prepare-cacheで保存したキャッシュを復元
+      # ────────────────────────────────────────────────────────────────────
       - name: Restore dependencies cache
         uses: actions/cache/restore@v5
         id: deps-cache
         with:
           path: |
-            ${{ steps.cache-paths.outputs.dir }}
+            ${{ steps.deps-cache-key.outputs.dir }}
             node_modules
-          key: ${{ runner.os }}-${{ matrix.package-manager }}-${{ hashFiles(format('**/{0}', steps.cache-paths.outputs.lockfile)) }}
-          fail-on-cache-miss: true
+          key: ${{ steps.deps-cache-key.outputs.key }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.package-manager }}-deps-
+      
+      - name: Check cache status
+        run: |
+          if [ "${{ steps.deps-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "✅ Dependencies cache HIT"
+          else
+            echo "⚠️ Dependencies cache MISS"
+          fi
 
       # ────────────────────────────────────────────────────────────────────
       #  ⏱️  ベンチマーク計測セクション (install_deps)                     
-      #  START/ENDで時間を計測し、GITHUB_ENVに記録                          
       # ────────────────────────────────────────────────────────────────────
       - name: Install dependencies
         run: |
@@ -230,36 +291,73 @@ jobs:
           fi
           END=$(date +%s)
           echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
-      
-      - name: Get Playwright version
-        id: playwright-version
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🔑 共通化されたキャッシュキー生成ロジック（prepare-cacheと同一）
+      # ────────────────────────────────────────────────────────────────────
+      - name: Generate Playwright cache key
+        id: playwright-cache-key
         run: |
           START=$(date +%s)
           VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          CACHE_KEY="playwright-${{ runner.os }}-${{ matrix.package-manager }}-${VERSION}-${{ env.PLAYWRIGHT_BROWSERS }}"
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          
           END=$(date +%s)
           echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
-      
+          echo "🎭 Restoring with key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: Playwrightブラウザキャッシュ復元
+      # ────────────────────────────────────────────────────────────────────
       - name: Restore Playwright browsers cache
         uses: actions/cache/restore@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}
-          fail-on-cache-miss: true
+          key: ${{ steps.playwright-cache-key.outputs.key }}
       
-      - name: Install Playwright system dependencies
+      - name: Check Playwright cache status
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "✅ Playwright cache HIT"
+          else
+            echo "⚠️ Playwright cache MISS"
+          fi
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🎭 Playwrightブラウザインストール
+      #  キャッシュミスの場合はブラウザ本体もインストール
+      #  キャッシュヒットの場合はシステム依存関係のみインストール
+      # ────────────────────────────────────────────────────────────────────
+      - name: Install Playwright browsers
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+          
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "⚠️ Cache miss - Installing browsers with dependencies..."
+            if [ "${{ matrix.package-manager }}" = "bun" ]; then
+              bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+            elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+              pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+            else
+              npx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+            fi
           else
-            npx playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+            echo "✅ Cache hit - Installing system dependencies only..."
+            if [ "${{ matrix.package-manager }}" = "bun" ]; then
+              bunx playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+            elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+              pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+            else
+              npx playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+            fi
           fi
+          
           END=$(date +%s)
-          echo "INSTALL_DEPS_ONLY_DURATION=$((END - START))" >> $GITHUB_ENV
+          echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
         
       - name: Run E2E tests (run #${{ matrix.run }})
         id: playwright-tests
@@ -278,7 +376,6 @@ jobs:
       
       # ────────────────────────────────────────────────────────────────────
       #  💾 ベンチマーク結果保存                                           
-      #  全計測結果をJSONに集約し、summaryジョブで分析                   
       # ────────────────────────────────────────────────────────────────────
       - name: Save timing data
         if: always()
@@ -297,8 +394,7 @@ jobs:
             "install_deps": ${INSTALL_DEPS_DURATION:-0},
             "deps_cache_hit": "${{ steps.deps-cache.outputs.cache-hit }}",
             "get_version": ${GET_VERSION_DURATION:-0},
-            "install_browsers": 0,
-            "install_deps_only": ${INSTALL_DEPS_ONLY_DURATION:-0},
+            "install_browsers": ${INSTALL_BROWSERS_DURATION:-0},
             "playwright_cache_hit": "${{ steps.playwright-cache.outputs.cache-hit }}",
             "test_execution": ${TEST_DURATION:-0},
             "test_result": "${{ steps.playwright-tests.outcome }}"
@@ -317,9 +413,6 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   # ██ Step 3: e2e-without-cache
   # ██ ⏱️  ベンチマーク計測: キャッシュなし
-  # ██
-  # ██ キャッシュを使用せず、各ステップの実行時間を計測
-  # ██ キャッシュありとの比較で高速化効果を検証
   # ════════════════════════════════════════════════════════════════════════════
   e2e-without-cache:
     runs-on: ubuntu-latest
@@ -355,7 +448,6 @@ jobs:
       - name: Record setup time
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
 
-      # キャッシュを使わずに直接インストール
       - name: Install dependencies (no cache)
         run: |
           START=$(date +%s)
@@ -424,7 +516,6 @@ jobs:
             "deps_cache_hit": "false",
             "get_version": ${GET_VERSION_DURATION:-0},
             "install_browsers": ${INSTALL_BROWSERS_DURATION:-0},
-            "install_deps_only": 0,
             "playwright_cache_hit": "false",
             "test_execution": ${TEST_DURATION:-0},
             "test_result": "${{ steps.playwright-tests.outcome }}"
@@ -443,11 +534,6 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   # ██ Step 4: summary
   # ██ 📊 結果集計: 統計・比較レポート生成
-  # ██
-  # ██ ベンチマーク結果を集約し、以下を算出:
-  # ██   - パッケージマネージャー別の平均実行時間
-  # ██   - キャッシュ有無による高速化率
-  # ██   - 最速構成の特定
   # ════════════════════════════════════════════════════════════════════════════
   summary:
     needs: [e2e-with-cache, e2e-without-cache]
@@ -465,11 +551,6 @@ jobs:
           echo "## 🎭 Playwright E2E Test Performance Comparison" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # ──────────────────────────────────────────────────────────────────────
-          # 📊 ベンチマーク結果の集計ロジック
-          # - パッケージマネージャーごとにグループ化
-          # - 各ステップの平均時間を算出
-          # ──────────────────────────────────────────────────────────────────────
           cat timing-*.json | jq -s '
             group_by(.package_manager, .cache_enabled) | 
             map({
@@ -482,21 +563,23 @@ jobs:
                 "install_deps": (map(.install_deps) | add / length),
                 "get_version": (map(.get_version) | add / length),
                 "install_browsers": (map(.install_browsers) | add / length),
-                "install_deps_only": (map(.install_deps_only) | add / length),
                 "test_execution": (map(.test_execution) | add / length)
+              },
+              "cache_hits": {
+                "deps": (map(select(.deps_cache_hit == "true")) | length),
+                "playwright": (map(select(.playwright_cache_hit == "true")) | length)
               },
               "details": .
             })
           ' > summary.json
           
-          # 比較表を生成
           echo "### 📊 Performance Comparison by Package Manager & Cache Strategy" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Package Manager | Cache | Runs | Total Time | Setup | Install Deps | Browsers | Tests | Overhead |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------------|-------|------|------------|-------|--------------|----------|-------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Manager | Cache | Runs | Total Time | Setup | Install Deps | Browsers | Tests | Deps Cache | PW Cache |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|-------|------|------------|-------|--------------|----------|-------|------------|----------|" >> $GITHUB_STEP_SUMMARY
           
           cat summary.json | jq -r '.[] | 
-            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.total | floor)s | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers + .averages.install_deps_only | floor)s | \(.averages.test_execution | floor)s | \((.averages.total - .averages.test_execution) | floor)s |"
+            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.total | floor)s | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers | floor)s | \(.averages.test_execution | floor)s | \(.cache_hits.deps)/\(.runs) | \(.cache_hits.playwright)/\(.runs) |"
           ' >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -539,7 +622,7 @@ jobs:
               "#### Cache: \(if .cache_enabled then "Enabled ✅" else "Disabled ❌" end)\n",
               "| Run | Total | Setup | Deps | Browsers | Tests | Deps Cache | PW Cache |",
               "|-----|-------|-------|------|----------|-------|------------|----------|",
-              (.details[] | "| \(.run) | \(.total)s | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers + .install_deps_only)s | \(.test_execution)s | \(.deps_cache_hit) | \(.playwright_cache_hit) |"),
+              (.details[] | "| \(.run) | \(.total)s | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers)s | \(.test_execution)s | \(.deps_cache_hit) | \(.playwright_cache_hit) |"),
               ""
             ' >> $GITHUB_STEP_SUMMARY
             
