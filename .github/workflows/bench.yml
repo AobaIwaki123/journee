@@ -8,7 +8,7 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
-  
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -287,7 +287,7 @@ jobs:
     strategy:
       matrix:
         package-manager: [bun, pnpm, npm]
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     env:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
@@ -315,15 +315,15 @@ jobs:
       
       - name: Setup Node.js for pnpm/npm
         if: matrix.package-manager != 'bun'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
       
       - name: Setup pnpm
         if: matrix.package-manager == 'pnpm'
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10
       
       - name: Record setup time
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
