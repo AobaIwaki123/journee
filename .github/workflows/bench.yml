@@ -1,7 +1,7 @@
 name: Playwright CI Benchmark
 
 on:
-  workflow_dispatch:
+  push:
 
 # PRへの書き込み権限を付与
 permissions:
