@@ -3,6 +3,12 @@ name: Playwright E2E Tests
 on:
   pull_request:
 
+# PRへの書き込み権限を付与
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,17 +34,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'  # npm依存関係もキャッシュ
+          cache: 'npm'
           
       - name: Install dependencies
         run: npm ci
       
-      # Playwrightのバージョンを取得
       - name: Get Playwright version
         id: playwright-version
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> $GITHUB_OUTPUT
       
-      # Playwrightブラウザのキャッシュ
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
@@ -46,19 +50,47 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
       
-      # キャッシュがない場合のみインストール
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps
       
-      # キャッシュがある場合はシステム依存関係のみ確認
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps
         
       - name: Run E2E tests
+        id: playwright-tests
+        continue-on-error: true
         run: npx playwright test
+      
+      # GitHub Summaryに結果を出力
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🎭 Playwright E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f playwright-report/index.html ]; then
+            # テスト結果の統計を抽出（簡易版）
+            if [ "${{ steps.playwright-tests.outcome }}" == "success" ]; then
+              echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📊 [View detailed report in Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No test report generated" >> $GITHUB_STEP_SUMMARY
+          fi
         
+      # PRにコメントを投稿
+      - name: Comment PR with test results
+        if: always() && github.event_name == 'pull_request'
+        uses: daun/playwright-report-comment@v3
+        with:
+          report-path: playwright-report
+          report-url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -7,8 +7,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html'], // ローカル用
-    ['github'], // GitHub Actions用 ← これ！
+    ['html', { open: 'never' }],  // HTMLレポート生成
+    ['github'],                    // GitHub Actions用の注釈
+    ['list'],                      // コンソール出力
   ],
   use: {
     baseURL: 'http://localhost:3000',
