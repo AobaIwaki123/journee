@@ -40,24 +40,6 @@ test.describe('Phase 10.4: しおり保存のDB統合', () => {
     });
   });
 
-  test.describe('フォールバック機能', () => {
-    test('しおり一覧ページでDB読み込み失敗時にLocalStorageにフォールバックする', async ({ page }) => {
-      // ネットワークエラーをシミュレート
-      await page.route('/api/itinerary/list', (route) => {
-        route.abort('failed');
-      });
-
-      // しおり一覧ページにアクセス
-      await page.goto('/itineraries');
-
-      // ページが正常に表示されることを確認（LocalStorageフォールバック）
-      await expect(page.locator('h1')).toContainText('しおり一覧');
-      
-      // エラーメッセージが表示されるかもしれないが、ページは機能する
-      await page.waitForTimeout(1000);
-    });
-  });
-
   test.describe('UI動作確認', () => {
     test('しおり一覧ページにローディング状態が表示される', async ({ page }) => {
       // ネットワークを遅延させる

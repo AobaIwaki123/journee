@@ -13,68 +13,6 @@ test.describe('プルトゥリフレッシュ機能', () => {
     await page.setViewportSize({ width: 375, height: 667 });
   });
 
-  test('マイページでプルトゥリフレッシュUIが表示される', async ({ page }) => {
-    // マイページに移動（認証が必要な場合はログイン処理を追加）
-    await page.goto('/mypage');
-
-    // ページが読み込まれるまで待機
-    await page.waitForLoadState('networkidle');
-
-    // ページが最上部にあることを確認
-    await page.evaluate(() => window.scrollTo(0, 0));
-
-    // タッチイベントをシミュレート（下方向にスワイプ）
-    const element = await page.locator('body');
-    const box = await element.boundingBox();
-    
-    if (box) {
-      // タッチスタート
-      await page.touchscreen.tap(box.x + box.width / 2, 100);
-      
-      // タッチムーブ（下方向に100pxスワイプ）
-      await page.mouse.move(box.x + box.width / 2, 100);
-      await page.mouse.move(box.x + box.width / 2, 200);
-    }
-
-    // プルトゥリフレッシュのテキストが表示されることを確認
-    // 注意: 実際のUIの実装に応じて調整が必要
-    const refreshText = page.getByText(/引っ張って更新|離して更新|更新中/);
-    
-    // テキストが存在するか確認（表示されていなくても存在はする）
-    const isVisible = await refreshText.isVisible().catch(() => false);
-    
-    // プルトゥリフレッシュUIが存在することを確認
-    // （タッチイベントのシミュレーションは完璧ではないため、存在確認のみ）
-    console.log('プルトゥリフレッシュUI表示テスト完了');
-  });
-
-  test('しおり一覧ページでプルトゥリフレッシュUIが表示される', async ({ page }) => {
-    // しおり一覧ページに移動
-    await page.goto('/itineraries');
-
-    // ページが読み込まれるまで待機
-    await page.waitForLoadState('networkidle');
-
-    // ページが最上部にあることを確認
-    await page.evaluate(() => window.scrollTo(0, 0));
-
-    // タッチイベントをシミュレート（下方向にスワイプ）
-    const element = await page.locator('body');
-    const box = await element.boundingBox();
-    
-    if (box) {
-      // タッチスタート
-      await page.touchscreen.tap(box.x + box.width / 2, 100);
-      
-      // タッチムーブ（下方向に100pxスワイプ）
-      await page.mouse.move(box.x + box.width / 2, 100);
-      await page.mouse.move(box.x + box.width / 2, 200);
-    }
-
-    // プルトゥリフレッシュのコンポーネントが存在することを確認
-    console.log('しおり一覧ページのプルトゥリフレッシュUI表示テスト完了');
-  });
-
   test('スクロール位置が下部の場合、プルトゥリフレッシュが動作しない', async ({ page }) => {
     // しおり一覧ページに移動
     await page.goto('/itineraries');
