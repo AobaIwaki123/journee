@@ -65,17 +65,3 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
-```
-
-## 効果
-
-### 初回実行
-```
-Install Playwright browsers: ~2分30秒
-```
-
-### 2回目以降（キャッシュヒット時）
-```
-Cache Playwright browsers: ~5秒
-Install Playwright system dependencies: ~10秒
-合計: ~15秒 → 約90%の時間短縮！
