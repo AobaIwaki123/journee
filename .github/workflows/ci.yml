@@ -30,7 +30,11 @@ jobs:
       
     steps:
       - uses: actions/checkout@v4
-      
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9  # 使用するpnpmのバージョンを指定
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
