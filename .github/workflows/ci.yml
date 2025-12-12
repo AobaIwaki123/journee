@@ -28,7 +28,7 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
       NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
-      
+      PLAYWRIGHT_BROWSERS: chromium # ここでブラウザを指定 (複数可: chromium,firefox,webkit)      
     steps:
       - uses: actions/checkout@v4
 
@@ -46,18 +46,18 @@ jobs:
       
       - name: Get Playwright version
         id: playwright-version
-        run: echo "version=$(node -p "require('./pnpm-lock.yaml').packages['node_modules/@playwright/test'].version")" >> $GITHUB_OUTPUT
-      
+        key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}      
+
       - name: Cache Playwright browsers
         uses: actions/cache@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}    
       
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm playwright install --with-deps
+        run: pnpm playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
       
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
@@ -66,7 +66,7 @@ jobs:
       - name: Run E2E tests
         id: playwright-tests
         continue-on-error: true
-        run: npx playwright test
+        run: npx playwright test --trace on
       
       # GitHub Summaryに結果を出力
       - name: Generate test summary
