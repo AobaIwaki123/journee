@@ -20,7 +20,9 @@ jobs:
       deps-cache-hit: ${{ steps.deps-cache.outputs.cache-hit }}
       playwright-cache-hit: ${{ steps.playwright-cache.outputs.cache-hit }}
       test-result: ${{ steps.playwright-tests.outcome }}
-      install-time: ${{ steps.timing.outputs.install-time }}
+      install-time: ${{ steps.install-deps.outputs.install-time }}
+      browsers-time: ${{ steps.install-browsers.outputs.browsers-time }}
+      sys-deps-time: ${{ steps.install-sys-deps.outputs.sys-deps-time }}
     env:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
@@ -104,19 +106,27 @@ jobs:
             playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-
       
       - name: Install Playwright browsers
+        id: install-browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+        run: |
+          START=$(date +%s)
+          pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "browsers-time=${DURATION}s" >> $GITHUB_OUTPUT
+          echo "⏱️ Browser install took ${DURATION}s"
       
       - name: Install Playwright system dependencies
+        id: install-sys-deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-      
-      # タイミング情報を保存
-      - name: Save timing info
-        id: timing
         run: |
-          echo "install-time=${{ steps.install-deps.outputs.install-time }}" >> $GITHUB_OUTPUT
-        
+          START=$(date +%s)
+          pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "sys-deps-time=${DURATION}s" >> $GITHUB_OUTPUT
+          echo "⏱️ System dependencies install took ${DURATION}s"
+      
       - name: Run E2E tests
         id: playwright-tests
         continue-on-error: true
@@ -156,8 +166,14 @@ jobs:
           
           if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
             echo "- **Playwright Cache**: ✅ Hit" >> $GITHUB_STEP_SUMMARY
+            if [ -n "${{ steps.install-sys-deps.outputs.sys-deps-time }}" ]; then
+              echo "- **Playwright System Deps Install**: ${{ steps.install-sys-deps.outputs.sys-deps-time }}" >> $GITHUB_STEP_SUMMARY
+            fi
           else
             echo "- **Playwright Cache**: ❌ Miss" >> $GITHUB_STEP_SUMMARY
+            if [ -n "${{ steps.install-browsers.outputs.browsers-time }}" ]; then
+              echo "- **Playwright Browsers Install**: ${{ steps.install-browsers.outputs.browsers-time }}" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
           
           # ベンチマークとの比較
@@ -167,6 +183,18 @@ jobs:
           echo "| Metric | Current | Benchmark (cache) | Benchmark (no-cache) |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|---------|-------------------|----------------------|" >> $GITHUB_STEP_SUMMARY
           echo "| Install Deps | ${{ steps.install-deps.outputs.install-time }} | ~15s | ~25s |" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            SYS_DEPS_TIME="${{ steps.install-sys-deps.outputs.sys-deps-time }}"
+            if [ -n "$SYS_DEPS_TIME" ]; then
+              echo "| Playwright System Deps | $SYS_DEPS_TIME | ~5-10s | N/A |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            BROWSERS_TIME="${{ steps.install-browsers.outputs.browsers-time }}"
+            if [ -n "$BROWSERS_TIME" ]; then
+              echo "| Playwright Full Install | $BROWSERS_TIME | N/A | ~40-60s |" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
           
       - uses: actions/upload-artifact@v4
         if: always()
@@ -233,6 +261,8 @@ jobs:
           PW_CACHE="${{ needs.e2e.outputs.playwright-cache-hit }}"
           TEST_RESULT="${{ needs.e2e.outputs.test-result }}"
           INSTALL_TIME="${{ needs.e2e.outputs.install-time }}"
+          BROWSERS_TIME="${{ needs.e2e.outputs.browsers-time }}"
+          SYS_DEPS_TIME="${{ needs.e2e.outputs.sys-deps-time }}"
           
           DEPS_ICON="❌"
           PW_ICON="❌"
@@ -241,6 +271,14 @@ jobs:
           fi
           if [ "$PW_CACHE" = "true" ]; then
             PW_ICON="✅"
+          fi
+          
+          # Playwright関連の時間情報を構築
+          PW_TIME_INFO=""
+          if [ "$PW_CACHE" = "true" ] && [ -n "$SYS_DEPS_TIME" ]; then
+            PW_TIME_INFO="- **Playwright System Deps Install**: ${SYS_DEPS_TIME}"
+          elif [ "$PW_CACHE" != "true" ] && [ -n "$BROWSERS_TIME" ]; then
+            PW_TIME_INFO="- **Playwright Full Install**: ${BROWSERS_TIME}"
           fi
           
           # PRコメントを追加
@@ -252,6 +290,7 @@ jobs:
           ### ⚡ Performance Info
           - **Package Manager**: pnpm (optimized based on benchmark)
           - **Install Time**: ${INSTALL_TIME}
+          ${PW_TIME_INFO}
           - **Dependencies Cache**: $DEPS_ICON $([ "$DEPS_CACHE" = "true" ] && echo "Hit" || echo "Miss")
           - **Playwright Cache**: $PW_ICON $([ "$PW_CACHE" = "true" ] && echo "Hit" || echo "Miss")
           - **Test Result**: $([ "$TEST_RESULT" = "success" ] && echo "✅ Passed" || echo "❌ Failed")
@@ -259,6 +298,7 @@ jobs:
           ### 📊 Performance Comparison
           | Metric | Current | Benchmark (cache) | Benchmark (no-cache) |
           |--------|---------|-------------------|----------------------|
-          | Install Deps | ${INSTALL_TIME} | ~15s | ~25s |"
+          | Install Deps | ${INSTALL_TIME} | ~15s | ~25s |
+          $(if [ "$PW_CACHE" = "true" ] && [ -n "$SYS_DEPS_TIME" ]; then echo "| Playwright System Deps | ${SYS_DEPS_TIME} | ~5-10s | N/A |"; elif [ -n "$BROWSERS_TIME" ]; then echo "| Playwright Full Install | ${BROWSERS_TIME} | N/A | ~40-60s |"; fi)"
         env:
           GH_TOKEN: ${{ github.token }}
