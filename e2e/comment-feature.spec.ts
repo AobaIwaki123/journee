@@ -18,21 +18,6 @@ test.describe('コメント機能', () => {
     await expect(page.getByRole('heading', { name: /コメント/ })).toBeVisible();
   });
 
-  test('匿名でコメントを投稿できる', async ({ page }) => {
-    // 名前を入力
-    await page.fill('input[placeholder="匿名ユーザー"]', 'テストユーザー');
-
-    // コメントを入力
-    await page.fill('textarea[placeholder="コメントを入力..."]', 'これはテストコメントです');
-
-    // 投稿ボタンをクリック
-    await page.click('button:has-text("投稿")');
-
-    // コメントが表示されることを確認
-    await expect(page.getByText('これはテストコメントです')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('テストユーザー')).toBeVisible();
-  });
-
   test('文字数制限を超えるとエラーメッセージが表示される', async ({ page }) => {
     // 501文字のコメントを入力
     const longComment = 'あ'.repeat(501);

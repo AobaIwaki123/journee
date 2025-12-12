@@ -231,15 +231,6 @@ test.describe('コメント機能', () => {
     // コメント表示確認
     await expect(page.locator('text=テストコメント')).toBeVisible();
   });
-
-  test('未認証でのコメント投稿制限', async ({ page }) => {
-    await page.goto('/share/test-slug');
-    
-    // ログイン必要メッセージ確認
-    await expect(
-      page.locator('text=ログインが必要です')
-    ).toBeVisible();
-  });
 });
 ```
 

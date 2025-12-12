@@ -108,21 +108,6 @@ npm run test:coverage
 - **フレームワーク**: Playwright
 - **ブラウザ**: Chromium, Firefox, WebKit
 
-### テスト対象
-
-#### コメント機能
-
-```typescript
-// e2e/comment-feature.spec.ts
-test('匿名でコメントを投稿できる', async ({ page }) => {
-  await page.fill('input[placeholder="匿名ユーザー"]', 'テスト');
-  await page.fill('textarea', 'テストコメント');
-  await page.click('button:has-text("投稿")');
-  
-  await expect(page.getByText('テストコメント')).toBeVisible();
-});
-```
-
 ### 実行方法
 
 ```bash
