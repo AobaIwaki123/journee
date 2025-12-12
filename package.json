@@ -27,6 +27,7 @@
     "deploy:gcr": "bash scripts/deploy-gcr.sh",
     "release": "bash scripts/tag-version.sh",
     "seed:mock-users": "npx tsx scripts/seed-mock-users.ts",
+    "seed:e2e": "npx tsx scripts/seed-e2e-data.ts",
     "k8s:clean": "bash scripts/clean-manifests.sh"
   },
   "dependencies": {
