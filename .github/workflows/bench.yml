@@ -55,73 +55,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # Package Manager Setup
-      - name: Setup Bun
-        if: matrix.package-manager == 'bun'
-        uses: oven-sh/setup-bun@v2
+      # ────────────────────────────────────────────────────────────────────
+      #  📦 Package Manager Setup (Composite Action)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Setup Package Manager
+        uses: ./.github/actions/setup-package-manager
         with:
-          bun-version: latest
-      
-      - name: Setup Node.js for pnpm/npm
-        if: matrix.package-manager != 'bun'
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-      
-      - name: Setup pnpm
-        if: matrix.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+          package-manager: ${{ matrix.package-manager }}
 
       # ────────────────────────────────────────────────────────────────────
       #  ⚙️ 環境設定 (Environment Configuration)
-      #  パッケージマネージャーごとのコマンドとパスを一元管理
       # ────────────────────────────────────────────────────────────────────
       - name: Configure Environment
-        run: |
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            echo "LOCKFILE=bun.lock" >> $GITHUB_ENV
-            echo "CACHE_DIR=$HOME/.bun/install/cache" >> $GITHUB_ENV
-            echo "INSTALL_CMD=bun install --frozen-lockfile" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=bunx playwright install --with-deps" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_VERSION_CMD=bunx playwright --version" >> $GITHUB_ENV
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            echo "LOCKFILE=pnpm-lock.yaml" >> $GITHUB_ENV
-            echo "CACHE_DIR=$(pnpm store path)" >> $GITHUB_ENV
-            echo "INSTALL_CMD=pnpm install --frozen-lockfile" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=pnpm exec playwright install --with-deps" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_VERSION_CMD=pnpm exec playwright --version" >> $GITHUB_ENV
-          else
-            echo "LOCKFILE=package-lock.json" >> $GITHUB_ENV
-            echo "CACHE_DIR=$HOME/.npm" >> $GITHUB_ENV
-            echo "INSTALL_CMD=npm ci" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=npx playwright install --with-deps" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_VERSION_CMD=npx playwright --version" >> $GITHUB_ENV
-          fi
+        run: ./.github/scripts/configure-env.sh "${{ matrix.package-manager }}"
 
       # ────────────────────────────────────────────────────────────────────
-      #  🔑 共通化されたキャッシュキー生成ロジック
-      #  依存パッケージ用のキャッシュパスとキーを生成
+      #  🔑 依存パッケージキャッシュキー生成
       # ────────────────────────────────────────────────────────────────────
       - name: Generate dependency cache key
         id: deps-cache-key
         run: |
           LOCKFILE_HASH=$(sha256sum ${{ env.LOCKFILE }} | cut -d' ' -f1)
           CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
-          
           echo "dir=${{ env.CACHE_DIR }}" >> $GITHUB_OUTPUT
-          echo "lockfile=${{ env.LOCKFILE }}" >> $GITHUB_OUTPUT
           echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
-          
-          echo "📦 Dependency Cache Configuration:"
-          echo "  Directory: ${{ env.CACHE_DIR }}"
-          echo "  Lockfile: ${{ env.LOCKFILE }}"
-          echo "  Cache Key: ${CACHE_KEY}"
+          echo "📦 Dependency Cache Key: ${CACHE_KEY}"
 
       # ────────────────────────────────────────────────────────────────────
       #  🚀 高速化コア: 依存パッケージキャッシュ                            
-      #  共通化されたキャッシュキーを使用
       # ────────────────────────────────────────────────────────────────────
       - name: Cache dependencies
         uses: actions/cache@v5
@@ -141,26 +102,19 @@ jobs:
           ${{ env.INSTALL_CMD }}
 
       # ────────────────────────────────────────────────────────────────────
-      #  🔑 共通化されたキャッシュキー生成ロジック
-      #  Playwright用のバージョンとキャッシュキーを生成
+      #  🔑 Playwrightキャッシュキー生成
       # ────────────────────────────────────────────────────────────────────
       - name: Generate Playwright cache key
         id: playwright-cache-key
         run: |
           VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
           CACHE_KEY="playwright-${{ runner.os }}-${{ matrix.package-manager }}-${VERSION}-${{ env.PLAYWRIGHT_BROWSERS }}"
-          
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
-          
-          echo "🎭 Playwright Cache Configuration:"
-          echo "  Version: ${VERSION}"
-          echo "  Browsers: ${{ env.PLAYWRIGHT_BROWSERS }}"
-          echo "  Cache Key: ${CACHE_KEY}"
+          echo "🎭 Playwright Cache Key: ${CACHE_KEY}"
 
       # ────────────────────────────────────────────────────────────────────
       #  🚀 高速化コア: Playwrightブラウザキャッシュ                        
-      #  共通化されたキャッシュキーを使用
       # ────────────────────────────────────────────────────────────────────
       - name: Cache Playwright browsers
         uses: actions/cache@v5
@@ -184,9 +138,6 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   # ██ Step 2: e2e-with-cache
   # ██ ⏱️  ベンチマーク計測: キャッシュあり
-  # ██
-  # ██ 各ステップの実行時間を計測し、JSONに記録
-  # ██ 計測項目: setup_pm, install_deps, get_version, install_browsers, test_execution
   # ════════════════════════════════════════════════════════════════════════════
   e2e-with-cache:
     needs: prepare-cache
@@ -202,24 +153,13 @@ jobs:
       - name: Record job start
         run: echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
 
-      # Package Manager Setup
-      - name: Setup Bun
-        if: matrix.package-manager == 'bun'
-        uses: oven-sh/setup-bun@v2
+      # ────────────────────────────────────────────────────────────────────
+      #  📦 Package Manager Setup (Composite Action)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Setup Package Manager
+        uses: ./.github/actions/setup-package-manager
         with:
-          bun-version: latest
-      
-      - name: Setup Node.js for pnpm/npm
-        if: matrix.package-manager != 'bun'
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-      
-      - name: Setup pnpm
-        if: matrix.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+          package-manager: ${{ matrix.package-manager }}
       
       - name: Record setup time
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
@@ -228,45 +168,22 @@ jobs:
       #  ⚙️ 環境設定 (Environment Configuration)
       # ────────────────────────────────────────────────────────────────────
       - name: Configure Environment
-        run: |
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            echo "LOCKFILE=bun.lock" >> $GITHUB_ENV
-            echo "CACHE_DIR=$HOME/.bun/install/cache" >> $GITHUB_ENV
-            echo "INSTALL_CMD=bun install --frozen-lockfile" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_CMD=bunx playwright" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=bunx playwright install --with-deps" >> $GITHUB_ENV
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            echo "LOCKFILE=pnpm-lock.yaml" >> $GITHUB_ENV
-            echo "CACHE_DIR=$(pnpm store path)" >> $GITHUB_ENV
-            echo "INSTALL_CMD=pnpm install --frozen-lockfile" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_CMD=pnpm exec playwright" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=pnpm exec playwright install --with-deps" >> $GITHUB_ENV
-          else
-            echo "LOCKFILE=package-lock.json" >> $GITHUB_ENV
-            echo "CACHE_DIR=$HOME/.npm" >> $GITHUB_ENV
-            echo "INSTALL_CMD=npm ci" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_CMD=npx playwright" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=npx playwright install --with-deps" >> $GITHUB_ENV
-          fi
+        run: ./.github/scripts/configure-env.sh "${{ matrix.package-manager }}" true
 
       # ────────────────────────────────────────────────────────────────────
-      #  🔑 共通化されたキャッシュキー生成ロジック（prepare-cacheと同一）
+      #  🔑 依存パッケージキャッシュキー生成
       # ────────────────────────────────────────────────────────────────────
       - name: Generate dependency cache key
         id: deps-cache-key
         run: |
           LOCKFILE_HASH=$(sha256sum ${{ env.LOCKFILE }} | cut -d' ' -f1)
           CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
-          
           echo "dir=${{ env.CACHE_DIR }}" >> $GITHUB_OUTPUT
-          echo "lockfile=${{ env.LOCKFILE }}" >> $GITHUB_OUTPUT
           echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
-          
           echo "📦 Restoring with key: ${CACHE_KEY}"
 
       # ────────────────────────────────────────────────────────────────────
-      #  🚀 高速化コア: 依存パッケージキャッシュ復元                        
-      #  prepare-cacheで保存したキャッシュを復元
+      #  🚀 高速化コア: 依存パッケージキャッシュ復元
       # ────────────────────────────────────────────────────────────────────
       - name: Restore dependencies cache
         uses: actions/cache/restore@v5
@@ -288,7 +205,7 @@ jobs:
           fi
 
       # ────────────────────────────────────────────────────────────────────
-      #  ⏱️  ベンチマーク計測セクション (install_deps)                     
+      #  ⏱️  ベンチマーク計測: 依存インストール
       # ────────────────────────────────────────────────────────────────────
       - name: Install dependencies
         run: |
@@ -298,7 +215,7 @@ jobs:
           echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
 
       # ────────────────────────────────────────────────────────────────────
-      #  🔑 共通化されたキャッシュキー生成ロジック（prepare-cacheと同一）
+      #  🔑 Playwrightキャッシュキー生成
       # ────────────────────────────────────────────────────────────────────
       - name: Generate Playwright cache key
         id: playwright-cache-key
@@ -306,10 +223,8 @@ jobs:
           START=$(date +%s)
           VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
           CACHE_KEY="playwright-${{ runner.os }}-${{ matrix.package-manager }}-${VERSION}-${{ env.PLAYWRIGHT_BROWSERS }}"
-          
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
-          
           END=$(date +%s)
           echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
           echo "🎭 Restoring with key: ${CACHE_KEY}"
@@ -333,9 +248,7 @@ jobs:
           fi
 
       # ────────────────────────────────────────────────────────────────────
-      #  🎭 Playwrightブラウザインストール
-      #  キャッシュヒットの場合は完全にスキップ（システム依存関係も不要）
-      #  キャッシュミスの場合のみフルインストール
+      #  🎭 Playwrightブラウザインストール (キャッシュミス時のみ)
       # ────────────────────────────────────────────────────────────────────
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -351,7 +264,10 @@ jobs:
         run: |
           echo "✅ Cache hit - Skipping browser installation completely"
           echo "INSTALL_BROWSERS_DURATION=0" >> $GITHUB_ENV
-        
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測: E2Eテスト実行
+      # ────────────────────────────────────────────────────────────────────
       - name: Run E2E tests (run #${{ matrix.run }})
         id: playwright-tests
         continue-on-error: true
@@ -362,33 +278,25 @@ jobs:
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
       # ────────────────────────────────────────────────────────────────────
-      #  💾 ベンチマーク結果保存                                           
+      #  💾 ベンチマーク結果保存
       # ────────────────────────────────────────────────────────────────────
       - name: Save timing data
+        id: save-timing
         if: always()
         run: |
-          JOB_END=$(date +%s)
-          TOTAL_DURATION=$((JOB_END - JOB_START))
-          SETUP_DURATION=$((SETUP_TIME - JOB_START))
-          
-          cat << EOF > timing-${{ matrix.package-manager }}-cached-${{ matrix.run }}.json
-          {
-            "package_manager": "${{ matrix.package-manager }}",
-            "cache_enabled": true,
-            "run": ${{ matrix.run }},
-            "total": $TOTAL_DURATION,
-            "setup_pm": $SETUP_DURATION,
-            "install_deps": ${INSTALL_DEPS_DURATION:-0},
-            "deps_cache_hit": "${{ steps.deps-cache.outputs.cache-hit }}",
-            "get_version": ${GET_VERSION_DURATION:-0},
-            "install_browsers": ${INSTALL_BROWSERS_DURATION:-0},
-            "playwright_cache_hit": "${{ steps.playwright-cache.outputs.cache-hit }}",
-            "test_execution": ${TEST_DURATION:-0},
-            "test_result": "${{ steps.playwright-tests.outcome }}"
-          }
-          EOF
-          
-          cat timing-${{ matrix.package-manager }}-cached-${{ matrix.run }}.json
+          ./.github/scripts/save-timing-data.sh \
+            "${{ matrix.package-manager }}" \
+            "true" \
+            "${{ matrix.run }}" \
+            "$JOB_START" \
+            "$SETUP_TIME" \
+            "${INSTALL_DEPS_DURATION:-0}" \
+            "${{ steps.deps-cache.outputs.cache-hit }}" \
+            "${GET_VERSION_DURATION:-0}" \
+            "${INSTALL_BROWSERS_DURATION:-0}" \
+            "${{ steps.playwright-cache.outputs.cache-hit }}" \
+            "${TEST_DURATION:-0}" \
+            "${{ steps.playwright-tests.outcome }}"
           
       - uses: actions/upload-artifact@v4
         if: always()
@@ -413,24 +321,13 @@ jobs:
       - name: Record job start
         run: echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
 
-      # Package Manager Setup
-      - name: Setup Bun
-        if: matrix.package-manager == 'bun'
-        uses: oven-sh/setup-bun@v2
+      # ────────────────────────────────────────────────────────────────────
+      #  📦 Package Manager Setup (Composite Action)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Setup Package Manager
+        uses: ./.github/actions/setup-package-manager
         with:
-          bun-version: latest
-      
-      - name: Setup Node.js for pnpm/npm
-        if: matrix.package-manager != 'bun'
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-      
-      - name: Setup pnpm
-        if: matrix.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+          package-manager: ${{ matrix.package-manager }}
       
       - name: Record setup time
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
@@ -439,27 +336,11 @@ jobs:
       #  ⚙️ 環境設定 (Environment Configuration)
       # ────────────────────────────────────────────────────────────────────
       - name: Configure Environment
-        run: |
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            echo "LOCKFILE=bun.lock" >> $GITHUB_ENV
-            echo "CACHE_DIR=$HOME/.bun/install/cache" >> $GITHUB_ENV
-            echo "INSTALL_CMD=bun install --frozen-lockfile" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_CMD=bunx playwright" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=bunx playwright install --with-deps" >> $GITHUB_ENV
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            echo "LOCKFILE=pnpm-lock.yaml" >> $GITHUB_ENV
-            echo "CACHE_DIR=$(pnpm store path)" >> $GITHUB_ENV
-            echo "INSTALL_CMD=pnpm install --frozen-lockfile" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_CMD=pnpm exec playwright" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=pnpm exec playwright install --with-deps" >> $GITHUB_ENV
-          else
-            echo "LOCKFILE=package-lock.json" >> $GITHUB_ENV
-            echo "CACHE_DIR=$HOME/.npm" >> $GITHUB_ENV
-            echo "INSTALL_CMD=npm ci" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_CMD=npx playwright" >> $GITHUB_ENV
-            echo "PLAYWRIGHT_INSTALL_CMD=npx playwright install --with-deps" >> $GITHUB_ENV
-          fi
+        run: ./.github/scripts/configure-env.sh "${{ matrix.package-manager }}" true
 
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測: 依存インストール (キャッシュなし)
+      # ────────────────────────────────────────────────────────────────────
       - name: Install dependencies (no cache)
         run: |
           START=$(date +%s)
@@ -482,7 +363,10 @@ jobs:
           ${{ env.PLAYWRIGHT_INSTALL_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
           END=$(date +%s)
           echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
-        
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測: E2Eテスト実行
+      # ────────────────────────────────────────────────────────────────────
       - name: Run E2E tests (run #${{ matrix.run }})
         id: playwright-tests
         continue-on-error: true
@@ -492,31 +376,26 @@ jobs:
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
+      # ────────────────────────────────────────────────────────────────────
+      #  💾 ベンチマーク結果保存
+      # ────────────────────────────────────────────────────────────────────
       - name: Save timing data
+        id: save-timing
         if: always()
         run: |
-          JOB_END=$(date +%s)
-          TOTAL_DURATION=$((JOB_END - JOB_START))
-          SETUP_DURATION=$((SETUP_TIME - JOB_START))
-          
-          cat << EOF > timing-${{ matrix.package-manager }}-nocache-${{ matrix.run }}.json
-          {
-            "package_manager": "${{ matrix.package-manager }}",
-            "cache_enabled": false,
-            "run": ${{ matrix.run }},
-            "total": $TOTAL_DURATION,
-            "setup_pm": $SETUP_DURATION,
-            "install_deps": ${INSTALL_DEPS_DURATION:-0},
-            "deps_cache_hit": "false",
-            "get_version": ${GET_VERSION_DURATION:-0},
-            "install_browsers": ${INSTALL_BROWSERS_DURATION:-0},
-            "playwright_cache_hit": "false",
-            "test_execution": ${TEST_DURATION:-0},
-            "test_result": "${{ steps.playwright-tests.outcome }}"
-          }
-          EOF
-          
-          cat timing-${{ matrix.package-manager }}-nocache-${{ matrix.run }}.json
+          ./.github/scripts/save-timing-data.sh \
+            "${{ matrix.package-manager }}" \
+            "false" \
+            "${{ matrix.run }}" \
+            "$JOB_START" \
+            "$SETUP_TIME" \
+            "${INSTALL_DEPS_DURATION:-0}" \
+            "false" \
+            "${GET_VERSION_DURATION:-0}" \
+            "${INSTALL_BROWSERS_DURATION:-0}" \
+            "false" \
+            "${TEST_DURATION:-0}" \
+            "${{ steps.playwright-tests.outcome }}"
           
       - uses: actions/upload-artifact@v4
         if: always()
