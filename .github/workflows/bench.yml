@@ -117,7 +117,7 @@ jobs:
     strategy:
       matrix:
         package-manager: [bun, pnpm, npm]
-        shard: [1, 2, 3, 4, 5]
+        run: [1, 2, 3, 4, 5]
     env:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
@@ -145,9 +145,9 @@ jobs:
       
       - name: Setup Node.js for pnpm/npm
         if: matrix.package-manager != 'bun'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
       
       - name: Setup pnpm
         if: matrix.package-manager == 'pnpm'
@@ -181,7 +181,6 @@ jobs:
             ${{ steps.cache-paths.outputs.dir }}
             node_modules
           key: ${{ runner.os }}-${{ matrix.package-manager }}-${{ hashFiles(format('**/{0}', steps.cache-paths.outputs.lockfile)) }}
-          fail-on-cache-miss: true  # キャッシュがなければ失敗
           
       - name: Install dependencies
         run: |
@@ -217,7 +216,6 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium
-          fail-on-cache-miss: true
       
       - name: Install Playwright system dependencies
         run: |
@@ -232,17 +230,17 @@ jobs:
           END=$(date +%s)
           echo "INSTALL_DEPS_ONLY_DURATION=$((END - START))" >> $GITHUB_ENV
         
-      - name: Run E2E tests
+      - name: Run E2E tests (run #${{ matrix.run }})
         id: playwright-tests
         continue-on-error: true
         run: |
           START=$(date +%s)
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright test 
+            bunx playwright test
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright test 
+            pnpm exec playwright test
           else
-            npx playwright test 
+            npx playwright test
           fi
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
@@ -254,31 +252,31 @@ jobs:
           TOTAL_DURATION=$((JOB_END - JOB_START))
           SETUP_DURATION=$((SETUP_TIME - JOB_START))
           
-          cat << EOF > timing-${{ matrix.package-manager }}-cached-${{ matrix.shard }}.json
+          cat << EOF > timing-${{ matrix.package-manager }}-cached-${{ matrix.run }}.json
           {
             "package_manager": "${{ matrix.package-manager }}",
             "cache_enabled": true,
-            "shard": ${{ matrix.shard }},
+            "run": ${{ matrix.run }},
             "total": $TOTAL_DURATION,
             "setup_pm": $SETUP_DURATION,
             "install_deps": ${INSTALL_DEPS_DURATION:-0},
-            "deps_cache_hit": "true",
+            "deps_cache_hit": "${{ steps.deps-cache.outputs.cache-hit }}",
             "get_version": ${GET_VERSION_DURATION:-0},
             "install_browsers": 0,
             "install_deps_only": ${INSTALL_DEPS_ONLY_DURATION:-0},
-            "playwright_cache_hit": "true",
+            "playwright_cache_hit": "${{ steps.playwright-cache.outputs.cache-hit }}",
             "test_execution": ${TEST_DURATION:-0},
             "test_result": "${{ steps.playwright-tests.outcome }}"
           }
           EOF
           
-          cat timing-${{ matrix.package-manager }}-cached-${{ matrix.shard }}.json
+          cat timing-${{ matrix.package-manager }}-cached-${{ matrix.run }}.json
           
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: timing-data-${{ matrix.package-manager }}-cached-${{ matrix.shard }}
-          path: timing-${{ matrix.package-manager }}-cached-${{ matrix.shard }}.json
+          name: timing-data-${{ matrix.package-manager }}-cached-${{ matrix.run }}
+          path: timing-${{ matrix.package-manager }}-cached-${{ matrix.run }}.json
           retention-days: 7
 
   # Step 3: キャッシュなしのテスト (独立して実行)
@@ -287,7 +285,7 @@ jobs:
     strategy:
       matrix:
         package-manager: [bun, pnpm, npm]
-        shard: [1, 2, 3, 4, 5]
+        run: [1, 2, 3, 4, 5]
     env:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
@@ -370,17 +368,17 @@ jobs:
           END=$(date +%s)
           echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
         
-      - name: Run E2E tests
+      - name: Run E2E tests (run #${{ matrix.run }})
         id: playwright-tests
         continue-on-error: true
         run: |
           START=$(date +%s)
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright test 
+            bunx playwright test
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright test 
+            pnpm exec playwright test
           else
-            npx playwright test 
+            npx playwright test
           fi
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
@@ -392,11 +390,11 @@ jobs:
           TOTAL_DURATION=$((JOB_END - JOB_START))
           SETUP_DURATION=$((SETUP_TIME - JOB_START))
           
-          cat << EOF > timing-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}.json
+          cat << EOF > timing-${{ matrix.package-manager }}-nocache-${{ matrix.run }}.json
           {
             "package_manager": "${{ matrix.package-manager }}",
             "cache_enabled": false,
-            "shard": ${{ matrix.shard }},
+            "run": ${{ matrix.run }},
             "total": $TOTAL_DURATION,
             "setup_pm": $SETUP_DURATION,
             "install_deps": ${INSTALL_DEPS_DURATION:-0},
@@ -410,13 +408,13 @@ jobs:
           }
           EOF
           
-          cat timing-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}.json
+          cat timing-${{ matrix.package-manager }}-nocache-${{ matrix.run }}.json
           
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: timing-data-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}
-          path: timing-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}.json
+          name: timing-data-${{ matrix.package-manager }}-nocache-${{ matrix.run }}
+          path: timing-${{ matrix.package-manager }}-nocache-${{ matrix.run }}.json
           retention-days: 7
 
   # Step 4: 結果を集計
@@ -436,7 +434,7 @@ jobs:
           echo "## 🎭 Playwright E2E Test Performance Comparison" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # 前回と同じ集計ロジック...
+          # 集計ロジック
           cat timing-*.json | jq -s '
             group_by(.package_manager, .cache_enabled) | 
             map({
@@ -490,3 +488,26 @@ jobs:
             .[] |
             "- **\(.pm)**: Cache saves **\((.without_cache - .with_cache) | floor)s** (\(((.without_cache - .with_cache) / .without_cache * 100) | floor)% faster)"
           ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Individual Run Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          for pm in bun pnpm npm; do
+            echo "<details>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>📦 $pm detailed results</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            cat summary.json | jq -r --arg pm "$pm" '
+              map(select(.package_manager == $pm)) |
+              .[] |
+              "#### Cache: \(if .cache_enabled then "Enabled ✅" else "Disabled ❌" end)\n",
+              "| Run | Total | Setup | Deps | Browsers | Tests | Deps Cache | PW Cache |",
+              "|-----|-------|-------|------|----------|-------|------------|----------|",
+              (.details[] | "| \(.run) | \(.total)s | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers + .install_deps_only)s | \(.test_execution)s | \(.deps_cache_hit) | \(.playwright_cache_hit) |"),
+              ""
+            ' >> $GITHUB_STEP_SUMMARY
+            
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
