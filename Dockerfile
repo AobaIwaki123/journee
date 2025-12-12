@@ -1,5 +1,5 @@
 # Development Dockerfile for Next.js
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Install dependencies for better compatibility
 RUN apk add --no-cache libc6-compat
