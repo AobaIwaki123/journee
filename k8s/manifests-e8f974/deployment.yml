@@ -19,7 +19,7 @@ spec:
         - name: gcr-pull-secret
       containers:
         - name: journee-e8f974
-          image: gcr.io/my-docker-471807/journee:v7.3.2
+          image: gcr.io/my-docker-471807/journee:e8f974-dd91ae
           env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /app/secret/key.json
