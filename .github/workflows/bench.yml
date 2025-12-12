@@ -238,11 +238,11 @@ jobs:
         run: |
           START=$(date +%s)
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright test --shard=${{ matrix.shard }}/3
+            bunx playwright test 
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright test --shard=${{ matrix.shard }}/3
+            pnpm exec playwright test 
           else
-            npx playwright test --shard=${{ matrix.shard }}/3
+            npx playwright test 
           fi
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
@@ -376,11 +376,11 @@ jobs:
         run: |
           START=$(date +%s)
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright test --shard=${{ matrix.shard }}/3
+            bunx playwright test 
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright test --shard=${{ matrix.shard }}/3
+            pnpm exec playwright test 
           else
-            npx playwright test --shard=${{ matrix.shard }}/3
+            npx playwright test 
           fi
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
