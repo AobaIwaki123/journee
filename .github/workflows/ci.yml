@@ -13,6 +13,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NEXTAUTH_URL: http://localhost:3000
+  NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+  GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+  NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
+  PLAYWRIGHT_BROWSERS: chromium
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -23,18 +36,6 @@ jobs:
       install-time: ${{ steps.install-deps.outputs.install-time }}
       browsers-time: ${{ steps.install-browsers.outputs.browsers-time }}
       sys-deps-time: ${{ steps.install-sys-deps.outputs.sys-deps-time }}
-    env:
-      NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
-      NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
-      PLAYWRIGHT_BROWSERS: chromium
     steps:
       - uses: actions/checkout@v4
 
