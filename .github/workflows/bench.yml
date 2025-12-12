@@ -448,11 +448,22 @@ jobs:
           
           echo "### 📊 Performance Comparison by Package Manager & Cache Strategy" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Package Manager | Cache | Runs | Total Time | Setup | Install Deps | Browsers | Tests | Deps Cache | PW Cache |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------------|-------|------|------------|-------|--------------|----------|-------|------------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Manager | Cache | Runs | Setup | Install Deps | Browsers | Tests | Total Time |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|-------|------|-------|--------------|----------|-------|------------|" >> $GITHUB_STEP_SUMMARY
           
           cat summary.json | jq -r '.[] | 
-            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.total | floor)s | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers | floor)s | \(.averages.test_execution | floor)s | \(.cache_hits.deps)/\(.runs) | \(.cache_hits.playwright)/\(.runs) |"
+            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers | floor)s | \(.averages.test_execution | floor)s | \(.averages.total | floor)s |"
+          ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Cache Hit Rate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Manager | Deps Cache Hit | Playwright Cache Hit |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|----------------|----------------------|" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '
+            map(select(.cache_enabled)) | .[] | 
+            "| **\(.package_manager)** | \(.cache_hits.deps)/\(.runs) | \(.cache_hits.playwright)/\(.runs) |"
           ' >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -493,9 +504,9 @@ jobs:
               map(select(.package_manager == $pm)) |
               .[] |
               "#### Cache: \(if .cache_enabled then "Enabled ✅" else "Disabled ❌" end)\n",
-              "| Run | Total | Setup | Deps | Browsers | Tests | Deps Cache | PW Cache |",
-              "|-----|-------|-------|------|----------|-------|------------|----------|",
-              (.details[] | "| \(.run) | \(.total)s | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers)s | \(.test_execution)s | \(.deps_cache_hit) | \(.playwright_cache_hit) |"),
+              "| Run | Setup | Deps | Browsers | Tests | Total |",
+              "|-----|-------|------|----------|-------|-------|",
+              (.details[] | "| \(.run) | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers)s | \(.test_execution)s | \(.total)s |"),
               ""
             ' >> $GITHUB_STEP_SUMMARY
             
