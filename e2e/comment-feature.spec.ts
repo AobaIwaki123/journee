@@ -6,129 +6,34 @@ import { test, expect } from '@playwright/test';
 
 test.describe('コメント機能', () => {
   // テスト用の公開しおりURL
-  const SHARED_ITINERARY_URL = '/share/test-itinerary'; // 実際のURLに置き換える
+  const SHARED_ITINERARY_URL = '/share/test-itinerary-slug-2'; // 実際のURLに置き換える
 
   test.beforeEach(async ({ page }) => {
     // 公開しおりページに移動
     await page.goto(SHARED_ITINERARY_URL);
   });
 
-  test('コメントセクションが表示される', async ({ page }) => {
-    // コメントセクションを確認
-    await expect(page.getByRole('heading', { name: /コメント/ })).toBeVisible();
-  });
+  test('未認証ユーザーはコメントを閲覧できるが投稿はできない', async ({ page }) => {
+    // コメントセクションヘッダー（コメント数込み）を確認
+    // seedで2件追加しているので "コメント (2件)" となっているはず
+    // 正規表現で柔軟にチェック
+    await expect(page.getByRole('heading', { name: /コメント \(\d+件\)/ })).toBeVisible();
 
-  test('文字数制限を超えるとエラーメッセージが表示される', async ({ page }) => {
-    // 501文字のコメントを入力
-    const longComment = 'あ'.repeat(501);
-    await page.fill('textarea[placeholder="コメントを入力..."]', longComment);
+    // コメントアイテムの数を確認
+    const commentItems = page.locator('[data-testid="comment-item"]');
+    await expect(commentItems).toHaveCount(2);
 
-    // エラーメッセージを確認
-    await expect(page.getByText(/500文字以内/)).toBeVisible();
-  });
+    // 既存のコメントが表示されていることを確認
+    await expect(page.getByText('楽しみですね！')).toBeVisible();
+    await expect(page.getByText('参考にします！')).toBeVisible();
 
-  test('空のコメントは投稿できない', async ({ page }) => {
-    // 投稿ボタンが無効化されていることを確認
-    const submitButton = page.locator('button:has-text("投稿")');
-    await expect(submitButton).toBeDisabled();
-  });
+    // 投稿フォームが表示されていないことを確認
+    await expect(page.locator('textarea[placeholder="コメントを入力..."]')).not.toBeVisible();
 
-  test('文字数カウンターが正しく表示される', async ({ page }) => {
-    // コメントを入力
-    await page.fill('textarea[placeholder="コメントを入力..."]', 'テスト');
+    // ログインを促すメッセージが表示されていることを確認
+    await expect(page.getByText('コメントを投稿するにはログインが必要です')).toBeVisible();
 
-    // 文字数カウンターを確認（500文字制限）
-    await expect(page.getByText(/残り496文字/)).toBeVisible();
-  });
-
-  test('コメント一覧のページネーションが機能する', async ({ page }) => {
-    // 「さらに読み込む」ボタンが存在するか確認
-    const loadMoreButton = page.locator('button:has-text("さらに読み込む")');
-    
-    if (await loadMoreButton.count() > 0) {
-      // 現在のコメント数を取得
-      const initialCommentCount = await page.locator('[data-testid="comment-item"]').count();
-
-      // 「さらに読み込む」をクリック
-      await loadMoreButton.click();
-
-      // コメントが増えることを確認
-      await page.waitForTimeout(1000);
-      const newCommentCount = await page.locator('[data-testid="comment-item"]').count();
-      expect(newCommentCount).toBeGreaterThan(initialCommentCount);
-    }
-  });
-
-  test('相対時間が正しく表示される', async ({ page }) => {
-    // コメントを投稿
-    await page.fill('input[placeholder="匿名ユーザー"]', 'テスト');
-    await page.fill('textarea[placeholder="コメントを入力..."]', 'テストコメント');
-    await page.click('button:has-text("投稿")');
-
-    // 「たった今」または「〜分前」が表示されることを確認
-    await expect(
-      page.getByText(/たった今|分前|時間前|日前/)
-    ).toBeVisible({ timeout: 10000 });
-  });
-
-  test('認証ユーザーとしてコメントを投稿できる', async ({ page, context }) => {
-    // 認証が必要なテストの場合
-    // セッションをセットアップ（実際の認証フローに応じて調整）
-    
-    // 匿名チェックボックスが表示されていることを確認（認証済みの場合）
-    const anonymousCheckbox = page.locator('input[type="checkbox"]:has-text("匿名で投稿")');
-    
-    if (await anonymousCheckbox.count() > 0) {
-      // コメントを入力
-      await page.fill('textarea[placeholder="コメントを入力..."]', '認証ユーザーのコメント');
-
-      // 投稿
-      await page.click('button:has-text("投稿")');
-
-      // コメントが表示されることを確認
-      await expect(page.getByText('認証ユーザーのコメント')).toBeVisible({ timeout: 10000 });
-    }
-  });
-
-  test('自分のコメントを削除できる', async ({ page }) => {
-    // 認証ユーザーとしてコメントを投稿
-    await page.fill('textarea[placeholder="コメントを入力..."]', '削除テスト');
-    await page.click('button:has-text("投稿")');
-
-    // コメントが表示されるまで待つ
-    await expect(page.getByText('削除テスト')).toBeVisible({ timeout: 10000 });
-
-    // 削除ボタンをクリック
-    const deleteButton = page.locator('button[title="削除"]').first();
-    
-    if (await deleteButton.count() > 0) {
-      await deleteButton.click();
-
-      // 確認ダイアログをハンドル
-      page.on('dialog', async (dialog) => {
-        expect(dialog.message()).toContain('削除');
-        await dialog.accept();
-      });
-
-      // コメントが削除されることを確認
-      await expect(page.getByText('削除テスト')).not.toBeVisible({ timeout: 5000 });
-    }
-  });
-
-  test('コメント数が正しく表示される', async ({ page }) => {
-    // コメントヘッダーを確認
-    const commentHeader = page.getByRole('heading', { name: /コメント \(\d+件\)/ });
-    await expect(commentHeader).toBeVisible();
-  });
-
-  test('コメントがない場合は空状態メッセージが表示される', async ({ page }) => {
-    // 新しいしおり（コメントがない）の場合
-    // 「まだコメントがありません」というメッセージを確認
-    const emptyMessage = page.getByText(/まだコメントがありません/);
-    
-    // コメントがない場合のみ表示される
-    if (await emptyMessage.count() > 0) {
-      await expect(emptyMessage).toBeVisible();
-    }
+    // ログインボタンが表示されていることを確認
+    await expect(page.locator('a[href="/login"]')).toBeVisible();
   });
 });

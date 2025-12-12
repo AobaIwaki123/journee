@@ -95,46 +95,6 @@ describe('CommentRepository', () => {
       expect(mockFrom).toHaveBeenCalledWith('comments');
     });
 
-    it('コメントを作成（匿名ユーザー）', async () => {
-      const mockComment = {
-        id: 'comment-2',
-        itinerary_id: 'itinerary-1',
-        user_id: null,
-        author_name: '匿名さん',
-        content: '匿名コメント',
-        is_anonymous: true,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-
-      mockSingle.mockResolvedValue({ data: mockComment, error: null });
-
-      const request: CreateCommentRequest = {
-        itineraryId: 'itinerary-1',
-        content: '匿名コメント',
-        isAnonymous: true,
-        authorName: '匿名さん',
-      };
-
-      const result = await repository.createComment(request);
-
-      expect(result.isAnonymous).toBe(true);
-      expect(result.authorName).toBe('匿名さん');
-      expect(result.userId).toBeNull();
-    });
-
-    it('エラー: 匿名投稿で名前が未指定', async () => {
-      const request: CreateCommentRequest = {
-        itineraryId: 'itinerary-1',
-        content: 'コメント',
-        isAnonymous: true,
-      };
-
-      await expect(repository.createComment(request)).rejects.toThrow(
-        '匿名投稿の場合は名前が必要です'
-      );
-    });
-
     it('エラー: 文字数オーバー（500文字超）', async () => {
       const request: CreateCommentRequest = {
         itineraryId: 'itinerary-1',

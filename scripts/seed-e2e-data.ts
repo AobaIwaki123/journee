@@ -27,7 +27,7 @@ async function seedE2EData() {
     console.log("🌱 Seeding E2E data...");
 
     // 1. Clean up existing data for the test
-    const TEST_ITINERARY_SLUG = 'test-itinerary-slug';
+    const TEST_ITINERARY_SLUG = 'test-itinerary-slug-2';
     const TEST_USER_EMAIL = 'e2e-test-user@example.com';
 
     // Clean up by slug first if possible, or by user?
@@ -87,6 +87,7 @@ async function seedE2EData() {
         process.exit(1);
     }
     const itineraryId = (itinerary as any).id;
+    console.log(`Itinerary created with ID: ${itineraryId}`);
 
     // 4. Create Day Schedule
     console.log("Creating day schedule...");
@@ -129,6 +130,46 @@ async function seedE2EData() {
         console.error("Failed to create tourist spot:", spotError);
         process.exit(1);
     }
+
+    // 6. Create Comments
+    console.log("Creating comments...");
+    const { error: commentError } = await supabase
+        .from('comments')
+        .insert([
+            {
+                id: crypto.randomUUID(),
+                itinerary_id: itineraryId,
+                user_id: userId,
+                content: '楽しみですね！',
+                author_name: 'E2E Test User A',
+                is_anonymous: false,
+                created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
+            },
+            {
+                id: crypto.randomUUID(),
+                itinerary_id: itineraryId,
+                user_id: userId,
+                content: '参考にします！',
+                author_name: 'E2E Test User B',
+                is_anonymous: true,
+                created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+            }
+        ] as any);
+
+    if (commentError) {
+        console.error("Failed to create comments:", commentError);
+        // Don't exit, just warn as comments might not be critical for all seeds? 
+        // Actually, for this test they are.
+        process.exit(1);
+    }
+
+    // Verify comments count
+    const { count: commentCount, error: countError } = await supabase
+        .from('comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('itinerary_id', itineraryId);
+
+    console.log(`Verified comments count in DB: ${commentCount} (Error: ${countError?.message || 'none'})`);
 
     console.log("✅ E2E Data seeded successfully!");
 }
