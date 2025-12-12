@@ -16,6 +16,10 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    outputs:
+      deps-cache-hit: ${{ steps.deps-cache.outputs.cache-hit }}
+      playwright-cache-hit: ${{ steps.playwright-cache.outputs.cache-hit }}
+      test-result: ${{ steps.playwright-tests.outcome }}
     env:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
@@ -31,17 +35,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      # pnpmのセットアップ（ベンチマーク結果で最速）
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          bun-version: latest
+          node-version: '24'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      
+      # pnpm依存関係のキャッシュ
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+      
+      - name: Cache pnpm dependencies
+        id: deps-cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ steps.pnpm-cache.outputs.dir }}
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
           
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       
+      # Playwrightのバージョン取得とキャッシュ
       - name: Get Playwright version
         id: playwright-version
         run: |
-          VERSION=$(bunx playwright --version | grep -oP 'Version \K[0-9.]+')
+          VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Cache Playwright browsers
@@ -49,22 +78,24 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}    
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}
+          restore-keys: |
+            playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-
       
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+        run: pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
       
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: bunx playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+        run: pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
         
       - name: Run E2E tests
         id: playwright-tests
         continue-on-error: true
-        run: bunx playwright test
+        run: pnpm exec playwright test
       
-      # GitHub Summaryに結果を出力
+      # GitHub Summaryに結果とキャッシュ情報を出力
       - name: Generate test summary
         if: always()
         run: |
@@ -82,6 +113,24 @@ jobs:
             echo "📊 [View detailed report in Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ No test report generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # キャッシュ情報を追加
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚡ Performance Info" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package Manager**: pnpm (optimized based on benchmark)" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.deps-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "- **Dependencies Cache**: ✅ Hit" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Dependencies Cache**: ❌ Miss" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "- **Playwright Cache**: ✅ Hit" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Playwright Cache**: ❌ Miss" >> $GITHUB_STEP_SUMMARY
           fi
           
       - uses: actions/upload-artifact@v4
@@ -151,10 +200,30 @@ jobs:
 
           echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
           
-          # PRコメントを追加
+          # キャッシュ情報を構築
+          DEPS_CACHE="${{ needs.e2e.outputs.deps-cache-hit }}"
+          PW_CACHE="${{ needs.e2e.outputs.playwright-cache-hit }}"
+          TEST_RESULT="${{ needs.e2e.outputs.test-result }}"
+          
+          DEPS_ICON="❌"
+          PW_ICON="❌"
+          if [ "$DEPS_CACHE" = "true" ]; then
+            DEPS_ICON="✅"
+          fi
+          if [ "$PW_CACHE" = "true" ]; then
+            PW_ICON="✅"
+          fi
+          
+          # PRコメントを追加（キャッシュ情報も含む）
           gh pr comment ${{ github.event.pull_request.number }} \
             --body "## 📋 Playwright Test Report
           
-          Test report has been published: $FULL_HTML_REPORT_URL"
+          Test report has been published: $FULL_HTML_REPORT_URL
+          
+          ### ⚡ Performance Info
+          - **Package Manager**: pnpm (optimized based on benchmark)
+          - **Dependencies Cache**: $DEPS_ICON $([ "$DEPS_CACHE" = "true" ] && echo "Hit" || echo "Miss")
+          - **Playwright Cache**: $PW_ICON $([ "$PW_CACHE" = "true" ] && echo "Hit" || echo "Miss")
+          - **Test Result**: $([ "$TEST_RESULT" = "success" ] && echo "✅ Passed" || echo "❌ Failed")"
         env:
           GH_TOKEN: ${{ github.token }}
