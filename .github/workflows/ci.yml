@@ -1,5 +1,5 @@
 name: Playwright E2E Tests
-run-name: ${{ github.event.pull_request.title }}
+run-name: ${{ github.event.head_commit.message || github.event.pull_request.title }}
 
 on:
   pull_request:
@@ -61,7 +61,7 @@ jobs:
       
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm playwright install-deps
+        run: pnpm playwright install-deps chromium
         
       - name: Run E2E tests
         id: playwright-tests
