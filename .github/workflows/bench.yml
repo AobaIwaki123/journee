@@ -1,0 +1,477 @@
+jobs:
+  # Step 1: キャッシュを事前に準備するジョブ
+  prepare-cache:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-manager: [bun, pnpm, npm]
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Package Manager Setup
+      - name: Setup Bun
+        if: matrix.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Setup Node.js for pnpm/npm
+        if: matrix.package-manager != 'bun'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Setup pnpm
+        if: matrix.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      # Dependencies Cache
+      - name: Get cache paths
+        id: cache-paths
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            echo "dir=$HOME/.bun/install/cache" >> $GITHUB_OUTPUT
+            echo "lockfile=bun.lockb" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+            echo "lockfile=pnpm-lock.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "dir=$HOME/.npm" >> $GITHUB_OUTPUT
+            echo "lockfile=package-lock.json" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        id: deps-cache
+        with:
+          path: |
+            ${{ steps.cache-paths.outputs.dir }}
+            node_modules
+          key: ${{ runner.os }}-${{ matrix.package-manager }}-${{ hashFiles(format('**/{0}', steps.cache-paths.outputs.lockfile)) }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.package-manager }}-
+      
+      - name: Install dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bun install --frozen-lockfile
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      # Playwright Cache
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            VERSION=$(bunx playwright --version | grep -oP 'Version \K[0-9.]+')
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
+          else
+            VERSION=$(npx playwright --version | grep -oP 'Version \K[0-9.]+')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium
+      
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bunx playwright install --with-deps chromium
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm exec playwright install --with-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+  # Step 2: キャッシュありのテスト (prepare-cache完了後に実行)
+  e2e-with-cache:
+    needs: prepare-cache
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-manager: [bun, pnpm, npm]
+        shard: [1, 2, 3, 4, 5]
+    env:
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+      NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
+      PLAYWRIGHT_BROWSERS: chromium
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Record job start
+        run: echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
+
+      # Package Manager Setup
+      - name: Setup Bun
+        if: matrix.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Setup Node.js for pnpm/npm
+        if: matrix.package-manager != 'bun'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Setup pnpm
+        if: matrix.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      
+      - name: Record setup time
+        run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      # Dependencies Cache (restore only)
+      - name: Get cache paths
+        id: cache-paths
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            echo "dir=$HOME/.bun/install/cache" >> $GITHUB_OUTPUT
+            echo "lockfile=bun.lockb" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+            echo "lockfile=pnpm-lock.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "dir=$HOME/.npm" >> $GITHUB_OUTPUT
+            echo "lockfile=package-lock.json" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v5
+        id: deps-cache
+        with:
+          path: |
+            ${{ steps.cache-paths.outputs.dir }}
+            node_modules
+          key: ${{ runner.os }}-${{ matrix.package-manager }}-${{ hashFiles(format('**/{0}', steps.cache-paths.outputs.lockfile)) }}
+          fail-on-cache-miss: true  # キャッシュがなければ失敗
+          
+      - name: Install dependencies
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bun install --frozen-lockfile
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm install --frozen-lockfile
+          else
+            npm ci
+          fi
+          END=$(date +%s)
+          echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            VERSION=$(bunx playwright --version | grep -oP 'Version \K[0-9.]+')
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
+          else
+            VERSION=$(npx playwright --version | grep -oP 'Version \K[0-9.]+')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          END=$(date +%s)
+          echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Restore Playwright browsers cache
+        uses: actions/cache/restore@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium
+          fail-on-cache-miss: true
+      
+      - name: Install Playwright system dependencies
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bunx playwright install-deps chromium
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm exec playwright install-deps chromium
+          else
+            npx playwright install-deps chromium
+          fi
+          END=$(date +%s)
+          echo "INSTALL_DEPS_ONLY_DURATION=$((END - START))" >> $GITHUB_ENV
+        
+      - name: Run E2E tests
+        id: playwright-tests
+        continue-on-error: true
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bunx playwright test --shard=${{ matrix.shard }}/3
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm exec playwright test --shard=${{ matrix.shard }}/3
+          else
+            npx playwright test --shard=${{ matrix.shard }}/3
+          fi
+          END=$(date +%s)
+          echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Save timing data
+        if: always()
+        run: |
+          JOB_END=$(date +%s)
+          TOTAL_DURATION=$((JOB_END - JOB_START))
+          SETUP_DURATION=$((SETUP_TIME - JOB_START))
+          
+          cat << EOF > timing-${{ matrix.package-manager }}-cached-${{ matrix.shard }}.json
+          {
+            "package_manager": "${{ matrix.package-manager }}",
+            "cache_enabled": true,
+            "shard": ${{ matrix.shard }},
+            "total": $TOTAL_DURATION,
+            "setup_pm": $SETUP_DURATION,
+            "install_deps": ${INSTALL_DEPS_DURATION:-0},
+            "deps_cache_hit": "true",
+            "get_version": ${GET_VERSION_DURATION:-0},
+            "install_browsers": 0,
+            "install_deps_only": ${INSTALL_DEPS_ONLY_DURATION:-0},
+            "playwright_cache_hit": "true",
+            "test_execution": ${TEST_DURATION:-0},
+            "test_result": "${{ steps.playwright-tests.outcome }}"
+          }
+          EOF
+          
+          cat timing-${{ matrix.package-manager }}-cached-${{ matrix.shard }}.json
+          
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: timing-data-${{ matrix.package-manager }}-cached-${{ matrix.shard }}
+          path: timing-${{ matrix.package-manager }}-cached-${{ matrix.shard }}.json
+          retention-days: 7
+
+  # Step 3: キャッシュなしのテスト (独立して実行)
+  e2e-without-cache:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-manager: [bun, pnpm, npm]
+        shard: [1, 2, 3]
+    env:
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+      NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
+      PLAYWRIGHT_BROWSERS: chromium
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Record job start
+        run: echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
+
+      # Package Manager Setup
+      - name: Setup Bun
+        if: matrix.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Setup Node.js for pnpm/npm
+        if: matrix.package-manager != 'bun'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Setup pnpm
+        if: matrix.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      
+      - name: Record setup time
+        run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      # キャッシュを使わずに直接インストール
+      - name: Install dependencies (no cache)
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bun install --frozen-lockfile
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm install --frozen-lockfile
+          else
+            npm ci
+          fi
+          END=$(date +%s)
+          echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            VERSION=$(bunx playwright --version | grep -oP 'Version \K[0-9.]+')
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
+          else
+            VERSION=$(npx playwright --version | grep -oP 'Version \K[0-9.]+')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          END=$(date +%s)
+          echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Install Playwright browsers (no cache)
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bunx playwright install --with-deps chromium
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm exec playwright install --with-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+          END=$(date +%s)
+          echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
+        
+      - name: Run E2E tests
+        id: playwright-tests
+        continue-on-error: true
+        run: |
+          START=$(date +%s)
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            bunx playwright test --shard=${{ matrix.shard }}/3
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm exec playwright test --shard=${{ matrix.shard }}/3
+          else
+            npx playwright test --shard=${{ matrix.shard }}/3
+          fi
+          END=$(date +%s)
+          echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Save timing data
+        if: always()
+        run: |
+          JOB_END=$(date +%s)
+          TOTAL_DURATION=$((JOB_END - JOB_START))
+          SETUP_DURATION=$((SETUP_TIME - JOB_START))
+          
+          cat << EOF > timing-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}.json
+          {
+            "package_manager": "${{ matrix.package-manager }}",
+            "cache_enabled": false,
+            "shard": ${{ matrix.shard }},
+            "total": $TOTAL_DURATION,
+            "setup_pm": $SETUP_DURATION,
+            "install_deps": ${INSTALL_DEPS_DURATION:-0},
+            "deps_cache_hit": "false",
+            "get_version": ${GET_VERSION_DURATION:-0},
+            "install_browsers": ${INSTALL_BROWSERS_DURATION:-0},
+            "install_deps_only": 0,
+            "playwright_cache_hit": "false",
+            "test_execution": ${TEST_DURATION:-0},
+            "test_result": "${{ steps.playwright-tests.outcome }}"
+          }
+          EOF
+          
+          cat timing-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}.json
+          
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: timing-data-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}
+          path: timing-${{ matrix.package-manager }}-nocache-${{ matrix.shard }}.json
+          retention-days: 7
+
+  # Step 4: 結果を集計
+  summary:
+    needs: [e2e-with-cache, e2e-without-cache]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all timing data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: timing-data-*
+          merge-multiple: true
+      
+      - name: Calculate averages and generate summary
+        run: |
+          echo "## 🎭 Playwright E2E Test Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 前回と同じ集計ロジック...
+          cat timing-*.json | jq -s '
+            group_by(.package_manager, .cache_enabled) | 
+            map({
+              "package_manager": .[0].package_manager,
+              "cache_enabled": .[0].cache_enabled,
+              "runs": length,
+              "averages": {
+                "total": (map(.total) | add / length),
+                "setup_pm": (map(.setup_pm) | add / length),
+                "install_deps": (map(.install_deps) | add / length),
+                "get_version": (map(.get_version) | add / length),
+                "install_browsers": (map(.install_browsers) | add / length),
+                "install_deps_only": (map(.install_deps_only) | add / length),
+                "test_execution": (map(.test_execution) | add / length)
+              },
+              "details": .
+            })
+          ' > summary.json
+          
+          # 比較表を生成
+          echo "### 📊 Performance Comparison by Package Manager & Cache Strategy" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Manager | Cache | Runs | Total Time | Setup | Install Deps | Browsers | Tests | Overhead |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|-------|------|------------|-------|--------------|----------|-------|----------|" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '.[] | 
+            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.total | floor)s | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers + .averages.install_deps_only | floor)s | \(.averages.test_execution | floor)s | \((.averages.total - .averages.test_execution) | floor)s |"
+          ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏆 Best Performance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '
+            sort_by(.averages.total) | 
+            .[0] | 
+            "**Fastest Configuration**: \(.package_manager) with cache \(if .cache_enabled then "enabled" else "disabled" end) - **\(.averages.total | floor)s** average total time"
+          ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Cache Impact Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '
+            group_by(.package_manager) |
+            map({
+              pm: .[0].package_manager,
+              with_cache: (map(select(.cache_enabled)) | .[0].averages.total),
+              without_cache: (map(select(.cache_enabled | not)) | .[0].averages.total)
+            }) |
+            .[] |
+            "- **\(.pm)**: Cache saves **\((.without_cache - .with_cache) | floor)s** (\(((.without_cache - .with_cache) / .without_cache * 100) | floor)% faster)"
+          ' >> $GITHUB_STEP_SUMMARY
