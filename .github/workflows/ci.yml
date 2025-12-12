@@ -1,5 +1,5 @@
 name: Playwright E2E Tests
-run-name: ${{ github.event.head_commit.message || github.event.pull_request.title }}
+run-name: ${{ github.event.pull_request.title }}
 
 on:
   pull_request:
@@ -42,27 +42,26 @@ jobs:
           cache: 'pnpm'
           
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile # npm ci
+        run: pnpm install --frozen-lockfile
       
       - name: Get Playwright version
         id: playwright-version
         run: echo "version=$(node -p "require('./pnpm-lock.yaml').packages['node_modules/@playwright/test'].version")" >> $GITHUB_OUTPUT
-        # echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> $GITHUB_OUTPUT
       
-      # - name: Cache Playwright browsers
-      #   uses: actions/cache@v5
-      #   id: playwright-cache
-      #   with:
-      #     path: ~/.cache/ms-playwright
-      #     key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
       
       - name: Install Playwright browsers
-        # if: steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm playwright install --with-deps
       
-      # - name: Install Playwright system dependencies
-      #   if: steps.playwright-cache.outputs.cache-hit == 'true'
-      #   run: pnpm playwright install-deps
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm playwright install-deps
         
       - name: Run E2E tests
         id: playwright-tests
@@ -149,9 +148,17 @@ jobs:
             fi
           done
 
-      - name: Output Report URL as Worfklow Annotation
-        # レポートのGitHub PagesのURLを出力する
+      - name: Output Report URL as Workflow Annotation and PR Comment
+        if: github.event_name == 'pull_request'
         run: |
-          FULL_HTML_REPORT_URL=https://mishiwata1015.github.io/playwright-report-to-gh-pages/$HTML_REPORT_URL_PATH
-
+          FULL_HTML_REPORT_URL=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$HTML_REPORT_URL_PATH
+          
           echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+          
+          # PRコメントを追加
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "## 📋 Playwright Test Report
+          
+          Test report has been published: $FULL_HTML_REPORT_URL"
+        env:
+        GH_TOKEN: ${{ github.token }}
