@@ -75,33 +75,48 @@ jobs:
           version: 10
 
       # ────────────────────────────────────────────────────────────────────
+      #  ⚙️ 環境設定 (Environment Configuration)
+      #  パッケージマネージャーごとのコマンドとパスを一元管理
+      # ────────────────────────────────────────────────────────────────────
+      - name: Configure Environment
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            echo "LOCKFILE=bun.lock" >> $GITHUB_ENV
+            echo "CACHE_DIR=$HOME/.bun/install/cache" >> $GITHUB_ENV
+            echo "INSTALL_CMD=bun install --frozen-lockfile" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=bunx playwright install --with-deps" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_VERSION_CMD=bunx playwright --version" >> $GITHUB_ENV
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            echo "LOCKFILE=pnpm-lock.yaml" >> $GITHUB_ENV
+            echo "CACHE_DIR=$(pnpm store path)" >> $GITHUB_ENV
+            echo "INSTALL_CMD=pnpm install --frozen-lockfile" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=pnpm exec playwright install --with-deps" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_VERSION_CMD=pnpm exec playwright --version" >> $GITHUB_ENV
+          else
+            echo "LOCKFILE=package-lock.json" >> $GITHUB_ENV
+            echo "CACHE_DIR=$HOME/.npm" >> $GITHUB_ENV
+            echo "INSTALL_CMD=npm ci" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=npx playwright install --with-deps" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_VERSION_CMD=npx playwright --version" >> $GITHUB_ENV
+          fi
+
+      # ────────────────────────────────────────────────────────────────────
       #  🔑 共通化されたキャッシュキー生成ロジック
       #  依存パッケージ用のキャッシュパスとキーを生成
       # ────────────────────────────────────────────────────────────────────
       - name: Generate dependency cache key
         id: deps-cache-key
         run: |
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            CACHE_DIR="$HOME/.bun/install/cache"
-            LOCKFILE="bun.lock"
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            CACHE_DIR="$(pnpm store path)"
-            LOCKFILE="pnpm-lock.yaml"
-          else
-            CACHE_DIR="$HOME/.npm"
-            LOCKFILE="package-lock.json"
-          fi
-          
-          LOCKFILE_HASH=$(sha256sum ${LOCKFILE} | cut -d' ' -f1)
+          LOCKFILE_HASH=$(sha256sum ${{ env.LOCKFILE }} | cut -d' ' -f1)
           CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
           
-          echo "dir=${CACHE_DIR}" >> $GITHUB_OUTPUT
-          echo "lockfile=${LOCKFILE}" >> $GITHUB_OUTPUT
+          echo "dir=${{ env.CACHE_DIR }}" >> $GITHUB_OUTPUT
+          echo "lockfile=${{ env.LOCKFILE }}" >> $GITHUB_OUTPUT
           echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
           
           echo "📦 Dependency Cache Configuration:"
-          echo "  Directory: ${CACHE_DIR}"
-          echo "  Lockfile: ${LOCKFILE}"
+          echo "  Directory: ${{ env.CACHE_DIR }}"
+          echo "  Lockfile: ${{ env.LOCKFILE }}"
           echo "  Cache Key: ${CACHE_KEY}"
 
       # ────────────────────────────────────────────────────────────────────
@@ -123,13 +138,7 @@ jobs:
         if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           echo "📥 Installing dependencies..."
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bun install --frozen-lockfile
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm install --frozen-lockfile
-          else
-            npm ci
-          fi
+          ${{ env.INSTALL_CMD }}
 
       # ────────────────────────────────────────────────────────────────────
       #  🔑 共通化されたキャッシュキー生成ロジック
@@ -164,25 +173,13 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           echo "🎭 Installing Playwright browsers..."
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          else
-            npx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          fi
+          ${{ env.PLAYWRIGHT_INSTALL_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
       
       - name: Verify Playwright installation
         run: |
           echo "✅ Verifying Playwright installation..."
           ls -la ~/.cache/ms-playwright || echo "❌ Cache directory not found"
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright --version
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright --version
-          else
-            npx playwright --version
-          fi
+          ${{ env.PLAYWRIGHT_VERSION_CMD }}
 
   # ════════════════════════════════════════════════════════════════════════════
   # ██ Step 2: e2e-with-cache
@@ -228,27 +225,41 @@ jobs:
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
 
       # ────────────────────────────────────────────────────────────────────
+      #  ⚙️ 環境設定 (Environment Configuration)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Configure Environment
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            echo "LOCKFILE=bun.lock" >> $GITHUB_ENV
+            echo "CACHE_DIR=$HOME/.bun/install/cache" >> $GITHUB_ENV
+            echo "INSTALL_CMD=bun install --frozen-lockfile" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_CMD=bunx playwright" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=bunx playwright install --with-deps" >> $GITHUB_ENV
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            echo "LOCKFILE=pnpm-lock.yaml" >> $GITHUB_ENV
+            echo "CACHE_DIR=$(pnpm store path)" >> $GITHUB_ENV
+            echo "INSTALL_CMD=pnpm install --frozen-lockfile" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_CMD=pnpm exec playwright" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=pnpm exec playwright install --with-deps" >> $GITHUB_ENV
+          else
+            echo "LOCKFILE=package-lock.json" >> $GITHUB_ENV
+            echo "CACHE_DIR=$HOME/.npm" >> $GITHUB_ENV
+            echo "INSTALL_CMD=npm ci" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_CMD=npx playwright" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=npx playwright install --with-deps" >> $GITHUB_ENV
+          fi
+
+      # ────────────────────────────────────────────────────────────────────
       #  🔑 共通化されたキャッシュキー生成ロジック（prepare-cacheと同一）
       # ────────────────────────────────────────────────────────────────────
       - name: Generate dependency cache key
         id: deps-cache-key
         run: |
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            CACHE_DIR="$HOME/.bun/install/cache"
-            LOCKFILE="bun.lock"
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            CACHE_DIR="$(pnpm store path)"
-            LOCKFILE="pnpm-lock.yaml"
-          else
-            CACHE_DIR="$HOME/.npm"
-            LOCKFILE="package-lock.json"
-          fi
-          
-          LOCKFILE_HASH=$(sha256sum ${LOCKFILE} | cut -d' ' -f1)
+          LOCKFILE_HASH=$(sha256sum ${{ env.LOCKFILE }} | cut -d' ' -f1)
           CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
           
-          echo "dir=${CACHE_DIR}" >> $GITHUB_OUTPUT
-          echo "lockfile=${LOCKFILE}" >> $GITHUB_OUTPUT
+          echo "dir=${{ env.CACHE_DIR }}" >> $GITHUB_OUTPUT
+          echo "lockfile=${{ env.LOCKFILE }}" >> $GITHUB_OUTPUT
           echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
           
           echo "📦 Restoring with key: ${CACHE_KEY}"
@@ -282,13 +293,7 @@ jobs:
       - name: Install dependencies
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bun install --frozen-lockfile
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm install --frozen-lockfile
-          else
-            npm ci
-          fi
+          ${{ env.INSTALL_CMD }}
           END=$(date +%s)
           echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
 
@@ -337,13 +342,7 @@ jobs:
         run: |
           START=$(date +%s)
           echo "⚠️ Cache miss - Installing browsers with dependencies..."
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          else
-            npx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          fi
+          ${{ env.PLAYWRIGHT_INSTALL_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
           END=$(date +%s)
           echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
       
@@ -358,13 +357,7 @@ jobs:
         continue-on-error: true
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright test
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright test
-          else
-            npx playwright test
-          fi
+          ${{ env.PLAYWRIGHT_CMD }} test
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
@@ -442,16 +435,35 @@ jobs:
       - name: Record setup time
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
 
+      # ────────────────────────────────────────────────────────────────────
+      #  ⚙️ 環境設定 (Environment Configuration)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Configure Environment
+        run: |
+          if [ "${{ matrix.package-manager }}" = "bun" ]; then
+            echo "LOCKFILE=bun.lock" >> $GITHUB_ENV
+            echo "CACHE_DIR=$HOME/.bun/install/cache" >> $GITHUB_ENV
+            echo "INSTALL_CMD=bun install --frozen-lockfile" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_CMD=bunx playwright" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=bunx playwright install --with-deps" >> $GITHUB_ENV
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            echo "LOCKFILE=pnpm-lock.yaml" >> $GITHUB_ENV
+            echo "CACHE_DIR=$(pnpm store path)" >> $GITHUB_ENV
+            echo "INSTALL_CMD=pnpm install --frozen-lockfile" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_CMD=pnpm exec playwright" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=pnpm exec playwright install --with-deps" >> $GITHUB_ENV
+          else
+            echo "LOCKFILE=package-lock.json" >> $GITHUB_ENV
+            echo "CACHE_DIR=$HOME/.npm" >> $GITHUB_ENV
+            echo "INSTALL_CMD=npm ci" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_CMD=npx playwright" >> $GITHUB_ENV
+            echo "PLAYWRIGHT_INSTALL_CMD=npx playwright install --with-deps" >> $GITHUB_ENV
+          fi
+
       - name: Install dependencies (no cache)
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bun install --frozen-lockfile
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm install --frozen-lockfile
-          else
-            npm ci
-          fi
+          ${{ env.INSTALL_CMD }}
           END=$(date +%s)
           echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
       
@@ -467,13 +479,7 @@ jobs:
       - name: Install Playwright browsers (no cache)
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          else
-            npx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
-          fi
+          ${{ env.PLAYWRIGHT_INSTALL_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
           END=$(date +%s)
           echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
         
@@ -482,13 +488,7 @@ jobs:
         continue-on-error: true
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright test
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright test
-          else
-            npx playwright test
-          fi
+          ${{ env.PLAYWRIGHT_CMD }} test
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
