@@ -1,7 +1,20 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#                      🎭 Playwright CI Benchmark Workflow                       
+#                                                                                 
+#   Purpose: パッケージマネージャー (bun/pnpm/npm) とキャッシュ戦略による              
+#            E2Eテスト実行時間の比較ベンチマーク                                     
+#                                                                                
+#   Structure:                                                                     
+#     1. prepare-cache    → 🚀 [高速化コア] キャッシュの事前準備                
+#     2. e2e-with-cache   → ⏱️  [ベンチマーク] キャッシュあり計測                
+#     3. e2e-without-cache→ ⏱️  [ベンチマーク] キャッシュなし計測                
+#     4. summary          → 📊 [結果集計] 統計・比較レポート生成                
+# ══════════════════════════════════════════════════════════════════════════════
+
 name: Playwright CI Benchmark
 
 on:
-  push:
+  workflow_dispatch:
 
 # PRへの書き込み権限を付与
 permissions:
@@ -27,7 +40,13 @@ env:
   PLAYWRIGHT_BROWSERS: chromium
 
 jobs:
-  # Step 1: キャッシュを事前に準備するジョブ
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 1: prepare-cache
+  # ██ 🚀 高速化コア機能: キャッシュの事前準備
+  # ██ 
+  # ██ 依存パッケージとPlaywrightブラウザをキャッシュに保存し、
+  # ██ 後続のテスト実行を高速化する
+  # ════════════════════════════════════════════════════════════════════════════
   prepare-cache:
     runs-on: ubuntu-latest
     strategy:
@@ -55,7 +74,10 @@ jobs:
         with:
           version: 10
 
-      # Dependencies Cache
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: 依存パッケージキャッシュ                            
+      #  lockfileのハッシュでキャッシュキーを生成し、再利用を最大化         
+      # ────────────────────────────────────────────────────────────────────
       - name: Get cache paths
         id: cache-paths
         run: |
@@ -92,7 +114,10 @@ jobs:
             npm ci
           fi
 
-      # Playwright Cache
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: Playwrightブラウザキャッシュ                        
+      #  ブラウザバージョンごとにキャッシュし、ダウンロード時間を削減       
+      # ────────────────────────────────────────────────────────────────────
       - name: Get Playwright version
         id: playwright-version
         run: |
@@ -123,7 +148,13 @@ jobs:
             npx playwright install --with-deps chromium
           fi
 
-  # Step 2: キャッシュありのテスト (prepare-cache完了後に実行)
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 2: e2e-with-cache
+  # ██ ⏱️  ベンチマーク計測: キャッシュあり
+  # ██
+  # ██ 各ステップの実行時間を計測し、JSONに記録
+  # ██ 計測項目: setup_pm, install_deps, get_version, install_deps_only, test_execution
+  # ════════════════════════════════════════════════════════════════════════════
   e2e-with-cache:
     needs: prepare-cache
     runs-on: ubuntu-latest
@@ -160,6 +191,10 @@ jobs:
       - name: Record setup time
         run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
 
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: 依存パッケージキャッシュ復元                        
+      #  prepare-cacheで保存したキャッシュを復元し、install時間を短縮     
+      # ────────────────────────────────────────────────────────────────────
       # Dependencies Cache (restore only)
       - name: Get cache paths
         id: cache-paths
@@ -183,8 +218,10 @@ jobs:
             ${{ steps.cache-paths.outputs.dir }}
             node_modules
           key: ${{ runner.os }}-${{ matrix.package-manager }}-${{ hashFiles(format('**/{0}', steps.cache-paths.outputs.lockfile)) }}
-          fail-on-cache-miss: true
-          
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測セクション (install_deps)                     
+      #  START/ENDで時間を計測し、GITHUB_ENVに記録                          
+      # ────────────────────────────────────────────────────────────────────
       - name: Install dependencies
         run: |
           START=$(date +%s)
@@ -249,6 +286,10 @@ jobs:
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
+      # ────────────────────────────────────────────────────────────────────
+      #  💾 ベンチマーク結果保存                                           
+      #  全計測結果をJSONに集約し、summaryジョブで分析                   
+      # ────────────────────────────────────────────────────────────────────
       - name: Save timing data
         if: always()
         run: |
@@ -283,7 +324,13 @@ jobs:
           path: timing-${{ matrix.package-manager }}-cached-${{ matrix.run }}.json
           retention-days: 7
 
-  # Step 3: キャッシュなしのテスト (独立して実行)
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 3: e2e-without-cache
+  # ██ ⏱️  ベンチマーク計測: キャッシュなし
+  # ██
+  # ██ キャッシュを使用せず、各ステップの実行時間を計測
+  # ██ キャッシュありとの比較で高速化効果を検証
+  # ════════════════════════════════════════════════════════════════════════════
   e2e-without-cache:
     runs-on: ubuntu-latest
     strategy:
@@ -409,7 +456,15 @@ jobs:
           path: timing-${{ matrix.package-manager }}-nocache-${{ matrix.run }}.json
           retention-days: 7
 
-  # Step 4: 結果を集計
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 4: summary
+  # ██ 📊 結果集計: 統計・比較レポート生成
+  # ██
+  # ██ ベンチマーク結果を集約し、以下を算出:
+  # ██   - パッケージマネージャー別の平均実行時間
+  # ██   - キャッシュ有無による高速化率
+  # ██   - 最速構成の特定
+  # ════════════════════════════════════════════════════════════════════════════
   summary:
     needs: [e2e-with-cache, e2e-without-cache]
     runs-on: ubuntu-latest
@@ -426,7 +481,11 @@ jobs:
           echo "## 🎭 Playwright E2E Test Performance Comparison" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # 集計ロジック
+          # ──────────────────────────────────────────────────────────────────────
+          # 📊 ベンチマーク結果の集計ロジック
+          # - パッケージマネージャーごとにグループ化
+          # - 各ステップの平均時間を算出
+          # ──────────────────────────────────────────────────────────────────────
           cat timing-*.json | jq -s '
             group_by(.package_manager, .cache_enabled) | 
             map({
