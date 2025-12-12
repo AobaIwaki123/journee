@@ -1,3 +1,12 @@
+name: Playwright CI Benchmark
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Step 1: キャッシュを事前に準備するジョブ
   prepare-cache:
