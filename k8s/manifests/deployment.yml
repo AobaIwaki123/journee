@@ -17,7 +17,7 @@ spec:
         - name: gcr-pull-secret
       containers:
         - name: journee
-          image: gcr.io/my-docker-471807/journee:v7.3.2
+          image: gcr.io/my-docker-471807/journee:v7.3.3
           env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /app/secret/key.json
