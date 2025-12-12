@@ -151,7 +151,7 @@ async function seedE2EData() {
                 user_id: userId,
                 content: '参考にします！',
                 author_name: 'E2E Test User B',
-                is_anonymous: true,
+                is_anonymous: false,
                 created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
             }
         ] as any);
