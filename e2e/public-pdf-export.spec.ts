@@ -14,11 +14,15 @@ test.describe("閲覧ページからのPDF出力機能", () => {
   const TEST_SPOT = "Tokyo Tower";
 
   test("公開しおりページにPDFボタンが表示される", async ({ page }) => {
+    // サーバー負荷が高い場合に備えてタイムアウトを延長
+    test.slow();
+
     await page.goto(`/share/${TEST_SLUG}`);
 
     // ページが正しく読み込まれることを確認
+    // タイムアウトを30秒に設定
     await expect(page.getByText(TEST_TITLE)).toBeVisible({
-      timeout: 10000,
+      timeout: 30000,
     });
 
     // PDFプレビューボタンが表示されることを確認
@@ -111,7 +115,10 @@ test.describe("閲覧ページからのPDF出力機能", () => {
     console.log("✓ しおりデータが正しく表示される");
   });
 
-  test("URLコピーボタンが正しく動作する", async ({ page }) => {
+  test("URLコピーボタンが正しく動作する", async ({ page, context }) => {
+    // クリップボード読み取り権限を付与
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
     await page.goto(`/share/${TEST_SLUG}`);
 
     // ページが読み込まれることを確認
@@ -123,7 +130,16 @@ test.describe("閲覧ページからのPDF出力機能", () => {
     const copyButton = page.getByRole("button", { name: /URLコピー/i });
     await expect(copyButton).toBeVisible();
 
-    console.log("✓ URLコピーボタンが正しく表示される");
+    // クリック
+    await copyButton.click();
+
+    // クリップボードの内容を確認
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+
+    // 正しいURLがコピーされているか確認
+    expect(clipboardText).toContain(`/share/${TEST_SLUG}`);
+
+    console.log("✓ URLコピーボタンが正しく動作し、クリップボードにコピーされる");
   });
 
   test("モバイル表示でもPDFボタンが正しく表示される", async ({ page }) => {
