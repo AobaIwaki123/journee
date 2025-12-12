@@ -259,11 +259,14 @@ jobs:
           END=$(date +%s)
           echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
       
-      - name: Record zero time for cache hit
+      - name: Install Playwright system dependencies (cache hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: |
-          echo "✅ Cache hit - Skipping browser installation completely"
-          echo "INSTALL_BROWSERS_DURATION=0" >> $GITHUB_ENV
+          START=$(date +%s)
+          echo "✅ Cache hit - Installing system dependencies only..."
+          ${{ env.PLAYWRIGHT_INSTALL_DEPS_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
 
       # ────────────────────────────────────────────────────────────────────
       #  ⏱️  ベンチマーク計測: E2Eテスト実行
