@@ -135,17 +135,17 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-chromium
+          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}
       
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright install --with-deps chromium
+            bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright install --with-deps chromium
+            pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           else
-            npx playwright install --with-deps chromium
+            npx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           fi
 
   # ════════════════════════════════════════════════════════════════════════════
@@ -219,7 +219,7 @@ jobs:
             node_modules
           key: ${{ runner.os }}-${{ matrix.package-manager }}-${{ hashFiles(format('**/{0}', steps.cache-paths.outputs.lockfile)) }}
           fail-on-cache-miss: true
-          
+
       # ────────────────────────────────────────────────────────────────────
       #  ⏱️  ベンチマーク計測セクション (install_deps)                     
       #  START/ENDで時間を計測し、GITHUB_ENVに記録                          
@@ -257,18 +257,18 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-chromium
+          key: playwright-browsers-${{ runner.os }}-${{ matrix.package-manager }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}
           fail-on-cache-miss: true
       
       - name: Install Playwright system dependencies
         run: |
           START=$(date +%s)
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright install-deps chromium
+            bunx playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright install-deps chromium
+            pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           else
-            npx playwright install-deps chromium
+            npx playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           fi
           END=$(date +%s)
           echo "INSTALL_DEPS_ONLY_DURATION=$((END - START))" >> $GITHUB_ENV
@@ -400,11 +400,11 @@ jobs:
         run: |
           START=$(date +%s)
           if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            bunx playwright install --with-deps chromium
+            bunx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            pnpm exec playwright install --with-deps chromium
+            pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           else
-            npx playwright install --with-deps chromium
+            npx playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
           fi
           END=$(date +%s)
           echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
