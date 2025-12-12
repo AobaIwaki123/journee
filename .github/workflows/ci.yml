@@ -338,7 +338,7 @@ jobs:
           ### 📊 Performance Comparison
           | Metric | Current | Benchmark (cache) | Benchmark (no-cache) |
           |--------|---------|-------------------|----------------------|
-          | Install Deps | ${INSTALL_TIME} | ~15s | ~25s |
-          $(if [ "$PW_CACHE" = "true" ] && [ -n "$SYS_DEPS_TIME" ]; then echo "| Playwright System Deps | ${SYS_DEPS_TIME} | ~5-10s | N/A |"; elif [ -n "$BROWSERS_TIME" ]; then echo "| Playwright Full Install | ${BROWSERS_TIME} | N/A | ~40-60s |"; fi)"
+          | Install Deps | ${INSTALL_TIME} | ~1s | ~6s |
+          $(if [ "$PW_CACHE" = "true" ] && [ -n "$SYS_DEPS_TIME" ]; then echo "| Playwright System Deps | ${SYS_DEPS_TIME} | 0s | 25s |"; elif [ -n "$BROWSERS_TIME" ]; then echo "| Playwright Full Install | ${BROWSERS_TIME} | N/A | ~40-60s |"; fi)"
         env:
           GH_TOKEN: ${{ github.token }}
