@@ -121,13 +121,7 @@ jobs:
       - name: Get Playwright version
         id: playwright-version
         run: |
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            VERSION=$(bunx playwright --version | grep -oP 'Version \K[0-9.]+')
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
-          else
-            VERSION=$(npx playwright --version | grep -oP 'Version \K[0-9.]+')
-          fi
+          VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Cache Playwright browsers
@@ -241,13 +235,7 @@ jobs:
         id: playwright-version
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            VERSION=$(bunx playwright --version | grep -oP 'Version \K[0-9.]+')
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
-          else
-            VERSION=$(npx playwright --version | grep -oP 'Version \K[0-9.]+')
-          fi
+          VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           END=$(date +%s)
           echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
@@ -385,13 +373,7 @@ jobs:
         id: playwright-version
         run: |
           START=$(date +%s)
-          if [ "${{ matrix.package-manager }}" = "bun" ]; then
-            VERSION=$(bunx playwright --version | grep -oP 'Version \K[0-9.]+')
-          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
-            VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
-          else
-            VERSION=$(npx playwright --version | grep -oP 'Version \K[0-9.]+')
-          fi
+          VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           END=$(date +%s)
           echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
