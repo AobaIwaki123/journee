@@ -423,7 +423,7 @@ const NotificationDemoPage: React.FC = () => {
           <div className="mt-10">
             <h2 className="text-lg font-semibold text-gray-900">使い方</h2>
             <ol className="mt-3 list-decimal list-inside space-y-2 text-gray-700">
-              <li>このページにアクセスするとService Workerを登録します。</li>
+              <li>PWAアプリとしてインストールします。</li>
               <li>「通知を許可する」を押して権限を付与します。</li>
               <li>「Web Pushを購読」で PushManager.subscribe を実行し購読を作成します。</li>
               <li>「ローカル通知を送信」でクライアント→SW経由の通知を確認します。</li>
