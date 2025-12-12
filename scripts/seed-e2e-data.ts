@@ -27,7 +27,7 @@ async function seedE2EData() {
     console.log("🌱 Seeding E2E data...");
 
     // 1. Clean up existing data for the test
-    const TEST_ITINERARY_SLUG = 'test-itinerary-slug-2';
+    const TEST_ITINERARY_SLUG = 'test-itinerary-slug';
     const TEST_USER_EMAIL = 'e2e-test-user@example.com';
 
     // Clean up by slug first if possible, or by user?

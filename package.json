@@ -12,10 +12,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:all": "npm run test && npm run test:e2e",
+    "e2e:seed": "npx tsx scripts/seed-e2e-data.ts",
+    "e2e:test": "playwright test",
+    "e2e:test:ui": "playwright test --ui",
+    "e2e:test:debug": "playwright test --debug",
+    "e2e:test:all": "npm run test && npm run test:e2e",
     "docker:start": "bash scripts/docker-dev.sh start",
     "docker:stop": "bash scripts/docker-dev.sh stop",
     "docker:restart": "bash scripts/docker-dev.sh restart",
@@ -27,7 +28,6 @@
     "deploy:gcr": "bash scripts/deploy-gcr.sh",
     "release": "bash scripts/tag-version.sh",
     "seed:mock-users": "npx tsx scripts/seed-mock-users.ts",
-    "seed:e2e": "npx tsx scripts/seed-e2e-data.ts",
     "k8s:clean": "bash scripts/clean-manifests.sh"
   },
   "dependencies": {

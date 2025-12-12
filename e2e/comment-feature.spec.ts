@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('コメント機能', () => {
   // テスト用の公開しおりURL
-  const SHARED_ITINERARY_URL = '/share/test-itinerary-slug-2'; // 実際のURLに置き換える
+  const SHARED_ITINERARY_URL = '/share/test-itinerary-slug'; // 実際のURLに置き換える
 
   test.beforeEach(async ({ page }) => {
     // 公開しおりページに移動
