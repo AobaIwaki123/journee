@@ -20,6 +20,7 @@ jobs:
       deps-cache-hit: ${{ steps.deps-cache.outputs.cache-hit }}
       playwright-cache-hit: ${{ steps.playwright-cache.outputs.cache-hit }}
       test-result: ${{ steps.playwright-tests.outcome }}
+      install-time: ${{ steps.timing.outputs.install-time }}
     env:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
@@ -31,11 +32,11 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
       NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
-      PLAYWRIGHT_BROWSERS: chromium # ここでブラウザを指定 (複数可: chromium,firefox,webkit)      
+      PLAYWRIGHT_BROWSERS: chromium
     steps:
       - uses: actions/checkout@v4
 
-      # pnpmのセットアップ（ベンチマーク結果で最速）
+      # pnpmのセットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -46,25 +47,45 @@ jobs:
         with:
           version: 10
       
-      # pnpm依存関係のキャッシュ
+      # pnpm依存関係のキャッシュ（最適化版）
       - name: Get pnpm store directory
         id: pnpm-cache
         run: |
           echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
       
-      - name: Cache pnpm dependencies
+      # キャッシュ戦略の改善: store + node_modules + lockfile hash
+      - name: Cache pnpm store and node_modules
         id: deps-cache
         uses: actions/cache@v5
         with:
           path: |
             ${{ steps.pnpm-cache.outputs.dir }}
             node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+            ~/.cache/pnpm
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-
+            ${{ runner.os }}-pnpm-store-
           
+      # インストール時間の計測
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        id: install-deps
+        run: |
+          START=$(date +%s)
+          
+          # キャッシュヒット時は frozen-lockfile でスキップ可能な処理を最小化
+          if [ "${{ steps.deps-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "📦 Cache hit - using cached dependencies"
+            # prefer-offline で高速化（キャッシュ優先）
+            pnpm install --frozen-lockfile --prefer-offline
+          else
+            echo "📦 Cache miss - installing from registry"
+            pnpm install --frozen-lockfile
+          fi
+          
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "install-time=${DURATION}s" >> $GITHUB_OUTPUT
+          echo "⏱️ Install took ${DURATION}s"
       
       # Playwrightのバージョン取得とキャッシュ
       - name: Get Playwright version
@@ -89,13 +110,19 @@ jobs:
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+      
+      # タイミング情報を保存
+      - name: Save timing info
+        id: timing
+        run: |
+          echo "install-time=${{ steps.install-deps.outputs.install-time }}" >> $GITHUB_OUTPUT
         
       - name: Run E2E tests
         id: playwright-tests
         continue-on-error: true
         run: pnpm exec playwright test
       
-      # GitHub Summaryに結果とキャッシュ情報を出力
+      # GitHub Summaryに結果とパフォーマンス情報を出力
       - name: Generate test summary
         if: always()
         run: |
@@ -103,7 +130,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ -f playwright-report/index.html ]; then
-            # テスト結果の統計を抽出（簡易版）
             if [ "${{ steps.playwright-tests.outcome }}" == "success" ]; then
               echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
             else
@@ -115,11 +141,12 @@ jobs:
             echo "⚠️ No test report generated" >> $GITHUB_STEP_SUMMARY
           fi
           
-          # キャッシュ情報を追加
+          # パフォーマンス情報を追加
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ⚡ Performance Info" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Package Manager**: pnpm (optimized based on benchmark)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Install Time**: ${{ steps.install-deps.outputs.install-time }}" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.deps-cache.outputs.cache-hit }}" = "true" ]; then
             echo "- **Dependencies Cache**: ✅ Hit" >> $GITHUB_STEP_SUMMARY
@@ -133,6 +160,14 @@ jobs:
             echo "- **Playwright Cache**: ❌ Miss" >> $GITHUB_STEP_SUMMARY
           fi
           
+          # ベンチマークとの比較
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Current | Benchmark (cache) | Benchmark (no-cache) |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|---------|-------------------|----------------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Install Deps | ${{ steps.install-deps.outputs.install-time }} | ~15s | ~25s |" >> $GITHUB_STEP_SUMMARY
+          
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -141,16 +176,13 @@ jobs:
           retention-days: 30
   
   # ここからレポートpush処理
-  # 参考: https://zenn.dev/leaner_dev/articles/88272c891d4fb5
   publish_report:
     name: Publish Report
-    # always() だとワークフローをキャンセルした場合も実行されてしまうので、明示的に指定する
     if: "success() || needs.e2e.result == 'failure'"
     needs: [e2e]
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
-      # ワークフロー実行ごとに一意となるパスを組み立てる
       HTML_REPORT_URL_PATH: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
     steps:
       - name: Checkout GitHub Pages Branch
@@ -159,8 +191,6 @@ jobs:
           ref: gh-pages
 
       - name: Set Git User
-        # GitHub Actions botとしてレポート追加のコミットを作成する
-        # See: https://github.com/orgs/community/discussions/26560
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -173,8 +203,6 @@ jobs:
 
       - name: Push HTML Report
         timeout-minutes: 3
-        # gh-pagesブランチにレポート追加のコミットをpushできるまでrebase, pushを繰り返す
-        # 異なるPRで同時にCIが走った場合など、このジョブが同時に実行される場合でも全てのレポートをpushするために必要
         run: |
           git add .
           git commit -m "workflow: add HTML report for run-id ${{ github.run_id }} (attempt:  ${{ github.run_attempt }})"
@@ -200,10 +228,11 @@ jobs:
 
           echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
           
-          # キャッシュ情報を構築
+          # キャッシュ情報とパフォーマンスを構築
           DEPS_CACHE="${{ needs.e2e.outputs.deps-cache-hit }}"
           PW_CACHE="${{ needs.e2e.outputs.playwright-cache-hit }}"
           TEST_RESULT="${{ needs.e2e.outputs.test-result }}"
+          INSTALL_TIME="${{ needs.e2e.outputs.install-time }}"
           
           DEPS_ICON="❌"
           PW_ICON="❌"
@@ -214,7 +243,7 @@ jobs:
             PW_ICON="✅"
           fi
           
-          # PRコメントを追加（キャッシュ情報も含む）
+          # PRコメントを追加
           gh pr comment ${{ github.event.pull_request.number }} \
             --body "## 📋 Playwright Test Report
           
@@ -222,8 +251,14 @@ jobs:
           
           ### ⚡ Performance Info
           - **Package Manager**: pnpm (optimized based on benchmark)
+          - **Install Time**: ${INSTALL_TIME}
           - **Dependencies Cache**: $DEPS_ICON $([ "$DEPS_CACHE" = "true" ] && echo "Hit" || echo "Miss")
           - **Playwright Cache**: $PW_ICON $([ "$PW_CACHE" = "true" ] && echo "Hit" || echo "Miss")
-          - **Test Result**: $([ "$TEST_RESULT" = "success" ] && echo "✅ Passed" || echo "❌ Failed")"
+          - **Test Result**: $([ "$TEST_RESULT" = "success" ] && echo "✅ Passed" || echo "❌ Failed")
+          
+          ### 📊 Performance Comparison
+          | Metric | Current | Benchmark (cache) | Benchmark (no-cache) |
+          |--------|---------|-------------------|----------------------|
+          | Install Deps | ${INSTALL_TIME} | ~15s | ~25s |"
         env:
           GH_TOKEN: ${{ github.token }}
