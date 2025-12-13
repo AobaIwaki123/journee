@@ -11,6 +11,9 @@ interface PageProps {
   params: { slug: string };
 }
 
+// キャッシュを無効化して常に最新データを取得
+export const dynamic = "force-dynamic";
+
 /**
  * Phase 10.2: OGPメタデータ生成（動的OGP画像対応）
  * SNS共有時のリッチプレビュー表示
@@ -36,9 +39,8 @@ export async function generateMetadata({
   const ogTitle = `${itinerary.title} | Journee`;
   const ogDescription = itinerary.summary
     ? itinerary.summary
-    : `${itinerary.destination}への${
-        itinerary.schedule?.length || 0
-      }日間の旅行計画`;
+    : `${itinerary.destination}への${itinerary.schedule?.length || 0
+    }日間の旅行計画`;
 
   // Phase 10.2: 動的に生成されるOGP画像を使用
   const ogImageUrl = `/api/og?slug=${params.slug}`;
@@ -164,9 +166,9 @@ export default async function PublicItineraryPage({ params }: PageProps) {
     }),
     ...(itinerary.schedule &&
       itinerary.schedule.length > 0 && {
-        startDate: itinerary.schedule[0]?.date,
-        endDate: itinerary.schedule[itinerary.schedule.length - 1]?.date,
-      }),
+      startDate: itinerary.schedule[0]?.date,
+      endDate: itinerary.schedule[itinerary.schedule.length - 1]?.date,
+    }),
     // 作成者情報（将来的に実装）
     // ...(itinerary.user_name && {
     //   creator: {

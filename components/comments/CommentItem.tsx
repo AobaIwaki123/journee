@@ -47,9 +47,6 @@ export default function CommentItem({
           <div>
             <p className="text-sm font-medium text-gray-900">
               {comment.authorName}
-              {comment.isAnonymous && (
-                <span className="ml-2 text-xs text-gray-500">(匿名)</span>
-              )}
             </p>
             <p className="text-xs text-gray-500">
               {getRelativeTime(comment.createdAt)}

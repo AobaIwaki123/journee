@@ -1,0 +1,344 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#                      🎭 Playwright E2E Tests Workflow                         
+#                                                                                 
+#   Purpose: PRごとのE2Eテスト実行とレポート生成                                   
+#                                                                                
+#   Structure:                                                                     
+#     1. e2e            → 🧪 [テスト] E2Eテスト実行                              
+#     2. publish_report → 📋 [レポート] GitHub Pagesへ公開                       
+# ══════════════════════════════════════════════════════════════════════════════
+
+name: Playwright E2E Tests
+
+on:
+  pull_request:
+
+# PRへの書き込み権限を付与
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXTAUTH_URL: http://localhost:3000
+  NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+  GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+  NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
+  PLAYWRIGHT_BROWSERS: chromium
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Job 1: e2e
+  # ██ 🧪 E2Eテスト実行
+  # ════════════════════════════════════════════════════════════════════════════
+  e2e:
+    runs-on: ubuntu-latest
+    outputs:
+      deps-cache-hit: ${{ steps.deps-cache.outputs.cache-hit }}
+      playwright-cache-hit: ${{ steps.playwright-cache.outputs.cache-hit }}
+      test-result: ${{ steps.playwright-tests.outcome }}
+      install-time: ${{ steps.install-deps.outputs.install-time }}
+      browsers-time: ${{ steps.install-browsers.outputs.browsers-time }}
+      sys-deps-time: ${{ steps.install-sys-deps.outputs.sys-deps-time }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ────────────────────────────────────────────────────────────────────
+      #  📦 Package Manager Setup (Composite Action)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Setup Package Manager
+        uses: ./.github/actions/setup-package-manager
+        with:
+          package-manager: pnpm
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 依存パッケージキャッシュ
+      # ────────────────────────────────────────────────────────────────────
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+      
+      - name: Cache pnpm store and node_modules
+        id: deps-cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ steps.pnpm-cache.outputs.dir }}
+            node_modules
+            ~/.cache/pnpm
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️ 依存インストール (計測付き)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          START=$(date +%s)
+          
+          if [ "${{ steps.deps-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "📦 Cache hit - using cached dependencies"
+            pnpm install --frozen-lockfile --prefer-offline
+          else
+            echo "📦 Cache miss - installing from registry"
+            pnpm install --frozen-lockfile
+          fi
+          
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "install-time=${DURATION}s" >> $GITHUB_OUTPUT
+          echo "⏱️ Install took ${DURATION}s"
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  🎭 Playwrightブラウザキャッシュ
+      # ────────────────────────────────────────────────────────────────────
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          VERSION=$(pnpm exec playwright --version | grep -oP 'Version \K[0-9.]+')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PLAYWRIGHT_BROWSERS }}
+          restore-keys: |
+            playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  🎭 Playwrightブラウザインストール
+      #  キャッシュミス → フルインストール
+      #  キャッシュヒット → システム依存関係のみ
+      # ────────────────────────────────────────────────────────────────────
+      - name: Install Playwright browsers
+        id: install-browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          START=$(date +%s)
+          pnpm exec playwright install --with-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "browsers-time=${DURATION}s" >> $GITHUB_OUTPUT
+          echo "⏱️ Browser install took ${DURATION}s"
+      
+      - name: Install Playwright system dependencies
+        id: install-sys-deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          START=$(date +%s)
+          pnpm exec playwright install-deps ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "sys-deps-time=${DURATION}s" >> $GITHUB_OUTPUT
+          echo "⏱️ System dependencies install took ${DURATION}s"
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  🧪 E2Eテスト実行
+      # ────────────────────────────────────────────────────────────────────
+      - name: Run E2E tests
+        id: playwright-tests
+        continue-on-error: true
+        run: pnpm exec playwright test
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  📊 テスト結果サマリー生成
+      # ────────────────────────────────────────────────────────────────────
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🎭 Playwright E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f playwright-report/index.html ]; then
+            if [ "${{ steps.playwright-tests.outcome }}" == "success" ]; then
+              echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📊 [View detailed report in Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No test report generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚡ Performance Info" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package Manager**: pnpm (optimized based on benchmark)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Install Time**: ${{ steps.install-deps.outputs.install-time }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.deps-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "- **Dependencies Cache**: ✅ Hit" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Dependencies Cache**: ❌ Miss" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "- **Playwright Cache**: ✅ Hit" >> $GITHUB_STEP_SUMMARY
+            if [ -n "${{ steps.install-sys-deps.outputs.sys-deps-time }}" ]; then
+              echo "- **Playwright System Deps Install**: ${{ steps.install-sys-deps.outputs.sys-deps-time }}" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "- **Playwright Cache**: ❌ Miss" >> $GITHUB_STEP_SUMMARY
+            if [ -n "${{ steps.install-browsers.outputs.browsers-time }}" ]; then
+              echo "- **Playwright Browsers Install**: ${{ steps.install-browsers.outputs.browsers-time }}" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Current | Benchmark (cache) | Benchmark (no-cache) |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|---------|-------------------|----------------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Install Deps | ${{ steps.install-deps.outputs.install-time }} | ~15s | ~25s |" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            SYS_DEPS_TIME="${{ steps.install-sys-deps.outputs.sys-deps-time }}"
+            if [ -n "$SYS_DEPS_TIME" ]; then
+              echo "| Playwright System Deps | $SYS_DEPS_TIME | ~5-10s | N/A |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            BROWSERS_TIME="${{ steps.install-browsers.outputs.browsers-time }}"
+            if [ -n "$BROWSERS_TIME" ]; then
+              echo "| Playwright Full Install | $BROWSERS_TIME | N/A | ~40-60s |" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      # ────────────────────────────────────────────────────────────────────
+      #  📤 テストレポートアップロード
+      # ────────────────────────────────────────────────────────────────────
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Job 2: publish_report
+  # ██ 📋 GitHub Pagesへレポート公開
+  # ════════════════════════════════════════════════════════════════════════════
+  publish_report:
+    name: Publish Report
+    if: "success() || needs.e2e.result == 'failure'"
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      HTML_REPORT_URL_PATH: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
+    steps:
+      # ────────────────────────────────────────────────────────────────────
+      #  📥 gh-pagesブランチのチェックアウト
+      # ────────────────────────────────────────────────────────────────────
+      - name: Checkout GitHub Pages Branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Set Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  📥 レポートダウンロード
+      # ────────────────────────────────────────────────────────────────────
+      - name: Download zipped HTML report
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: ${{ env.HTML_REPORT_URL_PATH }}
+
+      # ────────────────────────────────────────────────────────────────────
+      #  📤 レポートをGitHub Pagesへプッシュ
+      # ────────────────────────────────────────────────────────────────────
+      - name: Push HTML Report
+        timeout-minutes: 3
+        run: |
+          git add .
+          git commit -m "workflow: add HTML report for run-id ${{ github.run_id }} (attempt:  ${{ github.run_attempt }})"
+
+          while true; do
+            git pull --rebase
+            if [ $? -ne 0 ]; then
+              echo "Failed to rebase. Please review manually."
+              exit 1
+            fi
+
+            git push
+            if [ $? -eq 0 ]; then
+              echo "Successfully pushed HTML report to repo."
+              exit 0
+            fi
+          done
+
+      # ────────────────────────────────────────────────────────────────────
+      #  💬 PRにコメント投稿
+      # ────────────────────────────────────────────────────────────────────
+      - name: Output Report URL as Workflow Annotation and PR Comment
+        if: github.event_name == 'pull_request'
+        run: |
+          FULL_HTML_REPORT_URL=https://${{ github.repository_owner }}.github.io/$(echo ${{ github.repository }} | cut -d'/' -f2)/$HTML_REPORT_URL_PATH
+
+          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+          
+          # キャッシュ情報とパフォーマンスを構築
+          DEPS_CACHE="${{ needs.e2e.outputs.deps-cache-hit }}"
+          PW_CACHE="${{ needs.e2e.outputs.playwright-cache-hit }}"
+          TEST_RESULT="${{ needs.e2e.outputs.test-result }}"
+          INSTALL_TIME="${{ needs.e2e.outputs.install-time }}"
+          BROWSERS_TIME="${{ needs.e2e.outputs.browsers-time }}"
+          SYS_DEPS_TIME="${{ needs.e2e.outputs.sys-deps-time }}"
+          
+          DEPS_ICON="❌"
+          PW_ICON="❌"
+          if [ "$DEPS_CACHE" = "true" ]; then
+            DEPS_ICON="✅"
+          fi
+          if [ "$PW_CACHE" = "true" ]; then
+            PW_ICON="✅"
+          fi
+          
+          # Playwright関連の時間情報を構築
+          PW_TIME_INFO=""
+          if [ "$PW_CACHE" = "true" ] && [ -n "$SYS_DEPS_TIME" ]; then
+            PW_TIME_INFO="- **Playwright System Deps Install**: ${SYS_DEPS_TIME}"
+          elif [ "$PW_CACHE" != "true" ] && [ -n "$BROWSERS_TIME" ]; then
+            PW_TIME_INFO="- **Playwright Full Install**: ${BROWSERS_TIME}"
+          fi
+          
+          # PRコメントを追加
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "## 📋 Playwright Test Report
+          
+          Test report has been published: $FULL_HTML_REPORT_URL
+          
+          ### ⚡ Performance Info
+          - **Package Manager**: pnpm (optimized based on benchmark)
+          - **Install Time**: ${INSTALL_TIME}
+          ${PW_TIME_INFO}
+          - **Dependencies Cache**: $DEPS_ICON $([ "$DEPS_CACHE" = "true" ] && echo "Hit" || echo "Miss")
+          - **Playwright Cache**: $PW_ICON $([ "$PW_CACHE" = "true" ] && echo "Hit" || echo "Miss")
+          - **Test Result**: $([ "$TEST_RESULT" = "success" ] && echo "✅ Passed" || echo "❌ Failed")
+          
+          ### 📊 Performance Comparison
+          | Metric | Current | Benchmark (cache) | Benchmark (no-cache) |
+          |--------|---------|-------------------|----------------------|
+          | Install Deps | ${INSTALL_TIME} | ~1s | ~6s |
+          $(if [ "$PW_CACHE" = "true" ] && [ -n "$SYS_DEPS_TIME" ]; then echo "| Playwright System Deps | ${SYS_DEPS_TIME} | 0s | 25s |"; elif [ -n "$BROWSERS_TIME" ]; then echo "| Playwright Full Install | ${BROWSERS_TIME} | N/A | ~40-60s |"; fi)"
+        env:
+          GH_TOKEN: ${{ github.token }}

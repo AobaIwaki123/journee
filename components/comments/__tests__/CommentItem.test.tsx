@@ -46,13 +46,6 @@ describe('CommentItem', () => {
     expect(screen.getByText('3時間前')).toBeInTheDocument();
   });
 
-  it('匿名コメントを正しく表示', () => {
-    render(<CommentItem comment={mockAnonymousComment} />);
-
-    expect(screen.getByText('匿名ユーザー')).toBeInTheDocument();
-    expect(screen.getByText('(匿名)')).toBeInTheDocument();
-  });
-
   it('自分のコメントに削除ボタンを表示', () => {
     const mockOnDelete = jest.fn();
 

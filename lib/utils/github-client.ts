@@ -69,8 +69,6 @@ export function generateFeedbackTemplate(params: {
   const {
     category,
     description,
-    userEmail,
-    userName,
     userAgent,
     url,
   } = params;
@@ -78,8 +76,6 @@ export function generateFeedbackTemplate(params: {
   const timestamp = new Date().toLocaleString('ja-JP', {
     timeZone: 'Asia/Tokyo',
   });
-
-  const userInfo = userName || userEmail || '匿名ユーザー';
 
   let template = `## フィードバック
 

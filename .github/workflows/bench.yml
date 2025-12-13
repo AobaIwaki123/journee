@@ -1,0 +1,542 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#                      🎭 Playwright CI Benchmark Workflow                       
+#                                                                                 
+#   Purpose: パッケージマネージャー (bun/pnpm/npm) とキャッシュ戦略による              
+#            E2Eテスト実行時間の比較ベンチマーク                                     
+#                                                                                
+#   Structure:                                                                     
+#     1. prepare-cache    → 🚀 [高速化コア] キャッシュの事前準備                
+#     2. e2e-with-cache   → ⏱️ [ベンチマーク] キャッシュあり計測                
+#     3. e2e-without-cache→ ⏱️ [ベンチマーク] キャッシュなし計測                
+#     4. summary          → 📊 [結果集計] 統計・比較レポート生成                
+# ══════════════════════════════════════════════════════════════════════════════
+
+name: Playwright CI Benchmark
+
+on:
+  push:
+
+# PRへの書き込み権限を付与
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  NEXTAUTH_URL: http://localhost:3000
+  NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+  GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+  NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
+  PLAYWRIGHT_BROWSERS: chromium
+  PLAYWRIGHT_WORKERS: 2
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 1: prepare-cache
+  # ██ 🚀 高速化コア機能: キャッシュの事前準備
+  # ██ 
+  # ██ 依存パッケージとPlaywrightブラウザをキャッシュに保存し、
+  # ██ 後続のテスト実行を高速化する
+  # ════════════════════════════════════════════════════════════════════════════
+  prepare-cache:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-manager: [bun, pnpm, npm]
+    steps:
+      - uses: actions/checkout@v4
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  📦 Package Manager Setup (Composite Action)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Setup Package Manager
+        uses: ./.github/actions/setup-package-manager
+        with:
+          package-manager: ${{ matrix.package-manager }}
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⚙️ 環境設定 (Environment Configuration)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Configure Environment
+        run: ./.github/scripts/configure-env.sh "${{ matrix.package-manager }}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🔑 依存パッケージキャッシュキー生成
+      # ────────────────────────────────────────────────────────────────────
+      - name: Generate dependency cache key
+        id: deps-cache-key
+        run: |
+          LOCKFILE_HASH=$(sha256sum ${{ env.LOCKFILE }} | cut -d' ' -f1)
+          CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
+          echo "dir=${{ env.CACHE_DIR }}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          echo "📦 Dependency Cache Key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: 依存パッケージキャッシュ                            
+      # ────────────────────────────────────────────────────────────────────
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        id: deps-cache
+        with:
+          path: |
+            ${{ steps.deps-cache-key.outputs.dir }}
+            node_modules
+          key: ${{ steps.deps-cache-key.outputs.key }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.package-manager }}-deps-
+      
+      - name: Install dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "📥 Installing dependencies..."
+          ${{ env.INSTALL_CMD }}
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🔑 Playwrightキャッシュキー生成
+      # ────────────────────────────────────────────────────────────────────
+      - name: Generate Playwright cache key
+        id: playwright-cache-key
+        run: |
+          VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
+          CACHE_KEY="playwright-${{ runner.os }}-${{ matrix.package-manager }}-${VERSION}-${{ env.PLAYWRIGHT_BROWSERS }}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          echo "🎭 Playwright Cache Key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: Playwrightブラウザキャッシュ                        
+      # ────────────────────────────────────────────────────────────────────
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.playwright-cache-key.outputs.key }}
+      
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "🎭 Installing Playwright browsers..."
+          ${{ env.PLAYWRIGHT_INSTALL_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
+      
+      - name: Verify Playwright installation
+        run: |
+          echo "✅ Verifying Playwright installation..."
+          ls -la ~/.cache/ms-playwright || echo "❌ Cache directory not found"
+          ${{ env.PLAYWRIGHT_VERSION_CMD }}
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 2: e2e-with-cache
+  # ██ ⏱️  ベンチマーク計測: キャッシュあり
+  # ════════════════════════════════════════════════════════════════════════════
+  e2e-with-cache:
+    needs: prepare-cache
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-manager: [bun, pnpm, npm]
+        run: [1, 2, 3, 4, 5]
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Record job start
+        run: echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
+
+      # ────────────────────────────────────────────────────────────────────
+      #  📦 Package Manager Setup (Composite Action)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Setup Package Manager
+        uses: ./.github/actions/setup-package-manager
+        with:
+          package-manager: ${{ matrix.package-manager }}
+      
+      - name: Record setup time
+        run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⚙️ 環境設定 (Environment Configuration)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Configure Environment
+        run: ./.github/scripts/configure-env.sh "${{ matrix.package-manager }}" true
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🔑 依存パッケージキャッシュキー生成
+      # ────────────────────────────────────────────────────────────────────
+      - name: Generate dependency cache key
+        id: deps-cache-key
+        run: |
+          LOCKFILE_HASH=$(sha256sum ${{ env.LOCKFILE }} | cut -d' ' -f1)
+          CACHE_KEY="${{ runner.os }}-${{ matrix.package-manager }}-deps-${LOCKFILE_HASH}"
+          echo "dir=${{ env.CACHE_DIR }}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          echo "📦 Restoring with key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: 依存パッケージキャッシュ復元
+      # ────────────────────────────────────────────────────────────────────
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v5
+        id: deps-cache
+        with:
+          path: |
+            ${{ steps.deps-cache-key.outputs.dir }}
+            node_modules
+          key: ${{ steps.deps-cache-key.outputs.key }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.package-manager }}-deps-
+      
+      - name: Check cache status
+        run: |
+          if [ "${{ steps.deps-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "✅ Dependencies cache HIT"
+          else
+            echo "⚠️ Dependencies cache MISS"
+          fi
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測: 依存インストール
+      # ────────────────────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: |
+          START=$(date +%s)
+          ${{ env.INSTALL_CMD }}
+          END=$(date +%s)
+          echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🔑 Playwrightキャッシュキー生成
+      # ────────────────────────────────────────────────────────────────────
+      - name: Generate Playwright cache key
+        id: playwright-cache-key
+        run: |
+          START=$(date +%s)
+          VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
+          CACHE_KEY="playwright-${{ runner.os }}-${{ matrix.package-manager }}-${VERSION}-${{ env.PLAYWRIGHT_BROWSERS }}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          END=$(date +%s)
+          echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
+          echo "🎭 Restoring with key: ${CACHE_KEY}"
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🚀 高速化コア: Playwrightブラウザキャッシュ復元
+      # ────────────────────────────────────────────────────────────────────
+      - name: Restore Playwright browsers cache
+        uses: actions/cache/restore@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.playwright-cache-key.outputs.key }}
+      
+      - name: Check Playwright cache status
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "✅ Playwright cache HIT"
+          else
+            echo "⚠️ Playwright cache MISS"
+          fi
+
+      # ────────────────────────────────────────────────────────────────────
+      #  🎭 Playwrightブラウザインストール (キャッシュミス時のみ)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          START=$(date +%s)
+          echo "⚠️ Cache miss - Installing browsers with dependencies..."
+          ${{ env.PLAYWRIGHT_INSTALL_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Install Playwright system dependencies (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          START=$(date +%s)
+          echo "✅ Cache hit - Installing system dependencies only..."
+          ${{ env.PLAYWRIGHT_INSTALL_DEPS_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測: E2Eテスト実行
+      # ────────────────────────────────────────────────────────────────────
+      - name: Run E2E tests (run #${{ matrix.run }})
+        id: playwright-tests
+        continue-on-error: true
+        run: |
+          START=$(date +%s)
+          ${{ env.PLAYWRIGHT_CMD }} test --workers=${{ env.PLAYWRIGHT_WORKERS }}
+          END=$(date +%s)
+          echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  💾 ベンチマーク結果保存
+      # ────────────────────────────────────────────────────────────────────
+      - name: Save timing data
+        id: save-timing
+        if: always()
+        run: |
+          ./.github/scripts/save-timing-data.sh \
+            "${{ matrix.package-manager }}" \
+            "true" \
+            "${{ matrix.run }}" \
+            "$JOB_START" \
+            "$SETUP_TIME" \
+            "${INSTALL_DEPS_DURATION:-0}" \
+            "${{ steps.deps-cache.outputs.cache-hit }}" \
+            "${GET_VERSION_DURATION:-0}" \
+            "${INSTALL_BROWSERS_DURATION:-0}" \
+            "${{ steps.playwright-cache.outputs.cache-hit }}" \
+            "${TEST_DURATION:-0}" \
+            "${{ steps.playwright-tests.outcome }}"
+          
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: timing-data-${{ matrix.package-manager }}-cached-${{ matrix.run }}
+          path: timing-${{ matrix.package-manager }}-cached-${{ matrix.run }}.json
+          retention-days: 7
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 3: e2e-without-cache
+  # ██ ⏱️  ベンチマーク計測: キャッシュなし
+  # ════════════════════════════════════════════════════════════════════════════
+  e2e-without-cache:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-manager: [bun, pnpm, npm]
+        run: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Record job start
+        run: echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
+
+      # ────────────────────────────────────────────────────────────────────
+      #  📦 Package Manager Setup (Composite Action)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Setup Package Manager
+        uses: ./.github/actions/setup-package-manager
+        with:
+          package-manager: ${{ matrix.package-manager }}
+      
+      - name: Record setup time
+        run: echo "SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⚙️ 環境設定 (Environment Configuration)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Configure Environment
+        run: ./.github/scripts/configure-env.sh "${{ matrix.package-manager }}" true
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測: 依存インストール (キャッシュなし)
+      # ────────────────────────────────────────────────────────────────────
+      - name: Install dependencies (no cache)
+        run: |
+          START=$(date +%s)
+          ${{ env.INSTALL_CMD }}
+          END=$(date +%s)
+          echo "INSTALL_DEPS_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          START=$(date +%s)
+          VERSION=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' package.json | sed 's/[\^~]//g')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          END=$(date +%s)
+          echo "GET_VERSION_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      - name: Install Playwright browsers (no cache)
+        run: |
+          START=$(date +%s)
+          ${{ env.PLAYWRIGHT_INSTALL_CMD }} ${{ env.PLAYWRIGHT_BROWSERS }}
+          END=$(date +%s)
+          echo "INSTALL_BROWSERS_DURATION=$((END - START))" >> $GITHUB_ENV
+
+      # ────────────────────────────────────────────────────────────────────
+      #  ⏱️  ベンチマーク計測: E2Eテスト実行
+      # ────────────────────────────────────────────────────────────────────
+      - name: Run E2E tests (run #${{ matrix.run }})
+        id: playwright-tests
+        continue-on-error: true
+        run: |
+          START=$(date +%s)
+          ${{ env.PLAYWRIGHT_CMD }} test --workers=${{ env.PLAYWRIGHT_WORKERS }}
+          END=$(date +%s)
+          echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
+      
+      # ────────────────────────────────────────────────────────────────────
+      #  💾 ベンチマーク結果保存
+      # ────────────────────────────────────────────────────────────────────
+      - name: Save timing data
+        id: save-timing
+        if: always()
+        run: |
+          ./.github/scripts/save-timing-data.sh \
+            "${{ matrix.package-manager }}" \
+            "false" \
+            "${{ matrix.run }}" \
+            "$JOB_START" \
+            "$SETUP_TIME" \
+            "${INSTALL_DEPS_DURATION:-0}" \
+            "false" \
+            "${GET_VERSION_DURATION:-0}" \
+            "${INSTALL_BROWSERS_DURATION:-0}" \
+            "false" \
+            "${TEST_DURATION:-0}" \
+            "${{ steps.playwright-tests.outcome }}"
+          
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: timing-data-${{ matrix.package-manager }}-nocache-${{ matrix.run }}
+          path: timing-${{ matrix.package-manager }}-nocache-${{ matrix.run }}.json
+          retention-days: 7
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ██ Step 4: summary
+  # ██ 📊 結果集計: 統計・比較レポート生成
+  # ════════════════════════════════════════════════════════════════════════════
+  summary:
+    needs: [e2e-with-cache, e2e-without-cache]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all timing data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: timing-data-*
+          merge-multiple: true
+      
+      - name: Calculate averages and generate summary
+        run: |
+          echo "## 🎭 Playwright E2E Test Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 実行環境情報を表示
+          CPU_CORES=$(nproc)
+          # Playwright のデフォルト worker 数はコア数の半分
+          PW_WORKERS=${PLAYWRIGHT_WORKERS}
+          echo "### 🖥️ Execution Environment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| CPU Cores | ${CPU_CORES} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Playwright Workers (default) | ${PW_WORKERS} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          cat timing-*.json | jq -s '
+            group_by(.package_manager, .cache_enabled) | 
+            map({
+              "package_manager": .[0].package_manager,
+              "cache_enabled": .[0].cache_enabled,
+              "runs": length,
+              "averages": {
+                "total": (map(.total) | add / length),
+                "setup_pm": (map(.setup_pm) | add / length),
+                "install_deps": (map(.install_deps) | add / length),
+                "get_version": (map(.get_version) | add / length),
+                "install_browsers": (map(.install_browsers) | add / length),
+                "test_execution": (map(.test_execution) | add / length),
+                "overhead": (map(.total - (.setup_pm + .install_deps + .install_browsers + .test_execution)) | add / length)
+              },
+              "cache_hits": {
+                "deps": (map(select(.deps_cache_hit == "true")) | length),
+                "playwright": (map(select(.playwright_cache_hit == "true")) | length)
+              },
+              "details": .
+            })
+          ' > summary.json
+          
+          echo "### 📊 Performance Comparison by Package Manager & Cache Strategy" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Manager | Cache | Runs | Setup | Install Deps | Browsers | Tests | Overhead | Total Time |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|-------|------|-------|--------------|----------|-------|----------|------------|" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '
+            # Sort: bun -> pnpm -> npm, cache enabled -> disabled
+            sort_by(
+              (if .package_manager == "bun" then 0 elif .package_manager == "pnpm" then 1 else 2 end),
+              (if .cache_enabled then 0 else 1 end)
+            ) | .[] | 
+            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers | floor)s | \(.averages.test_execution | floor)s | \(.averages.overhead | floor)s | \(.averages.total | floor)s |"
+          ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Cache Hit Rate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Manager | Deps Cache Hit | Playwright Cache Hit |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|----------------|----------------------|" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '
+            map(select(.cache_enabled)) | 
+            sort_by(if .package_manager == "bun" then 0 elif .package_manager == "pnpm" then 1 else 2 end) | 
+            .[] | 
+            "| **\(.package_manager)** | \(.cache_hits.deps)/\(.runs) | \(.cache_hits.playwright)/\(.runs) |"
+          ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏆 Best Performance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '
+            sort_by(.averages.total) | 
+            .[0] | 
+            "**Fastest Configuration**: \(.package_manager) with cache \(if .cache_enabled then "enabled" else "disabled" end) - **\(.averages.total | floor)s** average total time"
+          ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Cache Impact Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          cat summary.json | jq -r '
+            group_by(.package_manager) |
+            map({
+              pm: .[0].package_manager,
+              with_cache: (map(select(.cache_enabled)) | .[0].averages.total),
+              without_cache: (map(select(.cache_enabled | not)) | .[0].averages.total)
+            }) |
+            sort_by(if .pm == "bun" then 0 elif .pm == "pnpm" then 1 else 2 end) |
+            .[] |
+            "- **\(.pm)**: Cache saves **\((.without_cache - .with_cache) | floor)s** (\(((.without_cache - .with_cache) / .without_cache * 100) | floor)% faster)"
+          ' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Individual Run Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          for pm in bun pnpm npm; do
+            echo "<details>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>📦 $pm detailed results</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            cat summary.json | jq -r --arg pm "$pm" '
+              map(select(.package_manager == $pm)) |
+              sort_by(if .cache_enabled then 0 else 1 end) |
+              .[] |
+              "#### Cache: \(if .cache_enabled then "Enabled ✅" else "Disabled ❌" end)\n",
+              "| Run | Setup | Deps | Browsers | Tests | Overhead | Total |",
+              "|-----|-------|------|----------|-------|----------|-------|",
+              (.details[] | "| \(.run) | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers)s | \(.test_execution)s | \(.total - (.setup_pm + .install_deps + .install_browsers + .test_execution))s | \(.total)s |"),
+              ""
+            ' >> $GITHUB_STEP_SUMMARY
+            
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done

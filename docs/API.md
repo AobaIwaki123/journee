@@ -127,10 +127,6 @@ GET /api/health
 - `/api/itinerary/[id]/comments/[commentId]` (PATCH/DELETE: 自分のコメントのみ)
 - `/api/migration/*`
 
-**認証推奨（未認証でも動作）**:
-- `/api/chat` - チャット（未認証でも利用可能）
-- `/api/itinerary/[id]/comments` (GET/POST: 閲覧・匿名投稿可能)
-
 ---
 
 ## 💬 チャットAPI
@@ -143,7 +139,7 @@ AIとの対話形式でしおりを作成。Gemini 2.5 ProとClaude 3.5 Sonnet�
 POST /api/chat
 ```
 
-**認証**: 推奨（未認証でも動作）
+**認証**: 必要
 
 **リクエストボディ**:
 ```typescript
