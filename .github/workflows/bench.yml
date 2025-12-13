@@ -276,7 +276,7 @@ jobs:
         continue-on-error: true
         run: |
           START=$(date +%s)
-          ${{ env.PLAYWRIGHT_CMD }} test --workers=4
+          ${{ env.PLAYWRIGHT_CMD }} test
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
