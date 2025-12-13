@@ -276,7 +276,7 @@ jobs:
         continue-on-error: true
         run: |
           START=$(date +%s)
-          ${{ env.PLAYWRIGHT_CMD }} test
+          ${{ env.PLAYWRIGHT_CMD }} test --workers=4
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
@@ -454,7 +454,12 @@ jobs:
           echo "| Package Manager | Cache | Runs | Setup | Install Deps | Browsers | Tests | Total Time |" >> $GITHUB_STEP_SUMMARY
           echo "|----------------|-------|------|-------|--------------|----------|-------|------------|" >> $GITHUB_STEP_SUMMARY
           
-          cat summary.json | jq -r '.[] | 
+          cat summary.json | jq -r '
+            # Sort: bun -> pnpm -> npm, cache enabled -> disabled
+            sort_by(
+              (if .package_manager == "bun" then 0 elif .package_manager == "pnpm" then 1 else 2 end),
+              (if .cache_enabled then 0 else 1 end)
+            ) | .[] | 
             "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers | floor)s | \(.averages.test_execution | floor)s | \(.averages.total | floor)s |"
           ' >> $GITHUB_STEP_SUMMARY
           
@@ -465,7 +470,9 @@ jobs:
           echo "|----------------|----------------|----------------------|" >> $GITHUB_STEP_SUMMARY
           
           cat summary.json | jq -r '
-            map(select(.cache_enabled)) | .[] | 
+            map(select(.cache_enabled)) | 
+            sort_by(if .package_manager == "bun" then 0 elif .package_manager == "pnpm" then 1 else 2 end) | 
+            .[] | 
             "| **\(.package_manager)** | \(.cache_hits.deps)/\(.runs) | \(.cache_hits.playwright)/\(.runs) |"
           ' >> $GITHUB_STEP_SUMMARY
           
@@ -490,6 +497,7 @@ jobs:
               with_cache: (map(select(.cache_enabled)) | .[0].averages.total),
               without_cache: (map(select(.cache_enabled | not)) | .[0].averages.total)
             }) |
+            sort_by(if .pm == "bun" then 0 elif .pm == "pnpm" then 1 else 2 end) |
             .[] |
             "- **\(.pm)**: Cache saves **\((.without_cache - .with_cache) | floor)s** (\(((.without_cache - .with_cache) / .without_cache * 100) | floor)% faster)"
           ' >> $GITHUB_STEP_SUMMARY
@@ -505,6 +513,7 @@ jobs:
             
             cat summary.json | jq -r --arg pm "$pm" '
               map(select(.package_manager == $pm)) |
+              sort_by(if .cache_enabled then 0 else 1 end) |
               .[] |
               "#### Cache: \(if .cache_enabled then "Enabled ✅" else "Disabled ❌" end)\n",
               "| Run | Setup | Deps | Browsers | Tests | Total |",

@@ -29,7 +29,7 @@ case "$PACKAGE_MANAGER" in
     echo "PLAYWRIGHT_INSTALL_DEPS_CMD=bunx playwright install-deps" >> "$GITHUB_ENV"
     echo "PLAYWRIGHT_VERSION_CMD=bunx playwright --version" >> "$GITHUB_ENV"
     if [ "$INCLUDE_PLAYWRIGHT_CMD" = "true" ]; then
-      echo "PLAYWRIGHT_CMD=bunx playwright --workers=4" >> "$GITHUB_ENV"
+      echo "PLAYWRIGHT_CMD=bunx playwright" >> "$GITHUB_ENV"
     fi
     ;;
   pnpm)
@@ -40,7 +40,7 @@ case "$PACKAGE_MANAGER" in
     echo "PLAYWRIGHT_INSTALL_DEPS_CMD=pnpm exec playwright install-deps" >> "$GITHUB_ENV"
     echo "PLAYWRIGHT_VERSION_CMD=pnpm exec playwright --version" >> "$GITHUB_ENV"
     if [ "$INCLUDE_PLAYWRIGHT_CMD" = "true" ]; then
-      echo "PLAYWRIGHT_CMD=pnpm exec playwright --workers=4" >> "$GITHUB_ENV"
+      echo "PLAYWRIGHT_CMD=pnpm exec playwright" >> "$GITHUB_ENV"
     fi
     ;;
   npm)
@@ -51,7 +51,7 @@ case "$PACKAGE_MANAGER" in
     echo "PLAYWRIGHT_INSTALL_DEPS_CMD=npx playwright install-deps" >> "$GITHUB_ENV"
     echo "PLAYWRIGHT_VERSION_CMD=npx playwright --version" >> "$GITHUB_ENV"
     if [ "$INCLUDE_PLAYWRIGHT_CMD" = "true" ]; then
-      echo "PLAYWRIGHT_CMD=npx playwright --workers=4" >> "$GITHUB_ENV"
+      echo "PLAYWRIGHT_CMD=npx playwright" >> "$GITHUB_ENV"
     fi
     ;;
   *)
