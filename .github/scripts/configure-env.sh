@@ -20,6 +20,9 @@ fi
 
 echo "⚙️ Configuring environment for: $PACKAGE_MANAGER"
 
+# パッケージマネージャー名を環境変数に設定（playwright.config.tsで使用）
+echo "PACKAGE_MANAGER=$PACKAGE_MANAGER" >> "$GITHUB_ENV"
+
 case "$PACKAGE_MANAGER" in
   bun)
     echo "LOCKFILE=bun.lock" >> "$GITHUB_ENV"
