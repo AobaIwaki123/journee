@@ -39,6 +39,7 @@ env:
   ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
   NEXT_PUBLIC_ENABLE_MOCK_AUTH: true
   PLAYWRIGHT_BROWSERS: chromium
+  PLAYWRIGHT_WORKERS: 4
 
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
@@ -277,7 +278,7 @@ jobs:
         continue-on-error: true
         run: |
           START=$(date +%s)
-          ${{ env.PLAYWRIGHT_CMD }} test
+          ${{ env.PLAYWRIGHT_CMD }} test --workers=${{ env.PLAYWRIGHT_WORKERS }}
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
@@ -376,7 +377,7 @@ jobs:
         continue-on-error: true
         run: |
           START=$(date +%s)
-          ${{ env.PLAYWRIGHT_CMD }} test
+          ${{ env.PLAYWRIGHT_CMD }} test --workers=${{ env.PLAYWRIGHT_WORKERS }}
           END=$(date +%s)
           echo "TEST_DURATION=$((END - START))" >> $GITHUB_ENV
       
@@ -431,7 +432,7 @@ jobs:
           # 実行環境情報を表示
           CPU_CORES=$(nproc)
           # Playwright のデフォルト worker 数はコア数の半分
-          PW_WORKERS=$((CPU_CORES / 2))
+          PW_WORKERS=${PLAYWRIGHT_WORKERS}
           echo "### 🖥️ Execution Environment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
