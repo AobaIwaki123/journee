@@ -452,7 +452,8 @@ jobs:
                 "install_deps": (map(.install_deps) | add / length),
                 "get_version": (map(.get_version) | add / length),
                 "install_browsers": (map(.install_browsers) | add / length),
-                "test_execution": (map(.test_execution) | add / length)
+                "test_execution": (map(.test_execution) | add / length),
+                "overhead": (map(.total - (.setup_pm + .install_deps + .install_browsers + .test_execution)) | add / length)
               },
               "cache_hits": {
                 "deps": (map(select(.deps_cache_hit == "true")) | length),
@@ -464,8 +465,8 @@ jobs:
           
           echo "### 📊 Performance Comparison by Package Manager & Cache Strategy" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Package Manager | Cache | Runs | Setup | Install Deps | Browsers | Tests | Total Time |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------------|-------|------|-------|--------------|----------|-------|------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Manager | Cache | Runs | Setup | Install Deps | Browsers | Tests | Overhead | Total Time |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|-------|------|-------|--------------|----------|-------|----------|------------|" >> $GITHUB_STEP_SUMMARY
           
           cat summary.json | jq -r '
             # Sort: bun -> pnpm -> npm, cache enabled -> disabled
@@ -473,7 +474,7 @@ jobs:
               (if .package_manager == "bun" then 0 elif .package_manager == "pnpm" then 1 else 2 end),
               (if .cache_enabled then 0 else 1 end)
             ) | .[] | 
-            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers | floor)s | \(.averages.test_execution | floor)s | \(.averages.total | floor)s |"
+            "| **\(.package_manager)** | \(if .cache_enabled then "✅ Enabled" else "❌ Disabled" end) | \(.runs) | \(.averages.setup_pm | floor)s | \(.averages.install_deps | floor)s | \(.averages.install_browsers | floor)s | \(.averages.test_execution | floor)s | \(.averages.overhead | floor)s | \(.averages.total | floor)s |"
           ' >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -529,9 +530,9 @@ jobs:
               sort_by(if .cache_enabled then 0 else 1 end) |
               .[] |
               "#### Cache: \(if .cache_enabled then "Enabled ✅" else "Disabled ❌" end)\n",
-              "| Run | Setup | Deps | Browsers | Tests | Total |",
-              "|-----|-------|------|----------|-------|-------|",
-              (.details[] | "| \(.run) | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers)s | \(.test_execution)s | \(.total)s |"),
+              "| Run | Setup | Deps | Browsers | Tests | Overhead | Total |",
+              "|-----|-------|------|----------|-------|----------|-------|",
+              (.details[] | "| \(.run) | \(.setup_pm)s | \(.install_deps)s | \(.install_browsers)s | \(.test_execution)s | \(.total - (.setup_pm + .install_deps + .install_browsers + .test_execution))s | \(.total)s |"),
               ""
             ' >> $GITHUB_STEP_SUMMARY
             
