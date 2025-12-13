@@ -27,6 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CI: true
   NEXTAUTH_URL: http://localhost:3000
   NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
   GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
