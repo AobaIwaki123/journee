@@ -428,6 +428,18 @@ jobs:
           echo "## 🎭 Playwright E2E Test Performance Comparison" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
+          # 実行環境情報を表示
+          CPU_CORES=$(nproc)
+          # Playwright のデフォルト worker 数はコア数の半分
+          PW_WORKERS=$((CPU_CORES / 2))
+          echo "### 🖥️ Execution Environment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| CPU Cores | ${CPU_CORES} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Playwright Workers (default) | ${PW_WORKERS} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
           cat timing-*.json | jq -s '
             group_by(.package_manager, .cache_enabled) | 
             map({
