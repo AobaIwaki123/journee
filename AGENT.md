@@ -1,64 +1,62 @@
-# Journee AGENT ガイド
+# Journee エージェント用ナレッジベース
 
-Codex を含む AI エージェントが Journee プロジェクトで作業する際のナビゲーションと実務メモをまとめています。詳細な仕様や手順は既存ドキュメントを参照してください。
+## 1. プロジェクト概要
+- 旅行計画をAIとチャットしながら作成できるWebアプリケーション。
+- メイン画面（`app/page.tsx`）でチャットと旅程プレビューを並行表示し、編集内容を即座に反映。
+- 完成した旅程は共有URL（`app/share/[slug]`）やPDF（`lib/utils/pdf-generator.ts`）として配布可能。
 
-## プロジェクト概要
-- 旅行計画としおり生成をサポートする Next.js 14 + TypeScript アプリケーション。
-- Gemini / Claude を切り替え可能な AI チャット、Supabase 永続化、PDF 出力、公開機能などを提供。
-- 主要技術: Next.js App Router, Tailwind CSS, Zustand, Supabase, NextAuth, Playwright, Jest。
-- 追加の背景やフェーズ進行は `README.md` と `docs/PLAN.md` を参照。
+## 2. システム構成
+- **Next.js 14 App Router** 構成。`app/` 配下でページ・API・レイアウトを管理。
+- **サーバー機能**: `/app/api` にREST APIがまとまり、AIチャット、旅程CRUD、OGP生成などを提供。
+- **UIコンポーネント**: `components/` は機能別ディレクトリ（`chat/`, `itinerary/`, `layout/`, `feedback/` 等）で整理。
+- **ビジネスロジック**: `lib/` にAI連携、Supabaseリポジトリ、Zustandストア、ユーティリティが集約。
+- **型定義**: `types/` 配下でチャット・旅程・認証などを型安全に管理。
 
-## ディレクトリ早見表
-- `app/` : ページと API ルート。本体の UI・API 実装が集約。
-- `components/` : 機能別 React コンポーネント群（chat, itinerary, layout など）。
-- `lib/` : AI 連携・認証・DB・ユーティリティロジック。
-- `types/` : TypeScript 型定義。
-- `docs/` : 設計・手順ドキュメント（PLAN, SCHEMA, TESTING など）。
-- `scripts/` : Docker/デプロイ/シードなどの自動化スクリプト。
-- `e2e/` : Playwright テスト。
-- `.cursor/rules/` : AI エージェント向け作業ルール・コンテキスト。
-- `blog/` : 技術ブログ（例: ブランチごと独立環境構築の解説）。
+## 3. 主要利用技術
+- **フロントエンド**: React 18 + TypeScript 5.x + Tailwind CSS。
+- **状態管理**: Zustand（`lib/store/`）、スライス構成＋`persist`で設定を永続化。
+- **認証**: NextAuth.js + Google OAuth。`lib/auth/auth-options.ts` と `middleware.ts` で保護。
+- **データベース**: Supabase PostgreSQL。RLS有効。DDLは `lib/db/schema.sql`、要件は `docs/SCHEMA.md`。
+- **AI**: Google Gemini（優先）とAnthropic Claude（フェイルオーバー）をサポート。プロンプトは `lib/ai/prompts.ts`、ストリーミング処理は `lib/ai/gemini.ts` と `/app/api/chat`.
 
-詳細なツリーは `README.md` の「主要ディレクトリ」および `.cursor/rules/project_structure.mdc` を参照。
+## 4. コア機能フロー
+1. ユーザーがチャット入力 → `/app/api/chat` がAIに問い合わせ、ReadableStreamで応答を返す。
+2. フロントエンドのZustandストアがメッセージ・旅程ステートを更新。
+3. `lib/execution/` のフローが旅程データを整形し、`lib/db/itinerary-repository.ts` 経由でSupabaseへ保存。
+4. 公開設定時は `is_public` と `public_slug` を付与し、共有ページで表示。
 
-## 主要ドキュメント
-- **全体概要**: `README.md`
-- **開発計画 / 既知課題**: `docs/PLAN.md`, `docs/BUG.md`, `docs/RELEASE.md`
-- **セットアップ / 実行**: `docs/QUICK_START.md`, `docs/DOCKER.md`, `docs/GCR_DEPLOYMENT.md`
-- **仕様**: `docs/API.md`, `docs/SCHEMA.md`, `docs/TESTING.md`
-- **コーディング規約**: `docs/GUIDELINE.md`, `.cursor/rules/typescript-react-rules.mdc`, `.cursor/rules/styling-rules.mdc`
-- **機能別メモ**: `.cursor/rules/*` (AI連携, 認証, コメント機能, テスト戦略 など)
-- **開発体験メモ**: `blog/ISOLATED_BRANCH_ENV.md`（ブランチ独立環境の背景と意図）
+## 5. データモデルの要点
+- **主要テーブル**（100% Supabase管理）:
+  - `users`: Google OAuth情報。
+  - `itineraries`: 旅程メタ情報と進行フェーズ。
+  - `day_schedules`: 日別スケジュールと詳細化ステータス。
+  - `tourist_spots`: 観光スポット、移動、飲食などのエントリ。
+  - `chat_messages`: 旅程生成時の対話履歴。
+  - `user_settings`: AIモデルやAPIキーの暗号化保存。
+- 各テーブルの詳細仕様・インデックス・RLSポリシーは `docs/SCHEMA.md` 参照。
 
-ドキュメント更新時は `.cursor/commands/` のカスタムコマンド方針（`.cursor/rules/cursor-commands.mdc`）に沿って対応。
+## 6. 開発ワークフロー
+- **起動/ビルド**: `npm run dev`、`npm run build`、`npm run start`。
+- **静的検証**: `npm run lint`、`npm run type-check`。
+- **テスト**: `npm run test`（Jest）、`npm run test:e2e`（Playwright）。設定は `jest.config.js` と `playwright.config.ts`。
+- **Docker開発**: `scripts/docker-dev.sh` 経由で `npm run docker:start` などを提供。
+- **デプロイ**: Vercel推奨。`docker-compose.yml`、`Dockerfile.prod`、`k8s/` のマニフェスト、`scripts/deploy-gcr.sh` でGCR/Cloud Runにも対応。
 
-## よく使う npm スクリプト
-- 開発サーバー: `npm run dev`
-- ビルド / 本番起動: `npm run build`, `npm run start`
-- 静的解析: `npm run lint`, `npm run type-check`
-- テスト: `npm run test` (Jest), `npm run test:e2e` (Playwright)、`npm run test:all`
-- Docker 開発: `npm run docker:start|stop|restart|logs|shell|build|clean|status`
-- デプロイ関連: `npm run deploy:gcr`, `npm run release`, `npm run k8s:clean`
-- シード: `npm run seed:mock-users`
+## 7. ドキュメントガイド
+- `README.md`: 製品コンセプトと公開機能のビジュアル。
+- `docs/README.md`: すべてのドキュメントの目次。技術仕様（`API.md`、`GUIDELINE.md`、`SCHEMA.md`）や開発・運用手順（`QUICK_START.md`、`DOCKER.md`、`GCR_DEPLOYMENT.md`）を案内。
+- `docs/TESTING.md`, `docs/LINT.md`: 品質チェックの詳細手順。
+- `docs/FEEDBACK.md`, `docs/MOCK_AUTH.md`: 機能別の補足資料。
 
-Node.js 18+ / npm 9+ が前提 (`package.json` の `engines` を参照)。
+## 8. 品質・運用上の留意点
+- AIレスポンスのトークン数削減のため `lib/ai/chat-compressor.ts` で履歴を圧縮。
+- ログイン必須ページは `middleware.ts` が自動リダイレクト。新規ページ追加時は `matcher` への追記を検討。
+- IndexedDBからSupabaseへの移行ガイドは `docs/STORAGE_MIGRATION.md`、実装は `lib/utils/storage-migration.ts`。
+- PDF生成やOGP生成など、ブラウザ専用処理は `next/dynamic` を用いた遅延ロードでパフォーマンスを確保。
 
-## 作業ガイドライン
-- **事前確認**: 着手前に `.cursor/rules/` と関連ドキュメントで対象分野のルールを確認。
-- **変更方針**: TypeScript + Next.js のベストプラクティス（Server Components / Client Components の境界、Tailwind のユーティリティ活用）を守る。
-- **テスト**: 可能な限り単体テスト or Playwright E2E を追加/更新し、`docs/TESTING.md` の手順で検証。
-- **AI 連携**: `lib/ai/` 配下の抽象化を利用し、キー管理やエラーハンドリングは既存パターンに合わせる。
-- **データベース**: Supabase スキーマは `lib/db/` と `docs/SCHEMA.md` を参照し、RLS ポリシーへの影響を考慮。
-- **ドキュメント**: 機能追加・フロー変更時は該当ドキュメント（特に `docs/PLAN.md`, `docs/README.md`, `.cursor/rules/`）の更新を検討。
-- **独立環境**: ブランチごとのプレビューや CI/CD 方針は `blog/ISOLATED_BRANCH_ENV.md` に背景説明あり。環境調整時に参照。
-
-## 迅速に状況把握するためのチェックリスト
-1. `README.md` を読んで現状フェーズと主要機能を確認。
-2. 関連フェーズの詳細は `docs/PLAN.md` → 実装ステータスを `docs/RELEASE.md` と照合。
-3. ターゲット機能のルールは `.cursor/rules/` で確認。
-4. 依存コードは `lib/` や `components/` で既存パターンを参照。
-5. 変更後は対応するテスト (`npm run test`, `npm run test:e2e`) を実行。
-6. 必要に応じてドキュメントの更新や補足を追加。
-
-このファイルは適宜更新してください。新しい運用ルールやドキュメントが追加された場合は、本ガイドの反映も忘れずに。
+## 9. これから作業するエージェント向けヒント
+- 新しいAPIを追加する場合は `/app/api` にルート作成 → `docs/API.md` に仕様追記 → 必要なら `e2e/` へテスト追加。
+- 状態を拡張する場合は `lib/store` の既存スライス構造に倣い、型を `types/` に定義してからUIへ配線すると安全。
+- Supabaseスキーマに変更を加えたら `lib/db/schema.sql` と `docs/SCHEMA.md` の更新を忘れないこと。
+- AIプロンプト調整時は `lib/ai/prompts.ts` を単一の真実とし、テストではモックを `lib/mock-data/` に追加すると便利。
 
