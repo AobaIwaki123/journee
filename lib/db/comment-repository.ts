@@ -89,7 +89,9 @@ export class CommentRepository {
     const sortOrder = filters.sortOrder || "desc";
 
     // コメント総数を取得
-    const { count, error: countError } = await supabase
+    // サーバーサイドではAdminクライアントを使用してRLSを回避
+    const client = supabaseAdmin || supabase;
+    const { count, error: countError } = await client
       .from("comments")
       .select("*", { count: "exact", head: true })
       .eq("itinerary_id", filters.itineraryId);
@@ -99,7 +101,8 @@ export class CommentRepository {
     }
 
     // コメント一覧を取得
-    const { data, error } = await supabase
+    // サーバーサイドではAdminクライアントを使用してRLSを回避
+    const { data, error } = await client
       .from("comments")
       .select("*")
       .eq("itinerary_id", filters.itineraryId)
@@ -202,7 +205,9 @@ export class CommentRepository {
    * しおりのコメント数を取得
    */
   async getCommentCount(itineraryId: string): Promise<number> {
-    const { count, error } = await supabase
+    // サーバーサイドではAdminクライアントを使用してRLSを回避
+    const client = supabaseAdmin || supabase;
+    const { count, error } = await client
       .from("comments")
       .select("*", { count: "exact", head: true })
       .eq("itinerary_id", itineraryId);

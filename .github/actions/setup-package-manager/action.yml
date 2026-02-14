@@ -1,0 +1,28 @@
+name: 'Setup Package Manager'
+description: 'Set up the specified package manager (bun, pnpm, or npm)'
+
+inputs:
+  package-manager:
+    description: 'Package manager to set up: bun, pnpm, or npm'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Bun
+      if: inputs.package-manager == 'bun'
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+    
+    - name: Setup Node.js for pnpm/npm
+      if: inputs.package-manager != 'bun'
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+    
+    - name: Setup pnpm
+      if: inputs.package-manager == 'pnpm'
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10

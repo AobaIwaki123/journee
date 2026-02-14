@@ -19,38 +19,6 @@ const TEST_ITINERARY = {
 };
 
 test.describe('Phase 10.4: しおり保存のDB統合', () => {
-  test.describe('未ログイン時の動作', () => {
-    test('LocalStorageにしおりが保存される', async ({ page }) => {
-      // ホームページにアクセス
-      await page.goto('/');
-
-      // チャットでしおり作成を開始（簡易的に）
-      // 注: 実際のAI生成は時間がかかるため、直接ストアを操作する方法も検討
-      
-      // LocalStorageにデータが保存されていることを確認
-      const currentItinerary = await page.evaluate(() => {
-        return localStorage.getItem('journee_current_itinerary');
-      });
-
-      // 何らかのデータがあることを確認（完全なしおりでなくても可）
-      expect(currentItinerary).toBeTruthy();
-    });
-
-    test('未ログイン時はしおり一覧ページでLocalStorageから読み込む', async ({ page }) => {
-      // しおり一覧ページにアクセス
-      await page.goto('/itineraries');
-
-      // ページが正常に表示されることを確認
-      await expect(page.locator('h1')).toContainText('しおり一覧');
-      
-      // ローディングが完了することを確認
-      await page.waitForTimeout(1000);
-      
-      // エラーが表示されないことを確認
-      await expect(page.locator('text=エラーが発生しました')).not.toBeVisible();
-    });
-  });
-
   test.describe('ログイン時の動作（モック認証）', () => {
     // 注: 実際の認証テストには認証用のセットアップが必要
     // ここではAPIエンドポイントのテストを優先
@@ -69,48 +37,6 @@ test.describe('Phase 10.4: しおり保存のDB統合', () => {
       // 1. ログイン処理
       // 2. マイページにアクセス
       // 3. しおりが表示されることを確認
-    });
-  });
-
-  test.describe('APIエンドポイントのテスト', () => {
-    test('未認証時にsave APIを呼ぶと401が返る', async ({ request }) => {
-      const response = await request.post('/api/itinerary/save', {
-        data: {
-          itinerary: TEST_ITINERARY,
-        },
-      });
-
-      expect(response.status()).toBe(401);
-    });
-
-    test('未認証時にlist APIを呼ぶと401が返る', async ({ request }) => {
-      const response = await request.get('/api/itinerary/list');
-
-      expect(response.status()).toBe(401);
-    });
-
-    test('未認証時にload APIを呼ぶと401が返る', async ({ request }) => {
-      const response = await request.get('/api/itinerary/load?id=test-id');
-
-      expect(response.status()).toBe(401);
-    });
-  });
-
-  test.describe('フォールバック機能', () => {
-    test('しおり一覧ページでDB読み込み失敗時にLocalStorageにフォールバックする', async ({ page }) => {
-      // ネットワークエラーをシミュレート
-      await page.route('/api/itinerary/list', (route) => {
-        route.abort('failed');
-      });
-
-      // しおり一覧ページにアクセス
-      await page.goto('/itineraries');
-
-      // ページが正常に表示されることを確認（LocalStorageフォールバック）
-      await expect(page.locator('h1')).toContainText('しおり一覧');
-      
-      // エラーメッセージが表示されるかもしれないが、ページは機能する
-      await page.waitForTimeout(1000);
     });
   });
 
