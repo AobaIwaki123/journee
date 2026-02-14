@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, BookOpen, Settings, User, LogOut, Plane, MessageSquare } from 'lucide-react';
+import { Menu, X, BookOpen, Settings, User, LogOut, Plane, MessageSquare, FileText } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 interface MobileMenuProps {
@@ -144,6 +144,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   >
                     <Settings className="w-5 h-5" />
                     <span className="text-sm font-medium">設定</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleNavigation('/license')}
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span className="text-sm font-medium">ライセンス</span>
                   </button>
                 </div>
               </nav>
