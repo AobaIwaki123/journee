@@ -13,8 +13,9 @@
 
 name: Playwright CI Benchmark
 
-on:
-  push:
+# 基本不要なので無効化
+# on:
+#   push:
 
 # PRへの書き込み権限を付与
 permissions:
